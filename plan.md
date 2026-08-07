@@ -142,7 +142,6 @@ AllomorphDefinition
 CrystalBasis
 MillerIndex
 CrystalPlaneDefinition
-SlabPreset
 FacetDefinition
 FibrilPreset
 ```
@@ -155,9 +154,9 @@ x' = R x + t
 
 where `R` is a rotation matrix and `t` is a fractional translation vector.
 
-`MillerIndex` stores an exact signed, nonzero integer triplet `(h, k, l)`. Indices must not be reduced automatically: for example, `(2, 0, 0)` and `(1, 0, 0)` have parallel normals but different interplanar spacings and may describe different terminations. Likewise, `(h, k, l)` and `(-h, -k, -l)` identify opposite oriented faces. Parallelism, orientation, and exact plane identity must therefore be represented as separate comparisons.
+`MillerIndex` stores an exact signed, nonzero integer triplet `(h, k, l)`. Indices must not be reduced automatically: for example, `(2, 0, 0)` and `(1, 0, 0)` have parallel normals but different interplanar spacings. Likewise, `(h, k, l)` and `(-h, -k, -l)` identify opposite oriented faces. Parallelism, orientation, and exact plane identity must therefore be represented as separate comparisons.
 
-Surface and fibril presets are declarative crystallographic data. They identify faces, relative offsets or layer counts, applicable allomorphs, labels, and literature provenance; they do not contain force-field atom types or generated Cartesian coordinates.
+Fibril presets are declarative crystallographic data. They identify bounding faces, chain arrangements, applicable allomorphs, labels, and literature provenance; they do not contain force-field atom types or generated Cartesian coordinates. A slab requires no surface preset: its exposed face is supplied directly as a Miller index.
 
 ### Tasks
 
@@ -167,15 +166,15 @@ Surface and fibril presets are declarative crystallographic data. They identify 
 - Encode the P1 and P2(1) symmetry operations used by the supported allomorphs.
 - Store allomorph definitions in a human-readable structured format.
 - Define a validated signed Miller-index representation and unambiguous exact serialization without reducing index magnitude or changing sign.
-- Define crystallographic-plane records containing a Miller index, optional fractional termination offset, human-readable label, and provenance.
-- Define slab presets containing the exposed face, opposite-face relationship, termination choices, and applicable allomorph.
-- Define fibril and nanocrystallite presets as ordered sets of bounding facets rather than hard-coded coordinate masks.
+- Define crystallographic-plane records containing a Miller index, human-readable label, and provenance.
+- Define a simple slab request schema containing the allomorph, Miller index, layers or thickness, lateral dimensions, and optional vacuum spacing.
+- Define fibril and nanocrystallite presets as ordered sets of bounding facets and chain arrangements rather than hard-coded coordinate masks.
 - Transcribe the I-alpha, I-beta, and nanocrystallite face sets used by the published reference models, including negative indices and source citations.
-- Distinguish a crystallographic face family from an oriented face so symmetry-equivalent planes are not accidentally treated as the same termination.
+- Distinguish a crystallographic face family from an oriented face without exposing a separate surface-termination option.
 - Add schemas for user-supplied arbitrary faces and multi-facet cross-sections.
 - Validate coordinate dimensions and atom labels.
 - Validate that Miller indices are integral and not `(0, 0, 0)`, preset identifiers are unique, referenced allomorphs exist, and facet lists contain no unintended duplicates.
-- Round-trip all crystallographic and surface definitions through their human-readable storage format without losing signs, offsets, ordering, units, or provenance.
+- Round-trip all crystallographic and surface definitions through their human-readable storage format without losing signs, ordering, units, or provenance.
 - Record the primary crystallographic publication for every dataset.
 - Compare imported data with the legacy input files.
 
@@ -183,8 +182,8 @@ Surface and fibril presets are declarative crystallographic data. They identify 
 
 - Miller-index validation, magnitude/sign preservation, equality, parallelism, and serialization tests.
 - Tests distinguishing exact plane indices, parallel orientations, and opposite oriented faces, including `(1, 1, 0)`, `(2, 2, 0)`, and `(-1, -1, 0)`.
-- Plane-termination offset and unit round-trip tests.
-- Schema tests for arbitrary slab definitions and ordered multi-facet cross-sections.
+- Plane-label and unit round-trip tests.
+- Schema tests for Miller-index-driven slab requests and ordered multi-facet cross-sections.
 - Reference-preset tests asserting the complete ordered face lists for I-alpha, I-beta, and the published nanocrystallite models.
 - Provenance and unknown-allomorph validation tests.
 
@@ -194,7 +193,7 @@ Surface and fibril presets are declarative crystallographic data. They identify 
 - Every atom site has a name, element, and fractional coordinate.
 - Calculated unit-cell volumes and vectors match reference values.
 - Arbitrary valid signed Miller indices load, validate, compare, and serialize without losing magnitude or face orientation.
-- All published slab, fibril, and nanocrystallite presets load with complete face lists and traceable citations.
+- All published fibril and nanocrystallite presets load with complete face lists and traceable citations.
 - Invalid zero indices, malformed facet definitions, duplicate preset identifiers, and unknown allomorph references fail with clear errors.
 - No force-field concepts are present in the crystallographic models.
 
@@ -234,9 +233,9 @@ Cellulose I-beta is the first vertical target because it exercises P2(1) symmetr
 - Normalize or wrap fractional coordinates when appropriate.
 - Replicate unit cells along crystallographic axes.
 - Compute reciprocal-lattice vectors, plane normals, and interplanar spacings for general `(h k l)` faces.
-- Generate a slab with a user-selected exposed face, number of molecular layers or thickness, lateral dimensions, termination offset, and optional vacuum spacing.
-- Generate fibrils and nanocrystallites by intersecting crystallographic half-spaces, allowing every bounding face and its signed offset to be specified.
-- Provide symmetric and asymmetric slab options and record the two exposed terminations independently.
+- Generate a slab from a user-supplied Miller index, number of molecular layers or thickness, lateral dimensions, and optional vacuum spacing.
+- Use a documented, deterministic whole-layer cutting convention internally; Version 1 will not expose a separate termination parameter.
+- Generate fibrils and nanocrystallites by intersecting crystallographic half-spaces defined by their bounding faces and requested dimensions or preset chain arrangement.
 - Avoid split residues and dangling fragments at cut boundaries by applying a documented whole-chain/whole-residue inclusion policy.
 - Provide published cross-section presets while retaining a general arbitrary-face interface.
 - Include reference presets covering the faces illustrated for cellulose I-alpha, I-beta, and cellulose nanocrystallites, including opposite signed faces where required to close the cross-section:
@@ -258,7 +257,7 @@ Cellulose I-beta is the first vertical target because it exercises P2(1) symmetr
 - Atom-count tests.
 - Translation-invariance tests.
 - Reciprocal-lattice plane-normal and `d(hkl)` tests for orthogonal and non-orthogonal cells.
-- Slab orientation, thickness, termination, vacuum, and exposed-face tests.
+- Slab orientation, layer count, thickness, vacuum, exposed-face, and deterministic-boundary tests.
 - Tests for both members of each opposite-face pair, including negative Miller indices.
 - Fibril cross-section tests for every reference face and all published presets.
 - Boundary tests ensuring that cutting does not silently create partial residues or chains.
@@ -271,7 +270,7 @@ Cellulose I-beta is the first vertical target because it exercises P2(1) symmetr
 - Monoclinic and triclinic cell vectors are correct.
 - A slab can be generated for any valid user-supplied `(h k l)` face for every supported allomorph.
 - Fibril and nanocrystallite cross-sections reproduce the documented reference face sets and dimensions within tolerance.
-- Every generated surface reports its Miller index, Cartesian normal, termination offset, area, and opposite/bounding face relationship.
+- Every generated surface reports its requested Miller index, Cartesian normal, interplanar spacing, realized thickness, area, and applied deterministic boundary convention.
 - No supported surface operation leaves an unreported partial residue or chemically ambiguous cut.
 - Geometry generation requires no VMD, Octave, Perl, sed, psfgen, or Open Babel.
 
