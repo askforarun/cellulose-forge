@@ -140,6 +140,11 @@ AsymmetricUnit
 AtomSite
 AllomorphDefinition
 CrystalBasis
+MillerIndex
+CrystalPlaneDefinition
+SlabPreset
+FacetDefinition
+FibrilPreset
 ```
 
 `SpaceGroupOperation` represents a crystallographic transformation of fractional coordinates:
@@ -150,6 +155,10 @@ x' = R x + t
 
 where `R` is a rotation matrix and `t` is a fractional translation vector.
 
+`MillerIndex` stores an exact signed, nonzero integer triplet `(h, k, l)`. Indices must not be reduced automatically: for example, `(2, 0, 0)` and `(1, 0, 0)` have parallel normals but different interplanar spacings and may describe different terminations. Likewise, `(h, k, l)` and `(-h, -k, -l)` identify opposite oriented faces. Parallelism, orientation, and exact plane identity must therefore be represented as separate comparisons.
+
+Surface and fibril presets are declarative crystallographic data. They identify faces, relative offsets or layer counts, applicable allomorphs, labels, and literature provenance; they do not contain force-field atom types or generated Cartesian coordinates.
+
 ### Tasks
 
 - Import unit-cell lengths and angles.
@@ -157,15 +166,36 @@ where `R` is a rotation matrix and `t` is a fractional translation vector.
 - Preserve atom ordering, labels, elements, and source provenance.
 - Encode the P1 and P2(1) symmetry operations used by the supported allomorphs.
 - Store allomorph definitions in a human-readable structured format.
+- Define a validated signed Miller-index representation and unambiguous exact serialization without reducing index magnitude or changing sign.
+- Define crystallographic-plane records containing a Miller index, optional fractional termination offset, human-readable label, and provenance.
+- Define slab presets containing the exposed face, opposite-face relationship, termination choices, and applicable allomorph.
+- Define fibril and nanocrystallite presets as ordered sets of bounding facets rather than hard-coded coordinate masks.
+- Transcribe the I-alpha, I-beta, and nanocrystallite face sets used by the published reference models, including negative indices and source citations.
+- Distinguish a crystallographic face family from an oriented face so symmetry-equivalent planes are not accidentally treated as the same termination.
+- Add schemas for user-supplied arbitrary faces and multi-facet cross-sections.
 - Validate coordinate dimensions and atom labels.
+- Validate that Miller indices are integral and not `(0, 0, 0)`, preset identifiers are unique, referenced allomorphs exist, and facet lists contain no unintended duplicates.
+- Round-trip all crystallographic and surface definitions through their human-readable storage format without losing signs, offsets, ordering, units, or provenance.
 - Record the primary crystallographic publication for every dataset.
 - Compare imported data with the legacy input files.
+
+### Tests
+
+- Miller-index validation, magnitude/sign preservation, equality, parallelism, and serialization tests.
+- Tests distinguishing exact plane indices, parallel orientations, and opposite oriented faces, including `(1, 1, 0)`, `(2, 2, 0)`, and `(-1, -1, 0)`.
+- Plane-termination offset and unit round-trip tests.
+- Schema tests for arbitrary slab definitions and ordered multi-facet cross-sections.
+- Reference-preset tests asserting the complete ordered face lists for I-alpha, I-beta, and the published nanocrystallite models.
+- Provenance and unknown-allomorph validation tests.
 
 ### Completion criteria
 
 - All four allomorph definitions load and validate.
 - Every atom site has a name, element, and fractional coordinate.
 - Calculated unit-cell volumes and vectors match reference values.
+- Arbitrary valid signed Miller indices load, validate, compare, and serialize without losing magnitude or face orientation.
+- All published slab, fibril, and nanocrystallite presets load with complete face lists and traceable citations.
+- Invalid zero indices, malformed facet definitions, duplicate preset identifiers, and unknown allomorph references fail with clear errors.
 - No force-field concepts are present in the crystallographic models.
 
 ---
@@ -179,15 +209,13 @@ Generate complete Cartesian bulk crystals, surface slabs, fibrils, and nanocryst
 ### Geometry models
 
 ```text
-MillerIndex
-CrystalPlane
 BulkCrystal
 Slab
 FibrilCrossSection
-ShapePreset
+GeneratedSurface
 ```
 
-A face is identified by a signed Miller index `(h k l)`. The geometry engine must derive the plane normal and interplanar spacing from the reciprocal lattice, so face support is not restricted to orthogonal unit cells or to a hard-coded list of orientations.
+Phase III consumes the signed face and preset definitions established in Phase II. The geometry engine must derive each plane normal and interplanar spacing from the reciprocal lattice, so face support is not restricted to orthogonal unit cells or to a hard-coded list of orientations.
 
 ### Implementation order
 
