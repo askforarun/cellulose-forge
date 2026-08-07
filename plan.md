@@ -216,6 +216,14 @@ GeneratedSurface
 
 Phase III consumes the signed face and preset definitions established in Phase II. The geometry engine must derive each plane normal and interplanar spacing from the reciprocal lattice, so face support is not restricted to orthogonal unit cells or to a hard-coded list of orientations.
 
+### Shape-selection contract
+
+- A slab is selected with `--shape slab --face H K L`; the user supplies one Miller index.
+- A fibril is selected with `--shape fibril --fibril-model NAME`; the named model supplies the complete cross-section, chain arrangement, and bounding-face set.
+- The initial fibril model is `36-chain-hexagonal`, reproduced from the literature independently for each allomorph for which adequate crystallographic evidence is available.
+- `--degree-polymerization N` controls the number of glucose residues along each fibril chain.
+- Users do not need to enter the individual faces of a named fibril model. Every face used by the model must be listed in the build report.
+
 ### Implementation order
 
 1. Cellulose I-beta.
@@ -235,9 +243,9 @@ Cellulose I-beta is the first vertical target because it exercises P2(1) symmetr
 - Compute reciprocal-lattice vectors, plane normals, and interplanar spacings for general `(h k l)` faces.
 - Generate a slab from a user-supplied Miller index, number of molecular layers or thickness, lateral dimensions, and optional vacuum spacing.
 - Use a documented, deterministic whole-layer cutting convention internally; Version 1 will not expose a separate termination parameter.
-- Generate fibrils and nanocrystallites by intersecting crystallographic half-spaces defined by their bounding faces and requested dimensions or preset chain arrangement.
+- Generate fibrils and nanocrystallites from named models by applying their complete bounding-face sets and chain arrangements.
 - Avoid split residues and dangling fragments at cut boundaries by applying a documented whole-chain/whole-residue inclusion policy.
-- Provide published cross-section presets while retaining a general arbitrary-face interface.
+- Provide published fibril cross-section models; arbitrary individual Miller-index input remains available through slab generation.
 - Include reference presets covering the faces illustrated for cellulose I-alpha, I-beta, and cellulose nanocrystallites, including opposite signed faces where required to close the cross-section:
   - I-alpha: `(1, 1, 0)`, `(0, 1, 0)`, `(1, 0, 0)`, `(-1, 1, 0)`, `(1, -1, 0)`, and `(-1, -1, 0)`.
   - I-beta: `(2, 0, 0)`, `(1, 1, 0)`, `(1, -1, 0)`, `(0, 1, 0)`, `(0, -1, 0)`, and the additional opposite faces needed to close the cross-section.
@@ -509,11 +517,12 @@ cellulose-forge build \
 
 ```bash
 cellulose-forge build \
-  --allomorph II \
+  --allomorph I-beta \
   --shape fibril \
-  --cellobiose 20 \
+  --fibril-model 36-chain-hexagonal \
+  --degree-polymerization 20 \
   --force-field glycam \
-  --output cellulose_ii_fibril
+  --output ibeta_36chain_fibril
 ```
 
 ```bash
