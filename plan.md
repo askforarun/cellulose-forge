@@ -220,8 +220,9 @@ Phase III consumes the signed face and preset definitions established in Phase I
 
 - A slab is selected with `--shape slab --face H K L`; the user supplies one Miller index.
 - A fibril is selected with `--shape fibril --fibril-model NAME`; the named model supplies the complete cross-section, chain arrangement, and bounding-face set.
-- The initial fibril model is `36-chain-hexagonal`, reproduced from the literature independently for each allomorph for which adequate crystallographic evidence is available.
-- `--degree-polymerization N` controls the number of glucose residues along each fibril chain.
+- The initial fibril model is `36-chain`, reproduced from the literature independently for each allomorph for which adequate crystallographic evidence is available.
+- `36-chain` denotes the published discrete chain arrangement; it must not be interpreted or generated as an ideal regular hexagon.
+- `--cellobiose-units N` controls fibril length using the original Cellulose-Builder convention. One cellobiose unit corresponds to two anhydroglucose residues along each chain.
 - Users do not need to enter the individual faces of a named fibril model. Every face used by the model must be listed in the build report.
 
 ### Implementation order
@@ -519,8 +520,8 @@ cellulose-forge build \
 cellulose-forge build \
   --allomorph I-beta \
   --shape fibril \
-  --fibril-model 36-chain-hexagonal \
-  --degree-polymerization 20 \
+  --fibril-model 36-chain \
+  --cellobiose-units 20 \
   --force-field glycam \
   --output ibeta_36chain_fibril
 ```
