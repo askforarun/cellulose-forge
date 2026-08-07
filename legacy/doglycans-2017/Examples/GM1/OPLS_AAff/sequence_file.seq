@@ -1,0 +1,7 @@
+N=P.1/H11:-(O1,C1,<a>)-4GB-(O4,C1,<b>)-WLB<branch>-(O4,C1,<d>)-3VB-(O3,C1)-0LB
+
+branch =N.4:-(O3,C2,<c>)-0SA
+a=O1,C1,[C3 C2 O1 C1 180.0]
+b=O4,C1,[C2 C3 C4 O4 175 C3 C4 O4 C1 112 C4 O4 C1 C2 156 O4 C1 C2 C3 170]
+c=O3,C2,[C2 C3 O3 C2 -90.0]
+d=O4,C1,[C4 O4 C1 O5 -120.0]

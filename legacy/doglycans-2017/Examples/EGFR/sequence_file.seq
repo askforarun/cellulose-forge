@@ -1,0 +1,26 @@
+A=P.32/HD22:-(ND2,C1,<Ae>)-4YB-(O4,C1,<a>)-4YB-(O4,C1,<b>)-VMB<branch>-(O6,C1,<c>)-0MA
+
+branch = A.4:-(O3,C1,<d>)-0MA
+a = O4,C1,[C3 C4 O4 C1   60.0 C4 O4 C1 C2 120.0]
+b = O4,C1,[C3 C4 O4 C1  100.0 C4 O4 C1 C2  60.0]
+c = O6,C1,[C4 C5 C6 O6   120.0 C5 C6 O6 C1 150.0 C6 O6 C1 C2 180.0]
+d = O3,C1,[C2 C3 O3 C1  120.0 C3 O3 C1 C2 -60.0]
+Ae=ND2,C1,[CG ND2 C1 C2 230]
+
+B=P.151/HD22:-(ND2,C1,<Ae>)-4YB-(O4,C1,<a>)-4YB-(O4,C1,<b>)-VMB<branch>-(O6,C1,<c>)-0MA
+
+C=P.172/HD22:-(ND2,C1,<Ae>)-4YB-(O4,C1,<a>)-4YB-(O4,C1,<b>)-VMB<branch>-(O6,C1,<c>)-0MA
+
+D=P.328/HD22:-(ND2,C1,<Ae>)-4YB-(O4,C1,<a>)-4YB-(O4,C1,<b>)-VMB<branch>-(O6,C1,<c>)-0MA
+
+E=P.337/HD22:-(ND2,C1,<Ae>)-4YB-(O4,C1,<a>)-4YB-(O4,C1,<b>)-VMB<branch>-(O6,C1,<c>)-0MA
+
+F=P.389/HD22:-(ND2,C1,<Ae>)-4YB-(O4,C1,<a>)-4YB-(O4,C1,<b>)-VMB<branch>-(O6,C1,<c>)-0MA
+
+G=P.420/HD22:-(ND2,C1,<Ae>)-4YB-(O4,C1,<a>)-4YB-(O4,C1,<b>)-VMB<branch>-(O6,C1,<c>)-0MA
+
+H=P.504/HD22:-(ND2,C1,<Ae>)-4YB-(O4,C1,<a>)-4YB-(O4,C1,<b>)-VMB<branch>-(O6,C1,<c>)-0MA
+
+I=P.544/HD22:-(ND2,C1,<Ae>)-4YB-(O4,C1,<a>)-4YB-(O4,C1,<b>)-VMB<branch>-(O6,C1,<c>)-0MA
+
+J=P.579/HD22:-(ND2,C1,<Ae>)-4YB-(O4,C1,<a>)-4YB-(O4,C1,<b>)-VMB<branch>-(O6,C1,<c>)-0MA

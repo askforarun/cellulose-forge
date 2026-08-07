@@ -1,0 +1,41 @@
+#include "ffoplsaa.itp"
+#include "OPLSaa.db"
+#include "glycam06h-3.itp"
+#include "nb_params.itp"
+#include "pairtypes.itp"
+#include "types_N_linked_glycan.itp"
+#include "types_O_linked_glycan.itp"
+#include "ProtG.itp"
+
+; Include water topology
+#include "oplsaa.ff/tip3p.itp"
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+; Include topology for ions
+;#include "oplsaa.ff/ions.itp"
+
+[ moleculetype ]
+; molname       nrexcl
+Na              1
+ [ atoms ]
+1    opls_405        1      Na      Na       1         1.000    23.0000
+;
+[ moleculetype ]
+; molname   nrexcl
+CL      1
+[ atoms ]
+; id    at type     res nr  residu name at name  cg nr  charge   mass
+1       opls_401    1       CL          CL       1      -1       35.45300
+
+[ system ]
+; Name
+Name in water
+
+[ molecules ]
+; Compound        #mols
+Protein             1

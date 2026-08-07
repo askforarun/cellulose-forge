@@ -1,0 +1,11 @@
+site_name: CelluloseForge
+site_description: Build crystalline cellulose structures for GROMACS simulations.
+repo_url: https://github.com/askforarun/cellulose-forge
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Governance: governance.md
+  - Support: support.md
+  - Architecture decisions: decisions/README.md
+  - AI assistance: ai-usage.md

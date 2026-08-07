@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the software release and the underlying Cellulose-Builder publication."
+title: "CelluloseForge"
+type: software
+version: 0.1.0
+license: GPL-3.0-or-later
+authors:
+  - name: "CelluloseForge contributors"
+repository-code: "https://github.com/askforarun/cellulose-forge"
+references:
+  - type: article
+    title: "Cellulose-Builder: A toolkit for building crystalline structures of cellulose"
+    authors:
+      - family-names: Gomes
+        given-names: Thiago C. F.
+      - family-names: Skaf
+        given-names: Munir S.
+    journal: Journal of Computational Chemistry
+    volume: 33
+    start: 1338
+    end: 1346
+    year: 2012
+    doi: 10.1002/jcc.22959

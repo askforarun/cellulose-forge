@@ -1,0 +1,53 @@
+a) Python:
+	1) The Python Package , version 3.6.1 https://www.python.org
+	2) License at https://docs.python.org/3/license.html
+	
+b) Openbabel:
+	1) N M O'Boyle, M Banck, C A James, C Morley, T Vandermeersch, and G R Hutchison. 
+	"Open Babel: An open chemical toolbox." J. Cheminf. (2011), 3, 33. 
+	DOI:10.1186/1758-2946-3-33
+	2) The Open Babel Package, version 2.4.1 http://openbabel.org
+	3) License at https://www.gnu.org/licenses/gpl.html
+	
+c) Libpng:
+	1) The libpng Package, version 1.6.28 http://www.libpng.org
+	2) License at http://www.libpng.org/pub/png/src/libpng-LICENSE.txt
+	
+d) Pixman:
+	1) The Pixman Package, version 0.34.0 http://www.pixman.org
+	2) License at https://opensource.org/licenses/MIT
+
+e) Cairo:
+	1) The Cairo Package, version 1.14.8 https://cairographics.org
+	2) License at https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+f) Libxml2:
+	1) The Libxml2 Package, version 2.9.1 http://xmlsoft.org
+	2) License at https://opensource.org/licenses/MIT
+
+g) Zlib:
+	1) The Zlib Package, version 1.2.11 https://zlib.net
+	2) License at https://opensource.org/licenses/Zlib
+
+h) Swig:
+	1) The Swig Package, version 3.0.12 http://www.swig.org
+	2) License at https://www.gnu.org/licenses/gpl-3.0.en.html
+
+i) Eigen:
+	1) The Eigen Package, version 3.3.3 http://eigen.tuxfamily.org
+	2) License at https://www.mozilla.org/en-US/MPL/2.0/
+
+l) Anaconda:
+	1) The Anaconda Package, version 4.3.1 (Linux) and 4.4.0 (MacOSX),
+	https://www.continuum.io/Anaconda-Overview
+	2) License at https://docs.continuum.io/anaconda/eula
+
+m) Numpy:
+	1) The Numpy Package, version  1.12.1  http://www.numpy.org
+	2) License at https://docs.scipy.org/doc/numpy-1.10.0/license.html
+
+n) Ply:
+	1) The Ply Package, version 3.10 http://www.dabeaz.com/ply
+	2) License at https://github.com/eliben/pycparser/blob/master/pycparser/ply/LICENSE
+
+
