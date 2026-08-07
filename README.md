@@ -7,7 +7,8 @@ The project is in its foundation phase. Scientific functionality will be added i
 ## Version 1 scope
 
 - Cellulose I-alpha, I-beta, II, and III-I.
-- Parallelepiped crystallites, supported 36-chain fibrils, and supported monolayers.
+- Parallelepiped crystallites, surface-oriented slabs, fibrils, nanocrystallites, and supported monolayers.
+- Arbitrary crystallographic faces selected by signed Miller indices, plus published cross-section presets.
 - Finite and covalently periodic cellulose chains.
 - CHARMM36 and GLYCAM force-field adapters.
 - GROMACS GRO, TOP, and ITP output.

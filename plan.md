@@ -8,7 +8,9 @@ Version 1 will support:
 
 - Cellulose I-alpha, I-beta, II, and III-I.
 - Parallelepiped crystallites.
-- Supported 36-chain elementary fibrils.
+- Surface-oriented slabs exposing user-selected crystallographic faces.
+- Fibrils and nanocrystallites with selectable, explicitly reported bounding faces.
+- Supported 36-chain elementary fibril presets.
 - Supported monolayers.
 - Finite cellulose chains.
 - Covalently periodic cellulose chains.
@@ -172,7 +174,20 @@ where `R` is a rotation matrix and `t` is a fractional translation vector.
 
 ### Purpose
 
-Generate complete Cartesian crystal geometries without assigning molecular mechanics parameters.
+Generate complete Cartesian bulk crystals, surface slabs, fibrils, and nanocrystallites without assigning molecular mechanics parameters.
+
+### Geometry models
+
+```text
+MillerIndex
+CrystalPlane
+BulkCrystal
+Slab
+FibrilCrossSection
+ShapePreset
+```
+
+A face is identified by a signed Miller index `(h k l)`. The geometry engine must derive the plane normal and interplanar spacing from the reciprocal lattice, so face support is not restricted to orthogonal unit cells or to a hard-coded list of orientations.
 
 ### Implementation order
 
@@ -190,6 +205,17 @@ Cellulose I-beta is the first vertical target because it exercises P2(1) symmetr
 - Apply space-group symmetry operations.
 - Normalize or wrap fractional coordinates when appropriate.
 - Replicate unit cells along crystallographic axes.
+- Compute reciprocal-lattice vectors, plane normals, and interplanar spacings for general `(h k l)` faces.
+- Generate a slab with a user-selected exposed face, number of molecular layers or thickness, lateral dimensions, termination offset, and optional vacuum spacing.
+- Generate fibrils and nanocrystallites by intersecting crystallographic half-spaces, allowing every bounding face and its signed offset to be specified.
+- Provide symmetric and asymmetric slab options and record the two exposed terminations independently.
+- Avoid split residues and dangling fragments at cut boundaries by applying a documented whole-chain/whole-residue inclusion policy.
+- Provide published cross-section presets while retaining a general arbitrary-face interface.
+- Include reference presets covering the faces illustrated for cellulose I-alpha, I-beta, and cellulose nanocrystallites, including opposite signed faces where required to close the cross-section:
+  - I-alpha: `(1, 1, 0)`, `(0, 1, 0)`, `(1, 0, 0)`, `(-1, 1, 0)`, `(1, -1, 0)`, and `(-1, -1, 0)`.
+  - I-beta: `(2, 0, 0)`, `(1, 1, 0)`, `(1, -1, 0)`, `(0, 1, 0)`, `(0, -1, 0)`, and the additional opposite faces needed to close the cross-section.
+  - Nanocrystallite reference cross-section: `(0, 2, 0)`, `(1, 2, 0)`, `(1, 0, 0)`, `(1, -1, 0)`, `(0, -2, 0)`, `(-1, 0, 0)`, and `(-1, 1, 0)`.
+- Express face labels canonically in machine-readable build reports while accepting conventional overbar/signed input notation.
 - Preserve deterministic atom ordering.
 - Generate output box vectors.
 - Write diagnostic XYZ and PDB coordinates.
@@ -203,12 +229,22 @@ Cellulose I-beta is the first vertical target because it exercises P2(1) symmetr
 - Symmetry-equivalent atom tests.
 - Atom-count tests.
 - Translation-invariance tests.
+- Reciprocal-lattice plane-normal and `d(hkl)` tests for orthogonal and non-orthogonal cells.
+- Slab orientation, thickness, termination, vacuum, and exposed-face tests.
+- Tests for both members of each opposite-face pair, including negative Miller indices.
+- Fibril cross-section tests for every reference face and all published presets.
+- Boundary tests ensuring that cutting does not silently create partial residues or chains.
+- Determinism tests for equivalent face specifications and repeated builds.
 - Coordinate comparisons with legacy reference structures.
 
 ### Completion criteria
 
 - All four allomorphs reproduce their reference geometry within documented tolerances.
 - Monoclinic and triclinic cell vectors are correct.
+- A slab can be generated for any valid user-supplied `(h k l)` face for every supported allomorph.
+- Fibril and nanocrystallite cross-sections reproduce the documented reference face sets and dimensions within tolerance.
+- Every generated surface reports its Miller index, Cartesian normal, termination offset, area, and opposite/bounding face relationship.
+- No supported surface operation leaves an unreported partial residue or chemically ambiguous cut.
 - Geometry generation requires no VMD, Octave, Perl, sed, psfgen, or Open Babel.
 
 ---
@@ -451,6 +487,18 @@ cellulose-forge build \
   --cellobiose 20 \
   --force-field glycam \
   --output cellulose_ii_fibril
+```
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape slab \
+  --face 1 1 0 \
+  --layers 8 \
+  --lateral-cells 6 6 \
+  --vacuum 3.0 \
+  --force-field charmm36 \
+  --output ibeta_110_slab
 ```
 
 ```bash
