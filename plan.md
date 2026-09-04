@@ -2,7 +2,7 @@
 
 ## Project objective
 
-Develop a modern Python package that constructs crystalline cellulose structures and produces simulation-ready GROMACS systems parameterized with either CHARMM36 or GLYCAM.
+Develop a modern Python package that constructs crystalline cellulose structures and produces simulation-ready GROMACS systems parameterized with GLYCAM.
 
 Version 1 will support:
 
@@ -14,12 +14,11 @@ Version 1 will support:
 - Supported monolayers.
 - Finite cellulose chains.
 - Covalently periodic cellulose chains.
-- CHARMM36 parameters represented correctly for GROMACS.
 - GLYCAM parameters represented correctly for GROMACS.
 - GROMACS `.gro`, `.top`, and `.itp` output.
 - Optional PDB coordinates and machine-readable build reports.
 
-Version 1 will not include functionalized cellulose, OPLS parameterization, native CHARMM/PSF output, or native Amber `prmtop`/`rst7` output.
+Version 1 will not include functionalized cellulose, CHARMM36 or OPLS parameterization, native CHARMM/PSF output, or native Amber `prmtop`/`rst7` output.
 
 The original Cellulose-Builder and doGlycans packages will be retained as GPLv3-licensed reference implementations and validation material. New Python code will remain separated from the legacy implementations.
 
@@ -28,7 +27,7 @@ The original Cellulose-Builder and doGlycans packages will be retained as GPLv3-
 1. Crystallographic geometry must remain independent of force-field assignment.
 2. Experimentally derived coordinates must not be replaced by idealized force-field coordinates.
 3. Molecular connectivity must be explicit before a force-field adapter is applied.
-4. CHARMM36 and GLYCAM must share the same crystallographic and molecular model.
+4. GLYCAM assignment must consume the force-field-independent crystallographic and molecular model.
 5. An output is not considered supported until `gmx grompp` and the relevant validation tests pass.
 6. Scientific provenance, generated coordinates, applied patches, and force-field versions must be recorded.
 
@@ -49,7 +48,7 @@ Define the scientific meaning and boundaries of Version 1 before implementation.
 - Define transverse periodic-compatibility options.
 - Define origin and center chains for cellulose I-beta and II.
 - Define cellulose II antiparallel-chain connectivity.
-- Select precise CHARMM36 and GLYCAM parameter versions.
+- Select the precise GLYCAM parameter release.
 - Define how external force-field data is discovered and versioned.
 - Define GROMACS output contents and naming conventions.
 - Establish coordinate, charge, and energy tolerances.
@@ -333,46 +332,7 @@ MolecularSystem
 
 ---
 
-## Phase 5 - CHARMM36-to-GROMACS backend
-
-### Purpose
-
-Assign CHARMM36 carbohydrate topology and produce a complete GROMACS system without requiring psfgen.
-
-### Tasks
-
-- Represent the CHARMM36 `BGLC` residue template as structured data.
-- Implement the CHARMM `14bb` beta(1->4) glycosidic patch.
-- Assign CHARMM atom names, atom types, masses, and partial charges.
-- Apply finite-terminal treatment.
-- Apply periodic glycosidic linkages.
-- Generate bonds, angles, proper dihedrals, and explicit impropers.
-- Implement CHARMM-compatible GROMACS defaults and exclusions.
-- Write `.gro`, `.itp`, `.top`, and optional PDB files.
-- Verify complete parameter coverage against the selected CHARMM36 files.
-- Record residue templates, patches, and force-field versions in the build report.
-
-### Tests
-
-- `14bb` deletion and atom-modification tests.
-- Patch charge-conservation tests.
-- Atom-name and atom-type assignment tests.
-- Connectivity and interaction-count tests.
-- Parameter-coverage tests.
-- Comparisons with legacy psfgen-generated topology.
-- `gmx grompp` integration tests.
-- Small-system energy minimization tests.
-
-### Completion criteria
-
-- GROMACS accepts all supported CHARMM36 structures.
-- Every required interaction has a parameter.
-- Total charge and connectivity are correct.
-- Small reference systems minimize without loss of cellulose stereochemistry.
-
----
-
-## Phase 6 - GLYCAM-to-GROMACS backend
+## Phase 5 - GLYCAM-to-GROMACS backend
 
 ### Purpose
 
@@ -413,7 +373,7 @@ Assign GLYCAM carbohydrate topology and produce a complete GROMACS system withou
 
 ---
 
-## Phase 7 - Crystal shapes and periodic options
+## Phase 6 - Crystal shapes and periodic options
 
 ### Purpose
 
@@ -448,7 +408,7 @@ Implement the full set of published cellulose structures after basic geometry an
 
 ---
 
-## Phase 8 - Scientific validation campaign
+## Phase 7 - Scientific validation campaign
 
 ### Purpose
 
@@ -479,26 +439,26 @@ Demonstrate chemical and physical correctness rather than only valid file syntax
 - Periodic crystal minimization.
 - Short NVT simulations.
 - Preservation of connectivity and stereochemistry.
-- Documented comparison of CHARMM36 and GLYCAM behavior.
+- Agreement with documented GLYCAM conventions and independent reference systems.
 
 ### Minimum validation matrix
 
-| Allomorph | Finite chains | Periodic chains | CHARMM36 | GLYCAM |
-|---|---:|---:|---:|---:|
-| I-alpha | Yes | Yes | Yes | Yes |
-| I-beta | Yes | Yes | Yes | Yes |
-| II | Yes | Yes | Yes | Yes |
-| III-I | Yes | Yes | Yes | Yes |
+| Allomorph | Finite chains | Periodic chains | GLYCAM |
+|---|---:|---:|---:|
+| I-alpha | Yes | Yes | Yes |
+| I-beta | Yes | Yes | Yes |
+| II | Yes | Yes | Yes |
+| III-I | Yes | Yes | Yes |
 
 ### Completion criteria
 
 - All validation procedures are reproducible from documented commands.
 - Reference outputs are versioned and archived with checksums.
-- Expected force-field differences are distinguished from implementation errors.
+- Expected structural differences between finite and periodic models are distinguished from implementation errors.
 
 ---
 
-## Phase 9 - CLI, documentation, and usability
+## Phase 8 - CLI, documentation, and usability
 
 ### Purpose
 
@@ -506,12 +466,13 @@ Turn the validated library into a usable research tool.
 
 ### Proposed CLI
 
+Version 1 uses GLYCAM exclusively, so no force-field selection option is required. The exact GLYCAM release and parameter provenance are always recorded in the build report.
+
 ```bash
 cellulose-forge build \
   --allomorph I-beta \
   --shape crystal \
   --cells 4 4 5 \
-  --force-field charmm36 \
   --chain-ends finite \
   --output ibeta_4x4x5
 ```
@@ -522,7 +483,6 @@ cellulose-forge build \
   --shape fibril \
   --fibril-model 36-chain \
   --cellobiose-units 20 \
-  --force-field glycam \
   --output ibeta_36chain_fibril
 ```
 
@@ -534,7 +494,6 @@ cellulose-forge build \
   --layers 8 \
   --lateral-cells 6 6 \
   --vacuum 3.0 \
-  --force-field charmm36 \
   --output ibeta_110_slab
 ```
 
@@ -575,7 +534,7 @@ ibeta_4x4x5/
 
 ---
 
-## Phase 10 - Version 1 release and JOSS preparation
+## Phase 9 - Version 1 release and JOSS preparation
 
 ### Purpose
 
@@ -609,13 +568,11 @@ Release stable research software and prepare it for peer review.
 2. **M1 - I-beta geometry:** a small cellulose I-beta crystal is generated entirely in Python.
 3. **M2 - Allomorph geometry:** all four allomorphs reproduce reference coordinates.
 4. **M3 - Chemistry:** explicit residues, chains, termini, and beta(1->4) bonds are correct.
-5. **M4 - CHARMM36 I-beta:** an I-beta CHARMM36 system passes `gmx grompp`.
-6. **M5 - CHARMM36 complete:** every supported allomorph passes CHARMM36 validation.
-7. **M6 - GLYCAM I-beta:** an I-beta GLYCAM system passes `gmx grompp`.
-8. **M7 - GLYCAM complete:** every supported allomorph passes GLYCAM validation.
-9. **M8 - Shapes and periodicity:** fibrils, monolayers, and periodic chains are supported.
-10. **M9 - Validation:** the complete scientific validation matrix passes.
-11. **M10 - Release:** documentation, Version 1.0, archival, and JOSS materials are ready.
+5. **M4 - GLYCAM I-beta:** an I-beta GLYCAM system passes `gmx grompp`.
+6. **M5 - GLYCAM complete:** every supported allomorph passes GLYCAM validation.
+7. **M6 - Shapes and periodicity:** slabs, fibrils, monolayers, and periodic chains are supported.
+8. **M7 - Validation:** the complete scientific validation matrix passes.
+9. **M8 - Release:** documentation, Version 1.0, archival, and JOSS materials are ready.
 
 ## First vertical prototype
 
@@ -626,13 +583,13 @@ Cellulose I-beta
   -> 2 x 2 x 1 crystallite
   -> explicit chains and glucose residues
   -> finite beta(1->4)-linked chains
-  -> CHARMM36 assignment
+  -> GLYCAM assignment
   -> GROMACS GRO/TOP/ITP
   -> gmx grompp validation
   -> energy minimization
 ```
 
-This prototype should expose the major crystallographic, topology, and GROMACS-integration issues early. Generalization to other allomorphs and GLYCAM begins only after the prototype is validated.
+This prototype should expose the major crystallographic, topology, and GROMACS-integration issues early. Generalization to other allomorphs begins only after the prototype is validated.
 
 ## Deferred work
 
@@ -640,9 +597,9 @@ The following features are explicitly deferred until after Version 1:
 
 - Functionalized cellulose.
 - Antechamber integration.
+- CHARMM36 parameterization.
 - OPLS parameterization.
 - Native CHARMM PSF output.
 - Native Amber `prmtop` and `rst7` output.
 - Protein, lipid, and arbitrary branched-glycan construction.
-- A general CHARMM RTF/STR parser.
 - A general doGlycans-compatible sequence language.
