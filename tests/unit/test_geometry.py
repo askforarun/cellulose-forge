@@ -5,11 +5,7 @@ from collections import Counter
 from numpy.testing import assert_allclose
 
 from cellulose_forge.crystallography import fractional_to_cartesian, load_allomorph
-from cellulose_forge.geometry import (
-    build_bulk_crystal,
-    build_i_beta_parallelepiped,
-    build_unit_cell,
-)
+from cellulose_forge.geometry import build_bulk_crystal, build_unit_cell
 
 
 def test_i_beta_unit_cell_has_two_chains_and_four_residues() -> None:
@@ -39,15 +35,6 @@ def test_i_beta_unit_cell_coordinates_follow_stored_symmetry() -> None:
 
     assert_allclose(crystal.cartesian_coordinates[:42], expected_identity, atol=1e-12)
     assert_allclose(crystal.cartesian_coordinates[42:], expected_screw, atol=1e-12)
-
-
-def test_legacy_four_by_four_by_five_atom_count() -> None:
-    definition = load_allomorph("i_beta")
-
-    crystal = build_i_beta_parallelepiped(definition, 4, 4, 5)
-
-    assert crystal.atom_count == 5_250
-    assert crystal.atom_count == 25 * 5 * 42
 
 
 def test_bulk_replication_retains_every_complete_unit_cell() -> None:

@@ -12,9 +12,6 @@ from cellulose_forge.crystallography import (
     fractional_to_cartesian,
 )
 
-_I_BETA_ATOMS_PER_RESIDUE = 21
-_I_BETA_ATOMS_PER_CELL = 84
-_MINIMUM_TRANSVERSE_REPLICATION = 2
 _ARRAY_DIMENSIONS = 2
 _COORDINATE_DIMENSIONS = 3
 _PDB_CHAIN_IDENTIFIERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -167,90 +164,4 @@ def build_bulk_crystal(
         replication=replication,
         chain_ids=tuple(chain_ids),
         residue_numbers=tuple(residue_numbers),
-    )
-
-
-def _validate_i_beta_layout(allomorph: AllomorphDefinition) -> None:
-    if allomorph.name != "I-beta":
-        msg = "build_i_beta_parallelepiped requires the I-beta allomorph"
-        raise ValueError(msg)
-    if allomorph.asymmetric_unit.residue_atom_count != _I_BETA_ATOMS_PER_RESIDUE:
-        msg = "the I-beta legacy replication requires 21 atoms per glucose residue"
-        raise ValueError(msg)
-    if len(_complete_cell_fractional(allomorph)) != _I_BETA_ATOMS_PER_CELL:
-        msg = "the I-beta legacy replication requires 84 atoms per complete unit cell"
-        raise ValueError(msg)
-
-
-def _build_layer_block(
-    allomorph: AllomorphDefinition, i: int, j: int
-) -> tuple[FloatArray, tuple[str, ...]]:
-    """Build one translated complete I-beta cell in legacy atom order."""
-    block = _complete_cell_fractional(allomorph).copy()
-    block[:, 0] += i
-    block[:, 1] += j
-    labels = allomorph.asymmetric_unit.atom_labels * len(allomorph.symmetry_operations)
-    return block, labels
-
-
-def _trim_edge_rings(
-    block: FloatArray,
-    labels: tuple[str, ...],
-    cell_index: tuple[int, int],
-    grid_shape: tuple[int, int],
-) -> tuple[FloatArray, tuple[str, ...]]:
-    """Delete boundary glucose rings using the legacy Cellulose-Builder rules."""
-    i, j = cell_index
-    xsize, ysize = grid_shape
-    drop_center_image = (i == 0 and j != ysize - 1) or (j == 0 and i not in (0, xsize - 1))
-    drop_center = (i == xsize - 1 and j != 0) or (j == ysize - 1 and i not in (0, xsize - 1))
-    if (i == 0 and j == ysize - 1) or (j == 0 and i == xsize - 1):
-        drop_center = True
-        drop_center_image = True
-
-    keep = np.ones(len(block), dtype=np.bool_)
-    if drop_center:
-        keep[21:42] = False
-    if drop_center_image:
-        keep[63:84] = False
-    kept_labels = tuple(label for label, include in zip(labels, keep, strict=True) if include)
-    return block[keep], kept_labels
-
-
-def build_i_beta_parallelepiped(
-    allomorph: AllomorphDefinition, xsize: int, ysize: int, zsize: int
-) -> BulkCrystal:
-    """Build a legacy-compatible I-beta parallelepiped with transverse PBC disabled."""
-    _validate_i_beta_layout(allomorph)
-    if xsize < _MINIMUM_TRANSVERSE_REPLICATION or ysize < _MINIMUM_TRANSVERSE_REPLICATION:
-        msg = "xsize and ysize must each be at least 2 (legacy CLI constraint)"
-        raise ValueError(msg)
-    if zsize < 1:
-        msg = "zsize must be at least 1"
-        raise ValueError(msg)
-
-    layer_blocks: list[FloatArray] = []
-    layer_labels: list[str] = []
-    for j in range(ysize):
-        for i in range(xsize):
-            block, labels = _build_layer_block(allomorph, i, j)
-            trimmed, trimmed_labels = _trim_edge_rings(block, labels, (i, j), (xsize, ysize))
-            layer_blocks.append(trimmed)
-            layer_labels.extend(trimmed_labels)
-
-    layer_cartesian = fractional_to_cartesian(np.vstack(layer_blocks), allomorph.unit_cell)
-    cell_c = allomorph.unit_cell.vectors()[2]
-    all_layers = [layer_cartesian + cell_c * k for k in range(zsize)]
-    cartesian = np.vstack(all_layers)
-    atom_labels = tuple(layer_labels) * zsize
-
-    scale = np.asarray([xsize, ysize, zsize], dtype=np.float64)[:, np.newaxis]
-    basis_vectors = allomorph.unit_cell.vectors() * scale
-    return BulkCrystal(
-        allomorph=allomorph.name,
-        space_group=allomorph.space_group,
-        atom_labels=atom_labels,
-        cartesian_coordinates=cartesian,
-        basis_vectors=basis_vectors,
-        replication=(xsize, ysize, zsize),
     )

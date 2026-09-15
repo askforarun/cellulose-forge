@@ -7,9 +7,9 @@ Develop a modern Python package that constructs crystalline cellulose structures
 Version 1 will support:
 
 - Cellulose I-alpha, I-beta, II, and III-I.
-- Parallelepiped crystallites.
+- Periodic bulk crystals.
 - Surface-oriented slabs exposing user-selected crystallographic faces.
-- Fibrils and nanocrystallites with selectable, explicitly reported bounding faces.
+- Nanofibrils with selectable, explicitly reported bounding faces.
 - Supported 36-chain elementary fibril presets.
 - Supported monolayers.
 - Finite cellulose chains.
@@ -168,8 +168,8 @@ Fibril presets are declarative crystallographic data. They identify bounding fac
 - Define a validated signed Miller-index representation and unambiguous exact serialization without reducing index magnitude or changing sign.
 - Define crystallographic-plane records containing a Miller index, human-readable label, and provenance.
 - Define a simple slab request schema containing the allomorph, Miller index, layers or thickness, lateral dimensions, and optional vacuum spacing.
-- Define fibril and nanocrystallite presets as ordered sets of bounding facets and chain arrangements rather than hard-coded coordinate masks.
-- Transcribe the I-alpha, I-beta, and nanocrystallite face sets used by the published reference models, including negative indices and source citations.
+- Define nanofibril presets as ordered sets of bounding facets and chain arrangements rather than hard-coded coordinate masks.
+- Transcribe the I-alpha, I-beta, and published nanofibril face sets, including negative indices and source citations.
 - Distinguish a crystallographic face family from an oriented face without exposing a separate surface-termination option.
 - Add schemas for user-supplied arbitrary faces and multi-facet cross-sections.
 - Validate coordinate dimensions and atom labels.
@@ -184,7 +184,7 @@ Fibril presets are declarative crystallographic data. They identify bounding fac
 - Tests distinguishing exact plane indices, parallel orientations, and opposite oriented faces, including `(1, 1, 0)`, `(2, 2, 0)`, and `(-1, -1, 0)`.
 - Plane-label and unit round-trip tests.
 - Schema tests for Miller-index-driven slab requests and ordered multi-facet cross-sections.
-- Reference-preset tests asserting the complete ordered face lists for I-alpha, I-beta, and the published nanocrystallite models.
+- Reference-preset tests asserting the complete ordered face lists for I-alpha, I-beta, and the published nanofibril models.
 - Provenance and unknown-allomorph validation tests.
 
 ### Completion criteria
@@ -193,7 +193,7 @@ Fibril presets are declarative crystallographic data. They identify bounding fac
 - Every atom site has a name, element, and fractional coordinate.
 - Calculated unit-cell volumes and vectors match reference values.
 - Arbitrary valid signed Miller indices load, validate, compare, and serialize without losing magnitude or face orientation.
-- All published fibril and nanocrystallite presets load with complete face lists and traceable citations.
+- All published nanofibril presets load with complete face lists and traceable citations.
 - Invalid zero indices, malformed facet definitions, duplicate preset identifiers, and unknown allomorph references fail with clear errors.
 - No force-field concepts are present in the crystallographic models.
 
@@ -203,7 +203,7 @@ Fibril presets are declarative crystallographic data. They identify bounding fac
 
 ### Purpose
 
-Generate complete Cartesian bulk crystals, surface slabs, fibrils, and nanocrystallites without assigning molecular mechanics parameters.
+Generate complete Cartesian bulk crystals, surface slabs, and nanofibrils without assigning molecular mechanics parameters.
 
 ### Geometry models
 
@@ -244,13 +244,13 @@ Cellulose I-beta is the first vertical target because it exercises P2(1) symmetr
 - Compute reciprocal-lattice vectors, plane normals, and interplanar spacings for general `(h k l)` faces.
 - Generate a slab from a user-supplied Miller index, number of molecular layers or thickness, lateral dimensions, and optional vacuum spacing.
 - Use a documented, deterministic whole-layer cutting convention internally; Version 1 will not expose a separate termination parameter.
-- Generate fibrils and nanocrystallites from named models by applying their complete bounding-face sets and chain arrangements.
+- Generate nanofibrils from named models by applying their complete bounding-face sets and chain arrangements.
 - Avoid split residues and dangling fragments at cut boundaries by applying a documented whole-chain/whole-residue inclusion policy.
 - Provide published fibril cross-section models; arbitrary individual Miller-index input remains available through slab generation.
-- Include reference presets covering the faces illustrated for cellulose I-alpha, I-beta, and cellulose nanocrystallites, including opposite signed faces where required to close the cross-section:
+- Include reference presets covering the faces illustrated for cellulose I-alpha, I-beta, and cellulose nanofibrils, including opposite signed faces where required to close the cross-section:
   - I-alpha: `(1, 1, 0)`, `(0, 1, 0)`, `(1, 0, 0)`, `(-1, 1, 0)`, `(1, -1, 0)`, and `(-1, -1, 0)`.
   - I-beta: `(2, 0, 0)`, `(1, 1, 0)`, `(1, -1, 0)`, `(0, 1, 0)`, `(0, -1, 0)`, and the additional opposite faces needed to close the cross-section.
-  - Nanocrystallite reference cross-section: `(0, 2, 0)`, `(1, 2, 0)`, `(1, 0, 0)`, `(1, -1, 0)`, `(0, -2, 0)`, `(-1, 0, 0)`, and `(-1, 1, 0)`.
+  - Nanofibril reference cross-section: `(0, 2, 0)`, `(1, 2, 0)`, `(1, 0, 0)`, `(1, -1, 0)`, `(0, -2, 0)`, `(-1, 0, 0)`, and `(-1, 1, 0)`.
 - Express face labels canonically in machine-readable build reports while accepting conventional overbar/signed input notation.
 - Preserve deterministic atom ordering.
 - Generate output box vectors.
@@ -278,7 +278,7 @@ Cellulose I-beta is the first vertical target because it exercises P2(1) symmetr
 - All four allomorphs reproduce their reference geometry within documented tolerances.
 - Monoclinic and triclinic cell vectors are correct.
 - A slab can be generated for any valid user-supplied `(h k l)` face for every supported allomorph.
-- Fibril and nanocrystallite cross-sections reproduce the documented reference face sets and dimensions within tolerance.
+- Nanofibril cross-sections reproduce the documented reference face sets and dimensions within tolerance.
 - Every generated surface reports its requested Miller index, Cartesian normal, interplanar spacing, realized thickness, area, and applied deterministic boundary convention.
 - No supported surface operation leaves an unreported partial residue or chemically ambiguous cut.
 - Geometry generation requires no VMD, Octave, Perl, sed, psfgen, or Open Babel.
@@ -421,7 +421,7 @@ Implement the full set of published cellulose structures after basic geometry an
 
 ### Tasks
 
-- General parallelepiped crystallites.
+- General periodic bulk crystals.
 - I-alpha, I-beta, and II 36-chain elementary fibrils.
 - I-alpha monolayers.
 - I-beta origin and center monolayers.
@@ -623,7 +623,7 @@ Before generalizing the package, implement one complete narrow workflow:
 
 ```text
 Cellulose I-beta
-  -> 2 x 2 x 1 crystallite
+  -> 2 x 2 x 1 periodic bulk supercell
   -> explicit chains and glucose residues
   -> finite beta(1->4)-linked chains
   -> CHARMM36 assignment

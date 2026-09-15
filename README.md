@@ -7,7 +7,7 @@ The project is in its foundation phase. Scientific functionality will be added i
 ## Version 1 scope
 
 - Cellulose I-alpha, I-beta, II, and III-I.
-- Parallelepiped crystallites, surface-oriented slabs, fibrils, nanocrystallites, and supported monolayers.
+- Periodic bulk crystals, Miller-index surface slabs, and published nanofibrils.
 - Arbitrary crystallographic faces selected by signed Miller indices, plus published cross-section presets.
 - Finite and covalently periodic cellulose chains.
 - CHARMM36 and GLYCAM force-field adapters.
@@ -45,21 +45,6 @@ uv run cellulose-forge build \
 
 This diagnostic PDB contains complete crystallographic unit cells. It does not
 yet contain bonds or force-field parameters.
-
-Generate the legacy-compatible finite I-beta crystallite geometry, including
-the original Cellulose-Builder boundary-ring selection:
-
-```bash
-uv run cellulose-forge build \
-  --allomorph I-beta \
-  --shape crystallite \
-  --cells 4 4 5 \
-  --output ibeta_4x4x5_crystallite.pdb
-```
-
-The crystallite PDB is currently a geometry-only validation output. Explicit
-chain assignment, connectivity, and finite terminal chemistry are not yet
-included.
 
 ## Legacy references
 
