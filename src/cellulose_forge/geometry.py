@@ -17,7 +17,7 @@ _I_BETA_ATOMS_PER_CELL = 84
 _MINIMUM_TRANSVERSE_REPLICATION = 2
 _ARRAY_DIMENSIONS = 2
 _COORDINATE_DIMENSIONS = 3
-_MAXIMUM_PDB_CHAINS = 26
+_PDB_CHAIN_IDENTIFIERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
 
 @dataclass(frozen=True)
@@ -78,10 +78,10 @@ def build_unit_cell(allomorph: AllomorphDefinition) -> BulkCrystal:
     atom_labels = asymmetric.atom_labels * operation_count
 
     chain_names = list(dict.fromkeys(asymmetric.chain_labels))
-    if len(chain_names) > _MAXIMUM_PDB_CHAINS:
-        msg = "diagnostic PDB output supports at most 26 crystallographic chains"
+    if len(chain_names) > len(_PDB_CHAIN_IDENTIFIERS):
+        msg = "diagnostic PDB output supports at most 62 crystallographic chains"
         raise ValueError(msg)
-    chain_letters = {name: chr(ord("A") + index) for index, name in enumerate(chain_names)}
+    chain_letters = {name: _PDB_CHAIN_IDENTIFIERS[index] for index, name in enumerate(chain_names)}
 
     chain_ids: list[str] = []
     residue_numbers: list[int] = []
@@ -99,6 +99,72 @@ def build_unit_cell(allomorph: AllomorphDefinition) -> BulkCrystal:
         cartesian_coordinates=fractional_to_cartesian(fractional, allomorph.unit_cell),
         basis_vectors=allomorph.unit_cell.vectors(),
         replication=(1, 1, 1),
+        chain_ids=tuple(chain_ids),
+        residue_numbers=tuple(residue_numbers),
+    )
+
+
+def build_bulk_crystal(
+    allomorph: AllomorphDefinition, replication: tuple[int, int, int]
+) -> BulkCrystal:
+    """Replicate a complete unit cell into a periodic bulk supercell.
+
+    Replication follows the crystallographic ``a``, ``b``, and ``c`` basis
+    vectors. Chains translated along ``c`` retain their chain identifier and
+    receive consecutive residue numbers. Transverse translations create new
+    chains.
+    """
+    if len(replication) != _COORDINATE_DIMENSIONS or any(
+        not isinstance(value, int) or isinstance(value, bool) or value < 1 for value in replication
+    ):
+        msg = "replication must contain three positive integers"
+        raise ValueError(msg)
+
+    nx, ny, nz = replication
+    chains_per_cell = len(dict.fromkeys(allomorph.asymmetric_unit.chain_labels))
+    transverse_chain_count = nx * ny * chains_per_cell
+    if transverse_chain_count > len(_PDB_CHAIN_IDENTIFIERS):
+        msg = (
+            "diagnostic PDB chain identifiers support at most 62 transverse "
+            f"chains; requested {transverse_chain_count}"
+        )
+        raise ValueError(msg)
+
+    unit_cell = build_unit_cell(allomorph)
+    unit_vectors = allomorph.unit_cell.vectors()
+    unit_chain_order = tuple(dict.fromkeys(unit_cell.chain_ids))
+    unit_chain_indices = {chain_id: index for index, chain_id in enumerate(unit_chain_order)}
+    residues_per_chain_per_cell = max(unit_cell.residue_numbers)
+
+    coordinate_blocks: list[FloatArray] = []
+    atom_labels: list[str] = []
+    chain_ids: list[str] = []
+    residue_numbers: list[int] = []
+    for k in range(nz):
+        for j in range(ny):
+            for i in range(nx):
+                translation = i * unit_vectors[0] + j * unit_vectors[1] + k * unit_vectors[2]
+                coordinate_blocks.append(unit_cell.cartesian_coordinates + translation)
+                atom_labels.extend(unit_cell.atom_labels)
+
+                transverse_cell_index = j * nx + i
+                for chain_id, residue_number in zip(
+                    unit_cell.chain_ids, unit_cell.residue_numbers, strict=True
+                ):
+                    chain_index = (
+                        transverse_cell_index * chains_per_cell + unit_chain_indices[chain_id]
+                    )
+                    chain_ids.append(_PDB_CHAIN_IDENTIFIERS[chain_index])
+                    residue_numbers.append(residue_number + k * residues_per_chain_per_cell)
+
+    scale = np.asarray(replication, dtype=np.float64)[:, np.newaxis]
+    return BulkCrystal(
+        allomorph=allomorph.name,
+        space_group=allomorph.space_group,
+        atom_labels=tuple(atom_labels),
+        cartesian_coordinates=np.vstack(coordinate_blocks),
+        basis_vectors=unit_vectors * scale,
+        replication=replication,
         chain_ids=tuple(chain_ids),
         residue_numbers=tuple(residue_numbers),
     )

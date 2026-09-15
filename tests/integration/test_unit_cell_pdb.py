@@ -32,3 +32,36 @@ def test_cli_writes_annotated_i_beta_unit_cell(tmp_path: Path) -> None:
         ("B", 1),
         ("B", 2),
     }
+
+
+def test_cli_writes_i_beta_bulk_supercell(tmp_path: Path) -> None:
+    output = tmp_path / "i_beta_2x2x2.pdb"
+
+    result = main(
+        [
+            "build",
+            "--allomorph",
+            "I-beta",
+            "--shape",
+            "bulk",
+            "--cells",
+            "2",
+            "2",
+            "2",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    lines = output.read_text(encoding="utf-8").splitlines()
+    atom_lines = [line for line in lines if line.startswith("HETATM")]
+    cryst1 = next(line for line in lines if line.startswith("CRYST1"))
+    assert len(atom_lines) == 84 * 2 * 2 * 2
+    assert (float(cryst1[6:15]), float(cryst1[15:24]), float(cryst1[24:33])) == (
+        15.568,
+        16.402,
+        20.760,
+    )
+    assert {line[21] for line in atom_lines} == set("ABCDEFGH")
+    assert {int(line[22:26]) for line in atom_lines} == {1, 2, 3, 4}

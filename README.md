@@ -32,6 +32,20 @@ Run the initial CLI:
 uv run cellulose-forge --version
 ```
 
+Generate an I-beta periodic bulk supercell by repeating the crystallographic
+unit cell along its `a`, `b`, and `c` axes:
+
+```bash
+uv run cellulose-forge build \
+  --allomorph I-beta \
+  --shape bulk \
+  --cells 2 2 2 \
+  --output ibeta_2x2x2.pdb
+```
+
+This diagnostic PDB contains complete crystallographic unit cells. It does not
+yet contain bonds or force-field parameters.
+
 ## Legacy references
 
 The repository retains the original Cellulose-Builder and doGlycans distributions as validation references. They are not imported by the new Python package. See [legacy/README.md](legacy/README.md) for provenance and licensing notes.
