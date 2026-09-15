@@ -46,23 +46,31 @@ uv run cellulose-forge build \
 This diagnostic PDB contains complete crystallographic unit cells. It does not
 yet contain bonds or force-field parameters.
 
-Generate a chain-parallel cellulose I-beta `(110)` slab with six molecular
-layers and 30 angstrom of vacuum:
+Generate a chain-parallel cellulose I-beta `(110)` visualization slab with four
+layers, 20 chains per layer, DP 12, and 30 angstrom of vacuum:
 
 ```bash
 uv run cellulose-forge build \
   --allomorph I-beta \
   --shape slab \
   --face 1 1 0 \
-  --layers 6 \
-  --lateral-cells 4 2 \
+  --layers 4 \
+  --chains-per-layer 20 \
+  --degree-polymerization 12 \
   --vacuum 30 \
   --output ibeta_110_slab.pdb
 ```
 
-The initial slab implementation supports chain-parallel faces (`l = 0`) and
-retains complete crystallographic residues. Arbitrary faces will be added after
-the molecular graph can represent finite chain ends safely.
+Degree of polymerization is the number of anhydroglucose units (AGUs) per
+chain. The slab implementation currently requires even DP and retains complete
+crystallographic residues. Cellulose I-beta `(110)` is validated against the SI
+wetting structure. Other chain-parallel I-beta `(h k 0)` faces can be generated
+for exploration, but their surface termination and layer arrangement still
+require independent validation. Exploratory status is recorded in the PDB
+header. The SI wetting reference corresponds to four layers, 100 chains per
+layer, and DP 12; that 100,800-atom cellulose substrate exceeds the standard
+PDB atom-serial limit and will be written as GROMACS GRO once that writer is
+implemented.
 
 ## Legacy references
 

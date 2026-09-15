@@ -8,6 +8,7 @@ from cellulose_forge.crystallography import basis_lengths_and_angles
 from cellulose_forge.geometry import BulkCrystal
 
 _MAXIMUM_PDB_ATOMS = 99_999
+_PDB_CHAIN_IDENTIFIER_COUNT = 62
 
 
 def _element_from_label(label: str) -> str:
@@ -34,6 +35,8 @@ def write_pdb(crystal: BulkCrystal, path: str | Path) -> None:
         lines.insert(2, "REMARK  chain and residue assignment not yet available")
     for annotation in reversed(crystal.annotations):
         lines.insert(3, f"REMARK  {annotation}")
+    if crystal.chain_numbers and max(crystal.chain_numbers) >= _PDB_CHAIN_IDENTIFIER_COUNT:
+        lines.insert(3, "REMARK  PDB one-character chain identifiers are reused after 62 chains")
     for index, vector in enumerate(crystal.basis_vectors, start=1):
         lines.append(
             f"REMARK  crystal basis vector {index}: "

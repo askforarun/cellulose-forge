@@ -82,10 +82,11 @@ def test_cli_writes_i_beta_110_slab(tmp_path: Path) -> None:
             "1",
             "0",
             "--layers",
-            "6",
-            "--lateral-cells",
             "4",
-            "2",
+            "--chains-per-layer",
+            "20",
+            "--degree-polymerization",
+            "12",
             "--vacuum",
             "30",
             "--output",
@@ -96,6 +97,8 @@ def test_cli_writes_i_beta_110_slab(tmp_path: Path) -> None:
     assert result == 0
     lines = output.read_text(encoding="utf-8").splitlines()
     atom_lines = [line for line in lines if line.startswith("HETATM")]
-    assert len(atom_lines) == 4_032
-    assert any("shape=slab face=(1,1,0) layers=6" in line for line in lines)
+    assert len(atom_lines) == 20_160
+    assert any("shape=slab face=(1,1,0) layers=4" in line for line in lines)
+    assert any("chains_per_layer=20 total_chains=80" in line for line in lines)
+    assert any("degree_polymerization=12" in line for line in lines)
     assert any("vacuum=30.000000 angstrom" in line for line in lines)

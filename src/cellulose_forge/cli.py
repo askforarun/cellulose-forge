@@ -46,12 +46,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="signed Miller index of the exposed slab face",
     )
     build.add_argument("--layers", type=int, help="number of complete molecular slab layers")
+    build.add_argument("--chains-per-layer", type=int, help="cellulose chains in each slab layer")
     build.add_argument(
-        "--lateral-cells",
-        nargs=2,
+        "--degree-polymerization",
         type=int,
-        metavar=("NSURFACE", "NCHAIN"),
-        help="surface repeats transverse to and along the cellulose chains",
+        help="anhydroglucose units (AGUs) in each cellulose chain",
     )
     build.add_argument(
         "--vacuum",
@@ -80,17 +79,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             if args.cells is not None:
                 build_parser().error("--cells is not valid with --shape slab")
-            if args.face is None or args.layers is None or args.lateral_cells is None:
+            if (
+                args.face is None
+                or args.layers is None
+                or args.chains_per_layer is None
+                or args.degree_polymerization is None
+            ):
                 build_parser().error(
-                    "--face H K L, --layers N, and --lateral-cells NSURFACE NCHAIN "
-                    "are required for slabs"
+                    "--face H K L, --layers N, --chains-per-layer N, and "
+                    "--degree-polymerization N are required for slabs"
                 )
             crystal = build_chain_parallel_slab(
                 definition,
                 MillerIndex(*args.face),
                 layers=args.layers,
-                surface_repeats=args.lateral_cells[0],
-                chain_repeats=args.lateral_cells[1],
+                chains_per_layer=args.chains_per_layer,
+                degree_polymerization=args.degree_polymerization,
                 vacuum=args.vacuum,
             )
         args.output.parent.mkdir(parents=True, exist_ok=True)
