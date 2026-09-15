@@ -2,10 +2,12 @@
 
 from collections import Counter
 
+import numpy as np
+import pytest
 from numpy.testing import assert_allclose
 
-from cellulose_forge.crystallography import fractional_to_cartesian, load_allomorph
-from cellulose_forge.geometry import build_bulk_crystal, build_unit_cell
+from cellulose_forge.crystallography import MillerIndex, fractional_to_cartesian, load_allomorph
+from cellulose_forge.geometry import build_bulk_crystal, build_chain_parallel_slab, build_unit_cell
 
 
 def test_i_beta_unit_cell_has_two_chains_and_four_residues() -> None:
@@ -79,3 +81,39 @@ def test_bulk_replication_rejects_invalid_counts() -> None:
             assert "three positive integers" in str(error)
         else:
             raise AssertionError("invalid replication was accepted")
+
+
+def test_i_beta_110_slab_is_surface_aligned_and_keeps_complete_residues() -> None:
+    definition = load_allomorph("i_beta")
+
+    slab = build_chain_parallel_slab(
+        definition,
+        MillerIndex(1, 1, 0),
+        layers=6,
+        surface_repeats=4,
+        chain_repeats=2,
+        vacuum=30.0,
+    )
+
+    assert slab.atom_count == 84 * 6 * 4 * 2
+    assert slab.atom_count % definition.asymmetric_unit.residue_atom_count == 0
+    assert len(set(slab.chain_ids)) == 48
+    assert set(slab.residue_numbers) == {1, 2, 3, 4}
+    assert_allclose(slab.basis_vectors - np.diag(np.diag(slab.basis_vectors)), 0.0)
+    assert slab.basis_vectors[2, 2] == pytest.approx(
+        np.ptp(slab.cartesian_coordinates[:, 2]) + 30.0
+    )
+
+
+def test_initial_slab_builder_rejects_chain_cutting_face() -> None:
+    definition = load_allomorph("i_beta")
+
+    with pytest.raises(ValueError, match="l = 0"):
+        build_chain_parallel_slab(
+            definition,
+            MillerIndex(1, 1, 1),
+            layers=2,
+            surface_repeats=2,
+            chain_repeats=1,
+            vacuum=10.0,
+        )

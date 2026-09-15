@@ -9,11 +9,14 @@ import numpy as np
 from cellulose_forge.crystallography import (
     AllomorphDefinition,
     FloatArray,
+    MillerIndex,
     fractional_to_cartesian,
 )
 
 _ARRAY_DIMENSIONS = 2
 _COORDINATE_DIMENSIONS = 3
+_ORTHOGONAL_TOLERANCE = 1e-10
+_NONZERO_VECTOR_TOLERANCE = 1e-12
 _PDB_CHAIN_IDENTIFIERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
 
@@ -29,6 +32,7 @@ class BulkCrystal:
     replication: tuple[int, int, int]
     chain_ids: tuple[str, ...] = ()
     residue_numbers: tuple[int, ...] = ()
+    annotations: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         coordinates = np.asarray(self.cartesian_coordinates, dtype=np.float64)
@@ -164,4 +168,109 @@ def build_bulk_crystal(
         replication=replication,
         chain_ids=tuple(chain_ids),
         residue_numbers=tuple(residue_numbers),
+    )
+
+
+def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
+    allomorph: AllomorphDefinition,
+    face: MillerIndex,
+    *,
+    layers: int,
+    surface_repeats: int,
+    chain_repeats: int,
+    vacuum: float,
+) -> BulkCrystal:
+    """Build a complete-residue slab for a chain-parallel ``(h k 0)`` face.
+
+    This first surface implementation constructs the surface directly from
+    translated complete unit cells. The first surface vector is ``k*a-h*b``;
+    the second follows the cellulose-chain vector ``c``. The requested face
+    normal is oriented along Cartesian z in the returned structure.
+    """
+    if face.l != 0:
+        msg = "the initial slab builder supports chain-parallel faces with l = 0"
+        raise ValueError(msg)
+    if allomorph.name != "I-beta":
+        msg = "the initial slab builder supports cellulose I-beta only"
+        raise ValueError(msg)
+    if any(
+        not isinstance(value, int) or isinstance(value, bool) or value < 1
+        for value in (layers, surface_repeats, chain_repeats)
+    ):
+        msg = "layers and repeat counts must be positive integers"
+        raise ValueError(msg)
+    if not np.isfinite(vacuum) or vacuum < 0:
+        msg = "vacuum must be a finite, nonnegative angstrom value"
+        raise ValueError(msg)
+
+    vectors = allomorph.unit_cell.vectors()
+    in_plane_vector = face.k * vectors[0] - face.h * vectors[1]
+    in_plane_length = float(np.linalg.norm(in_plane_vector))
+    if in_plane_length < _NONZERO_VECTOR_TOLERANCE:
+        msg = "face does not define a nonzero transverse surface vector"
+        raise ValueError(msg)
+
+    normal = face.normal(allomorph.unit_cell)
+    surface_x = in_plane_vector / in_plane_length
+    chain_axis = vectors[2] / np.linalg.norm(vectors[2])
+    if abs(float(np.dot(surface_x, chain_axis))) > _ORTHOGONAL_TOLERANCE:
+        msg = (
+            "initial slab basis requires the chain and transverse surface vectors to be orthogonal"
+        )
+        raise ValueError(msg)
+
+    unit_cell = build_unit_cell(allomorph)
+    axes = np.vstack([surface_x, chain_axis, normal])
+    coordinate_blocks: list[FloatArray] = []
+    atom_labels: list[str] = []
+    chain_ids: list[str] = []
+    residue_numbers: list[int] = []
+    chains_per_cell = len(set(unit_cell.chain_ids))
+    chain_count = layers * surface_repeats * chains_per_cell
+    if chain_count > len(_PDB_CHAIN_IDENTIFIERS):
+        msg = f"diagnostic PDB supports at most 62 slab chains; requested {chain_count}"
+        raise ValueError(msg)
+
+    unit_chain_order = tuple(dict.fromkeys(unit_cell.chain_ids))
+    unit_chain_indices = {chain_id: index for index, chain_id in enumerate(unit_chain_order)}
+    residues_per_chain = max(unit_cell.residue_numbers)
+    for chain_cell in range(chain_repeats):
+        for layer in range(layers):
+            for surface_cell in range(surface_repeats):
+                # k*a-h*b lies in the surface; b advances adjacent (hkl) planes
+                translation = (
+                    surface_cell * in_plane_vector + layer * vectors[1] + chain_cell * vectors[2]
+                )
+                coordinate_blocks.append(unit_cell.cartesian_coordinates + translation)
+                atom_labels.extend(unit_cell.atom_labels)
+                transverse_index = layer * surface_repeats + surface_cell
+                for chain_id, residue_number in zip(
+                    unit_cell.chain_ids, unit_cell.residue_numbers, strict=True
+                ):
+                    chain_index = transverse_index * chains_per_cell + unit_chain_indices[chain_id]
+                    chain_ids.append(_PDB_CHAIN_IDENTIFIERS[chain_index])
+                    residue_numbers.append(residue_number + chain_cell * residues_per_chain)
+
+    projected = np.vstack(coordinate_blocks) @ axes.T
+    projected[:, 0] -= float(np.min(projected[:, 0]))
+    projected[:, 1] -= float(np.min(projected[:, 1]))
+    projected[:, 2] -= float(np.min(projected[:, 2])) - vacuum / 2.0
+    slab_extent = float(np.ptp(projected[:, 2]))
+    chain_length = float(np.linalg.norm(vectors[2])) * chain_repeats
+    basis = np.diag([in_plane_length * surface_repeats, chain_length, slab_extent + vacuum])
+    return BulkCrystal(
+        allomorph=allomorph.name,
+        space_group="P1",
+        atom_labels=tuple(atom_labels),
+        cartesian_coordinates=projected,
+        basis_vectors=basis,
+        replication=(surface_repeats, layers, chain_repeats),
+        chain_ids=tuple(chain_ids),
+        residue_numbers=tuple(residue_numbers),
+        annotations=(
+            f"shape=slab face=({face.h},{face.k},{face.l}) layers={layers}",
+            f"d_hkl={face.spacing(allomorph.unit_cell):.6f} angstrom",
+            f"vacuum={vacuum:.6f} angstrom",
+            "surface normal aligned with Cartesian z",
+        ),
     )

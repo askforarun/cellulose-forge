@@ -111,6 +111,45 @@ class SpaceGroupOperation:
 
 
 @dataclass(frozen=True)
+class MillerIndex:
+    """An exact, signed crystallographic plane index."""
+
+    h: int
+    k: int
+    l: int  # noqa: E741 - conventional third Miller index
+
+    def __post_init__(self) -> None:
+        values = (self.h, self.k, self.l)
+        if any(not isinstance(value, int) or isinstance(value, bool) for value in values):
+            msg = "Miller indices must be integers"
+            raise TypeError(msg)
+        if values == (0, 0, 0):
+            msg = "Miller index (0, 0, 0) is invalid"
+            raise ValueError(msg)
+
+    @property
+    def values(self) -> tuple[int, int, int]:
+        """Return ``(h, k, l)`` without reducing magnitude or changing sign."""
+        return self.h, self.k, self.l
+
+    def reciprocal_vector(self, unit_cell: UnitCell) -> FloatArray:
+        """Return the Cartesian reciprocal vector without the ``2 pi`` factor."""
+        return np.asarray(
+            np.linalg.solve(unit_cell.vectors(), np.asarray(self.values, dtype=np.float64)),
+            dtype=np.float64,
+        )
+
+    def normal(self, unit_cell: UnitCell) -> FloatArray:
+        """Return the oriented Cartesian unit normal."""
+        reciprocal = self.reciprocal_vector(unit_cell)
+        return reciprocal / np.linalg.norm(reciprocal)
+
+    def spacing(self, unit_cell: UnitCell) -> float:
+        """Return the interplanar spacing in angstrom."""
+        return float(1.0 / np.linalg.norm(self.reciprocal_vector(unit_cell)))
+
+
+@dataclass(frozen=True)
 class AsymmetricUnit:
     """Ordered atom labels and fractional coordinates for one asymmetric unit."""
 

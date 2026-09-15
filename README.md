@@ -46,6 +46,24 @@ uv run cellulose-forge build \
 This diagnostic PDB contains complete crystallographic unit cells. It does not
 yet contain bonds or force-field parameters.
 
+Generate a chain-parallel cellulose I-beta `(110)` slab with six molecular
+layers and 30 angstrom of vacuum:
+
+```bash
+uv run cellulose-forge build \
+  --allomorph I-beta \
+  --shape slab \
+  --face 1 1 0 \
+  --layers 6 \
+  --lateral-cells 4 2 \
+  --vacuum 30 \
+  --output ibeta_110_slab.pdb
+```
+
+The initial slab implementation supports chain-parallel faces (`l = 0`) and
+retains complete crystallographic residues. Arbitrary faces will be added after
+the molecular graph can represent finite chain ends safely.
+
 ## Legacy references
 
 The repository retains the original Cellulose-Builder and doGlycans distributions as validation references. They are not imported by the new Python package. See [legacy/README.md](legacy/README.md) for provenance and licensing notes.

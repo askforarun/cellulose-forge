@@ -65,3 +65,37 @@ def test_cli_writes_i_beta_bulk_supercell(tmp_path: Path) -> None:
     )
     assert {line[21] for line in atom_lines} == set("ABCDEFGH")
     assert {int(line[22:26]) for line in atom_lines} == {1, 2, 3, 4}
+
+
+def test_cli_writes_i_beta_110_slab(tmp_path: Path) -> None:
+    output = tmp_path / "i_beta_110_slab.pdb"
+
+    result = main(
+        [
+            "build",
+            "--allomorph",
+            "I-beta",
+            "--shape",
+            "slab",
+            "--face",
+            "1",
+            "1",
+            "0",
+            "--layers",
+            "6",
+            "--lateral-cells",
+            "4",
+            "2",
+            "--vacuum",
+            "30",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    lines = output.read_text(encoding="utf-8").splitlines()
+    atom_lines = [line for line in lines if line.startswith("HETATM")]
+    assert len(atom_lines) == 4_032
+    assert any("shape=slab face=(1,1,0) layers=6" in line for line in lines)
+    assert any("vacuum=30.000000 angstrom" in line for line in lines)

@@ -5,6 +5,7 @@ import pytest
 from numpy.testing import assert_allclose
 
 from cellulose_forge.crystallography import (
+    MillerIndex,
     UnitCell,
     cartesian_to_fractional,
     fractional_to_cartesian,
@@ -54,6 +55,22 @@ def test_p21_operation_is_loaded_from_data() -> None:
     transformed = definition.symmetry_operations[1].apply(coordinate)
 
     assert_allclose(transformed, [[-0.25, 0.40, 0.60]])
+
+
+def test_i_beta_110_plane_geometry() -> None:
+    cell = load_allomorph("i_beta").unit_cell
+    face = MillerIndex(1, 1, 0)
+
+    assert face.values == (1, 1, 0)
+    assert face.spacing(cell) == pytest.approx(5.316996, abs=1e-6)
+    assert np.linalg.norm(face.normal(cell)) == pytest.approx(1.0)
+
+
+def test_miller_index_preserves_sign_and_magnitude() -> None:
+    assert MillerIndex(2, 0, 0).values == (2, 0, 0)
+    assert MillerIndex(-1, -1, 0).values == (-1, -1, 0)
+    with pytest.raises(ValueError, match="invalid"):
+        MillerIndex(0, 0, 0)
 
 
 @pytest.mark.parametrize("name", ["missing", "../i_beta", "I-beta"])

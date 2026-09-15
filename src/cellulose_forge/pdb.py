@@ -32,6 +32,8 @@ def write_pdb(crystal: BulkCrystal, path: str | Path) -> None:
         lines.insert(2, "REMARK  unit-cell chain A=origin chain B=center for cellulose I-beta")
     else:
         lines.insert(2, "REMARK  chain and residue assignment not yet available")
+    for annotation in reversed(crystal.annotations):
+        lines.insert(3, f"REMARK  {annotation}")
     for index, vector in enumerate(crystal.basis_vectors, start=1):
         lines.append(
             f"REMARK  crystal basis vector {index}: "
