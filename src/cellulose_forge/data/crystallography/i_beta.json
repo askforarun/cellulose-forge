@@ -1,0 +1,90 @@
+{
+  "allomorph": "I-beta",
+  "space_group": "P2_1",
+  "provenance": {
+    "citation": "Nishiyama, Y.; Langan, P.; Chanzy, H. J. Am. Chem. Soc. 2002, 124, 9074-9082.",
+    "doi": "10.1021/ja0257319",
+    "transcribed_from": "legacy/cellulose-builder-2013/asy_I_beta, dimensions_I_beta (Gomes & Skaf, J. Comput. Chem. 2012, 33, 1338-1346, DOI: 10.1002/jcc.22959)"
+  },
+  "unit_cell": {
+    "a": 7.784,
+    "b": 8.201,
+    "c": 10.380,
+    "alpha_deg": 90.0,
+    "beta_deg": 90.0,
+    "gamma_deg": 96.5,
+    "length_unit": "angstrom"
+  },
+  "symmetry_operations": [
+    {
+      "name": "identity",
+      "rotation": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+      "translation": [0.0, 0.0, 0.0]
+    },
+    {
+      "name": "P2_1_screw",
+      "description": "Two-fold screw axis parallel to c. Legacy Cellulose-Builder applies this operation to the full 42-atom asymmetric unit (both the origin and center rings) to generate a second, adjacent unit-cell layer; combined with edge-trimming during replication this reproduces the alternating origin/center sheet stacking reported by Nishiyama et al. It does not itself derive the center ring from the origin ring -- both rings are independently reported experimental positions already present in asymmetric_unit.",
+      "rotation": [[-1, 0, 0], [0, -1, 0], [0, 0, 1]],
+      "translation": [0.0, 0.0, 0.5]
+    }
+  ],
+  "asymmetric_unit": {
+    "description": "42 atoms: 21-atom origin anhydroglucopyranose ring (rows 0-20) followed by the 21-atom center ring (rows 21-41), as reported by Nishiyama et al. and transcribed unchanged from legacy asy_I_beta. atom_labels repeats the same 21-label ring sequence (per legacy atomtypes_I_beta) once for each ring.",
+    "residue_atom_count": 21,
+    "chain_labels": ["origin", "center"],
+    "ring_atom_labels": [
+      "C1", "H1", "C2", "H2", "C3", "H3", "C4", "H4", "C5", "H5",
+      "C6", "H61", "H62", "O2", "O3", "O4", "O5", "O6", "HO2", "HO3", "HO6"
+    ],
+    "atom_labels": [
+      "C1", "H1", "C2", "H2", "C3", "H3", "C4", "H4", "C5", "H5",
+      "C6", "H61", "H62", "O2", "O3", "O4", "O5", "O6", "HO2", "HO3", "HO6",
+      "C1", "H1", "C2", "H2", "C3", "H3", "C4", "H4", "C5", "H5",
+      "C6", "H61", "H62", "O2", "O3", "O4", "O5", "O6", "HO2", "HO3", "HO6"
+    ],
+    "fractional_coordinates": [
+      [0.014, -0.042, 0.0433],
+      [0.1382, -0.0188, 0.0598],
+      [-0.026, -0.184, -0.0516],
+      [-0.1508, -0.2177, -0.0546],
+      [0.040, -0.137, -0.1848],
+      [0.1667, -0.1323, -0.1840],
+      [-0.007, 0.030, -0.2250],
+      [-0.1316, 0.0176, -0.2425],
+      [0.026, 0.159, -0.1232],
+      [0.1507, 0.1821, -0.1090],
+      [-0.047, 0.319, -0.153],
+      [-0.1672, 0.2959, -0.1778],
+      [-0.0407, 0.3872, -0.0765],
+      [0.061, -0.314, -0.0003],
+      [-0.027, -0.261, -0.2759],
+      [0.079, 0.086, -0.3424],
+      [-0.056, 0.099, -0.0053],
+      [0.048, 0.403, -0.254],
+      [0.0366, -0.3194, 0.0920],
+      [0.0475, -0.2400, -0.3517],
+      [-0.0144, 0.4924, -0.2850],
+      [0.533, 0.455, 0.3043],
+      [0.6577, 0.4616, 0.3200],
+      [0.475, 0.3178, 0.2094],
+      [0.3480, 0.3058, 0.2052],
+      [0.545, 0.363, 0.0765],
+      [0.6716, 0.3753, 0.0793],
+      [0.482, 0.526, 0.0375],
+      [0.3561, 0.5139, 0.0289],
+      [0.541, 0.6574, 0.1388],
+      [0.6670, 0.6830, 0.1370],
+      [0.452, 0.815, 0.1125],
+      [0.3341, 0.7843, 0.0847],
+      [0.4491, 0.8778, 0.1916],
+      [0.528, 0.166, 0.2520],
+      [0.486, 0.233, -0.0081],
+      [0.563, 0.586, -0.0806],
+      [0.485, 0.6070, 0.2639],
+      [0.542, 0.914, 0.017],
+      [0.5035, 0.1593, 0.3448],
+      [0.5104, 0.2733, -0.0961],
+      [0.5184, 1.0275, 0.0326]
+    ]
+  }
+}
