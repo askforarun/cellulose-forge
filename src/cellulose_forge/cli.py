@@ -8,7 +8,11 @@ from pathlib import Path
 
 from cellulose_forge import __version__
 from cellulose_forge.crystallography import load_allomorph
-from cellulose_forge.geometry import build_bulk_crystal, build_unit_cell
+from cellulose_forge.geometry import (
+    build_bulk_crystal,
+    build_i_beta_parallelepiped,
+    build_unit_cell,
+)
 from cellulose_forge.pdb import write_pdb
 
 
@@ -26,7 +30,11 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command")
     build = subparsers.add_parser("build", help="build a cellulose structure")
     build.add_argument("--allomorph", choices=["I-beta"], required=True)
-    build.add_argument("--shape", choices=["unit-cell", "bulk", "crystal"], required=True)
+    build.add_argument(
+        "--shape",
+        choices=["unit-cell", "bulk", "crystal", "crystallite"],
+        required=True,
+    )
     build.add_argument(
         "--cells",
         nargs=3,
@@ -48,10 +56,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             if args.cells is not None:
                 build_parser().error("--cells is not valid with --shape unit-cell")
             crystal = build_unit_cell(definition)
-        else:
+        elif args.shape in {"bulk", "crystal"}:
             if args.cells is None:
                 build_parser().error("--cells NA NB NC is required for bulk crystals")
             crystal = build_bulk_crystal(definition, tuple(args.cells))
+        else:
+            if args.cells is None:
+                build_parser().error("--cells NA NB NC is required for crystallites")
+            crystal = build_i_beta_parallelepiped(definition, *args.cells)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         write_pdb(crystal, args.output)
     return 0

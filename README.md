@@ -46,6 +46,21 @@ uv run cellulose-forge build \
 This diagnostic PDB contains complete crystallographic unit cells. It does not
 yet contain bonds or force-field parameters.
 
+Generate the legacy-compatible finite I-beta crystallite geometry, including
+the original Cellulose-Builder boundary-ring selection:
+
+```bash
+uv run cellulose-forge build \
+  --allomorph I-beta \
+  --shape crystallite \
+  --cells 4 4 5 \
+  --output ibeta_4x4x5_crystallite.pdb
+```
+
+The crystallite PDB is currently a geometry-only validation output. Explicit
+chain assignment, connectivity, and finite terminal chemistry are not yet
+included.
+
 ## Legacy references
 
 The repository retains the original Cellulose-Builder and doGlycans distributions as validation references. They are not imported by the new Python package. See [legacy/README.md](legacy/README.md) for provenance and licensing notes.
