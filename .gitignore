@@ -13,6 +13,7 @@ site/
 tmp/
 .DS_Store
 mdout.mdp
+paper/*.pdf
 
 # Third-party reference distributions and locally downloaded literature are
 # cited in the provenance documentation rather than vendored in this project.

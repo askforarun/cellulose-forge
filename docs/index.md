@@ -1,5 +1,10 @@
 # CelluloseForge
 
-CelluloseForge will construct experimentally grounded crystalline cellulose systems for GROMACS using CHARMM36 or GLYCAM.
+CelluloseForge constructs experimentally grounded crystalline cellulose unit
+cells, bulk crystals, I-beta slabs, and literature-defined fibrils. Supported
+systems can be parameterized with GLYCAM06j-1 and written for GROMACS.
 
-Development follows the phased roadmap in `plan.md`. Scientific conventions and API documentation will be added as the corresponding phases are implemented.
+Start with the [step-by-step tutorial](tutorial.md). The main repository README
+contains the installation summary and command reference. Current scientific
+validation is documented in `validation/README.md`; planned features remain
+separate in `plan.md`.

@@ -5,6 +5,7 @@ theme:
   name: material
 nav:
   - Home: index.md
+  - Tutorial: tutorial.md
   - Governance: governance.md
   - Support: support.md
   - Architecture decisions: decisions/README.md
