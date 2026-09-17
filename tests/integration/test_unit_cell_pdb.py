@@ -1,8 +1,34 @@
 """Integration tests for unit-cell PDB generation through the CLI."""
 
+import json
+import shutil
 from pathlib import Path
 
+import pytest
+
 from cellulose_forge.cli import main
+from cellulose_forge.glycam import GlycamChainFiles
+
+
+def _use_committed_glycam_reference(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    chain_boundary: str,
+) -> None:
+    reference_name = "dp12_periodic_reference" if chain_boundary == "periodic" else "dp12_reference"
+    source_prefix = (
+        "cellulose_periodic_chain" if chain_boundary == "periodic" else "cellulose_chain"
+    )
+
+    def prepare(**kwargs: object) -> tuple[GlycamChainFiles, dict[str, object]]:
+        directory = Path(str(kwargs["directory"]))
+        files = GlycamChainFiles(directory, source_prefix)
+        source = Path("examples/glycam") / reference_name
+        shutil.copyfile(source / f"{source_prefix}.pdb", files.pdb)
+        shutil.copyfile(source / f"{source_prefix}.top", files.gromacs_topology)
+        return files, {"test_fixture": reference_name}
+
+    monkeypatch.setattr("cellulose_forge.cli.generate_glycam_gromacs_reference", prepare)
 
 
 def test_cli_writes_annotated_i_beta_unit_cell(tmp_path: Path) -> None:
@@ -254,3 +280,88 @@ def test_cli_writes_literature_i_beta_36_chain_fibril(tmp_path: Path) -> None:
         f"C{chain:03d}" for chain in range(1, 37)
     }
     assert any("shape=fibril fibril_model=36-chain total_chains=36" in line for line in lines)
+
+
+def test_cli_writes_periodic_glycam_fibril_system(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _use_committed_glycam_reference(monkeypatch, chain_boundary="periodic")
+    output = tmp_path / "ibeta_fibril"
+
+    result = main(
+        [
+            "build",
+            "--allomorph",
+            "I-beta",
+            "--shape",
+            "fibril",
+            "--fibril-model",
+            "36-chain",
+            "--degree-polymerization",
+            "12",
+            "--chain-boundary",
+            "periodic",
+            "--vacuum",
+            "30",
+            "--force-field",
+            "glycam",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    assert (output / "structure.pdb").is_file()
+    assert (output / "structure.gro").is_file()
+    topology = (output / "system.top").read_text(encoding="utf-8")
+    assert "CELLULOSE_CHAIN  36" in topology
+    report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
+    assert report["force_field"] == "GLYCAM"
+    assert report["chain_boundary"] == "periodic"
+    assert report["degree_polymerization"] == 12
+    assert report["chain_count"] == 36
+    assert report["force_field_atom_count"] == 9072
+
+
+def test_cli_writes_finite_glycam_slab_system(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _use_committed_glycam_reference(monkeypatch, chain_boundary="finite")
+    output = tmp_path / "ibeta_slab"
+
+    result = main(
+        [
+            "build",
+            "--allomorph",
+            "I-beta",
+            "--shape",
+            "slab",
+            "--face",
+            "1",
+            "1",
+            "0",
+            "--layers",
+            "1",
+            "--chains-per-layer",
+            "2",
+            "--degree-polymerization",
+            "12",
+            "--chain-boundary",
+            "finite",
+            "--vacuum",
+            "30",
+            "--force-field",
+            "glycam",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
+    assert report["chain_boundary"] == "finite"
+    assert report["chain_count"] == 2
+    assert report["force_field_atom_count"] == 510
+    assert "CELLULOSE_CHAIN  2" in (output / "system.top").read_text(encoding="utf-8")

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -17,6 +19,12 @@ from cellulose_forge.geometry import (
     build_slab_by_dimensions,
     build_unit_cell,
 )
+from cellulose_forge.glycam import GLYCAM_LEAPRC, generate_glycam_gromacs_reference
+from cellulose_forge.glycam_mapping import (
+    map_crystal_to_finite_glycam,
+    map_crystal_to_periodic_glycam,
+)
+from cellulose_forge.gromacs import write_glycam_gromacs_system
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -84,6 +92,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=0.0,
         help="total vacuum normal to the slab in angstrom (default: 0)",
     )
+    build.add_argument(
+        "--force-field",
+        choices=["none", "glycam"],
+        default="none",
+        help="write coordinates only or a simulation-ready GLYCAM/GROMACS system",
+    )
+    build.add_argument(
+        "--tleap-executable",
+        default="tleap",
+        help="tleap executable used for GLYCAM reference generation",
+    )
+    build.add_argument(
+        "--parmed-python",
+        type=Path,
+        help="optional Python interpreter containing ParmEd",
+    )
     build.add_argument("--output", type=Path, required=True)
     return parser
 
@@ -111,14 +135,106 @@ def main(argv: Sequence[str] | None = None) -> int:
             crystal = _build_slab(args, definition, build_parser())
         else:
             crystal = _build_fibril(args, definition, build_parser())
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        written_path = write_coordinates(crystal, args.output)
-        if written_path != args.output:
-            print(
-                f"Requested structure has {crystal.atom_count} atoms; "
-                f"wrote mmCIF instead of PDB: {written_path}"
-            )
+        if args.force_field == "glycam":
+            _write_glycam_build(args, crystal, build_parser())
+        else:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            written_path = write_coordinates(crystal, args.output)
+            if written_path != args.output:
+                print(
+                    f"Requested structure has {crystal.atom_count} atoms; "
+                    f"wrote mmCIF instead of PDB: {written_path}"
+                )
     return 0
+
+
+def _write_glycam_build(
+    args: argparse.Namespace,
+    crystal: BulkCrystal,
+    parser: argparse.ArgumentParser,
+) -> None:
+    """Generate a GLYCAM reference, map coordinates, and write GROMACS files."""
+    if args.output.suffix:
+        parser.error("--output must be a directory when --force-field glycam is selected")
+    chain_boundary = args.chain_boundary
+    if args.shape in {"bulk", "crystal", "unit-cell"}:
+        if chain_boundary is None:
+            parser.error(
+                "--chain-boundary periodic is required for GLYCAM bulk and unit-cell builds"
+            )
+        if chain_boundary != "periodic":
+            parser.error("GLYCAM bulk and unit-cell builds require --chain-boundary periodic")
+    elif chain_boundary is None:
+        parser.error("--chain-boundary finite|periodic is required with --force-field glycam")
+    assert chain_boundary is not None
+    degree_polymerization = _crystal_degree_polymerization(crystal)
+    output_directory = args.output
+
+    with tempfile.TemporaryDirectory(prefix="cellulose_forge_glycam_") as temporary:
+        files, reference_metadata = generate_glycam_gromacs_reference(
+            degree_polymerization=degree_polymerization,
+            chain_boundary=chain_boundary,
+            directory=temporary,
+            tleap_executable=args.tleap_executable,
+            parmed_python=args.parmed_python,
+        )
+        if chain_boundary == "periodic":
+            mapped = map_crystal_to_periodic_glycam(crystal, files.pdb)
+        else:
+            mapped = map_crystal_to_finite_glycam(crystal, files.pdb)
+        output_directory.mkdir(parents=True, exist_ok=True)
+        coordinate_path = write_coordinates(crystal, output_directory / "structure.pdb")
+        gro_path, topology_path = write_glycam_gromacs_system(
+            mapped,
+            files.gromacs_topology,
+            output_directory,
+        )
+
+    report = {
+        "cellulose_forge_version": __version__,
+        "allomorph": crystal.allomorph,
+        "shape": args.shape,
+        "force_field": "GLYCAM",
+        "force_field_release": GLYCAM_LEAPRC,
+        "chain_boundary": chain_boundary,
+        "degree_polymerization": degree_polymerization,
+        "chain_count": mapped.chain_count,
+        "crystallographic_atom_count": crystal.atom_count,
+        "force_field_atom_count": mapped.atom_count,
+        "outputs": {
+            "coordinates": coordinate_path.name,
+            "gromacs_coordinates": gro_path.name,
+            "gromacs_topology": topology_path.name,
+        },
+        "geometry_annotations": list(crystal.annotations),
+        "reference_generation": reference_metadata,
+    }
+    (output_directory / "build_report.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _crystal_degree_polymerization(crystal: BulkCrystal) -> int:
+    """Return the common residue count for every generated cellulose chain."""
+    degrees = {
+        chain_number: len(
+            {
+                residue_number
+                for atom_chain, residue_number in zip(
+                    crystal.chain_numbers,
+                    crystal.residue_numbers,
+                    strict=True,
+                )
+                if atom_chain == chain_number
+            }
+        )
+        for chain_number in dict.fromkeys(crystal.chain_numbers)
+    }
+    if not degrees or len(set(degrees.values())) != 1:
+        msg = "GLYCAM output requires equal, nonempty cellulose chain lengths"
+        raise ValueError(msg)
+    return next(iter(degrees.values()))
 
 
 def _build_fibril(

@@ -141,6 +141,41 @@ chain topology as 36 repeated molecules. GROMACS 2024.2 accepts it with PME
 electrostatics and zero preprocessing warnings, and steepest-descent
 minimization reaches the configured 1000 kJ mol-1 nm-1 force threshold.
 
+Generate the same fibril as a complete GLYCAM/GROMACS system:
+
+```bash
+uv run cellulose-forge build \
+  --allomorph I-beta \
+  --shape fibril \
+  --fibril-model 36-chain \
+  --degree-polymerization 12 \
+  --chain-boundary periodic \
+  --vacuum 30 \
+  --force-field glycam \
+  --output ibeta_fibril
+```
+
+With `--force-field glycam`, `--output` names a directory rather than a
+coordinate file. CelluloseForge uses AmberTools `tleap` with
+`leaprc.GLYCAM_06j-1` to generate and validate one chain, uses ParmEd to
+convert its topology, maps the crystallographic coordinates into GLYCAM atom
+order, and writes:
+
+```text
+ibeta_fibril/
+|-- structure.pdb
+|-- structure.gro
+|-- system.top
+`-- build_report.json
+```
+
+AmberTools and ParmEd are external requirements only for GLYCAM builds.
+Coordinate-only builds (`--force-field none`, the default) do not require
+them. If ParmEd is installed in another environment, pass its interpreter with
+`--parmed-python /path/to/python`. `build_report.json` records the force-field
+release, DP, boundary condition, chain count, output files, validation results,
+and executable provenance.
+
 ## Legacy references
 
 Cellulose-Builder and doGlycans are cited as external scientific references;

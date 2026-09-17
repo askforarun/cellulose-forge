@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -426,6 +427,72 @@ def convert_chain_reference_to_gromacs(
         "fudge_qq": 1.0,
         "parmed_python_executable": resolved_executable,
     }
+
+
+def find_parmed_python() -> str:
+    """Return a Python interpreter that can import ParmEd.
+
+    Prefer the running interpreter. If ParmEd is installed as a command from a
+    different environment, use the absolute interpreter from its shebang.
+    """
+    probe = subprocess.run(
+        [sys.executable, "-c", "import parmed"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if probe.returncode == 0:
+        return sys.executable
+    parmed_command = shutil.which("parmed")
+    if parmed_command is not None:
+        first_line = Path(parmed_command).read_text(encoding="utf-8").splitlines()[0]
+        if first_line.startswith("#!"):
+            interpreter = first_line[2:].strip()
+            if Path(interpreter).is_file():
+                return interpreter
+    msg = (
+        "ParmEd was not found; install ParmEd in the active Python environment "
+        "or make its 'parmed' command available on PATH"
+    )
+    raise FileNotFoundError(msg)
+
+
+def generate_glycam_gromacs_reference(
+    *,
+    degree_polymerization: int,
+    chain_boundary: str,
+    directory: str | Path,
+    tleap_executable: str | Path = "tleap",
+    parmed_python: str | Path | None = None,
+) -> tuple[GlycamChainFiles, dict[str, object]]:
+    """Generate and validate a one-chain GLYCAM/GROMACS reference."""
+    if chain_boundary == "finite":
+        finite_spec = GlycamChainSpec(degree_polymerization)
+        prefix = "cellulose_chain"
+        metadata = run_tleap_chain_reference(
+            finite_spec,
+            directory,
+            prefix=prefix,
+            executable=tleap_executable,
+        )
+    elif chain_boundary == "periodic":
+        periodic_spec = GlycamPeriodicChainSpec(degree_polymerization)
+        prefix = "cellulose_periodic_chain"
+        metadata = run_tleap_periodic_chain_reference(
+            periodic_spec,
+            directory,
+            prefix=prefix,
+            executable=tleap_executable,
+        )
+    else:
+        msg = "chain boundary must be 'finite' or 'periodic'"
+        raise ValueError(msg)
+    files = GlycamChainFiles(Path(directory), prefix)
+    conversion = convert_chain_reference_to_gromacs(
+        files,
+        python_executable=parmed_python or find_parmed_python(),
+    )
+    return files, {**metadata, "gromacs_conversion": conversion}
 
 
 def _gromacs_section_rows(text: str, section_name: str) -> list[str]:
