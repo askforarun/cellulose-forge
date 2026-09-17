@@ -5,7 +5,7 @@
   "provenance": {
     "citation": "Wada, M.; Chanzy, H.; Nishiyama, Y.; Langan, P. Macromolecules 2004, 37, 8548-8555.",
     "doi": "10.1021/ma0485585",
-    "transcribed_from": "legacy/cellulose-builder-2013/asy_III_I, dimensions_III_I, atomtypes_III_I (Gomes & Skaf, J. Comput. Chem. 2012, 33, 1338-1346, DOI: 10.1002/jcc.22959)"
+    "transcribed_from": "Cellulose-Builder July 2013 distribution: asy_III_I, dimensions_III_I, atomtypes_III_I (Gomes & Skaf, J. Comput. Chem. 2012, 33, 1338-1346, DOI: 10.1002/jcc.22959)"
   },
   "unit_cell": {
     "a": 4.450,

@@ -143,7 +143,10 @@ minimization reaches the configured 1000 kJ mol-1 nm-1 force threshold.
 
 ## Legacy references
 
-The repository retains the original Cellulose-Builder and doGlycans distributions as validation references. They are not imported by the new Python package. See [legacy/README.md](legacy/README.md) for provenance and licensing notes.
+Cellulose-Builder and doGlycans are cited as external scientific references;
+their source distributions, publications, and binary examples are not
+vendored in this repository. See [legacy/README.md](legacy/README.md) for
+provenance and citations.
 
 ## License
 

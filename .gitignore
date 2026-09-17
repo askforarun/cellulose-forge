@@ -14,8 +14,12 @@ tmp/
 .DS_Store
 mdout.mdp
 
-# Locally downloaded literature and supplementary material.
-legacy/publications/*.pdf
+# Third-party reference distributions and locally downloaded literature are
+# cited in the provenance documentation rather than vendored in this project.
+legacy/cellulose-builder-2013/
+legacy/doglycans-2017/
+legacy/source-archives/
+legacy/publications/
 legacy/SI_Cellulosewetting/
 
 # Regenerable coordinate demonstrations; retain only curated examples.

@@ -5,7 +5,7 @@
   "provenance": {
     "citation": "Langan, P.; Nishiyama, Y.; Chanzy, H. Biomacromolecules 2001, 2, 410-416.",
     "doi": "10.1021/bm005612q",
-    "transcribed_from": "legacy/cellulose-builder-2013/asy_II, dimensions_II, atomtypes_II (Gomes & Skaf, J. Comput. Chem. 2012, 33, 1338-1346, DOI: 10.1002/jcc.22959)"
+    "transcribed_from": "Cellulose-Builder July 2013 distribution: asy_II, dimensions_II, atomtypes_II (Gomes & Skaf, J. Comput. Chem. 2012, 33, 1338-1346, DOI: 10.1002/jcc.22959)"
   },
   "unit_cell": {
     "a": 8.10,

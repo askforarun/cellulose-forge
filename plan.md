@@ -21,7 +21,7 @@ Version 1 will support:
 
 Version 1 will not include functionalized cellulose, OPLS parameterization, native CHARMM/PSF output, or native Amber `prmtop`/`rst7` output.
 
-The original Cellulose-Builder and doGlycans packages will be retained as GPLv3-licensed reference implementations and validation material. New Python code will remain separated from the legacy implementations.
+Cellulose-Builder and doGlycans are external reference implementations used for provenance and independent validation. Their distributions are not vendored; the repository retains citations and compact, independently generated validation fixtures.
 
 ## Guiding principles
 
@@ -91,8 +91,7 @@ cellulose-forge/
 |   |-- crystallography/
 |   `-- schemas/
 |-- legacy/
-|   |-- cellulose-builder-2013/
-|   `-- doglycans-2017/
+|   `-- README.md
 |-- validation/
 |-- examples/
 |-- docs/
@@ -121,7 +120,7 @@ cellulose-forge/
 - The package installs in a clean environment.
 - Tests and quality checks run through documented commands.
 - Continuous integration passes.
-- Legacy code is isolated and clearly attributed.
+- External reference implementations are cited clearly and are not runtime dependencies.
 
 ---
 

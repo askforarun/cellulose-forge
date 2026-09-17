@@ -1,3 +1,0 @@
-PHASE=I-BETA   # Accepted values are: I-ALPHA , I-BETA , II , III_I .
-PBC=NONE       # Accepted values are: NONE (default), A , B , ALL .
-PCB_c=FALSE    # Accepted values are: FALSE , TRUE .

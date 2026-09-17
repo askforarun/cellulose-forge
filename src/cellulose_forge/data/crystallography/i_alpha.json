@@ -5,7 +5,7 @@
   "provenance": {
     "citation": "Nishiyama, Y.; Sugiyama, J.; Chanzy, H.; Langan, P. J. Am. Chem. Soc. 2003, 125, 14300-14306.",
     "doi": "10.1021/ja037055w",
-    "transcribed_from": "legacy/cellulose-builder-2013/asy_I_alpha, dimensions_I_alpha, atomtypes_I_alpha (Gomes & Skaf, J. Comput. Chem. 2012, 33, 1338-1346, DOI: 10.1002/jcc.22959)"
+    "transcribed_from": "Cellulose-Builder July 2013 distribution: asy_I_alpha, dimensions_I_alpha, atomtypes_I_alpha (Gomes & Skaf, J. Comput. Chem. 2012, 33, 1338-1346, DOI: 10.1002/jcc.22959)"
   },
   "unit_cell": {
     "a": 10.400,
