@@ -17,7 +17,7 @@ Version 1 will support:
 - CHARMM36 parameters represented correctly for GROMACS.
 - GLYCAM parameters represented correctly for GROMACS.
 - GROMACS `.gro`, `.top`, and `.itp` output.
-- Optional PDB coordinates and machine-readable build reports.
+- Optional PDB or PDBx/mmCIF coordinates and machine-readable build reports.
 
 Version 1 will not include functionalized cellulose, OPLS parameterization, native CHARMM/PSF output, or native Amber `prmtop`/`rst7` output.
 
@@ -222,7 +222,7 @@ Phase III consumes the signed face and preset definitions established in Phase I
 - A fibril is selected with `--shape fibril --fibril-model NAME`; the named model supplies the complete cross-section, chain arrangement, and bounding-face set.
 - The initial fibril model is `36-chain`, reproduced from the literature independently for each allomorph for which adequate crystallographic evidence is available.
 - `36-chain` denotes the published discrete chain arrangement; it must not be interpreted or generated as an ideal regular hexagon.
-- `--cellobiose-units N` controls fibril length using the original Cellulose-Builder convention. One cellobiose unit corresponds to two anhydroglucose residues along each chain.
+- `--degree-polymerization N` controls fibril length as the number of anhydroglucose residues in each chain. Version 1 requires an even DP because one crystallographic repeat is one cellobiose unit (two residues).
 - Users do not need to enter the individual faces of a named fibril model. Every face used by the model must be listed in the build report.
 
 ### Implementation order
@@ -521,7 +521,7 @@ cellulose-forge build \
   --allomorph I-beta \
   --shape fibril \
   --fibril-model 36-chain \
-  --cellobiose-units 20 \
+  --degree-polymerization 40 \
   --force-field glycam \
   --output ibeta_36chain_fibril
 ```
@@ -533,6 +533,7 @@ cellulose-forge build \
   --face 1 1 0 \
   --layers 8 \
   --lateral-cells 6 6 \
+  --chain-boundary periodic \
   --vacuum 3.0 \
   --force-field charmm36 \
   --output ibeta_110_slab
@@ -547,7 +548,7 @@ cellulose-forge validate ibeta_4x4x5/system.top
 ```text
 ibeta_4x4x5/
 |-- structure.gro
-|-- structure.pdb
+|-- structure.pdb (or structure.cif for large systems)
 |-- cellulose.itp
 |-- system.top
 |-- cell.json

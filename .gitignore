@@ -11,4 +11,22 @@ dist/
 htmlcov/
 site/
 tmp/
+.DS_Store
+mdout.mdp
 
+# Locally downloaded literature and supplementary material.
+legacy/publications/*.pdf
+legacy/SI_Cellulosewetting/
+
+# Regenerable coordinate demonstrations; retain only curated examples.
+/examples/bulk/
+/examples/slabs/
+/examples/ibeta_*.pdb
+
+# AmberTools intermediates. The PDB and GROMACS TOP files are retained as
+# compact, independently generated test fixtures.
+examples/glycam/**/*.gro
+examples/glycam/**/*.inpcrd
+examples/glycam/**/*.json
+examples/glycam/**/*.leap
+examples/glycam/**/*.prmtop

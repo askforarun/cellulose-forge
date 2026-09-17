@@ -7,17 +7,26 @@ from pathlib import Path
 from cellulose_forge.crystallography import basis_lengths_and_angles
 from cellulose_forge.geometry import BulkCrystal
 
-_MAXIMUM_PDB_ATOMS = 99_999
+MAXIMUM_PDB_ATOMS = 99_999
 _PDB_CHAIN_IDENTIFIER_COUNT = 62
+_MAXIMUM_PREFIXED_SEGMENT_NUMBER = 999
+_PDB_SEGMENT_NUMBER_MODULUS = 10_000
 
 
 def _element_from_label(label: str) -> str:
     return label[0].upper()
 
 
+def _segment_id(chain_number: int) -> str:
+    """Return a four-character visualization identifier for a chain number."""
+    if chain_number <= _MAXIMUM_PREFIXED_SEGMENT_NUMBER:
+        return f"C{chain_number:03d}"
+    return f"{chain_number % _PDB_SEGMENT_NUMBER_MODULUS:04d}"
+
+
 def write_pdb(crystal: BulkCrystal, path: str | Path) -> None:
     """Write a geometry-only PDB with cell, chain, and residue annotations."""
-    if crystal.atom_count > _MAXIMUM_PDB_ATOMS:
+    if crystal.atom_count > MAXIMUM_PDB_ATOMS:
         msg = "standard PDB serial numbers support at most 99,999 atoms"
         raise ValueError(msg)
 
@@ -29,14 +38,18 @@ def write_pdb(crystal: BulkCrystal, path: str | Path) -> None:
         f"replication={crystal.replication} atoms={crystal.atom_count}",
         f"CRYST1{a:9.3f}{b:9.3f}{c:9.3f}{alpha:7.2f}{beta:7.2f}{gamma:7.2f} {space_group:<11s}  1",
     ]
-    if crystal.chain_ids:
+    if crystal.chain_ids and crystal.allomorph == "I-beta":
         lines.insert(2, "REMARK  unit-cell chain A=origin chain B=center for cellulose I-beta")
+    elif crystal.chain_ids:
+        lines.insert(2, "REMARK  chain and residue IDs follow the crystallographic model")
     else:
         lines.insert(2, "REMARK  chain and residue assignment not yet available")
     for annotation in reversed(crystal.annotations):
         lines.insert(3, f"REMARK  {annotation}")
-    if crystal.chain_numbers and max(crystal.chain_numbers) >= _PDB_CHAIN_IDENTIFIER_COUNT:
+    if crystal.chain_numbers and max(crystal.chain_numbers) > _PDB_CHAIN_IDENTIFIER_COUNT:
         lines.insert(3, "REMARK  PDB one-character chain identifiers are reused after 62 chains")
+    if crystal.chain_numbers:
+        lines.insert(3, "REMARK  PDB segment IDs encode one-based chain numbers (C001, C002, ...)")
     for index, vector in enumerate(crystal.basis_vectors, start=1):
         lines.append(
             f"REMARK  crystal basis vector {index}: "
@@ -44,20 +57,25 @@ def write_pdb(crystal: BulkCrystal, path: str | Path) -> None:
         )
 
     chain_ids = crystal.chain_ids or ("A",) * crystal.atom_count
+    chain_numbers = crystal.chain_numbers or (1,) * crystal.atom_count
     residue_numbers = crystal.residue_numbers or (1,) * crystal.atom_count
     records = zip(
         crystal.atom_labels,
         crystal.cartesian_coordinates,
         chain_ids,
+        chain_numbers,
         residue_numbers,
         strict=True,
     )
-    for serial, (label, coords, chain_id, residue_number) in enumerate(records, start=1):
+    for serial, (label, coords, chain_id, chain_number, residue_number) in enumerate(
+        records, start=1
+    ):
         x, y, z = coords
+        segment_id = _segment_id(chain_number)
         lines.append(
             f"HETATM{serial:5d} {label:>4s} BGC {chain_id:1s}{residue_number:4d}    "
-            f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00          "
-            f"{_element_from_label(label):>2s}"
+            f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00      "
+            f"{segment_id:4s}{_element_from_label(label):>2s}"
         )
     lines.append("END")
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -1,6 +1,7 @@
 {
   "allomorph": "I-beta",
   "space_group": "P2_1",
+  "chain_axis": "c",
   "provenance": {
     "citation": "Nishiyama, Y.; Langan, P.; Chanzy, H. J. Am. Chem. Soc. 2002, 124, 9074-9082.",
     "doi": "10.1021/ja0257319",
@@ -32,6 +33,7 @@
     "description": "42 atoms: 21-atom origin anhydroglucopyranose ring (rows 0-20) followed by the 21-atom center ring (rows 21-41), as reported by Nishiyama et al. and transcribed unchanged from legacy asy_I_beta. atom_labels repeats the same 21-label ring sequence (per legacy atomtypes_I_beta) once for each ring.",
     "residue_atom_count": 21,
     "chain_labels": ["origin", "center"],
+    "chain_directions": [1, 1],
     "ring_atom_labels": [
       "C1", "H1", "C2", "H2", "C3", "H3", "C4", "H4", "C5", "H5",
       "C6", "H61", "H62", "O2", "O3", "O4", "O5", "O6", "HO2", "HO3", "HO6"

@@ -7,7 +7,69 @@ import pytest
 from numpy.testing import assert_allclose
 
 from cellulose_forge.crystallography import MillerIndex, fractional_to_cartesian, load_allomorph
-from cellulose_forge.geometry import build_bulk_crystal, build_chain_parallel_slab, build_unit_cell
+from cellulose_forge.geometry import (
+    build_36_chain_fibril,
+    build_bulk_crystal,
+    build_chain_parallel_slab,
+    build_slab_by_dimensions,
+    build_unit_cell,
+)
+
+
+@pytest.mark.parametrize(
+    ("allomorph_key", "atoms_per_residue"),
+    [("i_alpha", 21), ("i_beta", 21), ("ii", 18)],
+)
+def test_literature_36_chain_fibrils_have_complete_dp_chains(
+    allomorph_key: str,
+    atoms_per_residue: int,
+) -> None:
+    fibril = build_36_chain_fibril(
+        load_allomorph(allomorph_key),
+        degree_polymerization=6,
+        vacuum=20.0,
+        chain_boundary="periodic",
+    )
+
+    assert fibril.atom_count == 36 * 6 * atoms_per_residue
+    assert set(fibril.chain_numbers) == set(range(1, 37))
+    assert set(fibril.residue_numbers) == set(range(1, 7))
+    assert all(
+        sum(chain_number == chain for chain_number in fibril.chain_numbers)
+        == 6 * atoms_per_residue
+        for chain in range(1, 37)
+    )
+    assert any("fibril_model=36-chain" in value for value in fibril.annotations)
+    assert any("degree_polymerization=6" in value for value in fibril.annotations)
+    assert any("legacy_fragment_ids=" in value for value in fibril.annotations)
+
+
+def test_36_chain_fibril_is_deterministic() -> None:
+    definition = load_allomorph("i_beta")
+    first = build_36_chain_fibril(definition, degree_polymerization=4, vacuum=12.0)
+    second = build_36_chain_fibril(definition, degree_polymerization=4, vacuum=12.0)
+
+    assert first.atom_labels == second.atom_labels
+    assert first.chain_numbers == second.chain_numbers
+    assert_allclose(first.cartesian_coordinates, second.cartesian_coordinates)
+
+
+def test_36_chain_fibril_rejects_unsupported_iii_i() -> None:
+    with pytest.raises(ValueError, match=r"not defined.*reference Cellulose-Builder"):
+        build_36_chain_fibril(
+            load_allomorph("iii_i"),
+            degree_polymerization=4,
+            vacuum=10.0,
+        )
+
+
+def test_36_chain_fibril_rejects_odd_degree_polymerization() -> None:
+    with pytest.raises(ValueError, match=r"requires an even degree of polymerization"):
+        build_36_chain_fibril(
+            load_allomorph("i_beta"),
+            degree_polymerization=5,
+            vacuum=10.0,
+        )
 
 
 def test_i_beta_unit_cell_has_two_chains_and_four_residues() -> None:
@@ -23,6 +85,53 @@ def test_i_beta_unit_cell_has_two_chains_and_four_residues() -> None:
         ("B", 1),
         ("B", 2),
     }
+
+
+def test_i_alpha_unit_cell_has_one_chain_and_two_residues() -> None:
+    crystal = build_unit_cell(load_allomorph("i_alpha"))
+
+    assert crystal.atom_count == 42
+    assert set(crystal.chain_numbers) == {1}
+    assert set(crystal.residue_numbers) == {1, 2}
+    assert Counter(crystal.residue_numbers) == {1: 21, 2: 21}
+
+
+def test_i_alpha_bulk_replicates_chains_along_crystallographic_a() -> None:
+    crystal = build_bulk_crystal(load_allomorph("i_alpha"), (3, 2, 4))
+
+    assert crystal.atom_count == 42 * 3 * 2 * 4
+    assert len(set(crystal.chain_numbers)) == 2 * 4
+    assert set(crystal.residue_numbers) == set(range(1, 7))
+
+
+def test_iii_i_unit_cell_and_bulk_follow_p21_chain_geometry() -> None:
+    definition = load_allomorph("iii_i")
+    unit_cell = build_unit_cell(definition)
+    bulk = build_bulk_crystal(definition, (2, 3, 4))
+
+    assert unit_cell.atom_count == 42
+    assert set(unit_cell.chain_numbers) == {1}
+    assert set(unit_cell.residue_numbers) == {1, 2}
+    assert bulk.atom_count == 42 * 2 * 3 * 4
+    assert len(set(bulk.chain_numbers)) == 2 * 3
+    assert set(bulk.residue_numbers) == set(range(1, 9))
+
+
+def test_ii_unit_cell_and_bulk_keep_two_antiparallel_chain_identities() -> None:
+    definition = load_allomorph("ii")
+    unit_cell = build_unit_cell(definition)
+    bulk = build_bulk_crystal(definition, (2, 3, 4))
+
+    assert unit_cell.atom_count == 72
+    assert set(zip(unit_cell.chain_numbers, unit_cell.residue_numbers, strict=True)) == {
+        (1, 1),
+        (1, 2),
+        (2, 1),
+        (2, 2),
+    }
+    assert bulk.atom_count == 72 * 2 * 3 * 4
+    assert len(set(bulk.chain_numbers)) == 2 * 2 * 3
+    assert set(bulk.residue_numbers) == set(range(1, 9))
 
 
 def test_i_beta_unit_cell_coordinates_follow_stored_symmetry() -> None:
@@ -56,19 +165,35 @@ def test_bulk_replication_retains_every_complete_unit_cell() -> None:
 
 def test_bulk_replication_translates_coordinates_by_lattice_vectors() -> None:
     definition = load_allomorph("i_beta")
-    unit_cell = build_unit_cell(definition)
-
     crystal = build_bulk_crystal(definition, (2, 1, 2))
 
-    atoms_per_cell = unit_cell.atom_count
+    atoms_per_cell = build_unit_cell(definition).atom_count
+    first_cell = crystal.cartesian_coordinates[:atoms_per_cell]
     assert_allclose(
         crystal.cartesian_coordinates[atoms_per_cell : 2 * atoms_per_cell],
-        unit_cell.cartesian_coordinates + definition.unit_cell.vectors()[0],
+        first_cell + definition.unit_cell.vectors()[0],
     )
     assert_allclose(
         crystal.cartesian_coordinates[2 * atoms_per_cell : 3 * atoms_per_cell],
-        unit_cell.cartesian_coordinates + definition.unit_cell.vectors()[2],
+        first_cell + definition.unit_cell.vectors()[2],
     )
+
+
+def test_bulk_replication_unwraps_center_chain_across_transverse_boundary() -> None:
+    crystal = build_bulk_crystal(load_allomorph("i_beta"), (1, 1, 1))
+    labels = np.asarray(crystal.atom_labels)
+    chains = np.asarray(crystal.chain_numbers)
+    residues = np.asarray(crystal.residue_numbers)
+
+    for chain in (1, 2):
+        first = crystal.cartesian_coordinates[
+            (chains == chain) & (residues == 1) & (labels == "C1")
+        ][0]
+        second = crystal.cartesian_coordinates[
+            (chains == chain) & (residues == 2) & (labels == "C1")
+        ][0]
+        transverse_displacement = second[:2] - first[:2]
+        assert np.linalg.norm(transverse_displacement) < 1.0
 
 
 def test_bulk_replication_rejects_invalid_counts() -> None:
@@ -98,10 +223,36 @@ def test_i_beta_110_slab_is_surface_aligned_and_keeps_complete_residues() -> Non
     assert slab.atom_count == 21 * 4 * 20 * 12
     assert slab.atom_count % definition.asymmetric_unit.residue_atom_count == 0
     assert len(set(slab.chain_numbers)) == 80
+    assert set(slab.chain_numbers) == set(range(1, 81))
     assert set(slab.residue_numbers) == set(range(1, 13))
     assert_allclose(slab.basis_vectors - np.diag(np.diag(slab.basis_vectors)), 0.0)
-    assert slab.basis_vectors[2, 2] == pytest.approx(
-        np.ptp(slab.cartesian_coordinates[:, 2]) + 30.0
+    assert slab.basis_vectors[1, 1] == pytest.approx(
+        np.ptp(slab.cartesian_coordinates[:, 1]) + 30.0
+    )
+
+
+def test_slab_chain_numbering_starts_at_requested_face_and_increases_with_x() -> None:
+    definition = load_allomorph("i_beta")
+    chains_per_layer = 4
+    slab = build_chain_parallel_slab(
+        definition,
+        MillerIndex(1, 1, 0),
+        layers=3,
+        chains_per_layer=chains_per_layer,
+        degree_polymerization=2,
+        vacuum=10.0,
+    )
+    chain_numbers = np.asarray(slab.chain_numbers)
+    centers = {
+        chain: np.mean(slab.cartesian_coordinates[chain_numbers == chain], axis=0)
+        for chain in range(1, 13)
+    }
+
+    first_layer_y = [centers[chain][1] for chain in range(1, 5)]
+    second_layer_y = [centers[chain][1] for chain in range(5, 9)]
+    assert max(first_layer_y) < min(second_layer_y)
+    assert [centers[chain][0] for chain in range(1, 5)] == sorted(
+        centers[chain][0] for chain in range(1, 5)
     )
 
 
@@ -152,8 +303,8 @@ def test_i_beta_chain_parallel_faces_make_complete_aligned_slabs(
     assert len(set(slab.chain_numbers)) == 15
     assert set(slab.residue_numbers) == {1, 2, 3, 4}
     assert_allclose(slab.basis_vectors - np.diag(np.diag(slab.basis_vectors)), 0.0)
-    assert slab.basis_vectors[2, 2] == pytest.approx(
-        np.ptp(slab.cartesian_coordinates[:, 2]) + 12.0
+    assert slab.basis_vectors[1, 1] == pytest.approx(
+        np.ptp(slab.cartesian_coordinates[:, 1]) + 12.0
     )
 
 
@@ -181,6 +332,110 @@ def test_parallel_miller_indices_retain_distinct_plane_spacings() -> None:
     assert spacing_200 == pytest.approx(spacing_100 / 2.0)
     assert f"d_hkl={spacing_100:.6f} angstrom" in slab_100.annotations
     assert f"d_hkl={spacing_200:.6f} angstrom" in slab_200.annotations
+    assert "requested_face_chain_type=origin" in slab_100.annotations
+    assert "requested_face_chain_type=center" in slab_200.annotations
+    assert not np.allclose(slab_100.cartesian_coordinates, slab_200.cartesian_coordinates)
+
+
+def test_010_and_020_select_origin_and_center_terminations() -> None:
+    definition = load_allomorph("i_beta")
+
+    slab_010 = build_chain_parallel_slab(
+        definition,
+        MillerIndex(0, 1, 0),
+        layers=3,
+        chains_per_layer=4,
+        degree_polymerization=2,
+        vacuum=0.0,
+    )
+    slab_020 = build_chain_parallel_slab(
+        definition,
+        MillerIndex(0, 2, 0),
+        layers=3,
+        chains_per_layer=4,
+        degree_polymerization=2,
+        vacuum=0.0,
+    )
+
+    assert "requested_face_chain_type=origin" in slab_010.annotations
+    assert "requested_face_chain_type=center" in slab_020.annotations
+    assert not np.allclose(slab_010.cartesian_coordinates, slab_020.cartesian_coordinates)
+
+
+@pytest.mark.parametrize(
+    ("face", "vector_index"),
+    [((1, 0, 0), 1), ((2, 0, 0), 1), ((0, 1, 0), 0), ((0, 2, 0), 0)],
+)
+def test_axis_face_lateral_box_has_uniform_periodic_chain_spacing(
+    face: tuple[int, int, int], vector_index: int
+) -> None:
+    definition = load_allomorph("i_beta")
+    chains_per_layer = 8
+
+    slab = build_chain_parallel_slab(
+        definition,
+        MillerIndex(*face),
+        layers=3,
+        chains_per_layer=chains_per_layer,
+        degree_polymerization=2,
+        vacuum=0.0,
+    )
+
+    expected_spacing = np.linalg.norm(definition.unit_cell.vectors()[vector_index])
+    chain_numbers = np.asarray(slab.chain_numbers)
+    first_layer_centers = np.asarray(
+        [
+            np.mean(slab.cartesian_coordinates[chain_numbers == chain], axis=0)
+            for chain in range(1, chains_per_layer + 1)
+        ]
+    )
+    x_centers = np.sort(first_layer_centers[:, 0])
+    assert_allclose(np.diff(x_centers), expected_spacing, atol=1e-6)
+    boundary_spacing = slab.basis_vectors[0, 0] - x_centers[-1] + x_centers[0]
+    assert boundary_spacing == pytest.approx(expected_spacing, abs=1e-6)
+    assert slab.basis_vectors[0, 0] == pytest.approx(chains_per_layer * expected_spacing, abs=1e-6)
+
+
+def test_physical_slab_dimensions_round_up_to_complete_components() -> None:
+    definition = load_allomorph("i_beta")
+
+    slab = build_slab_by_dimensions(
+        definition,
+        MillerIndex(1, 1, 0),
+        width=40.0,
+        thickness=18.0,
+        length=25.0,
+        vacuum=10.0,
+    )
+
+    assert slab.basis_vectors[0, 0] >= 40.0
+    assert slab.basis_vectors[1, 1] - 10.0 >= 18.0
+    assert slab.basis_vectors[2, 2] >= 25.0
+    assert slab.replication == (7, 4, 3)
+    assert "size_mode=physical_dimensions" in slab.annotations
+    assert any(
+        annotation.startswith("requested_width=40.000000") for annotation in slab.annotations
+    )
+
+
+@pytest.mark.parametrize(
+    ("width", "thickness", "length"),
+    [(0.0, 10.0, 10.0), (10.0, -1.0, 10.0), (10.0, 10.0, float("nan"))],
+)
+def test_physical_slab_dimensions_must_be_positive(
+    width: float, thickness: float, length: float
+) -> None:
+    definition = load_allomorph("i_beta")
+
+    with pytest.raises(ValueError, match="finite positive"):
+        build_slab_by_dimensions(
+            definition,
+            MillerIndex(1, 1, 0),
+            width=width,
+            thickness=thickness,
+            length=length,
+            vacuum=0.0,
+        )
 
 
 def test_si_wetting_reference_slab_counts() -> None:
@@ -200,9 +455,9 @@ def test_si_wetting_reference_slab_counts() -> None:
     assert len(set(zip(slab.chain_numbers, slab.residue_numbers, strict=True))) == 4_800
     chain_numbers = np.asarray(slab.chain_numbers)
     chain_centers = [
-        np.mean(slab.cartesian_coordinates[chain_numbers == chain], axis=0) for chain in (0, 1, 100)
+        np.mean(slab.cartesian_coordinates[chain_numbers == chain], axis=0) for chain in (1, 2, 101)
     ]
     assert_allclose(chain_centers[1][0] - chain_centers[0][0], 5.964480, atol=1e-6)
-    assert_allclose(chain_centers[2][0] - chain_centers[0][0], -0.279393, atol=1e-6)
-    assert_allclose(chain_centers[2][2] - chain_centers[0][2], 5.316996, atol=1e-6)
-    assert np.count_nonzero(chain_numbers == 0) == 252
+    assert_allclose(chain_centers[2][0] - chain_centers[0][0], 0.279393, atol=1e-6)
+    assert_allclose(chain_centers[2][1] - chain_centers[0][1], 5.316996, atol=1e-6)
+    assert np.count_nonzero(chain_numbers == 1) == 252

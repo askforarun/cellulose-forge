@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 
@@ -19,6 +19,35 @@ _ORTHOGONAL_TOLERANCE = 1e-10
 _NONZERO_VECTOR_TOLERANCE = 1e-12
 _PDB_CHAIN_IDENTIFIERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 _LAYER_TOLERANCE = 1e-6
+_MAX_SLAB_DISCRETE_COUNT = 10_000
+_I_BETA_TERMINATION_BY_FACE = {
+    (1, 0, 0): 0,
+    (-1, 0, 0): 0,
+    (2, 0, 0): 1,
+    (-2, 0, 0): 1,
+    (0, 1, 0): 0,
+    (0, -1, 0): 0,
+    (0, 2, 0): 1,
+    (0, -2, 0): 1,
+}
+_I_BETA_CHAIN_TYPE_NAMES = ("origin", "center")
+_FIBRIL_FRAGMENT_IDS = {
+    "I-alpha": (
+        2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+        33, 34, 36, 37, 38, 39,
+    ),
+    "I-beta": (
+        18, 27, 36, 10, 19, 28, 37, 11, 20, 29, 38, 47, 3, 12,
+        21, 30, 39, 48, 4, 13, 22, 31, 40, 49, 5, 14, 23, 32,
+        41, 15, 24, 33, 42, 16, 25, 34,
+    ),
+    "II": (
+        3, 4, 5, 6, 7, 8, 9, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+        23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 41,
+        42, 43, 44, 45, 46, 47,
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -57,6 +86,9 @@ class BulkCrystal:
         if self.chain_numbers and len(self.chain_numbers) != len(coordinates):
             msg = "chain numbers and Cartesian coordinates must have equal lengths"
             raise ValueError(msg)
+        if self.chain_numbers and min(self.chain_numbers) < 1:
+            msg = "chain numbers must be one-based positive integers"
+            raise ValueError(msg)
         if any(value < 1 for value in self.replication):
             msg = "replication values must be positive integers"
             raise ValueError(msg)
@@ -92,11 +124,20 @@ def build_unit_cell(allomorph: AllomorphDefinition) -> BulkCrystal:
     chain_ids: list[str] = []
     residue_numbers: list[int] = []
     residues_per_asymmetric_unit = len(asymmetric.chain_labels)
+    residues_per_chain = {
+        chain_name: asymmetric.chain_labels.count(chain_name) for chain_name in chain_names
+    }
     for operation_index in range(operation_count):
+        chain_residue_counts = dict.fromkeys(chain_names, 0)
         for residue_index in range(residues_per_asymmetric_unit):
             chain_name = asymmetric.chain_labels[residue_index]
+            chain_residue_counts[chain_name] += 1
             chain_ids.extend([chain_letters[chain_name]] * asymmetric.residue_atom_count)
-            residue_numbers.extend([operation_index + 1] * asymmetric.residue_atom_count)
+            residue_number = (
+                operation_index * residues_per_chain[chain_name]
+                + chain_residue_counts[chain_name]
+            )
+            residue_numbers.extend([residue_number] * asymmetric.residue_atom_count)
 
     return BulkCrystal(
         allomorph=allomorph.name,
@@ -107,7 +148,8 @@ def build_unit_cell(allomorph: AllomorphDefinition) -> BulkCrystal:
         replication=(1, 1, 1),
         chain_ids=tuple(chain_ids),
         residue_numbers=tuple(residue_numbers),
-        chain_numbers=tuple(0 if chain_id == "A" else 1 for chain_id in chain_ids),
+        chain_numbers=tuple(1 if chain_id == "A" else 2 for chain_id in chain_ids),
+        annotations=_allomorph_chain_annotations(allomorph),
     )
 
 
@@ -128,8 +170,14 @@ def build_bulk_crystal(
         raise ValueError(msg)
 
     nx, ny, nz = replication
+    cell_counts = replication
     chains_per_cell = len(dict.fromkeys(allomorph.asymmetric_unit.chain_labels))
-    transverse_chain_count = nx * ny * chains_per_cell
+    transverse_axes = tuple(axis for axis in range(3) if axis != allomorph.chain_axis)
+    transverse_chain_count = (
+        cell_counts[transverse_axes[0]]
+        * cell_counts[transverse_axes[1]]
+        * chains_per_cell
+    )
     if transverse_chain_count > len(_PDB_CHAIN_IDENTIFIERS):
         msg = (
             "diagnostic PDB chain identifiers support at most 62 transverse "
@@ -139,6 +187,11 @@ def build_bulk_crystal(
 
     unit_cell = build_unit_cell(allomorph)
     unit_vectors = allomorph.unit_cell.vectors()
+    unit_coordinates = _unwrap_unit_cell_chains(
+        unit_cell,
+        unit_vectors,
+        chain_axis=allomorph.chain_axis,
+    )
     unit_chain_order = tuple(dict.fromkeys(unit_cell.chain_ids))
     unit_chain_indices = {chain_id: index for index, chain_id in enumerate(unit_chain_order)}
     residues_per_chain_per_cell = max(unit_cell.residue_numbers)
@@ -152,10 +205,14 @@ def build_bulk_crystal(
         for j in range(ny):
             for i in range(nx):
                 translation = i * unit_vectors[0] + j * unit_vectors[1] + k * unit_vectors[2]
-                coordinate_blocks.append(unit_cell.cartesian_coordinates + translation)
+                coordinate_blocks.append(unit_coordinates + translation)
                 atom_labels.extend(unit_cell.atom_labels)
 
-                transverse_cell_index = j * nx + i
+                cell_indices = (i, j, k)
+                transverse_cell_index = (
+                    cell_indices[transverse_axes[0]]
+                    + cell_counts[transverse_axes[0]] * cell_indices[transverse_axes[1]]
+                )
                 for chain_id, residue_number in zip(
                     unit_cell.chain_ids, unit_cell.residue_numbers, strict=True
                 ):
@@ -163,8 +220,11 @@ def build_bulk_crystal(
                         transverse_cell_index * chains_per_cell + unit_chain_indices[chain_id]
                     )
                     chain_ids.append(_PDB_CHAIN_IDENTIFIERS[chain_index])
-                    chain_numbers.append(chain_index)
-                    residue_numbers.append(residue_number + k * residues_per_chain_per_cell)
+                    chain_numbers.append(chain_index + 1)
+                    residue_numbers.append(
+                        residue_number
+                        + cell_indices[allomorph.chain_axis] * residues_per_chain_per_cell
+                    )
 
     scale = np.asarray(replication, dtype=np.float64)[:, np.newaxis]
     return BulkCrystal(
@@ -177,6 +237,241 @@ def build_bulk_crystal(
         chain_ids=tuple(chain_ids),
         residue_numbers=tuple(residue_numbers),
         chain_numbers=tuple(chain_numbers),
+        annotations=_allomorph_chain_annotations(allomorph),
+    )
+
+
+def _allomorph_chain_annotations(allomorph: AllomorphDefinition) -> tuple[str, ...]:
+    """Return machine-readable chain-axis and direction annotations."""
+    axis_name = ("a", "b", "c")[allomorph.chain_axis]
+    directions = dict(
+        zip(
+            allomorph.asymmetric_unit.chain_labels,
+            allomorph.asymmetric_unit.chain_directions,
+            strict=True,
+        )
+    )
+    direction_text = ",".join(
+        f"{label}:{'+' if direction > 0 else '-'}{axis_name}"
+        for label, direction in directions.items()
+    )
+    return f"chain_axis={axis_name}", f"chain_directions={direction_text}"
+
+
+def _unwrap_unit_cell_chains(
+    unit_cell: BulkCrystal,
+    unit_vectors: FloatArray,
+    *,
+    chain_axis: int,
+) -> FloatArray:
+    """Make sequential residues whole across transverse unit-cell boundaries.
+
+    Crystallographic symmetry can place consecutive residues of one cellulose
+    chain in neighbouring transverse images.  Molecular topology generation
+    requires one consistent image of each chain, so choose integer ``a``/``b``
+    translations that minimize the lateral displacement between consecutive
+    C1 atoms.  Replication along ``c`` is applied only after this operation.
+    """
+    coordinates = unit_cell.cartesian_coordinates.copy()
+    labels = np.asarray(unit_cell.atom_labels)
+    chains = np.asarray(unit_cell.chain_numbers)
+    residues = np.asarray(unit_cell.residue_numbers)
+    chain_vector = unit_vectors[chain_axis] / np.linalg.norm(unit_vectors[chain_axis])
+    transverse_axes = tuple(axis for axis in range(3) if axis != chain_axis)
+    transverse_translations = tuple(
+        i * unit_vectors[transverse_axes[0]] + j * unit_vectors[transverse_axes[1]]
+        for i in range(-2, 3)
+        for j in range(-2, 3)
+    )
+
+    for chain_number in dict.fromkeys(unit_cell.chain_numbers):
+        residue_order = tuple(dict.fromkeys(residues[chains == chain_number]))
+        previous_anchor: FloatArray | None = None
+        for residue_number in residue_order:
+            residue_mask = (chains == chain_number) & (residues == residue_number)
+            anchor_indices = np.flatnonzero(residue_mask & (labels == "C1"))
+            if len(anchor_indices) != 1:
+                msg = "each crystallographic cellulose residue must contain exactly one C1 atom"
+                raise ValueError(msg)
+            anchor = coordinates[anchor_indices[0]]
+            if previous_anchor is not None:
+                translation = min(
+                    transverse_translations,
+                    key=lambda candidate: np.linalg.norm(
+                        (anchor + candidate - previous_anchor)
+                        - np.dot(anchor + candidate - previous_anchor, chain_vector) * chain_vector
+                    ),
+                )
+                coordinates[residue_mask] += translation
+                anchor = anchor + translation
+            previous_anchor = anchor
+
+    coordinates.setflags(write=False)
+    return coordinates
+
+
+def build_36_chain_fibril(  # noqa: PLR0912, PLR0915
+    allomorph: AllomorphDefinition,
+    *,
+    degree_polymerization: int,
+    vacuum: float,
+    chain_boundary: str = "finite",
+) -> BulkCrystal:
+    """Build the literature-defined 36-chain elementary fibril.
+
+    The transverse chain selections reproduce the explicit fragment lists in
+    Cellulose-Builder. They are discrete, allomorph-specific arrangements and
+    are deliberately not approximated as regular hexagons.
+    """
+    if allomorph.name not in _FIBRIL_FRAGMENT_IDS:
+        msg = (
+            f"the 36-chain fibril is not defined for cellulose {allomorph.name}; "
+            "the reference Cellulose-Builder supports I-alpha, I-beta, and II"
+        )
+        raise ValueError(msg)
+    if (
+        not isinstance(degree_polymerization, int)
+        or isinstance(degree_polymerization, bool)
+        or degree_polymerization < 1
+    ):
+        msg = "degree of polymerization must be a positive integer"
+        raise ValueError(msg)
+    if degree_polymerization % 2:
+        msg = "the crystallographic 36-chain fibril requires an even degree of polymerization"
+        raise ValueError(msg)
+    if chain_boundary not in {"finite", "periodic"}:
+        msg = "chain boundary must be 'finite' or 'periodic'"
+        raise ValueError(msg)
+    if not np.isfinite(vacuum) or vacuum < 0:
+        msg = "vacuum must be a finite, nonnegative angstrom value"
+        raise ValueError(msg)
+
+    cellobiose_units = degree_polymerization // 2
+    vectors = allomorph.unit_cell.vectors()
+    unit_cell = build_unit_cell(allomorph)
+    unit_coordinates = _unwrap_unit_cell_chains(
+        unit_cell,
+        vectors,
+        chain_axis=allomorph.chain_axis,
+    )
+    unit_chain_order = tuple(dict.fromkeys(unit_cell.chain_numbers))
+    templates = {
+        chain_number: (
+            unit_coordinates[np.asarray(unit_cell.chain_numbers) == chain_number],
+            tuple(
+                label
+                for label, number in zip(
+                    unit_cell.atom_labels, unit_cell.chain_numbers, strict=True
+                )
+                if number == chain_number
+            ),
+            tuple(
+                residue
+                for residue, number in zip(
+                    unit_cell.residue_numbers, unit_cell.chain_numbers, strict=True
+                )
+                if number == chain_number
+            ),
+        )
+        for chain_number in unit_chain_order
+    }
+    direction_by_chain = {
+        index + 1: direction
+        for index, direction in enumerate(
+            dict(
+                zip(
+                    allomorph.asymmetric_unit.chain_labels,
+                    allomorph.asymmetric_unit.chain_directions,
+                    strict=True,
+                )
+            ).values()
+        )
+    }
+
+    candidates: list[tuple[int, FloatArray]] = []
+    if allomorph.name == "I-alpha":
+        for k in range(7):
+            candidates.extend((1, j * vectors[1] + k * vectors[2]) for j in range(6))
+    else:
+        nx, ny = (5, 7) if allomorph.name == "I-beta" else (7, 5)
+        for j in range(ny):
+            for i in range(nx):
+                translation = i * vectors[0] + j * vectors[1]
+                candidates.append((1, translation))
+                if i < nx - 1 and j < ny - 1:
+                    candidates.append((2, translation))
+
+    fragment_ids = _FIBRIL_FRAGMENT_IDS[allomorph.name]
+    selected = [candidates[fragment_id] for fragment_id in fragment_ids]
+    coordinate_blocks: list[FloatArray] = []
+    atom_labels: list[str] = []
+    chain_ids: list[str] = []
+    chain_numbers: list[int] = []
+    residue_numbers: list[int] = []
+    for chain_index, (template_number, transverse_translation) in enumerate(selected):
+        template, labels, template_residues = templates[template_number]
+        direction = direction_by_chain[template_number]
+        for repeat in range(cellobiose_units):
+            translation = (
+                transverse_translation
+                + repeat * direction * vectors[allomorph.chain_axis]
+            )
+            coordinate_blocks.append(template + translation)
+            atom_labels.extend(labels)
+            chain_number = chain_index + 1
+            chain_ids.extend([_PDB_CHAIN_IDENTIFIERS[chain_index]] * len(template))
+            chain_numbers.extend([chain_number] * len(template))
+            residue_numbers.extend(
+                residue + 2 * repeat for residue in template_residues
+            )
+
+    chain_vector = vectors[allomorph.chain_axis]
+    chain_axis = chain_vector / np.linalg.norm(chain_vector)
+    transverse_axis = next(axis for axis in range(3) if axis != allomorph.chain_axis)
+    surface_x = vectors[transverse_axis] - np.dot(
+        vectors[transverse_axis], chain_axis
+    ) * chain_axis
+    surface_x /= np.linalg.norm(surface_x)
+    surface_y = np.cross(chain_axis, surface_x)
+    axes = np.vstack([surface_x, surface_y, chain_axis])
+    projected = np.vstack(coordinate_blocks) @ axes.T
+    projected[:, 0] -= float(np.min(projected[:, 0])) - vacuum / 2.0
+    projected[:, 1] -= float(np.min(projected[:, 1])) - vacuum / 2.0
+    projected[:, 2] -= float(np.min(projected[:, 2]))
+    extents = np.ptp(projected, axis=0)
+    basis = np.diag(
+        [
+            float(extents[0]) + vacuum,
+            float(extents[1]) + vacuum,
+            float(np.linalg.norm(chain_vector)) * cellobiose_units,
+        ]
+    )
+    replication_values = [1, 1, 1]
+    replication_values[allomorph.chain_axis] = cellobiose_units
+    replication = (
+        replication_values[0],
+        replication_values[1],
+        replication_values[2],
+    )
+    return BulkCrystal(
+        allomorph=allomorph.name,
+        space_group="P1",
+        atom_labels=tuple(atom_labels),
+        cartesian_coordinates=projected,
+        basis_vectors=basis,
+        replication=replication,
+        chain_ids=tuple(chain_ids),
+        residue_numbers=tuple(residue_numbers),
+        chain_numbers=tuple(chain_numbers),
+        annotations=(
+            "shape=fibril fibril_model=36-chain total_chains=36",
+            f"degree_polymerization={degree_polymerization} cellobiose_units={cellobiose_units}",
+            f"chain_boundary={chain_boundary}",
+            f"vacuum={vacuum:.6f} angstrom transverse_total_padding",
+            "chains aligned with Cartesian z",
+            "legacy_fragment_ids=" + ",".join(str(value) for value in fragment_ids),
+            "source=Gomes_and_Skaf_2012_Cellulose-Builder doi:10.1002/jcc.22959",
+        ),
     )
 
 
@@ -188,6 +483,7 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
     chains_per_layer: int,
     degree_polymerization: int,
     vacuum: float,
+    chain_boundary: str = "finite",
 ) -> BulkCrystal:
     """Build a complete-residue slab for a chain-parallel ``(h k 0)`` face.
 
@@ -195,13 +491,18 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
     wetting reference systems. Chains in a layer are spaced by ``(a-b)/2``;
     successive layers alternate origin and center chains and advance by
     ``(a+b)/2``. The chain direction follows ``c`` and the requested face
-    normal is oriented along Cartesian z.
+    normal is oriented along Cartesian -y and the cellulose chains along z.
+    This is equivalent to a +90 degree rotation about x from the wetting-system
+    convention and gives a direct side view in common molecular viewers.
     """
     if allomorph.name != "I-beta":
         msg = "the initial slab builder supports cellulose I-beta only"
         raise ValueError(msg)
     if face.l != 0:
         msg = "I-beta slab faces must be parallel to the cellulose chain axis (l = 0)"
+        raise ValueError(msg)
+    if chain_boundary not in {"finite", "periodic"}:
+        msg = "chain boundary must be 'finite' or 'periodic'"
         raise ValueError(msg)
     if any(
         not isinstance(value, int) or isinstance(value, bool) or value < 1
@@ -224,6 +525,7 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
             chains_per_layer=chains_per_layer,
             degree_polymerization=degree_polymerization,
             vacuum=vacuum,
+            chain_boundary=chain_boundary,
         )
 
     vectors = allomorph.unit_cell.vectors()
@@ -244,7 +546,7 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
 
     unit_cell = build_unit_cell(allomorph)
     chain_repeats = degree_polymerization // 2
-    axes = np.vstack([surface_x, chain_axis, normal])
+    axes = np.vstack([surface_x, -normal, chain_axis])
     coordinate_blocks: list[FloatArray] = []
     atom_labels: list[str] = []
     chain_ids: list[str] = []
@@ -260,13 +562,14 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
     origin_labels = tuple(unit_cell.atom_labels[index] for index in origin_indices)
     center_labels = tuple(unit_cell.atom_labels[index] for index in center_indices)
 
-    for layer in range(layers):
-        is_center_layer = bool(layer % 2)
+    for output_layer, crystal_layer in enumerate(reversed(range(layers))):
+        is_center_layer = bool(crystal_layer % 2)
         template = center_template if is_center_layer else origin_template
         template_labels = center_labels if is_center_layer else origin_labels
-        layer_translation = (layer // 2) * (vectors[0] + vectors[1])
+        layer_translation = (crystal_layer // 2) * (vectors[0] + vectors[1])
         for surface_chain in range(chains_per_layer):
-            chain_index = layer * chains_per_layer + surface_chain
+            chain_index = output_layer * chains_per_layer + surface_chain
+            chain_number = chain_index + 1
             chain_id = _PDB_CHAIN_IDENTIFIERS[chain_index % len(_PDB_CHAIN_IDENTIFIERS)]
             surface_translation = surface_chain * in_plane_vector
             for chain_cell in range(chain_repeats):
@@ -274,18 +577,18 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
                 coordinate_blocks.append(template + translation)
                 atom_labels.extend(template_labels)
                 chain_ids.extend([chain_id] * len(template))
-                chain_numbers.extend([chain_index] * len(template))
+                chain_numbers.extend([chain_number] * len(template))
                 first_residue = 2 * chain_cell + 1
                 residue_numbers.extend([first_residue] * residue_atoms)
                 residue_numbers.extend([first_residue + 1] * residue_atoms)
 
     projected = np.vstack(coordinate_blocks) @ axes.T
     projected[:, 0] -= float(np.min(projected[:, 0]))
-    projected[:, 1] -= float(np.min(projected[:, 1]))
-    projected[:, 2] -= float(np.min(projected[:, 2])) - vacuum / 2.0
-    slab_extent = float(np.ptp(projected[:, 2]))
+    projected[:, 1] -= float(np.min(projected[:, 1])) - vacuum / 2.0
+    projected[:, 2] -= float(np.min(projected[:, 2]))
+    slab_extent = float(np.ptp(projected[:, 1]))
     chain_length = float(np.linalg.norm(vectors[2])) * chain_repeats
-    basis = np.diag([in_plane_length * chains_per_layer, chain_length, slab_extent + vacuum])
+    basis = np.diag([in_plane_length * chains_per_layer, slab_extent + vacuum, chain_length])
     return BulkCrystal(
         allomorph=allomorph.name,
         space_group="P1",
@@ -300,14 +603,100 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
             f"shape=slab face=({face.h},{face.k},{face.l}) layers={layers}",
             f"chains_per_layer={chains_per_layer} total_chains={chain_count}",
             f"degree_polymerization={degree_polymerization}",
+            f"chain_boundary={chain_boundary}",
             f"d_hkl={face.spacing(allomorph.unit_cell):.6f} angstrom",
             f"vacuum={vacuum:.6f} angstrom",
-            "surface normal aligned with Cartesian z",
+            "surface normal aligned with Cartesian -y; chains aligned with Cartesian z",
+            "chain numbering starts at requested low-y face; within each layer low-x to high-x",
         ),
     )
 
 
-def _build_exploratory_chain_parallel_slab(  # noqa: PLR0913, PLR0915
+def build_slab_by_dimensions(  # noqa: PLR0913
+    allomorph: AllomorphDefinition,
+    face: MillerIndex,
+    *,
+    width: float,
+    thickness: float,
+    length: float,
+    vacuum: float,
+    chain_boundary: str = "finite",
+) -> BulkCrystal:
+    """Build a slab meeting or exceeding requested physical dimensions.
+
+    Dimensions are in angstrom. Width follows Cartesian x, thickness follows
+    the surface-normal Cartesian y direction, and length follows the cellulose
+    chains along Cartesian z. Counts are rounded upward so no chain, molecular
+    layer, or crystallographic cellobiose repeat is cut.
+    """
+    requested = (width, thickness, length)
+    if any(not np.isfinite(value) or value <= 0 for value in requested):
+        msg = "slab width, thickness, and length must be finite positive angstrom values"
+        raise ValueError(msg)
+    if not np.isfinite(vacuum) or vacuum < 0:
+        msg = "vacuum must be a finite, nonnegative angstrom value"
+        raise ValueError(msg)
+
+    chain_repeat_length = float(np.linalg.norm(allomorph.unit_cell.vectors()[2]))
+    chain_repeats = max(1, int(np.ceil(length / chain_repeat_length)))
+    degree_polymerization = 2 * chain_repeats
+
+    def probe(layers: int, chains: int) -> BulkCrystal:
+        return build_chain_parallel_slab(
+            allomorph,
+            face,
+            layers=layers,
+            chains_per_layer=chains,
+            degree_polymerization=2,
+            vacuum=0.0,
+            chain_boundary=chain_boundary,
+        )
+
+    chains_per_layer = 1
+    while float(probe(1, chains_per_layer).basis_vectors[0, 0]) + _LAYER_TOLERANCE < width:
+        chains_per_layer += 1
+        if chains_per_layer > _MAX_SLAB_DISCRETE_COUNT:
+            msg = "requested slab width exceeds the supported discrete-chain search limit"
+            raise ValueError(msg)
+
+    layers = 1
+    while float(probe(layers, chains_per_layer).basis_vectors[1, 1]) + _LAYER_TOLERANCE < thickness:
+        layers += 1
+        if layers > _MAX_SLAB_DISCRETE_COUNT:
+            msg = "requested slab thickness exceeds the supported molecular-layer search limit"
+            raise ValueError(msg)
+
+    slab = build_chain_parallel_slab(
+        allomorph,
+        face,
+        layers=layers,
+        chains_per_layer=chains_per_layer,
+        degree_polymerization=degree_polymerization,
+        vacuum=vacuum,
+        chain_boundary=chain_boundary,
+    )
+    realized_width = float(slab.basis_vectors[0, 0])
+    realized_thickness = float(slab.basis_vectors[1, 1]) - vacuum
+    realized_length = float(slab.basis_vectors[2, 2])
+    return replace(
+        slab,
+        annotations=(
+            *slab.annotations,
+            "size_mode=physical_dimensions",
+            f"requested_width={width:.6f} angstrom realized_width={realized_width:.6f} angstrom",
+            (
+                f"requested_thickness={thickness:.6f} angstrom "
+                f"realized_thickness={realized_thickness:.6f} angstrom"
+            ),
+            (
+                f"requested_length={length:.6f} angstrom "
+                f"realized_length={realized_length:.6f} angstrom"
+            ),
+        ),
+    )
+
+
+def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     allomorph: AllomorphDefinition,
     face: MillerIndex,
     *,
@@ -315,6 +704,7 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0913, PLR0915
     chains_per_layer: int,
     degree_polymerization: int,
     vacuum: float,
+    chain_boundary: str,
 ) -> BulkCrystal:
     """Build an exploratory I-beta slab by selecting complete lattice chains.
 
@@ -328,7 +718,7 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0913, PLR0915
     chain_axis = vectors[2] / np.linalg.norm(vectors[2])
     surface_x = np.cross(chain_axis, normal)
     surface_x /= np.linalg.norm(surface_x)
-    axes = np.vstack([surface_x, chain_axis, normal])
+    axes = np.vstack([surface_x, -normal, chain_axis])
 
     unit_cell = build_unit_cell(allomorph)
     residue_atoms = allomorph.asymmetric_unit.residue_atom_count
@@ -373,10 +763,27 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0913, PLR0915
         raise ValueError(msg)
 
     middle = len(eligible_rows) // 2
-    start = max(0, min(middle - layers // 2, len(eligible_rows) - layers))
+    ideal_start = max(0, min(middle - layers // 2, len(eligible_rows) - layers))
+    requested_termination = _I_BETA_TERMINATION_BY_FACE.get(face.values)
+    if requested_termination is None:
+        start = ideal_start
+    else:
+        possible_starts = [
+            candidate_start
+            for candidate_start in range(len(eligible_rows) - layers + 1)
+            if any(
+                candidate[2] == requested_termination
+                for candidate in eligible_rows[candidate_start + layers - 1]
+            )
+        ]
+        if not possible_starts:
+            chain_type = _I_BETA_CHAIN_TYPE_NAMES[requested_termination]
+            msg = f"could not expose the required {chain_type}-chain termination for {face.values}"
+            raise ValueError(msg)
+        start = min(possible_starts, key=lambda value: (abs(value - ideal_start), value))
     selected_rows = eligible_rows[start : start + layers]
     selected: list[tuple[float, float, int, int, int]] = []
-    for row in selected_rows:
+    for row in reversed(selected_rows):
         row.sort(key=lambda item: (item[1], item[2], item[3], item[4]))
         row_middle = len(row) // 2
         row_start = max(0, min(row_middle - chains_per_layer // 2, len(row) - chains_per_layer))
@@ -389,6 +796,7 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0913, PLR0915
     chain_numbers: list[int] = []
     residue_numbers: list[int] = []
     for chain_index, (_, _, template_index, i, j) in enumerate(selected):
+        chain_number = chain_index + 1
         chain_id = _PDB_CHAIN_IDENTIFIERS[chain_index % len(_PDB_CHAIN_IDENTIFIERS)]
         transverse_translation = i * vectors[0] + j * vectors[1]
         template = templates[template_index]
@@ -398,18 +806,32 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0913, PLR0915
             coordinate_blocks.append(template + translation)
             atom_labels.extend(labels)
             chain_ids.extend([chain_id] * len(template))
-            chain_numbers.extend([chain_index] * len(template))
+            chain_numbers.extend([chain_number] * len(template))
             first_residue = 2 * chain_cell + 1
             residue_numbers.extend([first_residue] * residue_atoms)
             residue_numbers.extend([first_residue + 1] * residue_atoms)
 
     projected = np.vstack(coordinate_blocks) @ axes.T
     projected[:, 0] -= float(np.min(projected[:, 0]))
-    projected[:, 1] -= float(np.min(projected[:, 1]))
-    projected[:, 2] -= float(np.min(projected[:, 2])) - vacuum / 2.0
+    projected[:, 1] -= float(np.min(projected[:, 1])) - vacuum / 2.0
+    projected[:, 2] -= float(np.min(projected[:, 2]))
     extents = np.ptp(projected, axis=0)
     chain_length = float(np.linalg.norm(vectors[2])) * chain_repeats
-    basis = np.diag([float(extents[0]), chain_length, float(extents[2]) + vacuum])
+    if face.k == 0:
+        surface_repeat_length = float(np.linalg.norm(vectors[1]))
+    elif face.h == 0:
+        surface_repeat_length = float(np.linalg.norm(vectors[0]))
+    else:
+        surface_repeat_length = float(extents[0]) / chains_per_layer
+    periodic_width = surface_repeat_length * chains_per_layer
+    basis = np.diag([periodic_width, float(extents[1]) + vacuum, chain_length])
+    termination_annotations: tuple[str, ...] = ()
+    if requested_termination is not None:
+        chain_type = _I_BETA_CHAIN_TYPE_NAMES[requested_termination]
+        termination_annotations = (
+            f"requested_face_chain_type={chain_type}",
+            "requested face is the low-y surface",
+        )
     return BulkCrystal(
         allomorph=allomorph.name,
         space_group="P1",
@@ -424,9 +846,13 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0913, PLR0915
             f"shape=slab face=({face.h},{face.k},{face.l}) layers={layers}",
             f"chains_per_layer={chains_per_layer} total_chains={len(selected)}",
             f"degree_polymerization={degree_polymerization}",
+            f"chain_boundary={chain_boundary}",
             f"d_hkl={face.spacing(allomorph.unit_cell):.6f} angstrom",
             f"vacuum={vacuum:.6f} angstrom",
-            "surface normal aligned with Cartesian z",
+            f"lateral_repeat={surface_repeat_length:.6f} angstrom",
+            "surface normal aligned with Cartesian -y; chains aligned with Cartesian z",
+            "chain numbering starts at requested low-y face; within each layer low-x to high-x",
             "validation=exploratory; independent surface reference pending",
+            *termination_annotations,
         ),
     )

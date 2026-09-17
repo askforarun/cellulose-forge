@@ -1,0 +1,64 @@
+{
+  "allomorph": "III-I",
+  "space_group": "P2_1",
+  "chain_axis": "c",
+  "provenance": {
+    "citation": "Wada, M.; Chanzy, H.; Nishiyama, Y.; Langan, P. Macromolecules 2004, 37, 8548-8555.",
+    "doi": "10.1021/ma0485585",
+    "transcribed_from": "legacy/cellulose-builder-2013/asy_III_I, dimensions_III_I, atomtypes_III_I (Gomes & Skaf, J. Comput. Chem. 2012, 33, 1338-1346, DOI: 10.1002/jcc.22959)"
+  },
+  "unit_cell": {
+    "a": 4.450,
+    "b": 7.850,
+    "c": 10.310,
+    "alpha_deg": 90.0,
+    "beta_deg": 90.0,
+    "gamma_deg": 105.10,
+    "length_unit": "angstrom"
+  },
+  "symmetry_operations": [
+    {
+      "name": "identity",
+      "rotation": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+      "translation": [0.0, 0.0, 0.0]
+    },
+    {
+      "name": "P2_1_screw",
+      "rotation": [[-1, 0, 0], [0, -1, 0], [0, 0, 1]],
+      "translation": [0.0, 0.0, 0.5]
+    }
+  ],
+  "asymmetric_unit": {
+    "description": "One fully hydrogenated 21-atom anhydroglucose residue. The P2_1 operation generates the second residue of the single chain in the unit cell.",
+    "residue_atom_count": 21,
+    "chain_labels": ["chain"],
+    "chain_directions": [1],
+    "atom_labels": [
+      "C1", "C2", "C3", "C4", "C5", "C6", "O2", "O3", "O4", "O5", "O6",
+      "H1", "H2", "H3", "H4", "H5", "H61", "H62", "HO2", "HO3", "HO6"
+    ],
+    "fractional_coordinates": [
+      [0.050961, 0.057262, 0.380527],
+      [0.191389, 0.196135, 0.287129],
+      [0.047193, 0.160362, 0.153425],
+      [0.009263, -0.031267, 0.112801],
+      [-0.148745, -0.157932, 0.218384],
+      [-0.176129, -0.348168, 0.188882],
+      [0.181636, 0.366971, 0.331722],
+      [0.242720, 0.281823, 0.066537],
+      [-0.191038, -0.076143, 0.000711],
+      [0.038639, -0.114787, 0.333349],
+      [-0.238242, -0.451795, 0.303957],
+      [-0.164524, 0.062564, 0.393673],
+      [0.411219, 0.197152, 0.278760],
+      [-0.158495, 0.183912, 0.154995],
+      [0.213656, -0.050262, 0.093348],
+      [-0.356184, -0.141547, 0.235149],
+      [-0.342927, -0.390800, 0.126975],
+      [0.016046, -0.359921, 0.150091],
+      [0.400, 0.442, 0.330],
+      [0.150, 0.270, -0.020],
+      [-0.120, -0.540, 0.300]
+    ]
+  }
+}

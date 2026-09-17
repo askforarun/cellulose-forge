@@ -157,6 +157,7 @@ class AsymmetricUnit:
     fractional_coordinates: FloatArray
     residue_atom_count: int
     chain_labels: tuple[str, ...]
+    chain_directions: tuple[int, ...]
 
     def __post_init__(self) -> None:
         coordinates = np.asarray(self.fractional_coordinates, dtype=np.float64)
@@ -182,6 +183,17 @@ class AsymmetricUnit:
         if len(self.chain_labels) != residue_count:
             msg = f"chain_labels must contain {residue_count} entries"
             raise ValueError(msg)
+        if len(self.chain_directions) != residue_count or any(
+            direction not in (-1, 1) for direction in self.chain_directions
+        ):
+            msg = f"chain_directions must contain {residue_count} entries equal to -1 or 1"
+            raise ValueError(msg)
+        directions_by_chain: dict[str, int] = {}
+        for chain, direction in zip(self.chain_labels, self.chain_directions, strict=True):
+            if chain in directions_by_chain and directions_by_chain[chain] != direction:
+                msg = f"chain direction is inconsistent for chain label {chain!r}"
+                raise ValueError(msg)
+            directions_by_chain[chain] = direction
         coordinates.setflags(write=False)
         object.__setattr__(self, "fractional_coordinates", coordinates)
 
@@ -192,6 +204,7 @@ class AllomorphDefinition:
 
     name: str
     space_group: str
+    chain_axis: int
     unit_cell: UnitCell
     asymmetric_unit: AsymmetricUnit
     symmetry_operations: tuple[SpaceGroupOperation, ...]
@@ -201,6 +214,9 @@ class AllomorphDefinition:
     def __post_init__(self) -> None:
         if not self.name or not self.space_group or not self.symmetry_operations:
             msg = "allomorph name, space group, and symmetry operations are required"
+            raise ValueError(msg)
+        if self.chain_axis not in (0, 1, 2):
+            msg = "chain_axis must identify crystallographic a, b, or c"
             raise ValueError(msg)
 
 
@@ -235,6 +251,7 @@ def load_allomorph(name: str) -> AllomorphDefinition:
         fractional_coordinates=np.asarray(asy_payload["fractional_coordinates"], dtype=np.float64),
         residue_atom_count=int(asy_payload["residue_atom_count"]),
         chain_labels=tuple(cast(list[str], asy_payload["chain_labels"])),
+        chain_directions=tuple(cast(list[int], asy_payload["chain_directions"])),
     )
 
     operation_payloads = cast(list[dict[str, Any]], payload["symmetry_operations"])
@@ -251,6 +268,7 @@ def load_allomorph(name: str) -> AllomorphDefinition:
     return AllomorphDefinition(
         name=str(payload["allomorph"]),
         space_group=str(payload["space_group"]),
+        chain_axis={"a": 0, "b": 1, "c": 2}[str(payload["chain_axis"])],
         unit_cell=unit_cell,
         asymmetric_unit=asymmetric_unit,
         symmetry_operations=symmetry_operations,

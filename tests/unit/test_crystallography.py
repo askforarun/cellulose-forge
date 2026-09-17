@@ -39,6 +39,55 @@ def test_i_beta_cell_vectors_match_legacy_convention() -> None:
     )
 
 
+def test_i_alpha_definition_matches_published_triclinic_cell() -> None:
+    definition = load_allomorph("i_alpha")
+
+    assert definition.name == "I-alpha"
+    assert definition.space_group == "P1"
+    assert definition.chain_axis == 0
+    assert definition.doi == "10.1021/ja037055w"
+    assert definition.asymmetric_unit.fractional_coordinates.shape == (42, 3)
+    assert definition.asymmetric_unit.chain_labels == ("chain", "chain")
+    assert len(definition.symmetry_operations) == 1
+    assert definition.unit_cell.volume() == pytest.approx(333.3373941)
+    assert_allclose(
+        definition.unit_cell.vectors(),
+        [
+            [10.4, 0.0, 0.0],
+            [-2.81745964, 6.09754132, 0.0],
+            [-2.80633684, -0.19803391, 5.25649123],
+        ],
+        atol=1e-8,
+    )
+
+
+def test_iii_i_definition_matches_published_cell() -> None:
+    definition = load_allomorph("iii_i")
+
+    assert definition.name == "III-I"
+    assert definition.space_group == "P2_1"
+    assert definition.chain_axis == 2
+    assert definition.doi == "10.1021/ma0485585"
+    assert definition.asymmetric_unit.fractional_coordinates.shape == (21, 3)
+    assert definition.asymmetric_unit.chain_labels == ("chain",)
+    assert definition.asymmetric_unit.chain_directions == (1,)
+    assert definition.unit_cell.volume() == pytest.approx(347.7189023)
+
+
+def test_ii_definition_records_antiparallel_chains_and_missing_hydrogens() -> None:
+    definition = load_allomorph("ii")
+
+    assert definition.name == "II"
+    assert definition.space_group == "P2_1"
+    assert definition.chain_axis == 2
+    assert definition.doi == "10.1021/bm005612q"
+    assert definition.asymmetric_unit.fractional_coordinates.shape == (36, 3)
+    assert definition.asymmetric_unit.chain_labels == ("origin", "center")
+    assert definition.asymmetric_unit.chain_directions == (1, -1)
+    assert not {"HO2", "HO3", "HO6"}.intersection(definition.asymmetric_unit.atom_labels)
+    assert definition.unit_cell.volume() == pytest.approx(671.3133306)
+
+
 def test_fractional_cartesian_round_trip_for_triclinic_cell() -> None:
     cell = UnitCell(6.0, 7.0, 8.0, 75.0, 82.0, 68.0)
     fractional = np.array([[0.1, 0.2, 0.3], [-0.2, 1.1, 0.7]], dtype=np.float64)
