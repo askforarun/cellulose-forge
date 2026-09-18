@@ -75,7 +75,7 @@ Define the scientific meaning and boundaries of Version 1 before implementation.
 
 ### Purpose
 
-Establish a maintainable open-source Python project suitable for eventual JOSS submission.
+Establish a maintainable open-source Python project suitable for eventual SoftwareX submission.
 
 ### Proposed structure
 
@@ -95,7 +95,7 @@ cellulose-forge/
 |-- validation/
 |-- examples/
 |-- docs/
-|-- paper/
+|-- softwarex/
 |-- pyproject.toml
 |-- LICENSE
 |-- README.md
@@ -113,7 +113,7 @@ cellulose-forge/
 - Establish semantic versioning and a changelog.
 - Add contribution, support, and governance documentation.
 - Record architectural decisions in the public repository.
-- Maintain an AI-assistance log for the eventual JOSS disclosure.
+- Maintain an AI-assistance log for the eventual SoftwareX disclosure.
 
 ### Completion criteria
 
@@ -575,7 +575,7 @@ ibeta_4x4x5/
 
 ---
 
-## Phase 10 - Version 1 release and JOSS preparation
+## Phase 10 - Version 1 release and SoftwareX preparation
 
 ### Purpose
 
@@ -586,7 +586,7 @@ Release stable research software and prepare it for peer review.
 - Publish version `1.0.0`.
 - Archive the release and validation dataset on Zenodo.
 - Finalize `CITATION.cff`.
-- Add the JOSS `paper.md` and bibliography.
+- Complete the SoftwareX LaTeX manuscript and bibliography.
 - Document the statement of need and research significance.
 - Compare capabilities with Cellulose-Builder, doGlycans, and related tools.
 - Publish reproducible validation results and benchmarks.
@@ -598,7 +598,7 @@ Release stable research software and prepare it for peer review.
 
 - The public release is stable and archived with a DOI.
 - Continuous integration and documentation builds pass.
-- The JOSS checklist is satisfied.
+- The SoftwareX submission checklist is satisfied.
 - At least one independent user has reproduced a documented workflow if possible.
 
 ---
@@ -615,7 +615,7 @@ Release stable research software and prepare it for peer review.
 8. **M7 - GLYCAM complete:** every supported allomorph passes GLYCAM validation.
 9. **M8 - Shapes and periodicity:** fibrils, monolayers, and periodic chains are supported.
 10. **M9 - Validation:** the complete scientific validation matrix passes.
-11. **M10 - Release:** documentation, Version 1.0, archival, and JOSS materials are ready.
+11. **M10 - Release:** documentation, Version 1.0, archival, and SoftwareX materials are ready.
 
 ## First vertical prototype
 

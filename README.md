@@ -5,7 +5,7 @@ cellulose structures. It generates periodic bulk crystals, cellulose I-beta
 surface slabs, and literature-defined 36-chain fibrils. Supported systems can
 also be parameterized with GLYCAM06j-1 and written directly for GROMACS.
 
-> **Development status:** CelluloseForge is pre-alpha research software. The
+> **Release status:** CelluloseForge 1.0.0 is the initial stable release. Its
 > supported and validated boundaries below are intentionally narrower than the
 > long-term project plan.
 
@@ -47,7 +47,6 @@ branched glycans are not implemented in the current release.
 - [Large systems](#large-systems)
 - [Scientific conventions](#scientific-conventions)
 - [Development and testing](#development-and-testing)
-- [Citation and provenance](#citation-and-provenance)
 
 ## Requirements
 
@@ -382,19 +381,7 @@ uv run mypy src
 
 Continuous integration tests Python 3.11 and 3.13 on Linux and macOS.
 
-## Citation and provenance
-
-Citation metadata is provided in [CITATION.cff](CITATION.cff). A release DOI
-will be added after the first stable archival release. The JOSS manuscript is
-maintained in [paper/paper.md](paper/paper.md).
-
-The crystallographic datasets are derived from the primary diffraction
-literature for cellulose I-alpha, I-beta, II, and III-I. Cellulose-Builder,
-doGlycans, and Nanopolysaccharide Builder are related scientific tools and are
-cited in the manuscript and [legacy provenance record](legacy/README.md). Their
-source distributions are not required at runtime and are not vendored here.
-
 ## License
 
 CelluloseForge is distributed under the GNU General Public License, version 3
-or later. See [LICENSE](LICENSE).
+or later. See [LICENSE](LICENSE) or [Licence.txt](Licence.txt).

@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cellulose-forge"
-version = "0.1.0"
+version = "1.0.0"
 description = "Build crystalline cellulose structures for GROMACS simulations."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "GPL-3.0-or-later" }
 authors = [
-  { name = "CelluloseForge contributors" },
+  { name = "Arun Srikanth Sridhar" },
 ]
 keywords = [
   "cellulose",
@@ -19,7 +19,7 @@ keywords = [
   "molecular-dynamics",
 ]
 classifiers = [
-  "Development Status :: 2 - Pre-Alpha",
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
   "Programming Language :: Python :: 3",
@@ -51,6 +51,7 @@ cellulose-forge = "cellulose_forge.cli:main"
 Documentation = "https://github.com/askforarun/cellulose-forge#readme"
 Issues = "https://github.com/askforarun/cellulose-forge/issues"
 Repository = "https://github.com/askforarun/cellulose-forge"
+Changelog = "https://github.com/askforarun/cellulose-forge/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cellulose_forge"]

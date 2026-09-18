@@ -2,6 +2,23 @@
 
 This directory will contain reproducible comparisons with the legacy builders and GROMACS preprocessing, minimization, and simulation checks. Generated binary or large reference artifacts should be archived externally and identified here by version and checksum.
 
+## High-throughput coordinate benchmark
+
+`benchmark_coordinate_matrix.py` exercises the public CLI over a matrix of all
+four supported allomorphs and three bulk sizes. Each of the 12 systems is built
+twice as mmCIF; SHA-256 checksums test byte-for-byte determinism while elapsed
+times and atom counts are recorded in
+`results/high_throughput_coordinate_matrix.json`. Run it from the repository
+root with:
+
+```bash
+uv run python validation/benchmark_coordinate_matrix.py
+```
+
+This is a coordinate-construction benchmark, not a force-field or molecular-
+dynamics performance benchmark. Its purpose is to demonstrate reproducible
+batch generation without requiring AmberTools or GROMACS.
+
 ## GROMACS protocols
 
 - `periodic_pme_minim.mdp`: energy minimization for cellulose chains bonded

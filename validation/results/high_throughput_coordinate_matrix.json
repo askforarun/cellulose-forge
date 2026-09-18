@@ -1,0 +1,218 @@
+{
+  "benchmark": "coordinate-only bulk construction matrix",
+  "command": "uv run python validation/benchmark_coordinate_matrix.py",
+  "cellulose_forge_version": "1.0.0",
+  "python": "3.13.7",
+  "platform": "macOS-14.8.4-arm64-arm-64bit-Mach-O",
+  "system_count": 12,
+  "build_count": 24,
+  "all_deterministic": true,
+  "total_atoms_per_matrix": 21360,
+  "total_measured_seconds": 3.1389973340847064,
+  "results": [
+    {
+      "allomorph": "I-alpha",
+      "cells": [
+        1,
+        1,
+        1
+      ],
+      "atom_count": 42,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "bcb2b3d805f76c0b58e8f91de1d81cd50e5c2ff2a6898861d2d9ba3d8446520f",
+      "timings_seconds": [
+        0.15774483399582095,
+        0.12209550000261515
+      ],
+      "median_seconds": 0.13992016699921805
+    },
+    {
+      "allomorph": "I-alpha",
+      "cells": [
+        2,
+        2,
+        2
+      ],
+      "atom_count": 336,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "90fc9acf7063887a7e5eb765b7e463ca70a55c3a57248cc400c184b69e860afa",
+      "timings_seconds": [
+        0.11976162501377985,
+        0.11947708399384283
+      ],
+      "median_seconds": 0.11961935450381134
+    },
+    {
+      "allomorph": "I-alpha",
+      "cells": [
+        4,
+        4,
+        5
+      ],
+      "atom_count": 3360,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "ce7e8b19535c7720b0758df9189068ae0e80b553a986a218458cb5f02050e5cd",
+      "timings_seconds": [
+        0.13501112500671297,
+        0.13441912501002662
+      ],
+      "median_seconds": 0.1347151250083698
+    },
+    {
+      "allomorph": "I-beta",
+      "cells": [
+        1,
+        1,
+        1
+      ],
+      "atom_count": 84,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "29f39d15a1e4573f1ab33ea8e0414fe7a3d853d96e92faf73ff5b8778df23633",
+      "timings_seconds": [
+        0.12921708400244825,
+        0.1261955839872826
+      ],
+      "median_seconds": 0.12770633399486542
+    },
+    {
+      "allomorph": "I-beta",
+      "cells": [
+        2,
+        2,
+        2
+      ],
+      "atom_count": 672,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "3b83a01f47d878a40605fc2c3062a3c51faaee8fe698e625fa29594c498cd53a",
+      "timings_seconds": [
+        0.12579987500794232,
+        0.12362133301212452
+      ],
+      "median_seconds": 0.12471060401003342
+    },
+    {
+      "allomorph": "I-beta",
+      "cells": [
+        4,
+        4,
+        5
+      ],
+      "atom_count": 6720,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "b079b8d9c64a392fa2ea3ea7296ea97478827d90c26e1e8052ffdb9bca61d6e8",
+      "timings_seconds": [
+        0.1400046249909792,
+        0.14248041700921021
+      ],
+      "median_seconds": 0.1412425210000947
+    },
+    {
+      "allomorph": "II",
+      "cells": [
+        1,
+        1,
+        1
+      ],
+      "atom_count": 72,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "7aa33fc4b13a1b92fe2aaf32893ce4ce43b16359d9d5b1743443fd94a6caebab",
+      "timings_seconds": [
+        0.12295791701762937,
+        0.12939441701746546
+      ],
+      "median_seconds": 0.1261761670175474
+    },
+    {
+      "allomorph": "II",
+      "cells": [
+        2,
+        2,
+        2
+      ],
+      "atom_count": 576,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "f9e8c28d71dcb82b37f252d5719e542c590f15ef96eb8eb9c4d504186b51c549",
+      "timings_seconds": [
+        0.1312233750068117,
+        0.13142975000664592
+      ],
+      "median_seconds": 0.1313265625067288
+    },
+    {
+      "allomorph": "II",
+      "cells": [
+        4,
+        4,
+        5
+      ],
+      "atom_count": 5760,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "1f35da88446bf3e2d8b54e6f25354b37f0c66915e13da9f555bcf9830016cdbf",
+      "timings_seconds": [
+        0.14341237497865222,
+        0.14221729201381095
+      ],
+      "median_seconds": 0.14281483349623159
+    },
+    {
+      "allomorph": "III-I",
+      "cells": [
+        1,
+        1,
+        1
+      ],
+      "atom_count": 42,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "544c937a6ce5d333c013a65d34cce1e0c7be0d44d5cbc4a69183d82685ea5dc6",
+      "timings_seconds": [
+        0.12420366599690169,
+        0.1222805829893332
+      ],
+      "median_seconds": 0.12324212449311744
+    },
+    {
+      "allomorph": "III-I",
+      "cells": [
+        2,
+        2,
+        2
+      ],
+      "atom_count": 336,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "d3476dafcb5442470d4be7c6e73d0f0afc59f4d05151b5c92a8142e4f729dce0",
+      "timings_seconds": [
+        0.12216479098424315,
+        0.12310200001229532
+      ],
+      "median_seconds": 0.12263339549826924
+    },
+    {
+      "allomorph": "III-I",
+      "cells": [
+        4,
+        4,
+        5
+      ],
+      "atom_count": 3360,
+      "repeats": 2,
+      "deterministic": true,
+      "sha256": "0fd0dec8462656190cf208997214a9a8e07de46a7f47b7491e54dcab91cd44fc",
+      "timings_seconds": [
+        0.13718529100879095,
+        0.13359766601934098
+      ],
+      "median_seconds": 0.13539147851406597
+    }
+  ]
+}

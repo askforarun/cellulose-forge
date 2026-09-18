@@ -13,6 +13,6 @@ This project is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-The complete GPL version 3 license text retained with the legacy distribution is at
-`legacy/cellulose-builder-2013/license` and is incorporated here by reference. It is also
-available at <https://www.gnu.org/licenses/gpl-3.0.txt>.
+The license declaration is also maintained in the repository's `Licence.txt` file. The
+complete GNU GPL version 3 text is available at
+<https://www.gnu.org/licenses/gpl-3.0.txt>.
