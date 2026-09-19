@@ -54,6 +54,45 @@ def test_36_chain_fibril_is_deterministic() -> None:
     assert_allclose(first.cartesian_coordinates, second.cartesian_coordinates)
 
 
+def test_36_chain_fibril_supports_independent_finite_box_padding() -> None:
+    definition = load_allomorph("i_beta")
+    unpadded = build_36_chain_fibril(
+        definition,
+        degree_polymerization=4,
+        vacuum=0.0,
+        chain_boundary="finite",
+    )
+    padded = build_36_chain_fibril(
+        definition,
+        degree_polymerization=4,
+        vacuum=0.0,
+        padding_x=10.0,
+        padding_y=20.0,
+        padding_z=30.0,
+        chain_boundary="finite",
+    )
+
+    assert_allclose(
+        np.diag(padded.basis_vectors) - np.diag(unpadded.basis_vectors),
+        [10.0, 20.0, 30.0],
+    )
+    assert_allclose(np.min(padded.cartesian_coordinates, axis=0), [5.0, 10.0, 15.0])
+    assert any("padding_x=10.000000" in value for value in padded.annotations)
+    assert any("padding_y=20.000000" in value for value in padded.annotations)
+    assert any("padding_z=30.000000" in value for value in padded.annotations)
+
+
+def test_36_chain_periodic_fibril_rejects_longitudinal_padding() -> None:
+    with pytest.raises(ValueError, match=r"padding_z must be zero.*periodic"):
+        build_36_chain_fibril(
+            load_allomorph("i_beta"),
+            degree_polymerization=4,
+            vacuum=10.0,
+            padding_z=5.0,
+            chain_boundary="periodic",
+        )
+
+
 def test_36_chain_fibril_rejects_unsupported_iii_i() -> None:
     with pytest.raises(ValueError, match=r"not defined.*reference Cellulose-Builder"):
         build_36_chain_fibril(

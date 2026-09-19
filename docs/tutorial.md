@@ -265,6 +265,32 @@ by cutting an ideal regular hexagon. Presets are available for I-alpha, I-beta,
 and II. A III-I 36-chain model is intentionally rejected because the reference
 builder did not define that preset.
 
+`--vacuum 30` adds 30 Å of total padding along both transverse box directions,
+with 15 Å on each opposing side. Use `--padding-x` and `--padding-y` when the
+two transverse dimensions need different padding. These options override
+`--vacuum` only for their respective direction.
+
+A fibril may also contain finite, chemically terminated chains. In that case,
+`--padding-z` adds total space beyond the two chain ends:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape fibril \
+  --fibril-model 36-chain \
+  --degree-polymerization 12 \
+  --chain-boundary finite \
+  --padding-x 30 \
+  --padding-y 40 \
+  --padding-z 20 \
+  --output cellulose_forge_tutorial/ibeta_36chain_finite_padded.pdb
+```
+
+For a periodic fibril, CelluloseForge derives the z box length from the degree
+of polymerization and crystallographic chain repeat. It rejects nonzero
+`--padding-z`, which would otherwise separate atoms joined by the periodic
+covalent bond.
+
 ## 9. Understand chain numbering
 
 Slab chains are numbered deterministically:

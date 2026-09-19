@@ -310,11 +310,14 @@ def _unwrap_unit_cell_chains(
     return coordinates
 
 
-def build_36_chain_fibril(  # noqa: PLR0912, PLR0915
+def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
     allomorph: AllomorphDefinition,
     *,
     degree_polymerization: int,
     vacuum: float,
+    padding_x: float | None = None,
+    padding_y: float | None = None,
+    padding_z: float | None = None,
     chain_boundary: str = "finite",
 ) -> BulkCrystal:
     """Build the literature-defined 36-chain elementary fibril.
@@ -345,6 +348,20 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0915
     if not np.isfinite(vacuum) or vacuum < 0:
         msg = "vacuum must be a finite, nonnegative angstrom value"
         raise ValueError(msg)
+    for name, value in (
+        ("padding_x", padding_x),
+        ("padding_y", padding_y),
+        ("padding_z", padding_z),
+    ):
+        if value is not None and (not np.isfinite(value) or value < 0):
+            msg = f"{name} must be a finite, nonnegative angstrom value"
+            raise ValueError(msg)
+    if chain_boundary == "periodic" and padding_z not in {None, 0}:
+        msg = "padding_z must be zero for a fibril with periodic chain boundaries"
+        raise ValueError(msg)
+    transverse_padding_x = vacuum if padding_x is None else padding_x
+    transverse_padding_y = vacuum if padding_y is None else padding_y
+    longitudinal_padding = 0.0 if padding_z is None else padding_z
 
     cellobiose_units = degree_polymerization // 2
     vectors = allomorph.unit_cell.vectors()
@@ -435,15 +452,15 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0915
     surface_y = np.cross(chain_axis, surface_x)
     axes = np.vstack([surface_x, surface_y, chain_axis])
     projected = np.vstack(coordinate_blocks) @ axes.T
-    projected[:, 0] -= float(np.min(projected[:, 0])) - vacuum / 2.0
-    projected[:, 1] -= float(np.min(projected[:, 1])) - vacuum / 2.0
-    projected[:, 2] -= float(np.min(projected[:, 2]))
+    projected[:, 0] -= float(np.min(projected[:, 0])) - transverse_padding_x / 2.0
+    projected[:, 1] -= float(np.min(projected[:, 1])) - transverse_padding_y / 2.0
+    projected[:, 2] -= float(np.min(projected[:, 2])) - longitudinal_padding / 2.0
     extents = np.ptp(projected, axis=0)
     basis = np.diag(
         [
-            float(extents[0]) + vacuum,
-            float(extents[1]) + vacuum,
-            float(np.linalg.norm(chain_vector)) * cellobiose_units,
+            float(extents[0]) + transverse_padding_x,
+            float(extents[1]) + transverse_padding_y,
+            float(np.linalg.norm(chain_vector)) * cellobiose_units + longitudinal_padding,
         ]
     )
     replication_values = [1, 1, 1]
@@ -467,7 +484,10 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0915
             "shape=fibril fibril_model=36-chain total_chains=36",
             f"degree_polymerization={degree_polymerization} cellobiose_units={cellobiose_units}",
             f"chain_boundary={chain_boundary}",
-            f"vacuum={vacuum:.6f} angstrom transverse_total_padding",
+            f"vacuum={vacuum:.6f} angstrom transverse_padding_default",
+            f"padding_x={transverse_padding_x:.6f} angstrom total",
+            f"padding_y={transverse_padding_y:.6f} angstrom total",
+            f"padding_z={longitudinal_padding:.6f} angstrom total",
             "chains aligned with Cartesian z",
             "legacy_fragment_ids=" + ",".join(str(value) for value in fragment_ids),
             "source=Gomes_and_Skaf_2012_Cellulose-Builder doi:10.1002/jcc.22959",

@@ -91,7 +91,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--vacuum",
         type=float,
         default=0.0,
-        help="total vacuum normal to the slab in angstrom (default: 0)",
+        help="total slab-normal or fibril-transverse padding in angstrom (default: 0)",
+    )
+    build.add_argument(
+        "--padding-x",
+        type=float,
+        help="total fibril padding along Cartesian x; overrides --vacuum for x",
+    )
+    build.add_argument(
+        "--padding-y",
+        type=float,
+        help="total fibril padding along Cartesian y; overrides --vacuum for y",
+    )
+    build.add_argument(
+        "--padding-z",
+        type=float,
+        help="total chain-direction padding for finite fibrils; periodic fibrils require zero",
     )
     build.add_argument(
         "--force-field",
@@ -147,6 +162,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             "III-I": "iii_i",
         }[args.allomorph]
         definition = load_allomorph(allomorph_key)
+        if args.shape != "fibril" and any(
+            value is not None for value in (args.padding_x, args.padding_y, args.padding_z)
+        ):
+            build_parser().error(
+                "--padding-x, --padding-y, and --padding-z are valid only with --shape fibril"
+            )
         if args.shape == "unit-cell":
             if args.cells is not None:
                 build_parser().error("--cells is not valid with --shape unit-cell")
@@ -286,10 +307,15 @@ def _build_fibril(
         parser.error("--degree-polymerization N is required for fibrils")
     if args.chain_boundary is None:
         parser.error("--chain-boundary finite|periodic is required for fibrils")
+    if args.chain_boundary == "periodic" and args.padding_z not in {None, 0}:
+        parser.error("--padding-z must be zero with --chain-boundary periodic")
     return build_36_chain_fibril(
         definition,
         degree_polymerization=args.degree_polymerization,
         vacuum=args.vacuum,
+        padding_x=args.padding_x,
+        padding_y=args.padding_y,
+        padding_z=args.padding_z,
         chain_boundary=args.chain_boundary,
     )
 

@@ -229,6 +229,30 @@ cellulose-forge build \
 The preset is an explicit published chain arrangement, not an ideal regular
 hexagon. Cellulose III-I has no supported 36-chain reference preset.
 
+For independent transverse box control, use `--padding-x` and `--padding-y`.
+Both values are total padding and are divided equally between opposite sides.
+For a finite fibril, `--padding-z` additionally controls total padding beyond
+the chain ends:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape fibril \
+  --fibril-model 36-chain \
+  --degree-polymerization 12 \
+  --chain-boundary finite \
+  --padding-x 30 \
+  --padding-y 40 \
+  --padding-z 20 \
+  --output ibeta_36chain_finite_padded.pdb
+```
+
+For periodic chains, the z box length is fixed by the crystallographic repeat;
+nonzero `--padding-z` is rejected because it would break the covalent bond
+across the boundary. `--vacuum N` remains a shorthand that applies `N` total
+padding to both transverse directions unless the corresponding x or y option
+overrides it.
+
 ## Full tutorial
 
 The [step-by-step tutorial](docs/tutorial.md) covers installation, unit cells,
@@ -335,6 +359,9 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--fibril-model` | `36-chain` | Named literature-defined fibril preset |
 | `--chain-boundary` | `finite`, `periodic` | Terminal groups or a covalent bond across the chain boundary |
 | `--vacuum` | angstrom | Total transverse vacuum padding |
+| `--padding-x` | angstrom | Total fibril x padding; overrides `--vacuum` for x |
+| `--padding-y` | angstrom | Total fibril y padding; overrides `--vacuum` for y |
+| `--padding-z` | angstrom | Total finite-fibril chain-end padding; periodic chains require zero |
 | `--force-field` | `none`, `glycam` | Coordinate-only or GLYCAM/GROMACS output |
 | `--tleap-executable` | executable path | `tleap` used for GLYCAM builds |
 | `--parmed-python` | Python path | Interpreter containing ParmEd |

@@ -267,6 +267,10 @@ def test_cli_writes_literature_i_beta_36_chain_fibril(tmp_path: Path) -> None:
             "periodic",
             "--vacuum",
             "20",
+            "--padding-x",
+            "24",
+            "--padding-y",
+            "32",
             "--output",
             str(output),
         ]
@@ -280,6 +284,63 @@ def test_cli_writes_literature_i_beta_36_chain_fibril(tmp_path: Path) -> None:
         f"C{chain:03d}" for chain in range(1, 37)
     }
     assert any("shape=fibril fibril_model=36-chain total_chains=36" in line for line in lines)
+    assert any("padding_x=24.000000" in line for line in lines)
+    assert any("padding_y=32.000000" in line for line in lines)
+
+
+def test_cli_writes_finite_fibril_with_longitudinal_padding(tmp_path: Path) -> None:
+    output = tmp_path / "i_beta_finite_padded_fibril.pdb"
+
+    result = main(
+        [
+            "build",
+            "--allomorph",
+            "I-beta",
+            "--shape",
+            "fibril",
+            "--fibril-model",
+            "36-chain",
+            "--degree-polymerization",
+            "6",
+            "--chain-boundary",
+            "finite",
+            "--padding-x",
+            "20",
+            "--padding-y",
+            "30",
+            "--padding-z",
+            "40",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    lines = output.read_text(encoding="utf-8").splitlines()
+    assert any("padding_z=40.000000" in line for line in lines)
+
+
+def test_cli_rejects_longitudinal_padding_for_periodic_fibril(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="2"):
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "fibril",
+                "--fibril-model",
+                "36-chain",
+                "--degree-polymerization",
+                "6",
+                "--chain-boundary",
+                "periodic",
+                "--padding-z",
+                "20",
+                "--output",
+                str(tmp_path / "invalid_periodic_fibril.pdb"),
+            ]
+        )
 
 
 def test_cli_writes_periodic_glycam_fibril_system(
