@@ -21,6 +21,8 @@ also be parameterized with GLYCAM06j-1 and written directly for GROMACS.
 - Automatic mmCIF fallback when a requested PDB exceeds 99,999 atoms.
 - GLYCAM06j-1 parameterization through AmberTools and ParmEd.
 - GROMACS `.gro` and `.top` output plus a machine-readable build report.
+- Machine-readable diagnostics and deterministic outputs suitable for workflow
+  managers and external LLM-based software agents.
 
 ## Current support
 
@@ -41,6 +43,7 @@ branched glycans are not implemented in the current release.
 - [Verify the installation](#verify-the-installation)
 - [Quick start](#quick-start)
 - [Full tutorial](#full-tutorial)
+- [Workflow-manager and LLM-agent orchestration](#workflow-manager-and-llm-agent-orchestration)
 - [GLYCAM and GROMACS workflow](#glycam-and-gromacs-workflow)
 - [Command reference](#command-reference)
 - [Output files](#output-files)
@@ -113,21 +116,22 @@ cd cellulose-forge
 python -m pip install -e .
 ```
 
-Verify the external tools:
+Verify the external tools with one diagnostic command:
 
 ```bash
-which tleap
-python -c "import parmed; print(parmed.__version__)"
-gmx --version
+cellulose-forge doctor
 ```
 
-GROMACS is commonly installed separately using the package manager or module
-system appropriate to the workstation or cluster. Consult the
+`doctor` checks Python, NumPy, `tleap`, ParmEd, and GROMACS, reports which
+build modes are ready, and suggests a fix for anything missing. Pass `--json`
+for machine-readable output. GROMACS is commonly installed separately using
+the package manager or module system appropriate to the workstation or
+cluster. Consult the
 [GROMACS installation guide](https://manual.gromacs.org/current/install-guide/index.html).
 
 If ParmEd is installed in a different Python environment, pass its interpreter
-with `--parmed-python /path/to/python`. Likewise, a non-default `tleap` can be
-selected with `--tleap-executable /path/to/tleap`.
+with `--parmed-python /path/to/python` to both `doctor` and `build`. Likewise,
+a non-default `tleap` can be selected with `--tleap-executable /path/to/tleap`.
 
 ## Verify the installation
 
@@ -231,6 +235,44 @@ The [step-by-step tutorial](docs/tutorial.md) covers installation, unit cells,
 bulk crystals, exact-count and dimension-based slabs, alternative faces,
 36-chain fibrils, GLYCAM generation, GROMACS preprocessing and minimization,
 large systems, visualization, chain numbering, and troubleshooting.
+
+## Workflow-manager and LLM-agent orchestration
+
+CelluloseForge does not embed an LLM, and an LLM is never required. Its
+deterministic CLI, JSON diagnostics, and JSON build reports allow an external
+workflow manager or software agent to use exactly the same documented commands
+as a human. Check dependency availability in machine-readable form first:
+
+```bash
+cellulose-forge doctor --json
+```
+
+For example, an external agent can translate this request:
+
+> Build a validated cellulose I-beta (110) slab with 4 layers, 20 chains per
+> layer, DP 12, finite chains, 30 angstrom vacuum, and GLYCAM output.
+
+into the following independently reproducible action:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape slab \
+  --face 1 1 0 \
+  --layers 4 \
+  --chains-per-layer 20 \
+  --degree-polymerization 12 \
+  --chain-boundary finite \
+  --vacuum 30 \
+  --force-field glycam \
+  --output ibeta_110_slab
+```
+
+The generated `build_report.json` records the interpreted scientific choices
+and realized system. Consumers should inspect that report and run the normal
+validation workflow instead of trusting an agent's textual account. A retained
+proof-of-concept record is available in
+[`validation/agent_orchestration_demo/`](validation/agent_orchestration_demo/).
 
 ## GLYCAM and GROMACS workflow
 

@@ -42,3 +42,11 @@ examples/glycam/**/*.inpcrd
 examples/glycam/**/*.json
 examples/glycam/**/*.leap
 examples/glycam/**/*.prmtop
+
+# Regenerable bulk outputs from the agent-orchestration demonstration.
+# build_report.json is the retained evidence artifact; run cellulose-forge
+# build (see validation/agent_orchestration_demo/README.md) to regenerate the
+# large coordinate and topology files.
+validation/agent_orchestration_demo/**/*.pdb
+validation/agent_orchestration_demo/**/*.gro
+validation/agent_orchestration_demo/**/*.top

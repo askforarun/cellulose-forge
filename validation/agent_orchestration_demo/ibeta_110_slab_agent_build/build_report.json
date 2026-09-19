@@ -1,0 +1,93 @@
+{
+  "allomorph": "I-beta",
+  "cellulose_forge_version": "1.0.0",
+  "chain_boundary": "finite",
+  "chain_count": 80,
+  "crystallographic_atom_count": 20160,
+  "degree_polymerization": 12,
+  "force_field": "GLYCAM",
+  "force_field_atom_count": 20400,
+  "force_field_release": "leaprc.GLYCAM_06j-1",
+  "geometry_annotations": [
+    "shape=slab face=(1,1,0) layers=4",
+    "chains_per_layer=20 total_chains=80",
+    "degree_polymerization=12",
+    "chain_boundary=finite",
+    "d_hkl=5.316996 angstrom",
+    "vacuum=30.000000 angstrom",
+    "surface normal aligned with Cartesian -y; chains aligned with Cartesian z",
+    "chain numbering starts at requested low-y face; within each layer low-x to high-x"
+  ],
+  "outputs": {
+    "coordinates": "structure.pdb",
+    "gromacs_coordinates": "structure.gro",
+    "gromacs_topology": "system.top"
+  },
+  "reference_generation": {
+    "chemical_residues": [
+      "0GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "ROH"
+    ],
+    "degree_polymerization": 12,
+    "force_field": "GLYCAM",
+    "gromacs_conversion": {
+      "fudge_lj": 1.0,
+      "fudge_qq": 1.0,
+      "gromacs_coordinates": "cellulose_chain.gro",
+      "gromacs_topology": "cellulose_chain.top",
+      "molecule_count": 1,
+      "molecule_name": "CELLULOSE_CHAIN",
+      "parmed_python_executable": "<PARMED_ENV>/bin/python"
+    },
+    "leaprc": "leaprc.GLYCAM_06j-1",
+    "outputs": {
+      "inpcrd": "cellulose_chain.inpcrd",
+      "leap": "cellulose_chain.leap",
+      "pdb": "cellulose_chain.pdb",
+      "prmtop": "cellulose_chain.prmtop"
+    },
+    "tleap_executable": "<AMBERTOOLS_ENV>/bin/tleap",
+    "tleap_residues": [
+      "ROH",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "0GB"
+    ],
+    "validation": {
+      "atom_count": 255,
+      "cap_residue_count": 1,
+      "glucose_residue_count": 12,
+      "scaling": {
+        "SCEE_SCALE_FACTOR": [
+          1.0
+        ],
+        "SCNB_SCALE_FACTOR": [
+          1.0
+        ]
+      },
+      "topology_residue_count": 13,
+      "total_charge": 5.551115123125783e-16
+    }
+  },
+  "shape": "slab"
+}

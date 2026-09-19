@@ -11,6 +11,7 @@ from pathlib import Path
 from cellulose_forge import __version__
 from cellulose_forge.coordinates import write_coordinates
 from cellulose_forge.crystallography import AllomorphDefinition, MillerIndex, load_allomorph
+from cellulose_forge.doctor import render_json, render_text, run_diagnostics
 from cellulose_forge.geometry import (
     BulkCrystal,
     build_36_chain_fibril,
@@ -109,12 +110,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="optional Python interpreter containing ParmEd",
     )
     build.add_argument("--output", type=Path, required=True)
+
+    doctor = subparsers.add_parser(
+        "doctor",
+        help="check the environment for coordinate-only, GLYCAM, and GROMACS readiness",
+    )
+    doctor.add_argument(
+        "--tleap-executable",
+        default="tleap",
+        help="tleap executable to check for GLYCAM reference generation",
+    )
+    doctor.add_argument(
+        "--parmed-python",
+        type=Path,
+        help="Python interpreter to check for an importable ParmEd",
+    )
+    doctor.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command-line interface."""
     args = build_parser().parse_args(argv)
+    if args.command == "doctor":
+        checks = run_diagnostics(
+            tleap_executable=args.tleap_executable,
+            parmed_python=str(args.parmed_python) if args.parmed_python else None,
+        )
+        print(render_json(checks) if args.json else render_text(checks))
+        return 0 if all(check.ok for check in checks if check.name != "gmx") else 1
     if args.command == "build":
         allomorph_key = {
             "I-alpha": "i_alpha",

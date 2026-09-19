@@ -21,7 +21,8 @@ files.
 12. [Work with systems above 99,999 atoms](#12-work-with-systems-above-99999-atoms)
 13. [Visualize the results](#13-visualize-the-results)
 14. [Common errors](#14-common-errors)
-15. [What to record in a research workflow](#15-what-to-record-in-a-research-workflow)
+15. [Use an external workflow manager or LLM agent](#15-use-an-external-workflow-manager-or-llm-agent)
+16. [What to record in a research workflow](#16-what-to-record-in-a-research-workflow)
 
 ## 1. Choose an installation mode
 
@@ -52,17 +53,36 @@ cd cellulose-forge
 python -m pip install -e .
 ```
 
-Check that the required programs are visible:
+Check that the required programs are visible with a single diagnostic
+command:
 
 ```bash
-which tleap
-python -c "import parmed; print(parmed.__version__)"
-cellulose-forge --version
-gmx --version
+cellulose-forge doctor
+```
+
+This reports Python, NumPy, `tleap`, ParmEd, and GROMACS availability, states
+which build modes are ready, and prints a suggested fix for anything missing.
+Pass `--json` for machine-readable output, which is convenient for scripts or
+agents that need to check readiness programmatically before choosing a build
+mode:
+
+```bash
+cellulose-forge doctor --json
+```
+
+If `tleap` or ParmEd live in a different environment than the one running
+`cellulose-forge`, point `doctor` at them the same way `build` accepts them:
+
+```bash
+cellulose-forge doctor \
+  --tleap-executable /path/to/tleap \
+  --parmed-python /path/to/python
 ```
 
 If GROMACS is unavailable, you can still generate GLYCAM files and transfer
-them to a machine or cluster where GROMACS is installed.
+them to a machine or cluster where GROMACS is installed; `doctor` reports
+GROMACS preprocessing readiness separately from GLYCAM file-generation
+readiness for exactly this reason.
 
 ## 2. Inspect the command-line interface
 
@@ -398,7 +418,9 @@ Use a directory name without `.pdb`, `.cif`, or `.gro`:
 
 ### `tleap` is not found
 
-Activate the AmberTools environment or provide its full path:
+Run `cellulose-forge doctor` to confirm which executable is missing and where
+CelluloseForge looked for it, then activate the AmberTools environment or
+provide its full path:
 
 ```bash
 --tleap-executable /path/to/amber/bin/tleap
@@ -406,8 +428,9 @@ Activate the AmberTools environment or provide its full path:
 
 ### ParmEd cannot be imported
 
-Install ParmEd in the active environment or identify a Python interpreter that
-contains it:
+Run `cellulose-forge doctor --parmed-python /path/to/python` to check a
+specific interpreter, then install ParmEd in the active environment or
+identify a Python interpreter that contains it:
 
 ```bash
 --parmed-python /path/to/amber/environment/bin/python
@@ -428,7 +451,51 @@ preset. Use unit-cell or bulk geometry for III-I instead.
 Check the terminal message for a sibling `.cif` path. CelluloseForge switches
 to mmCIF rather than writing invalid wrapped PDB identifiers.
 
-## 15. What to record in a research workflow
+## 15. Use an external workflow manager or LLM agent
+
+CelluloseForge does not contain an LLM and does not require one. External
+workflow managers and LLM-based software agents can orchestrate it through the
+same deterministic CLI used by a human. Machine-readable diagnostics allow an
+agent to inspect dependency availability before choosing a build mode:
+
+```bash
+cellulose-forge doctor --json
+```
+
+Consider this natural-language request:
+
+> Build a validated cellulose I-beta (110) slab with 4 layers, 20 chains per
+> layer, DP 12, finite chains, 30 angstrom vacuum, and GLYCAM output.
+
+Its corresponding CLI action is:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape slab \
+  --face 1 1 0 \
+  --layers 4 \
+  --chains-per-layer 20 \
+  --degree-polymerization 12 \
+  --chain-boundary finite \
+  --vacuum 30 \
+  --force-field glycam \
+  --output cellulose_forge_tutorial/ibeta_110_slab
+```
+
+The command is ordinary CelluloseForge syntax: it can be inspected, rerun, and
+validated without the agent. After execution, check `build_report.json` rather
+than relying on the agent's description of success. For GLYCAM output, also run
+the GROMACS preprocessing procedure in Section 11. The retained
+proof-of-concept evidence is documented in
+[`validation/agent_orchestration_demo/`](../validation/agent_orchestration_demo/).
+
+This example demonstrates interface compatibility, not general
+natural-language accuracy. Applications that accept unrestricted user text
+should validate allowed values and require human review before launching costly
+simulation jobs.
+
+## 16. What to record in a research workflow
 
 For reproducibility, retain:
 
