@@ -24,6 +24,9 @@ _TEMPLATE_FIRST_RESIDUE = 5
 _TEMPLATE_LAST_RESIDUE = 16
 _INTERNAL_REFERENCE_RESIDUE = 10
 _MINIMUM_PERIODIC_DP = 4
+_RING_ALIGNMENT_ATOMS = ("C1", "C3", "C5")
+_MISSING_CELLULOSE_II_HYDROGENS = frozenset({"HO2", "HO3", "HO6"})
+_HYDROXYL_OXYGEN_BY_HYDROGEN = {"HO2": "O2", "HO3": "O3", "HO6": "O6"}
 
 
 @dataclass(frozen=True)
@@ -54,6 +57,7 @@ class PeriodicOplsTopology:
 
     degree_polymerization: int
     coordinate_atom_names: tuple[str, ...]
+    reference_coordinates: FloatArray
     topology_atoms: tuple[_TopologyAtom, ...]
     interactions: tuple[_InteractionTemplate, ...]
     source_repeat_charge: float
@@ -190,6 +194,10 @@ def derive_periodic_opls_cm5_topology(
         msg = "internal OPLS-CM5 repeat contains duplicate coordinate atom names"
         raise ValueError(msg)
     topology_atoms = tuple(source_atoms[index] for index in internal_indices)
+    reference_coordinates = np.vstack(
+        [coordinates[index].coordinates for index in internal_indices]
+    )
+    reference_coordinates.setflags(write=False)
     source_repeat_charge = sum(atom.charge for atom in topology_atoms)
 
     templates: set[_InteractionTemplate] = set()
@@ -230,6 +238,7 @@ def derive_periodic_opls_cm5_topology(
     return PeriodicOplsTopology(
         degree_polymerization=degree_polymerization,
         coordinate_atom_names=coordinate_atom_names,
+        reference_coordinates=reference_coordinates,
         topology_atoms=topology_atoms,
         interactions=tuple(sorted(templates)),
         source_repeat_charge=source_repeat_charge,
@@ -400,12 +409,24 @@ def map_periodic_opls_cm5(
     output_coordinates: list[FloatArray] = []
     for chain_number in chain_numbers:
         for residue_number in range(1, topology.degree_polymerization + 1):
+            crystal_residue_number = (
+                topology.degree_polymerization - residue_number + 1
+                if crystal.allomorph == "II" and chain_number % 2 == 0
+                else residue_number
+            )
             lookup = _coordinate_lookup(
                 crystal,
                 chain_number=chain_number,
-                residue_number=residue_number,
+                residue_number=crystal_residue_number,
             )
-            missing = set(topology.coordinate_atom_names).difference(lookup)
+            allowed_missing = (
+                _MISSING_CELLULOSE_II_HYDROGENS
+                if crystal.allomorph == "II"
+                else frozenset()
+            )
+            missing = set(topology.coordinate_atom_names).difference(lookup).difference(
+                allowed_missing
+            )
             if missing:
                 msg = (
                     f"chain {chain_number} residue {residue_number} lacks OPLS-CM5 "
@@ -415,14 +436,47 @@ def map_periodic_opls_cm5(
             global_residue = (
                 (chain_number - 1) * topology.degree_polymerization + residue_number
             )
-            for coordinate_name, topology_atom in zip(
-                topology.coordinate_atom_names, topology.topology_atoms, strict=True
+            reference_lookup = dict(
+                zip(
+                    topology.coordinate_atom_names,
+                    topology.reference_coordinates,
+                    strict=True,
+                )
+            )
+            hydrogen_transform = (
+                _rigid_transform(reference_lookup, lookup, _RING_ALIGNMENT_ATOMS)
+                if allowed_missing
+                else None
+            )
+            for coordinate_name, reference_coordinate, topology_atom in zip(
+                topology.coordinate_atom_names,
+                topology.reference_coordinates,
+                topology.topology_atoms,
+                strict=True,
             ):
                 output_names.append(topology_atom.atom_name)
                 output_residue_names.append("CNC")
                 output_residue_numbers.append(global_residue)
                 output_chain_numbers.append(chain_number)
-                output_coordinates.append(lookup[coordinate_name])
+                if coordinate_name in allowed_missing:
+                    assert hydrogen_transform is not None
+                    oxygen_name = _HYDROXYL_OXYGEN_BY_HYDROGEN[coordinate_name]
+                    aligned_hydrogen = _transform(
+                        reference_coordinate, hydrogen_transform
+                    )
+                    aligned_oxygen = _transform(
+                        reference_lookup[oxygen_name], hydrogen_transform
+                    )
+                    direction = aligned_hydrogen - aligned_oxygen
+                    direction /= np.linalg.norm(direction)
+                    bond_length = np.linalg.norm(
+                        reference_coordinate - reference_lookup[oxygen_name]
+                    )
+                    output_coordinates.append(
+                        lookup[oxygen_name] + direction * bond_length
+                    )
+                else:
+                    output_coordinates.append(lookup[coordinate_name])
 
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)
@@ -512,7 +566,7 @@ def write_periodic_opls_cm5_system(
     top_path.write_text(
         '#include "oplsaa.ff/forcefield.itp"\n'
         '#include "cellulose_opls_cm5.itp"\n\n'
-        "[ system ]\nCellulose I-beta periodic OPLS-CM5\n\n"
+        "[ system ]\nPeriodic cellulose OPLS-CM5\n\n"
         "[ molecules ]\nCNC  " + str(system.chain_count) + "\n",
         encoding="utf-8",
     )

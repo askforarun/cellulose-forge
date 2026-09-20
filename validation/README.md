@@ -90,6 +90,46 @@ records its force-field construction of the missing hydroxyl hydrogens and
 uses opposite topology-to-crystal residue mappings for its antiparallel origin
 and center chains.
 
+## Experimental periodic OPLS-CM5 allomorph matrix
+
+`validate_opls_allomorphs.py` applies the externally supplied OPLS-CM5 repeat
+template to periodic bulk I-alpha, I-beta, II, and III-I crystals, then runs
+the same `gmx grompp`, PME minimization, and configurable NVT engineering
+checks as the GLYCAM matrix. The external finite DP20 topology and its matching
+coordinates are required explicitly:
+
+```bash
+uv run python validation/validate_opls_allomorphs.py \
+  --opls-template /path/to/CNC.itp \
+  --opls-reference-gro /path/to/solute.gro
+```
+
+Compact evidence is stored in `results/opls_allomorph_matrix/`. Successful
+preprocessing, minimization, and 1-ps integration establish that the generated
+topologies are internally executable. They do not independently validate the
+transferability or physical accuracy of the I-beta-derived OPLS-CM5 parameters
+for other cellulose allomorphs.
+
+## Matched GLYCAM/OPLS-CM5 allomorph NPT comparison
+
+`compare_allomorph_force_fields.py` builds every periodic bulk allomorph with
+both force fields, minimizes it, and runs matched NVT and isotropic NPT stages.
+The default duration is 10 ps for each ensemble:
+
+```bash
+uv run python validation/compare_allomorph_force_fields.py \
+  --opls-template /path/to/CNC.itp \
+  --opls-reference-gro /path/to/solute.gro \
+  --tleap-executable /path/to/ambertools/bin/tleap \
+  --parmed-python /path/to/ambertools/bin/python
+```
+
+The driver separately records Lennard--Jones and electrostatic 1--4 scaling.
+The current generated systems use `fudgeLJ = fudgeQQ = 1.0` for GLYCAM and
+`fudgeLJ = fudgeQQ = 0.5` for OPLS-AA. Compact results are stored in
+`results/allomorph_force_field_comparison/`; trajectories and binary run files
+remain under ignored `validation/work/` paths.
+
 ## I-beta fibril smoke test
 
 The literature-defined DP12 36-chain I-beta fibril was mapped to the periodic

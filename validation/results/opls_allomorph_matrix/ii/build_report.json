@@ -1,0 +1,46 @@
+{
+  "allomorph": "II",
+  "cellulose_forge_version": "1.0.0",
+  "chain_boundary": "periodic",
+  "chain_count": 32,
+  "crystallographic_atom_count": 4608,
+  "degree_polymerization": 8,
+  "force_field": "OPLS-CM5",
+  "force_field_atom_count": 5376,
+  "generated_force_field_coordinates": {
+    "atoms": [
+      "HO2",
+      "HO3",
+      "HO6"
+    ],
+    "method": "OPLS hydroxyl direction from C1/C3/C5 rigid alignment with the source O-H bond length preserved",
+    "reason": "hydroxyl-hydrogen coordinates are absent from the diffraction dataset",
+    "scope": "each anhydroglucose residue"
+  },
+  "geometry_annotations": [
+    "chain_axis=c",
+    "chain_directions=origin:+c,center:-c"
+  ],
+  "outputs": {
+    "coordinates": "structure.pdb",
+    "gromacs_coordinates": "structure.gro",
+    "gromacs_molecule_topology": "cellulose_opls_cm5.itp",
+    "gromacs_topology": "system.top"
+  },
+  "periodic_topology_derivation": {
+    "corrected_repeat_charge": -3.621235256101585e-17,
+    "interaction_counts_per_chain": {
+      "angles": 328,
+      "bonds": 176,
+      "dihedrals": 528,
+      "pairs": 512
+    },
+    "source": "internal repeat of externally supplied finite DP20 topology",
+    "source_repeat_charge": 0.0016299999999999735,
+    "uniform_charge_correction_per_atom": 7.761904761904635e-05
+  },
+  "reference_coordinates": "externally-supplied/solute.gro",
+  "reference_topology": "externally-supplied/CNC.itp",
+  "shape": "bulk",
+  "status": "experimental"
+}

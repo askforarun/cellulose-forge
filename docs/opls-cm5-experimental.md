@@ -6,7 +6,8 @@ SoftwareX claims.
 
 The supported constructions are pristine cellulose I-beta slabs and fibrils
 with finite DP20 chains, plus even-DP periodic unit cells, bulk crystals, slabs,
-and fibrils. They consume the pristine `CNC.itp` and matching `solute.gro`
+and fibrils for I-alpha, I-beta, II, and III-I. They consume the pristine
+`CNC.itp` and matching `solute.gro`
 from an external CNC model. These files are input templates, not a public
 validation standard. CelluloseForge does not vendor them because their source
 does not currently state a software/data license.
@@ -40,8 +41,8 @@ cellulose-forge build \
 ```
 
 The adapter verifies the exact 423-atom DP20 layout and zero total charge before
-writing GROMACS files. Other allomorphs and malformed/non-neutral references
-fail explicitly.
+writing finite-chain GROMACS files. Finite OPLS-CM5 construction remains
+restricted to I-beta; malformed or non-neutral references fail explicitly.
 
 For a periodic bulk crystal, CelluloseForge derives the 21-atom internal AGU
 repeat and its complete local bond, angle, Ryckaert--Bellemans dihedral, and
@@ -87,3 +88,17 @@ Over its 50--100 ps window, the temperature averaged 301.0 K, density averaged
 1597.1 kg m-3, and the box volume showed no substantial systematic drift.
 Compact logs, coordinates, observables, and a matched partial GLYCAM comparison
 are retained under `validation/results/force_field_comparison/`.
+
+Periodic bulk I-alpha, I-beta, II, and III-I systems also pass `gmx grompp`,
+PME minimization to the configured force threshold, and 1-ps NVT integration
+without GROMACS warnings. Cellulose II maps its antiparallel chain classes in
+opposite residue directions and constructs the hydroxyl hydrogens absent from
+the diffraction coordinates. The reproducible driver and compact evidence are
+provided in `validation/validate_opls_allomorphs.py` and
+`validation/results/opls_allomorph_matrix/`.
+
+This expanded matrix is still an engineering validation. The repeat topology
+and corrected charges originate from one externally supplied I-beta model;
+independent reference topologies, longer allomorph-specific simulations, and
+lattice/energy comparisons are required before claiming physical validation or
+general OPLS-CM5 transferability.

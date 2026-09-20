@@ -213,16 +213,14 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
     return 0
 
 
-def _write_opls_cm5_build(
+def _write_opls_cm5_build(  # noqa: PLR0912
     args: argparse.Namespace,
     crystal: BulkCrystal,
     parser: argparse.ArgumentParser,
 ) -> None:
-    """Map pristine I-beta to a finite or derived periodic OPLS-CM5 topology."""
+    """Map pristine cellulose to a finite or derived periodic OPLS-CM5 topology."""
     if args.output.suffix:
         parser.error("--output must be a directory when --force-field opls-cm5 is selected")
-    if args.allomorph != "I-beta":
-        parser.error("the experimental OPLS-CM5 backend currently supports I-beta only")
     if args.opls_template is None or args.opls_reference_gro is None:
         parser.error(
             "--opls-template and --opls-reference-gro are required with "
@@ -245,6 +243,8 @@ def _write_opls_cm5_build(
         )
         mapped = map_periodic_opls_cm5(crystal, periodic_topology)
     else:
+        if args.allomorph != "I-beta":
+            parser.error("finite OPLS-CM5 currently supports I-beta only")
         if args.shape not in {"slab", "fibril"}:
             parser.error("finite OPLS-CM5 currently supports slabs and fibrils only")
         mapped = map_finite_dp20_opls_cm5(
@@ -295,6 +295,19 @@ def _write_opls_cm5_build(
                 periodic_topology
             ),
         }
+        if crystal.allomorph == "II":
+            report["generated_force_field_coordinates"] = {
+                "atoms": ["HO2", "HO3", "HO6"],
+                "scope": "each anhydroglucose residue",
+                "method": (
+                    "OPLS hydroxyl direction from C1/C3/C5 rigid alignment with "
+                    "the source O-H bond length preserved"
+                ),
+                "reason": (
+                    "hydroxyl-hydrogen coordinates are absent from the "
+                    "diffraction dataset"
+                ),
+            }
     (args.output / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

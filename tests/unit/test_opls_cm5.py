@@ -2,8 +2,11 @@
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 
+from cellulose_forge.crystallography import load_allomorph
+from cellulose_forge.geometry import build_bulk_crystal
 from cellulose_forge.opls_cm5 import (
     PeriodicOplsTopology,
     _InteractionTemplate,
@@ -11,6 +14,7 @@ from cellulose_forge.opls_cm5 import (
     _read_topology_atoms,
     _TopologyAtom,
     derive_periodic_opls_cm5_topology,
+    map_periodic_opls_cm5,
     periodic_interaction_counts,
     render_periodic_opls_cm5_itp,
 )
@@ -59,6 +63,7 @@ def test_periodic_opls_render_wraps_interactions_and_neutralizes_charge() -> Non
     topology = PeriodicOplsTopology(
         degree_polymerization=4,
         coordinate_atom_names=("A", "B"),
+        reference_coordinates=np.asarray([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]),
         topology_atoms=(
             _TopologyAtom("opls_1", "A", 0.1, 12.0),
             _TopologyAtom("opls_2", "B", 0.1, 1.0),
@@ -91,3 +96,79 @@ def test_periodic_opls_render_wraps_interactions_and_neutralizes_charge() -> Non
     assert "7 2 1 0.1 100" in rendered
     atom_rows = [line.split() for line in rendered.splitlines() if "opls_" in line]
     assert sum(float(row[6]) for row in atom_rows) == pytest.approx(0.0)
+
+
+def test_periodic_opls_maps_cellulose_ii_antiparallel_chains() -> None:
+    source = build_bulk_crystal(load_allomorph("i_beta"), (1, 1, 1))
+    source_indices = [
+        index
+        for index, (chain, residue) in enumerate(
+            zip(source.chain_numbers, source.residue_numbers, strict=True)
+        )
+        if chain == 1 and residue == 1
+    ]
+    coordinate_names = tuple(source.atom_labels[index] for index in source_indices)
+    reference_coordinates = source.cartesian_coordinates[source_indices]
+    topology = PeriodicOplsTopology(
+        degree_polymerization=12,
+        coordinate_atom_names=coordinate_names,
+        reference_coordinates=reference_coordinates,
+        topology_atoms=tuple(
+            _TopologyAtom("opls_1", name, 0.0, 1.0) for name in coordinate_names
+        ),
+        interactions=(),
+        source_repeat_charge=0.0,
+    )
+    crystal = build_bulk_crystal(load_allomorph("ii"), (1, 1, 6))
+
+    mapped = map_periodic_opls_cm5(crystal, topology)
+
+    assert mapped.chain_count == 2
+    for chain_number in (1, 2):
+        for residue_number in range(1, 13):
+            global_residue = (chain_number - 1) * 12 + residue_number
+            residue = {
+                name: coordinate
+                for name, coordinate, chain, mapped_residue in zip(
+                    mapped.atom_names,
+                    mapped.cartesian_coordinates,
+                    mapped.chain_numbers,
+                    mapped.residue_numbers,
+                    strict=True,
+                )
+                if chain == chain_number and mapped_residue == global_residue
+            }
+            for oxygen, hydrogen in (("O2", "HO2"), ("O3", "HO3"), ("O6", "HO6")):
+                assert 0.8 < np.linalg.norm(residue[hydrogen] - residue[oxygen]) < 1.1
+        for residue_number in range(1, 12):
+            global_residue = (chain_number - 1) * 12 + residue_number
+            c1 = next(
+                coordinate
+                for name, coordinate, chain, mapped_residue in zip(
+                    mapped.atom_names,
+                    mapped.cartesian_coordinates,
+                    mapped.chain_numbers,
+                    mapped.residue_numbers,
+                    strict=True,
+                )
+                if chain == chain_number
+                and mapped_residue == global_residue
+                and name == "C1"
+            )
+            o4 = next(
+                coordinate
+                for name, coordinate, chain, mapped_residue in zip(
+                    mapped.atom_names,
+                    mapped.cartesian_coordinates,
+                    mapped.chain_numbers,
+                    mapped.residue_numbers,
+                    strict=True,
+                )
+                if chain == chain_number
+                and mapped_residue == global_residue + 1
+                and name == "O4"
+            )
+            displacement = o4 - c1
+            fractional = np.linalg.solve(mapped.basis_vectors.T, displacement)
+            fractional -= np.round(fractional)
+            assert np.linalg.norm(fractional @ mapped.basis_vectors) < 1.7

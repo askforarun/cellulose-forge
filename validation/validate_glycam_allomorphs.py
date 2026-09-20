@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from compare_force_fields import ENERGY_TERMS, _parse_xvg, _run, _summarize_rows, _write_protocol
+from compare_force_fields import _parse_xvg, _run, _summarize_rows, _write_protocol
 
 ROOT = Path(__file__).resolve().parents[1]
 VALIDATION = ROOT / "validation"
@@ -20,6 +20,7 @@ SYSTEMS = {
     # III-I has a short a axis; six repeats satisfy the PME cutoff condition.
     "III-I": (6, 4, 4),
 }
+NVT_ENERGY_TERMS = ("Potential", "Temperature", "Pressure")
 
 
 def _safe_name(allomorph: str) -> str:
@@ -112,7 +113,7 @@ def _validate_one(
         [args.gmx, "energy", "-f", "nvt.edr", "-o", observables.name, "-xvg", "none"],
         cwd=directory,
         log_path=directory / "energy.log",
-        stdin="\n".join((*ENERGY_TERMS, "0", "")),
+        stdin="\n".join((*NVT_ENERGY_TERMS, "0", "")),
     )
     report = json.loads((directory / "build_report.json").read_text(encoding="utf-8"))
     steps = re.search(r"converged to Fmax < 1000 in (\d+) steps", em_output)
@@ -130,7 +131,9 @@ def _validate_one(
         "fudge_14": float(fudge.group(1)),
         "minimization_steps": int(steps.group(1)),
         "maximum_force_kJ_mol_nm": float(force.group(1)),
-        "nvt": _summarize_rows(_parse_xvg(observables)),
+        "nvt": _summarize_rows(
+            _parse_xvg(observables, NVT_ENERGY_TERMS), NVT_ENERGY_TERMS
+        ),
         "generated_force_field_coordinates": report.get(
             "generated_force_field_coordinates"
         ),

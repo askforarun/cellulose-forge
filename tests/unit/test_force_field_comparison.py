@@ -11,6 +11,7 @@ _NAMESPACE = run_path(str(_SCRIPT), run_name="validation_compare_force_fields")
 _parse_xvg = cast(Any, _NAMESPACE["_parse_xvg"])
 _summarize_rows = cast(Any, _NAMESPACE["_summarize_rows"])
 _write_protocol = cast(Any, _NAMESPACE["_write_protocol"])
+_gromacs_version = cast(Any, _NAMESPACE["_gromacs_version"])
 
 
 def test_write_protocol_replaces_only_nsteps(tmp_path: Path) -> None:
@@ -48,3 +49,21 @@ def test_parse_rejects_incomplete_observable_table(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="unexpected GROMACS energy table"):
         _parse_xvg(table)
+
+
+def test_parse_and_summarize_subset_of_observables(tmp_path: Path) -> None:
+    table = tmp_path / "nvt_energy.xvg"
+    table.write_text("0 10 290 2\n1 14 310 4\n", encoding="utf-8")
+    terms = ("Potential", "Temperature", "Pressure")
+
+    summary = _summarize_rows(_parse_xvg(table, terms), terms)
+
+    assert summary["Potential"]["mean"] == pytest.approx(12.0)
+    assert summary["Temperature"]["mean"] == pytest.approx(300.0)
+    assert summary["Pressure"]["final_minus_initial"] == pytest.approx(2.0)
+
+
+def test_extracts_gromacs_version_from_banner() -> None:
+    output = "banner\nGROMACS version:    2024.2-Homebrew\nmore metadata\n"
+
+    assert _gromacs_version(output) == "2024.2-Homebrew"

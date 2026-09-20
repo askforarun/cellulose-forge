@@ -1,0 +1,36 @@
+# This file was created Sun Sep 20 20:42:54 2026
+# Created by:
+#                 :-) GROMACS - gmx energy, 2024.2-Homebrew (-:
+# 
+# Executable:   /opt/homebrew/bin/../Cellar/gromacs/2024.2/bin/gmx
+# Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2024.2
+# Working dir:  <repository>
+# Command line:
+#   gmx energy -f <validation-work>/nvt_1ps.edr -o <validation-work>/nvt_observables.xvg
+# gmx energy is part of G R O M A C S:
+#
+# Gnomes, ROck Monsters And Chili Sauce
+#
+@    title "GROMACS Energies"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "(kJ/mol), (K)"
+@TYPE xy
+@ view 0.15, 0.15, 0.75, 0.85
+@ legend on
+@ legend box on
+@ legend loctype view
+@ legend 0.78, 0.8
+@ legend length 2
+@ s0 legend "Potential"
+@ s1 legend "Temperature"
+    0.000000  9373.609375  300.082794
+    0.100000  11611.936523  261.079681
+    0.200000  12054.993164  260.096680
+    0.300000  11411.154297  280.302002
+    0.400000  11438.852539  283.745789
+    0.500000  12254.191406  276.367096
+    0.600000  12085.558594  285.773651
+    0.700000  12518.528320  280.903656
+    0.800000  12538.231445  284.345642
+    0.900000  12542.916992  283.371643
+    1.000000  12304.108398  289.556366
