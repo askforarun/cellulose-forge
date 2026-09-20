@@ -1,4 +1,4 @@
-"""Experimental adapter for the published pristine cellulose OPLS-CM5 topology."""
+"""Experimental adapter for an externally supplied pristine OPLS-CM5 topology."""
 
 from __future__ import annotations
 
@@ -99,7 +99,7 @@ def _read_topology_atoms(path: str | Path) -> tuple[_TopologyAtom, ...]:
         )
     if len(atoms) != _REFERENCE_ATOM_COUNT:
         msg = (
-            "the experimental OPLS-CM5 adapter requires the published pristine "
+            "the experimental OPLS-CM5 adapter requires the supplied pristine "
             f"DP20 topology with {_REFERENCE_ATOM_COUNT} atoms; found {len(atoms)}"
         )
         raise ValueError(msg)
@@ -223,7 +223,7 @@ def derive_periodic_opls_cm5_topology(
     }
     if actual_template_counts != expected_template_counts:
         msg = (
-            "published OPLS-CM5 internal interaction pattern changed: "
+            "supplied OPLS-CM5 internal interaction pattern changed: "
             f"expected {expected_template_counts}, found {actual_template_counts}"
         )
         raise ValueError(msg)
@@ -283,7 +283,7 @@ def map_finite_dp20_opls_cm5(
     topology_path: str | Path,
     reference_gro: str | Path,
 ) -> GlycamMappedSystem:
-    """Map a finite DP20 crystal onto the exact published OPLS-CM5 atom order."""
+    """Map a finite DP20 crystal onto the supplied OPLS-CM5 atom order."""
     topology_atoms = _read_topology_atoms(topology_path)
     reference_atoms = _read_first_reference_chain(reference_gro)
     chain_numbers = tuple(dict.fromkeys(crystal.chain_numbers))
@@ -300,7 +300,7 @@ def map_finite_dp20_opls_cm5(
         for chain in chain_numbers
     }
     if not degree_by_chain or set(degree_by_chain.values()) != {_REFERENCE_DP}:
-        msg = "the published pristine OPLS-CM5 reference currently supports finite DP20 only"
+        msg = "the supplied pristine OPLS-CM5 topology supports finite DP20 only"
         raise ValueError(msg)
 
     reference_by_residue = {

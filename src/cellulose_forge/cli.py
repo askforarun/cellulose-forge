@@ -125,12 +125,12 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument(
         "--opls-template",
         type=Path,
-        help="published pristine DP20 OPLS-CM5 CNC.itp reference",
+        help="externally supplied pristine DP20 OPLS-CM5 CNC.itp template",
     )
     build.add_argument(
         "--opls-reference-gro",
         type=Path,
-        help="published pristine CNC GRO containing the matching DP20 chain",
+        help="externally supplied CNC GRO containing the matching DP20 chain",
     )
     build.add_argument(
         "--tleap-executable",
@@ -285,7 +285,7 @@ def _write_opls_cm5_build(
     }
     if periodic_topology is not None:
         report["periodic_topology_derivation"] = {
-            "source": "internal repeat of published finite DP20 topology",
+            "source": "internal repeat of externally supplied finite DP20 topology",
             "source_repeat_charge": periodic_topology.source_repeat_charge,
             "uniform_charge_correction_per_atom": (
                 periodic_topology.charge_correction_per_atom

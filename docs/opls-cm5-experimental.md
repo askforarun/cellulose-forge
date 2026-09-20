@@ -7,9 +7,9 @@ SoftwareX claims.
 The supported constructions are pristine cellulose I-beta slabs and fibrils
 with finite DP20 chains, plus even-DP periodic unit cells, bulk crystals, slabs,
 and fibrils. They consume the pristine `CNC.itp` and matching `solute.gro`
-from the reference data associated with Elahi et al. (2025). CelluloseForge does
-not vendor those files because their repository does not currently state a
-software/data license.
+from an external CNC model. These files are input templates, not a public
+validation standard. CelluloseForge does not vendor them because their source
+does not currently state a software/data license.
 
 The pristine topology is available in the history of the authors' CNCstruc
 repository, immediately before commit `6f20944` removed it:
@@ -60,7 +60,7 @@ cellulose-forge build \
   --output ibeta_bulk_opls_cm5
 ```
 
-The published rounded internal-repeat charges sum to +0.00163 e. For cyclic
+The supplied rounded internal-repeat charges sum to +0.00163 e. For cyclic
 chains, the adapter distributes the residual uniformly over all 21 repeat atoms
 instead of assigning it to a chemically arbitrary atom. The source residual,
 per-atom correction, corrected charge, and generated interaction counts are
@@ -74,7 +74,11 @@ This is an engineering smoke test, not yet a scientific validation result.
 
 A periodic 4x4x4-cell I-beta bulk crystal (32 chains, DP8, 5376 atoms) also
 passes `gmx grompp` with OPLS 1--4 scaling (`fudge = 0.5`). PME minimization
-converged in eight steps to a maximum force of 702.985 kJ mol-1 nm-1. One-ps
-NVT and one-ps isotropic NPT smoke tests both completed normally. These short
-runs establish topology and runtime integrity only; they do not validate bulk
-thermodynamics or reproduce the published force-field study.
+converged in eight steps to a maximum force of 702.985 kJ mol-1 nm-1. Ten-ps
+NVT and ten-ps isotropic NPT smoke tests both completed normally. During the
+NPT smoke test, temperature averaged 299.4 K and density averaged 1598.5
+kg m-3. Pressure remained high and noisy (320 bar average), as expected for an
+unequilibrated 10-ps crystal run, so these values must not be interpreted as
+equilibrium properties. These short runs establish topology and runtime
+integrity only; they do not validate bulk thermodynamics or establish
+equivalence to an independently validated model.

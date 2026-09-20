@@ -28,7 +28,7 @@ def test_opls_reference_topology_must_be_neutral(tmp_path: Path) -> None:
         _read_topology_atoms(topology)
 
 
-def test_opls_reference_gro_requires_published_dp20_layout(tmp_path: Path) -> None:
+def test_opls_reference_gro_requires_expected_dp20_layout(tmp_path: Path) -> None:
     reference = tmp_path / "reference.gro"
     residue_counts = [22, *([21] * 18), 23]
     lines = ["reference", "423"]
