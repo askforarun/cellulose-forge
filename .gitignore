@@ -51,3 +51,12 @@ examples/glycam/**/*.prmtop
 validation/agent_orchestration_demo/**/*.pdb
 validation/agent_orchestration_demo/**/*.gro
 validation/agent_orchestration_demo/**/*.top
+
+# Regenerable force-field comparison trajectories and run directories. Only
+# curated compact evidence under validation/results is versioned.
+validation/work/
+validation/results/force_field_comparison/**/*.xtc
+validation/results/force_field_comparison/**/*.trr
+validation/results/force_field_comparison/**/*.edr
+validation/results/force_field_comparison/**/*.tpr
+validation/results/force_field_comparison/**/*.cpt

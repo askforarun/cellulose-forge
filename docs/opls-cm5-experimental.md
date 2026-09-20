@@ -81,4 +81,9 @@ kg m-3. Pressure remained high and noisy (320 bar average), as expected for an
 unequilibrated 10-ps crystal run, so these values must not be interpreted as
 equilibrium properties. These short runs establish topology and runtime
 integrity only; they do not validate bulk thermodynamics or establish
-equivalence to an independently validated model.
+equivalence to an independently validated model. A subsequent 100-ps NPT
+engineering run also completed without LINCS or non-finite-energy failures.
+Over its 50--100 ps window, the temperature averaged 301.0 K, density averaged
+1597.1 kg m-3, and the box volume showed no substantial systematic drift.
+Compact logs, coordinates, observables, and a matched partial GLYCAM comparison
+are retained under `validation/results/force_field_comparison/`.

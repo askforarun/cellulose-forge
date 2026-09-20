@@ -1,0 +1,64 @@
+{
+  "allomorph": "I-beta",
+  "cellulose_forge_version": "1.0.0",
+  "chain_boundary": "periodic",
+  "chain_count": 32,
+  "crystallographic_atom_count": 5376,
+  "degree_polymerization": 8,
+  "force_field": "GLYCAM",
+  "force_field_atom_count": 5376,
+  "force_field_release": "leaprc.GLYCAM_06j-1",
+  "geometry_annotations": [
+    "chain_axis=c",
+    "chain_directions=origin:+c,center:+c"
+  ],
+  "outputs": {
+    "coordinates": "structure.pdb",
+    "gromacs_coordinates": "structure.gro",
+    "gromacs_topology": "system.top"
+  },
+  "reference_generation": {
+    "chain_boundary": "periodic",
+    "closure_bond": {
+      "from": "8:O4",
+      "to": "1:C1"
+    },
+    "degree_polymerization": 8,
+    "force_field": "GLYCAM",
+    "gromacs_conversion": {
+      "fudge_lj": 1.0,
+      "fudge_qq": 1.0,
+      "gromacs_coordinates": "cellulose_periodic_chain.gro",
+      "gromacs_topology": "cellulose_periodic_chain.top",
+      "molecule_count": 1,
+      "molecule_name": "CELLULOSE_CHAIN",
+      "parmed_python_executable": "$AMBERTOOLS/bin/python"
+    },
+    "leaprc": "leaprc.GLYCAM_06j-1",
+    "tleap_executable": "$AMBERTOOLS/bin/tleap",
+    "tleap_residues": [
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB"
+    ],
+    "validation": {
+      "atom_count": 168,
+      "residue_count": 8,
+      "scaling": {
+        "SCEE_SCALE_FACTOR": [
+          1.0
+        ],
+        "SCNB_SCALE_FACTOR": [
+          1.0
+        ]
+      },
+      "total_charge": 4.440892098500626e-16
+    }
+  },
+  "shape": "bulk"
+}

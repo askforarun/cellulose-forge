@@ -1,0 +1,62 @@
+{
+  "comparison": "matched periodic cellulose I-beta 4x4x4 bulk crystal",
+  "date": "2026-09-20",
+  "gromacs": "2024.2-Homebrew",
+  "system": {
+    "chains": 32,
+    "degree_polymerization": 8,
+    "atoms": 5376,
+    "initial_box_nm": [3.11360, 3.25931, 4.15200],
+    "initial_box_xz_nm": -0.37135
+  },
+  "protocol": {
+    "time_step_ps": 0.001,
+    "temperature_K": 300,
+    "pressure_bar": 1,
+    "electrostatics": "PME",
+    "constraints": "hydrogen bonds",
+    "pressure_coupling": "isotropic C-rescale"
+  },
+  "results": {
+    "opls-cm5": {
+      "status": "completed",
+      "nvt_ps": 10.0,
+      "npt_ps": 100.0,
+      "fudge_14": 0.5,
+      "minimization_steps": 8,
+      "minimized_maximum_force_kJ_mol_nm": 702.9848,
+      "analysis_window_ps": [50.0, 100.0],
+      "temperature_K_mean": 301.0357,
+      "pressure_bar_mean": -24.8106,
+      "pressure_bar_standard_deviation": 1062.5039,
+      "density_kg_m3_mean": 1597.1065,
+      "volume_nm3_mean": 43.15739,
+      "box_nm_mean": [3.138574, 3.285453, 4.185303],
+      "potential_energy_kJ_mol_mean": 9968.7036,
+      "final_gro_sha256": "43e955ee93e815219f6de79a81c6666978f85035983ca1e4c4d9100f636fd0db"
+    },
+    "glycam": {
+      "status": "stopped intentionally after stability was established",
+      "nvt_ps": 10.0,
+      "npt_ps": 38.48,
+      "fudge_14": 1.0,
+      "minimization_steps": 8,
+      "minimized_maximum_force_kJ_mol_nm": 628.0216,
+      "analysis_window_ps": [20.0, 38.48],
+      "temperature_K_mean": 300.9626,
+      "pressure_bar_mean": -107.9955,
+      "pressure_bar_standard_deviation": 1118.0416,
+      "density_kg_m3_mean": 1525.0916,
+      "volume_nm3_mean": 45.19461,
+      "box_nm_mean": [3.187201, 3.336355, 4.250146],
+      "potential_energy_kJ_mol_mean": 111694.8054,
+      "final_gro_sha256": "501e221764aa0775b1fd80bc0d1f6382c7f14ee6facc3b5a7263c7797bedf7f7"
+    }
+  },
+  "interpretation": [
+    "Both topologies passed grompp, minimization, NVT, and NPT integration without LINCS or non-finite-energy failures.",
+    "Potential energies are not directly comparable because the force fields use different functional forms, charges, and 1-4 scaling.",
+    "The unequal NPT durations prevent a converged quantitative force-field comparison.",
+    "The short trajectories validate software interoperability and numerical stability, not force-field accuracy or equilibrium cellulose properties."
+  ]
+}

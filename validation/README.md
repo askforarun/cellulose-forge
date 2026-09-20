@@ -38,6 +38,39 @@ batch generation without requiring AmberTools or GROMACS.
   lattice lengths and angles requires a longer, validated anisotropic
   production protocol.
 
+## Matched GLYCAM and experimental OPLS-CM5 comparison
+
+`compare_force_fields.py` automates a matched engineering comparison using the
+same periodic cellulose I-beta 4x4x4 bulk geometry (32 chains, DP8, 5,376
+atoms) for GLYCAM and the experimental OPLS-CM5 backend. It builds both
+systems, runs PME minimization, NVT, and isotropic NPT, checks the total charge
+stored in the compiled TPR, records the force field's 1--4 scaling, and writes
+complete- and late-window summaries for temperature, pressure, density,
+volume, box lengths, and potential energy.
+
+The default simulation stages are short 10 ps engineering checks. Use
+`--npt-steps 100000` for the 100 ps comparison protocol. The OPLS inputs are
+external templates and must be supplied explicitly; they are not vendored or
+treated as a public validation standard.
+
+```bash
+uv run python validation/compare_force_fields.py \
+  --opls-template /path/to/CNC.itp \
+  --opls-reference-gro /path/to/solute.gro \
+  --tleap-executable /path/to/ambertools/bin/tleap \
+  --parmed-python /path/to/ambertools/bin/python \
+  --npt-steps 100000
+```
+
+Large trajectories and binary GROMACS run files are written under
+`validation/work/` and ignored by git. Compact evidence from the September 20,
+2026 development run is retained in
+`results/force_field_comparison/summary.json`. OPLS completed 100 ps. The
+matched GLYCAM run was intentionally stopped at 38.48 ps after runtime
+stability had been established, so its late window is 20--38.48 ps rather than
+50--100 ps. These trajectories demonstrate topology and runtime integrity;
+they do not establish force-field accuracy or converged material properties.
+
 ## I-beta fibril smoke test
 
 The literature-defined DP12 36-chain I-beta fibril was mapped to the periodic
