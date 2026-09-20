@@ -362,6 +362,16 @@ def _write_glycam_build(
         "geometry_annotations": list(crystal.annotations),
         "reference_generation": reference_metadata,
     }
+    if crystal.allomorph == "II":
+        report["generated_force_field_coordinates"] = {
+            "atoms": ["HO2", "HO3", "HO6"],
+            "scope": "each anhydroglucose residue",
+            "method": (
+                "GLYCAM hydroxyl direction from C1/C3/C5 rigid alignment with "
+                "the source O-H bond length preserved"
+            ),
+            "reason": "hydroxyl-hydrogen coordinates are absent from the diffraction dataset",
+        }
     (output_directory / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

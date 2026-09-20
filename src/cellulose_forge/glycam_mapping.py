@@ -13,6 +13,9 @@ from cellulose_forge.geometry import BulkCrystal
 _GLYCAM_TO_CRYSTAL_NAME = {"H2O": "HO2", "H3O": "HO3", "H6O": "HO6"}
 _REDUCING_ALIGNMENT_ATOMS = ("C1", "H1", "O5")
 _NONREDUCING_ALIGNMENT_ATOMS = ("O4", "C4", "H4")
+_RING_ALIGNMENT_ATOMS = ("C1", "C3", "C5")
+_MISSING_CELLULOSE_II_HYDROGENS = frozenset({"HO2", "HO3", "HO6"})
+_HYDROXYL_OXYGEN_BY_GLYCAM_HYDROGEN = {"H2O": "O2", "H3O": "O3", "H6O": "O6"}
 
 
 @dataclass(frozen=True)
@@ -263,7 +266,20 @@ def map_crystal_to_periodic_glycam(
         msg = "periodic GLYCAM mapping requires explicit chain and residue numbers"
         raise ValueError(msg)
     reference = _read_reference_pdb(reference_pdb)
-    _require_crystallographic_atoms(crystal, reference)
+    generated_names = (
+        _MISSING_CELLULOSE_II_HYDROGENS
+        if crystal.allomorph == "II"
+        else frozenset()
+    )
+    _require_crystallographic_atoms(
+        crystal,
+        reference,
+        constructed_names=frozenset(
+            name
+            for name, crystal_name in _GLYCAM_TO_CRYSTAL_NAME.items()
+            if crystal_name in generated_names
+        ),
+    )
     reference_residues = _atoms_by_residue(reference)
     chain_numbers = tuple(dict.fromkeys(crystal.chain_numbers))
     degree_by_chain = {
@@ -296,11 +312,22 @@ def map_crystal_to_periodic_glycam(
     output_coordinates: list[FloatArray] = []
     for chain_number in chain_numbers:
         for reference_residue_number, reference_atoms in reference_residues.items():
-            crystal_residue_number = degree_polymerization - reference_residue_number + 1
+            if crystal.allomorph == "II" and chain_number % 2 == 0:
+                crystal_residue_number = reference_residue_number
+            else:
+                crystal_residue_number = (
+                    degree_polymerization - reference_residue_number + 1
+                )
             target = _coordinate_lookup(
                 crystal,
                 chain_number=chain_number,
                 residue_number=crystal_residue_number,
+            )
+            reference_lookup = {atom.name: atom.coordinates for atom in reference_atoms}
+            hydrogen_transform = (
+                _rigid_transform(reference_lookup, target, _RING_ALIGNMENT_ATOMS)
+                if generated_names
+                else None
             )
             for atom in reference_atoms:
                 crystal_name = _GLYCAM_TO_CRYSTAL_NAME.get(atom.name, atom.name)
@@ -308,7 +335,25 @@ def map_crystal_to_periodic_glycam(
                 output_residue_names.append("4GB")
                 output_residue_numbers.append(reference_residue_number)
                 output_chain_numbers.append(chain_number)
-                output_coordinates.append(target[crystal_name])
+                if crystal_name in generated_names:
+                    assert hydrogen_transform is not None
+                    oxygen_name = _HYDROXYL_OXYGEN_BY_GLYCAM_HYDROGEN[atom.name]
+                    aligned_hydrogen = _transform_coordinate(
+                        atom.coordinates, hydrogen_transform
+                    )
+                    aligned_oxygen = _transform_coordinate(
+                        reference_lookup[oxygen_name], hydrogen_transform
+                    )
+                    direction = aligned_hydrogen - aligned_oxygen
+                    direction /= np.linalg.norm(direction)
+                    bond_length = np.linalg.norm(
+                        atom.coordinates - reference_lookup[oxygen_name]
+                    )
+                    output_coordinates.append(
+                        target[oxygen_name] + direction * bond_length
+                    )
+                else:
+                    output_coordinates.append(target[crystal_name])
 
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)

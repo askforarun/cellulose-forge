@@ -192,6 +192,14 @@ The coordinate-only structure contains crystallographic atoms. Force-field
 mode later constructs the additional terminal atoms required for finite GLYCAM
 chains.
 
+Cellulose II is a separate documented case: its diffraction dataset omits
+HO2, HO3, and HO6. GLYCAM output generates those hydrogen coordinates using
+the aligned force-field hydroxyl directions while preserving GLYCAM O--H bond
+lengths. It does not alter the crystallographic heavy atoms. Cellulose II's
+origin and center chains are mapped in opposite residue directions so their
+antiparallel beta(1->4) connectivity remains correct. The generated-coordinate
+method is included in `build_report.json`.
+
 CelluloseForge orients generated slabs consistently: the transverse surface
 direction is `x`, the outward surface normal is `-y`, and the cellulose chain
 direction is `z`.

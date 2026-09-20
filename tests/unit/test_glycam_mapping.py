@@ -136,8 +136,48 @@ def test_iii_i_periodic_bulk_maps_to_complete_glycam_chain() -> None:
     assert set(mapped.residue_numbers) == set(range(1, 13))
 
 
-def test_ii_mapping_rejects_missing_experimental_hydroxyl_hydrogens() -> None:
+def test_ii_mapping_generates_force_field_hydrogens_and_maps_antiparallel_chains() -> None:
     crystal = build_bulk_crystal(load_allomorph("ii"), (1, 1, 6))
 
-    with pytest.raises(ValueError, match=r"HO2, HO3, HO6"):
-        map_crystal_to_periodic_glycam(crystal, PERIODIC_REFERENCE_PDB)
+    mapped = map_crystal_to_periodic_glycam(crystal, PERIODIC_REFERENCE_PDB)
+
+    assert mapped.chain_count == 2
+    assert mapped.atom_count == 2 * 12 * 21
+    for chain_number in (1, 2):
+        for residue_number in range(1, 13):
+            residue = {
+                name: coordinate
+                for name, coordinate, chain, mapped_residue in zip(
+                    mapped.atom_names,
+                    mapped.cartesian_coordinates,
+                    mapped.chain_numbers,
+                    mapped.residue_numbers,
+                    strict=True,
+                )
+                if chain == chain_number and mapped_residue == residue_number
+            }
+            for oxygen, hydrogen in (("O2", "H2O"), ("O3", "H3O"), ("O6", "H6O")):
+                assert 0.8 < np.linalg.norm(residue[hydrogen] - residue[oxygen]) < 1.1
+    for chain_number in (1, 2):
+        chain_indices = [
+            index
+            for index, chain in enumerate(mapped.chain_numbers)
+            if chain == chain_number
+        ]
+        for residue_number in range(1, 12):
+            o4 = next(
+                mapped.cartesian_coordinates[index]
+                for index in chain_indices
+                if mapped.residue_numbers[index] == residue_number
+                and mapped.atom_names[index] == "O4"
+            )
+            c1 = next(
+                mapped.cartesian_coordinates[index]
+                for index in chain_indices
+                if mapped.residue_numbers[index] == residue_number + 1
+                and mapped.atom_names[index] == "C1"
+            )
+            displacement = c1 - o4
+            fractional = np.linalg.solve(mapped.basis_vectors.T, displacement)
+            fractional -= np.round(fractional)
+            assert np.linalg.norm(fractional @ mapped.basis_vectors) < 1.7

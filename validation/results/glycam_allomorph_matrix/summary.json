@@ -1,0 +1,65 @@
+{
+  "validation": "periodic GLYCAM bulk allomorph matrix",
+  "date": "2026-09-20",
+  "gromacs": "2024.2-Homebrew",
+  "protocol": {
+    "minimization": "PME steepest descent to Fmax below 1000 kJ mol-1 nm-1",
+    "nvt_ps": 1.0,
+    "time_step_ps": 0.001,
+    "temperature_K": 300,
+    "constraints": "hydrogen bonds",
+    "fudge_14": 1.0
+  },
+  "results": [
+    {
+      "allomorph": "I-alpha",
+      "cells": [4, 4, 4],
+      "chains": 16,
+      "degree_polymerization": 8,
+      "atoms": 2688,
+      "minimization_steps": 18,
+      "maximum_force_kJ_mol_nm": 737.7736,
+      "nvt_temperature_K_mean": 249.210,
+      "status": "completed without GROMACS warnings",
+      "final_gro_sha256": "0dae444d1a77a6803881f77625a748c91ba4357a4629643656e1b67e2071f792"
+    },
+    {
+      "allomorph": "I-beta",
+      "cells": [4, 4, 4],
+      "chains": 32,
+      "degree_polymerization": 8,
+      "atoms": 5376,
+      "minimization_steps": 8,
+      "maximum_force_kJ_mol_nm": 628.0216,
+      "nvt_temperature_K_mean": 255.635,
+      "status": "completed without GROMACS warnings",
+      "final_gro_sha256": "576332e6612ad298a86867649cce96f0ac84eefb0a837b07d975959c8dc0e976"
+    },
+    {
+      "allomorph": "II",
+      "cells": [4, 4, 4],
+      "chains": 32,
+      "degree_polymerization": 8,
+      "atoms": 5376,
+      "minimization_steps": 14,
+      "maximum_force_kJ_mol_nm": 599.6163,
+      "nvt_temperature_K_mean": 309.034,
+      "generated_force_field_atoms_per_residue": ["HO2", "HO3", "HO6"],
+      "status": "completed without GROMACS warnings",
+      "final_gro_sha256": "9b0ecca14ab3ad66c63139f4f2d8fedfd8ca80e389018a5cfcf2a9af0d258a35"
+    },
+    {
+      "allomorph": "III-I",
+      "cells": [6, 4, 4],
+      "chains": 24,
+      "degree_polymerization": 8,
+      "atoms": 4032,
+      "minimization_steps": 9,
+      "maximum_force_kJ_mol_nm": 887.3385,
+      "nvt_temperature_K_mean": 235.356,
+      "status": "completed without GROMACS warnings",
+      "final_gro_sha256": "add76b1ca780ca5070b840dd96feb11a8c405172cf6213c70267c8550b14f7d4"
+    }
+  ],
+  "interpretation_limit": "One-ps NVT runs establish integration stability only; their mean temperatures are not equilibrium estimates."
+}

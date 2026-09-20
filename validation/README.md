@@ -71,6 +71,25 @@ stability had been established, so its late window is 20--38.48 ps rather than
 50--100 ps. These trajectories demonstrate topology and runtime integrity;
 they do not establish force-field accuracy or converged material properties.
 
+## Periodic GLYCAM allomorph matrix
+
+`validate_glycam_allomorphs.py` builds periodic bulk crystals for I-alpha,
+I-beta, II, and III-I, then runs `gmx grompp`, PME minimization, and a
+configurable NVT stability test. The default is 1 ps. III-I uses 6x4x4 cells
+because its short `a` lattice vector requires six repeats for compatibility
+with the validation cutoff.
+
+```bash
+uv run python validation/validate_glycam_allomorphs.py \
+  --tleap-executable /path/to/ambertools/bin/tleap \
+  --parmed-python /path/to/ambertools/bin/python
+```
+
+Compact evidence is stored in `results/glycam_allomorph_matrix/`. Cellulose II
+records its force-field construction of the missing hydroxyl hydrogens and
+uses opposite topology-to-crystal residue mappings for its antiparallel origin
+and center chains.
+
 ## I-beta fibril smoke test
 
 The literature-defined DP12 36-chain I-beta fibril was mapped to the periodic

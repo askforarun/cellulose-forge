@@ -29,7 +29,7 @@ also be parameterized with GLYCAM06j-1 and written directly for GROMACS.
 | Structure | Available allomorphs | Validation status |
 |---|---|---|
 | Unit cell | I-alpha, I-beta, II, III-I | Crystallographic cell, symmetry, and atom counts tested |
-| Periodic bulk | I-alpha, I-beta, II, III-I | Replication and box vectors tested |
+| Periodic bulk | I-alpha, I-beta, II, III-I | GLYCAM/GROMACS preprocessing, minimization, and NVT stability tested |
 | Slab | I-beta chain-parallel `(h,k,0)` faces | `(110)` validated; other faces are exploratory |
 | 36-chain fibril | I-alpha, I-beta, II | Geometry presets tested; periodic I-beta DP12 validated with GLYCAM/GROMACS |
 
@@ -318,6 +318,13 @@ cellulose-forge build \
 CelluloseForge asks `tleap` to construct one GLYCAM chain, converts that
 reference with ParmEd, maps the crystallographic coordinates into GLYCAM atom
 order, and repeats the topology for the generated chains.
+
+For cellulose II, the diffraction dataset does not contain hydroxyl-hydrogen
+coordinates. GLYCAM output constructs HO2, HO3, and HO6 using the aligned
+force-field hydroxyl directions and bond lengths; the experimental heavy-atom
+coordinates remain unchanged. Origin and center chains are mapped in opposite
+residue directions to preserve the allomorph's antiparallel connectivity. This
+construction is recorded in `build_report.json`.
 
 Preprocess a generated system with GROMACS:
 

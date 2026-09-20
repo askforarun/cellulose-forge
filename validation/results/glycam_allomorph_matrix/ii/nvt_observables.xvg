@@ -1,0 +1,36 @@
+# This file was created Sun Sep 20 20:35:04 2026
+# Created by:
+#                 :-) GROMACS - gmx energy, 2024.2-Homebrew (-:
+# 
+# Executable:   /opt/homebrew/bin/../Cellar/gromacs/2024.2/bin/gmx
+# Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2024.2
+# Working dir:  validation work directory
+# Command line:
+#   gmx energy -f nvt_1ps.edr -o nvt_observables.xvg
+# gmx energy is part of G R O M A C S:
+#
+# Good gRace! Old Maple Actually Chews Slate
+#
+@    title "GROMACS Energies"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "(kJ/mol), (K)"
+@TYPE xy
+@ view 0.15, 0.15, 0.75, 0.85
+@ legend on
+@ legend box on
+@ legend loctype view
+@ legend 0.78, 0.8
+@ legend length 2
+@ s0 legend "Potential"
+@ s1 legend "Temperature"
+    0.000000  115337.328125  299.585693
+    0.100000  115616.578125  295.326172
+    0.200000  114948.828125  305.460541
+    0.300000  115047.921875  304.477295
+    0.400000  115016.585938  302.901947
+    0.500000  114050.570312  317.830811
+    0.600000  113407.492188  327.673004
+    0.700000  113837.070312  312.612335
+    0.800000  113609.445312  312.763062
+    0.900000  113550.976562  313.208008
+    1.000000  113773.187500  307.537628
