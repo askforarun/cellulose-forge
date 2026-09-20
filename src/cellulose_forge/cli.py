@@ -26,6 +26,7 @@ from cellulose_forge.glycam_mapping import (
     map_crystal_to_periodic_glycam,
 )
 from cellulose_forge.gromacs import write_glycam_gromacs_system
+from cellulose_forge.opls_cm5 import map_finite_dp20_opls_cm5, write_opls_cm5_system
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -110,9 +111,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     build.add_argument(
         "--force-field",
-        choices=["none", "glycam"],
+        choices=["none", "glycam", "opls-cm5"],
         default="none",
-        help="write coordinates only or a simulation-ready GLYCAM/GROMACS system",
+        help="write coordinates only or a simulation-ready GROMACS system",
+    )
+    build.add_argument(
+        "--opls-template",
+        type=Path,
+        help="published pristine DP20 OPLS-CM5 CNC.itp reference",
+    )
+    build.add_argument(
+        "--opls-reference-gro",
+        type=Path,
+        help="published pristine CNC GRO containing the matching DP20 chain",
     )
     build.add_argument(
         "--tleap-executable",
@@ -144,7 +155,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
     """Run the command-line interface."""
     args = build_parser().parse_args(argv)
     if args.command == "doctor":
@@ -182,6 +193,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             crystal = _build_fibril(args, definition, build_parser())
         if args.force_field == "glycam":
             _write_glycam_build(args, crystal, build_parser())
+        elif args.force_field == "opls-cm5":
+            _write_opls_cm5_build(args, crystal, build_parser())
         else:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             written_path = write_coordinates(crystal, args.output)
@@ -191,6 +204,64 @@ def main(argv: Sequence[str] | None = None) -> int:
                     f"wrote mmCIF instead of PDB: {written_path}"
                 )
     return 0
+
+
+def _write_opls_cm5_build(
+    args: argparse.Namespace,
+    crystal: BulkCrystal,
+    parser: argparse.ArgumentParser,
+) -> None:
+    """Map finite pristine I-beta DP20 to the published OPLS-CM5 topology."""
+    if args.output.suffix:
+        parser.error("--output must be a directory when --force-field opls-cm5 is selected")
+    if args.allomorph != "I-beta":
+        parser.error("the experimental OPLS-CM5 backend currently supports I-beta only")
+    if args.shape not in {"slab", "fibril"}:
+        parser.error("the experimental OPLS-CM5 backend currently supports slabs and fibrils")
+    if args.chain_boundary != "finite":
+        parser.error("the published OPLS-CM5 DP20 topology currently requires finite chains")
+    if args.opls_template is None or args.opls_reference_gro is None:
+        parser.error(
+            "--opls-template and --opls-reference-gro are required with "
+            "--force-field opls-cm5"
+        )
+    mapped = map_finite_dp20_opls_cm5(
+        crystal,
+        args.opls_template,
+        args.opls_reference_gro,
+    )
+    args.output.mkdir(parents=True, exist_ok=True)
+    coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
+    gro_path, itp_path, topology_path = write_opls_cm5_system(
+        mapped,
+        args.opls_template,
+        args.output,
+    )
+    report = {
+        "cellulose_forge_version": __version__,
+        "allomorph": crystal.allomorph,
+        "shape": args.shape,
+        "force_field": "OPLS-CM5",
+        "status": "experimental",
+        "chain_boundary": "finite",
+        "degree_polymerization": 20,
+        "chain_count": mapped.chain_count,
+        "crystallographic_atom_count": crystal.atom_count,
+        "force_field_atom_count": mapped.atom_count,
+        "reference_topology": str(args.opls_template),
+        "reference_coordinates": str(args.opls_reference_gro),
+        "outputs": {
+            "coordinates": coordinate_path.name,
+            "gromacs_coordinates": gro_path.name,
+            "gromacs_molecule_topology": itp_path.name,
+            "gromacs_topology": topology_path.name,
+        },
+        "geometry_annotations": list(crystal.annotations),
+    }
+    (args.output / "build_report.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _write_glycam_build(

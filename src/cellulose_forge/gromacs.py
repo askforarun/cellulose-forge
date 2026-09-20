@@ -28,7 +28,7 @@ def _gro_box_line(basis_vectors: FloatArray) -> str:
 
 def write_gro(system: GlycamMappedSystem, path: str | Path) -> None:
     """Write mapped coordinates in GROMACS GRO atom order."""
-    lines = ["CelluloseForge GLYCAM-mapped cellulose", f"{system.atom_count:5d}"]
+    lines = ["CelluloseForge force-field-mapped cellulose", f"{system.atom_count:5d}"]
     for atom_index, (atom_name, residue_name, residue_number, coordinates) in enumerate(
         zip(
             system.atom_names,
