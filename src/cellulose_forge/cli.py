@@ -26,7 +26,14 @@ from cellulose_forge.glycam_mapping import (
     map_crystal_to_periodic_glycam,
 )
 from cellulose_forge.gromacs import write_glycam_gromacs_system
-from cellulose_forge.opls_cm5 import map_finite_dp20_opls_cm5, write_opls_cm5_system
+from cellulose_forge.opls_cm5 import (
+    derive_periodic_opls_cm5_topology,
+    map_finite_dp20_opls_cm5,
+    map_periodic_opls_cm5,
+    periodic_interaction_counts,
+    write_opls_cm5_system,
+    write_periodic_opls_cm5_system,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -211,40 +218,58 @@ def _write_opls_cm5_build(
     crystal: BulkCrystal,
     parser: argparse.ArgumentParser,
 ) -> None:
-    """Map finite pristine I-beta DP20 to the published OPLS-CM5 topology."""
+    """Map pristine I-beta to a finite or derived periodic OPLS-CM5 topology."""
     if args.output.suffix:
         parser.error("--output must be a directory when --force-field opls-cm5 is selected")
     if args.allomorph != "I-beta":
         parser.error("the experimental OPLS-CM5 backend currently supports I-beta only")
-    if args.shape not in {"slab", "fibril"}:
-        parser.error("the experimental OPLS-CM5 backend currently supports slabs and fibrils")
-    if args.chain_boundary != "finite":
-        parser.error("the published OPLS-CM5 DP20 topology currently requires finite chains")
     if args.opls_template is None or args.opls_reference_gro is None:
         parser.error(
             "--opls-template and --opls-reference-gro are required with "
             "--force-field opls-cm5"
         )
-    mapped = map_finite_dp20_opls_cm5(
-        crystal,
-        args.opls_template,
-        args.opls_reference_gro,
-    )
+    chain_boundary = args.chain_boundary
+    if args.shape in {"bulk", "crystal", "unit-cell"}:
+        if chain_boundary != "periodic":
+            parser.error("OPLS-CM5 bulk and unit-cell builds require --chain-boundary periodic")
+    elif chain_boundary is None:
+        parser.error("--chain-boundary finite|periodic is required with OPLS-CM5")
+    assert chain_boundary is not None
+    degree_polymerization = _crystal_degree_polymerization(crystal)
+    periodic_topology = None
+    if chain_boundary == "periodic":
+        periodic_topology = derive_periodic_opls_cm5_topology(
+            args.opls_template,
+            args.opls_reference_gro,
+            degree_polymerization=degree_polymerization,
+        )
+        mapped = map_periodic_opls_cm5(crystal, periodic_topology)
+    else:
+        if args.shape not in {"slab", "fibril"}:
+            parser.error("finite OPLS-CM5 currently supports slabs and fibrils only")
+        mapped = map_finite_dp20_opls_cm5(
+            crystal,
+            args.opls_template,
+            args.opls_reference_gro,
+        )
     args.output.mkdir(parents=True, exist_ok=True)
     coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
-    gro_path, itp_path, topology_path = write_opls_cm5_system(
-        mapped,
-        args.opls_template,
-        args.output,
-    )
+    if periodic_topology is None:
+        gro_path, itp_path, topology_path = write_opls_cm5_system(
+            mapped, args.opls_template, args.output
+        )
+    else:
+        gro_path, itp_path, topology_path = write_periodic_opls_cm5_system(
+            mapped, periodic_topology, args.output
+        )
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
         "shape": args.shape,
         "force_field": "OPLS-CM5",
         "status": "experimental",
-        "chain_boundary": "finite",
-        "degree_polymerization": 20,
+        "chain_boundary": chain_boundary,
+        "degree_polymerization": degree_polymerization,
         "chain_count": mapped.chain_count,
         "crystallographic_atom_count": crystal.atom_count,
         "force_field_atom_count": mapped.atom_count,
@@ -258,6 +283,18 @@ def _write_opls_cm5_build(
         },
         "geometry_annotations": list(crystal.annotations),
     }
+    if periodic_topology is not None:
+        report["periodic_topology_derivation"] = {
+            "source": "internal repeat of published finite DP20 topology",
+            "source_repeat_charge": periodic_topology.source_repeat_charge,
+            "uniform_charge_correction_per_atom": (
+                periodic_topology.charge_correction_per_atom
+            ),
+            "corrected_repeat_charge": periodic_topology.corrected_repeat_charge,
+            "interaction_counts_per_chain": periodic_interaction_counts(
+                periodic_topology
+            ),
+        }
     (args.output / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
