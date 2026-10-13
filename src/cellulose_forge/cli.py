@@ -164,6 +164,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="sequential CelluloseForge chain IDs to restrain",
     )
     build.add_argument(
+        "--restrain-layers",
+        nargs="+",
+        type=int,
+        metavar="LAYER_ID",
+        help="one-based transverse layers to restrain, ordered from low y to high y",
+    )
+    build.add_argument(
         "--restraint-force",
         nargs=3,
         type=float,
@@ -260,6 +267,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
                 value is not None
                 for value in (
                     args.restrain_chains,
+                    args.restrain_layers,
                     args.restraint_force,
                 )
             ):
@@ -364,6 +372,11 @@ def _write_charmm36_build(
         report["position_restraints"] = {
             "define": "POSRES_CELLULOSE",
             "selected_chain_ids": list(restraints.chain_ids),
+            "selected_layer_ids": list(restraints.layer_ids),
+            "layer_mapping": [
+                {"layer_id": layer_id, "chain_ids": list(chain_ids)}
+                for layer_id, chain_ids in restraints.layer_mapping
+            ],
             "force_constants_kj_mol_nm2": list(restraints.force_constants),
             "atom_selection": "all atoms in each selected chain",
             "chain_mapping": chain_mapping,
@@ -451,6 +464,11 @@ def _write_glycam_build(
         report["position_restraints"] = {
             "define": "POSRES_CELLULOSE",
             "selected_chain_ids": list(restraints.chain_ids),
+            "selected_layer_ids": list(restraints.layer_ids),
+            "layer_mapping": [
+                {"layer_id": layer_id, "chain_ids": list(chain_ids)}
+                for layer_id, chain_ids in restraints.layer_mapping
+            ],
             "force_constants_kj_mol_nm2": list(restraints.force_constants),
             "atom_selection": "all atoms in each selected chain",
             "chain_mapping": chain_mapping,
@@ -503,6 +521,7 @@ def _resolve_restraints(
         return resolve_chain_restraints(
             crystal,
             chain_ids=args.restrain_chains,
+            layer_ids=args.restrain_layers,
             force_constants=args.restraint_force,
         )
     except ValueError as error:

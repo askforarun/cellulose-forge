@@ -17,7 +17,7 @@ files.
 8. [Build a 36-chain elementary fibril](#8-build-a-36-chain-elementary-fibril)
 9. [Understand chain numbering](#9-understand-chain-numbering)
 10. [Generate a GLYCAM/GROMACS fibril](#10-generate-a-glycamgromacs-fibril)
-11. [Generate a CHARMM36/GROMACS fibril](#11-generate-a-charmm36gromacs-fibril)
+11. [Generate CHARMM36/GROMACS systems](#11-generate-charmm36gromacs-systems)
 12. [Preprocess and minimize with GROMACS](#12-preprocess-and-minimize-with-gromacs)
 13. [Work with systems above 99,999 atoms](#13-work-with-systems-above-99999-atoms)
 14. [Visualize the results](#14-visualize-the-results)
@@ -56,6 +56,42 @@ git clone https://github.com/askforarun/cellulose-forge.git
 cd cellulose-forge
 python -m pip install -e .
 ```
+
+### CHARMM36 environment and force-field installation
+
+CHARMM36 construction needs the normal Python installation of CelluloseForge,
+but does not need AmberTools, ParmEd, VMD, or `psfgen`. After installing the
+package, install the pinned official GROMACS force-field release once:
+
+```bash
+cellulose-forge forcefield install charmm36
+cellulose-forge forcefield path charmm36
+```
+
+The first command downloads the February 2026 CHARMM36/CGenFF 5.0 archive from
+the MacKerell Laboratory, verifies the archive checksum, and validates the
+installed files. The second command prints the directory that subsequent
+builds will use.
+
+On a cluster without internet access, copy the official archive to the cluster
+and install it locally:
+
+```bash
+cellulose-forge forcefield install charmm36 \
+  --archive /path/to/charmm36-feb2026_cgenff-5.0.ff.tgz
+```
+
+The default installation root is `~/.local/share/cellulose-forge`. To use a
+project or shared-filesystem location, set the override consistently when
+installing and building:
+
+```bash
+export CELLULOSE_FORGE_DATA_DIR=/path/to/cellulose-forge-data
+cellulose-forge forcefield install charmm36
+```
+
+GROMACS is not needed to construct the files, but it is required for `grompp`,
+minimization, and simulation validation.
 
 Check that the required programs are visible with a single diagnostic
 command:
@@ -317,7 +353,7 @@ identifiers are the appropriate basis for later restraint or selection files.
 ### Selective chain position restraints
 
 Force-field builds can create separate free and restrained cellulose molecule
-types. Select chains using their deterministic CelluloseForge chain IDs:
+types. Select deterministic chain IDs, complete transverse layers, or both:
 
 ```bash
 uv run cellulose-forge build \
@@ -327,14 +363,18 @@ uv run cellulose-forge build \
   --degree-polymerization 40 \
   --chain-boundary periodic \
   --force-field glycam \
-  --restrain-chains 6 11 16 21 26 31 \
+  --restrain-layers 1 3 \
+  --restrain-chains 11 16 \
   --restraint-force 1000 1000 1000 \
   --output restrained_fibril
 ```
 
-The generated topology places free
-molecules before restrained molecules, and `build_report.json` records the
-mapping from original chain ID to GROMACS molecule index and global atom range.
+Layers are numbered from low Cartesian y to high Cartesian y. Both selectors
+are combined and duplicate chains are removed. The generated topology places
+free molecules before restrained molecules, and `build_report.json` records
+the layer-to-chain expansion and mapping from original chain ID to GROMACS
+molecule index and global atom range. The same selectors work with
+`--force-field charmm36`.
 Enable the restraints in an MDP file with
 `define = -DPOSRES_CELLULOSE` and supply the generated coordinates to
 `gmx grompp` with `-r structure.gro`. Without this define, the same topology
@@ -389,7 +429,7 @@ cellulose-forge build [the remaining build options] \
   --output cellulose_forge_tutorial/custom_environment_build
 ```
 
-## 11. Generate a CHARMM36/GROMACS fibril
+## 11. Generate CHARMM36/GROMACS systems
 
 CHARMM36 supports pristine finite and periodic chains. Install the pinned
 February 2026 GROMACS force-field release once:
@@ -398,7 +438,49 @@ February 2026 GROMACS force-field release once:
 cellulose-forge forcefield install charmm36
 ```
 
-Then build the fibril without a reference-chain topology:
+Confirm which installed directory CelluloseForge will use:
+
+```bash
+cellulose-forge forcefield path charmm36
+```
+
+### Finite I-beta (110) slab
+
+This example constructs explicit reducing and nonreducing chain termini:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape slab \
+  --face 1 1 0 \
+  --layers 4 \
+  --chains-per-layer 20 \
+  --degree-polymerization 12 \
+  --chain-boundary finite \
+  --vacuum 30 \
+  --force-field charmm36 \
+  --output cellulose_forge_tutorial/ibeta_110_finite_charmm36
+```
+
+### Periodic bulk crystal
+
+For a bulk crystal, the last residue of every chain is covalently linked to
+the first residue through the periodic box. The corresponding boundary bonds,
+angles, pairs, and dihedrals are generated explicitly:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape bulk \
+  --cells 4 4 6 \
+  --chain-boundary periodic \
+  --force-field charmm36 \
+  --output cellulose_forge_tutorial/ibeta_bulk_charmm36
+```
+
+### Periodic 36-chain fibril
+
+Build the fibril without a reference-chain topology:
 
 ```bash
 cellulose-forge build \
@@ -422,6 +504,41 @@ Use `--chain-boundary finite` for explicit reducing and nonreducing termini, or
 `--chain-boundary periodic` for a final-to-first glycosidic linkage. Periodic bulk models are tested
 for I-alpha, I-beta, II, and III-I; periodic 36-chain fibrils are tested for
 I-alpha, I-beta, and II.
+
+Each CHARMM36 output directory contains:
+
+```text
+structure.pdb                 crystallographic/force-field coordinates
+structure.gro                 GROMACS coordinates
+cellulose_charmm36.itp        generated cellulose topology
+system.top                    complete GROMACS system topology
+charmm36-feb2026_cgenff-5.0.ff/ pinned force-field files
+build_report.json             interpreted options, provenance, and identifiers
+```
+
+Inspect the report before simulation:
+
+```bash
+python -m json.tool \
+  cellulose_forge_tutorial/ibeta_110_finite_charmm36/build_report.json
+```
+
+Preprocess and minimize the finite slab:
+
+```bash
+gmx grompp \
+  -f validation/finite_pme_minim.mdp \
+  -c cellulose_forge_tutorial/ibeta_110_finite_charmm36/structure.gro \
+  -p cellulose_forge_tutorial/ibeta_110_finite_charmm36/system.top \
+  -o cellulose_forge_tutorial/ibeta_110_finite_charmm36/minim.tpr
+
+gmx mdrun \
+  -deffnm cellulose_forge_tutorial/ibeta_110_finite_charmm36/minim
+```
+
+Use `validation/periodic_pme_minim.mdp` for periodic bulk crystals and
+periodic fibrils. Do not add chain-direction vacuum to a periodic chain because
+that would separate atoms joined by the final-to-first glycosidic bond.
 
 ## 12. Preprocess and minimize with GROMACS
 

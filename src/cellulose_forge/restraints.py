@@ -16,16 +16,38 @@ class ChainRestraints:
 
     chain_ids: tuple[int, ...]
     force_constants: tuple[float, float, float]
+    layer_ids: tuple[int, ...] = ()
+    layer_mapping: tuple[tuple[int, tuple[int, ...]], ...] = ()
+
+
+def transverse_chain_layers(crystal: BulkCrystal) -> tuple[tuple[int, tuple[int, ...]], ...]:
+    """Group chains into low-y to high-y transverse molecular layers."""
+    chain_numbers = np.asarray(crystal.chain_numbers)
+    coordinates = np.asarray(crystal.cartesian_coordinates)
+    centers = [
+        (chain_id, float(coordinates[chain_numbers == chain_id, 1].mean()))
+        for chain_id in sorted(set(crystal.chain_numbers))
+    ]
+    grouped: list[list[tuple[int, float]]] = []
+    for chain_id, center in sorted(centers, key=lambda item: (item[1], item[0])):
+        if not grouped or not np.isclose(center, grouped[-1][0][1], atol=1e-5, rtol=0.0):
+            grouped.append([])
+        grouped[-1].append((chain_id, center))
+    return tuple(
+        (layer_id, tuple(sorted(chain_id for chain_id, _ in members)))
+        for layer_id, members in enumerate(grouped, start=1)
+    )
 
 
 def resolve_chain_restraints(
     crystal: BulkCrystal,
     *,
     chain_ids: list[int] | None,
-    force_constants: list[float] | None,
+    layer_ids: list[int] | None = None,
+    force_constants: list[float] | None = None,
 ) -> ChainRestraints | None:
     """Resolve universal selectors to deterministic chain IDs."""
-    if not chain_ids:
+    if not chain_ids and not layer_ids:
         if force_constants is not None:
             raise ValueError("--restraint-force requires a chain-restraint selector")
         return None
@@ -40,9 +62,23 @@ def resolve_chain_restraints(
     if unknown:
         raise ValueError(f"unknown chain IDs: {', '.join(map(str, sorted(unknown)))}")
 
+    layer_mapping = transverse_chain_layers(crystal)
+    layers_by_id = dict(layer_mapping)
+    selected_layers = set(layer_ids or [])
+    unknown_layers = selected_layers.difference(layers_by_id)
+    if unknown_layers:
+        raise ValueError(
+            f"unknown layer IDs: {', '.join(map(str, sorted(unknown_layers)))}; "
+            f"available layers are 1-{len(layer_mapping)}"
+        )
+    for layer_id in selected_layers:
+        selected.update(layers_by_id[layer_id])
+
     return ChainRestraints(
         chain_ids=tuple(sorted(selected)),
         force_constants=tuple(force_constants),  # type: ignore[arg-type]
+        layer_ids=tuple(sorted(selected_layers)),
+        layer_mapping=layer_mapping,
     )
 
 
@@ -104,8 +140,7 @@ def position_restraints_section(
         "; atom  funct       fx       fy       fz",
     ]
     lines.extend(
-        f"{atom:6d}      1 {fx:10.3f} {fy:10.3f} {fz:10.3f}"
-        for atom in range(1, atom_count + 1)
+        f"{atom:6d}      1 {fx:10.3f} {fy:10.3f} {fz:10.3f}" for atom in range(1, atom_count + 1)
     )
     lines.extend(("#endif", ""))
     return "\n".join(lines)

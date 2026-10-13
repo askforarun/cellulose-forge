@@ -78,6 +78,17 @@ AmberTools and ParmEd are not required when `--force-field none` is used.
 GROMACS is not required to generate files, but it is required to validate and
 simulate the generated system.
 
+### CHARMM36/GROMACS builds
+
+In addition to the coordinate-only requirements:
+
+- Internet access for the one-time force-field download, or a local copy of
+  the official pinned archive
+- GROMACS for preprocessing, minimization, and simulation
+
+AmberTools, ParmEd, VMD, and `psfgen` are not required for CHARMM36 builds.
+CelluloseForge reads the official GROMACS CHARMM36 files directly.
+
 ## Installation
 
 CelluloseForge is not yet released on PyPI. Install it from the GitHub
@@ -122,6 +133,43 @@ git clone https://github.com/askforarun/cellulose-forge.git
 cd cellulose-forge
 python -m pip install -e .
 ```
+
+### Install the CHARMM36 force field
+
+After installing CelluloseForge, download and install the supported official
+CHARMM36/CGenFF release:
+
+```bash
+cellulose-forge forcefield install charmm36
+```
+
+When using the `uv` environment from this repository, run:
+
+```bash
+uv run cellulose-forge forcefield install charmm36
+```
+
+The installer downloads the pinned February 2026 CHARMM36/CGenFF 5.0 GROMACS
+archive from the MacKerell Laboratory, verifies its SHA-256 checksum, validates
+the required files, and installs it under the user data directory. Confirm the
+exact path with:
+
+```bash
+cellulose-forge forcefield path charmm36
+```
+
+For an offline machine or compute cluster, first obtain the same official
+archive and install from the local file:
+
+```bash
+cellulose-forge forcefield install charmm36 \
+  --archive /path/to/charmm36-feb2026_cgenff-5.0.ff.tgz
+```
+
+Set `CELLULOSE_FORGE_DATA_DIR` before installation if the default
+`~/.local/share/cellulose-forge` location is unsuitable. Normal builds discover
+this installed release automatically; `--charmm-force-field-directory` is only
+needed to override discovery deliberately.
 
 Verify the external tools with one diagnostic command:
 
@@ -355,9 +403,10 @@ the periodic box provides sufficient separation between chain ends.
 ### Selective chain position restraints
 
 GLYCAM and CHARMM36 builds can apply GROMACS position restraints to selected
-cellulose chains. Chain IDs are deterministic, one-based identifiers reported
-in `build_report.json`. For example, the following command restrains six chains
-in the standard 36-chain fibril:
+cellulose chains. Chain and transverse-layer IDs are deterministic, one-based
+identifiers reported in `build_report.json`. Select explicit chains with
+`--restrain-chains`, complete layers with `--restrain-layers`, or combine both.
+For example, this command restrains layer 1 plus two additional chains:
 
 ```bash
 cellulose-forge build \
@@ -368,14 +417,17 @@ cellulose-forge build \
   --chain-boundary periodic \
   --vacuum 30 \
   --force-field glycam \
-  --restrain-chains 6 11 16 21 26 31 \
+  --restrain-layers 1 \
+  --restrain-chains 11 16 \
   --restraint-force 1000 1000 1000 \
   --output restrained_fibril
 ```
 
-The generated topology separates free and restrained chains while preserving
-the coordinate-to-topology order. The build report maps every requested chain
-ID to its GROMACS molecule index and global atom range.
+Layers are numbered from low Cartesian y to high Cartesian y after geometry
+generation. The generated topology separates free and restrained chains while
+preserving the coordinate-to-topology order. The build report records the
+layer-to-chain expansion and maps each selected chain ID to its GROMACS
+molecule index and global atom range.
 
 Enable the restraints in the simulation MDP file:
 
@@ -428,6 +480,7 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--charmm-template` | ITP path | Optional periodic reference topology for regression studies |
 | `--charmm-force-field-directory` | directory | Optional override for the installed CHARMM36 release |
 | `--restrain-chains` | one or more IDs | Restrain selected deterministic chain IDs |
+| `--restrain-layers` | one or more IDs | Restrain transverse layers numbered from low y to high y |
 | `--restraint-force` | `FX FY FZ` | Position-restraint force constants in kJ mol$^{-1}$ nm$^{-2}$ |
 | `--output` | file or directory | Coordinate file for `none`; directory for force-field builds |
 
@@ -441,13 +494,45 @@ Install the pinned official February 2026 CHARMM36/CGenFF 5.0 GROMACS port once:
 cellulose-forge forcefield install charmm36
 ```
 
+Build a finite cellulose I-beta (110) slab with native CHARMM36/GROMACS
+topology:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape slab \
+  --face 1 1 0 \
+  --layers 4 \
+  --chains-per-layer 20 \
+  --degree-polymerization 12 \
+  --chain-boundary finite \
+  --vacuum 30 \
+  --force-field charmm36 \
+  --output ibeta_110_charmm36
+```
+
+The output directory contains `structure.gro`, `structure.pdb` (or mmCIF for
+large systems), `cellulose_charmm36.itp`, `system.top`, the pinned local
+force-field files, and `build_report.json`. Preprocess it with:
+
+```bash
+gmx grompp \
+  -f validation/finite_pme_minim.mdp \
+  -c ibeta_110_charmm36/structure.gro \
+  -p ibeta_110_charmm36/system.top \
+  -o ibeta_110_charmm36/minim.tpr
+
+gmx mdrun -deffnm ibeta_110_charmm36/minim
+```
+
 The installer verifies the archive checksum and records a stable local release;
 upstream updates are adopted only through an explicit CelluloseForge update.
 CelluloseForge reads `BGLC` from the installed force field, applies finite or
 cyclic `14bb` linkages, and writes matched GRO/ITP/TOP output
 directly without a reference-chain ITP, VMD, or `psfgen`. See
-[`docs/charmm36.md`](docs/charmm36.md) for the exact
-inputs, examples, and validation evidence.
+the [full tutorial](docs/tutorial.md#11-generate-charmm36gromacs-systems) for
+finite and periodic examples and [`docs/charmm36.md`](docs/charmm36.md) for
+the implementation and validation evidence.
 
 ## Output files
 
