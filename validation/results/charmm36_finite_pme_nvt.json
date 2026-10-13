@@ -1,0 +1,56 @@
+{
+  "description": "Finite-chain CHARMM36 PME minimization and 1 ps NVT smoke tests",
+  "force_field": "charmm36-feb2026_cgenff-5.0.ff",
+  "gromacs_version": "2024.2-Homebrew",
+  "preparation": {
+    "initial_minimization": "validation/finite_minim.mdp",
+    "tight_pme_minimization": "validation/finite_pme_minim_tight.mdp",
+    "tight_minimization_target_kj_mol_nm": 100.0,
+    "nvt": "validation/finite_pme_nvt.mdp",
+    "nvt_duration_ps": 1.0,
+    "target_temperature_k": 300.0
+  },
+  "interpretation": "Integration smoke test only; the 1 ps trajectories are not equilibrated production simulations.",
+  "systems": {
+    "I-beta-(110)-slab": {
+      "chains": 24,
+      "degree_polymerization": 6,
+      "minimization_steps": 2191,
+      "maximum_force_kj_mol_nm": 80.148407,
+      "nvt_completed": true,
+      "lincs_or_nonfinite_warnings": false,
+      "mean_temperature_k": 234.692,
+      "final_temperature_k": 255.506897
+    },
+    "I-alpha-36-chain-fibril": {
+      "chains": 36,
+      "degree_polymerization": 6,
+      "minimization_steps": 591,
+      "maximum_force_kj_mol_nm": 95.887733,
+      "nvt_completed": true,
+      "lincs_or_nonfinite_warnings": false,
+      "mean_temperature_k": 211.091,
+      "final_temperature_k": 243.194061
+    },
+    "I-beta-36-chain-fibril": {
+      "chains": 36,
+      "degree_polymerization": 6,
+      "minimization_steps": 1685,
+      "maximum_force_kj_mol_nm": 99.909546,
+      "nvt_completed": true,
+      "lincs_or_nonfinite_warnings": false,
+      "mean_temperature_k": 211.396,
+      "final_temperature_k": 244.218307
+    },
+    "II-36-chain-fibril": {
+      "chains": 36,
+      "degree_polymerization": 6,
+      "minimization_steps": 1062,
+      "maximum_force_kj_mol_nm": 99.077019,
+      "nvt_completed": true,
+      "lincs_or_nonfinite_warnings": false,
+      "mean_temperature_k": 217.582,
+      "final_temperature_k": 242.858429
+    }
+  }
+}

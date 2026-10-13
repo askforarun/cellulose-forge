@@ -59,6 +59,10 @@ packages = ["src/cellulose_forge"]
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers"
 testpaths = ["tests"]
+markers = [
+  "gromacs: requires a working GROMACS executable",
+  "scientific_integration: exercises an external simulation workflow",
+]
 
 [tool.coverage.run]
 branch = true

@@ -1,0 +1,39 @@
+{
+  "description": "Native finite-chain CHARMM36 DP6 36-chain fibril smoke tests",
+  "force_field": "charmm36-feb2026_cgenff-5.0.ff",
+  "gromacs_version": "2024.2-Homebrew",
+  "method": {
+    "chain_boundary": "finite",
+    "degree_polymerization": 6,
+    "chain_count": 36,
+    "force_field_atom_count": 4644,
+    "vacuum_angstrom": 30.0,
+    "chain_end_padding_angstrom": 20.0,
+    "preprocessing": "gmx grompp with validation/finite_minim.mdp",
+    "minimization": "steepest descent to Fmax < 1000 kJ mol-1 nm-1"
+  },
+  "systems": {
+    "I-alpha": {
+      "grompp": "passed",
+      "minimization_steps": 8,
+      "potential_energy_kj_mol": 96237.938,
+      "maximum_force_kj_mol_nm": 918.70422,
+      "structure_gro_sha256": "1cefc2d591c8729536acddef920fb4fd5ae7cdc3a0738d20bb5c44d4a9de79d7"
+    },
+    "I-beta": {
+      "grompp": "passed",
+      "minimization_steps": 15,
+      "potential_energy_kj_mol": 92383.469,
+      "maximum_force_kj_mol_nm": 936.77600,
+      "structure_gro_sha256": "36f83f50b2064bc4ef37abce7343157caf9faa7c0c5e7e3968a5cfe41900255c"
+    },
+    "II": {
+      "grompp": "passed",
+      "minimization_steps": 22,
+      "potential_energy_kj_mol": 98857.578,
+      "maximum_force_kj_mol_nm": 801.95807,
+      "structure_gro_sha256": "d6fb520d56a94962b0d6eb7dbcb316de7c739ca2a846e0b6faaa5113ab65a42f"
+    }
+  },
+  "molecule_itp_sha256": "52f2ac59374293c11fda39edfbce3ecd1e411cb9e8ba6ce5e4d9cf261344d959"
+}

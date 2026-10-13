@@ -37,39 +37,10 @@ batch generation without requiring AmberTools or GROMACS.
   box shape while allowing its volume to respond. Independent relaxation of
   lattice lengths and angles requires a longer, validated anisotropic
   production protocol.
-
-## Matched GLYCAM and experimental OPLS-CM5 comparison
-
-`compare_force_fields.py` automates a matched engineering comparison using the
-same periodic cellulose I-beta 4x4x4 bulk geometry (32 chains, DP8, 5,376
-atoms) for GLYCAM and the experimental OPLS-CM5 backend. It builds both
-systems, runs PME minimization, NVT, and isotropic NPT, checks the total charge
-stored in the compiled TPR, records the force field's 1--4 scaling, and writes
-complete- and late-window summaries for temperature, pressure, density,
-volume, box lengths, and potential energy.
-
-The default simulation stages are short 10 ps engineering checks. Use
-`--npt-steps 100000` for the 100 ps comparison protocol. The OPLS inputs are
-external templates and must be supplied explicitly; they are not vendored or
-treated as a public validation standard.
-
-```bash
-uv run python validation/compare_force_fields.py \
-  --opls-template /path/to/CNC.itp \
-  --opls-reference-gro /path/to/solute.gro \
-  --tleap-executable /path/to/ambertools/bin/tleap \
-  --parmed-python /path/to/ambertools/bin/python \
-  --npt-steps 100000
-```
-
-Large trajectories and binary GROMACS run files are written under
-`validation/work/` and ignored by git. Compact evidence from the September 20,
-2026 development run is retained in
-`results/force_field_comparison/summary.json`. OPLS completed 100 ps. The
-matched GLYCAM run was intentionally stopped at 38.48 ps after runtime
-stability had been established, so its late window is 20--38.48 ps rather than
-50--100 ps. These trajectories demonstrate topology and runtime integrity;
-they do not establish force-field accuracy or converged material properties.
+- `position_restraint_minim.mdp`: minimization smoke test with selective chain
+  restraints enabled through `POSRES_CELLULOSE`.
+- `position_restraint_pme_nvt_1ps.mdp`: deterministic 1 ps, 300 K PME/NVT
+  integration test for selectively restrained cellulose chains.
 
 ## Periodic GLYCAM allomorph matrix
 
@@ -90,45 +61,74 @@ records its force-field construction of the missing hydroxyl hydrogens and
 uses opposite topology-to-crystal residue mappings for its antiparallel origin
 and center chains.
 
-## Experimental periodic OPLS-CM5 allomorph matrix
+## CHARMM36 validation
 
-`validate_opls_allomorphs.py` applies the externally supplied OPLS-CM5 repeat
-template to periodic bulk I-alpha, I-beta, II, and III-I crystals, then runs
-the same `gmx grompp`, PME minimization, and configurable NVT engineering
-checks as the GLYCAM matrix. The external finite DP20 topology and its matching
-coordinates are required explicitly:
+The CHARMM36 adapter reads `BGLC` from the checksum-pinned official GROMACS
+force-field distribution and generates finite or arbitrary even-DP cyclic
+topologies directly. A 4x4x6 I-beta DP12 build (32 chains,
+8,064 atoms) passed `gmx grompp`, converged below the configured minimization
+force threshold, and completed 1 ps of NVT integration. A generated DP8 system
+also passed preprocessing and minimization.
 
-```bash
-uv run python validation/validate_opls_allomorphs.py \
-  --opls-template /path/to/CNC.itp \
-  --opls-reference-gro /path/to/solute.gro
-```
-
-Compact evidence is stored in `results/opls_allomorph_matrix/`. Successful
-preprocessing, minimization, and 1-ps integration establish that the generated
-topologies are internally executable. They do not independently validate the
-transferability or physical accuracy of the I-beta-derived OPLS-CM5 parameters
-for other cellulose allomorphs.
-
-## Matched GLYCAM/OPLS-CM5 allomorph NPT comparison
-
-`compare_allomorph_force_fields.py` builds every periodic bulk allomorph with
-both force fields, minimizes it, and runs matched NVT and isotropic NPT stages.
-The default duration is 10 ps for each ensemble:
+The reference chemistry can be audited without copying external parameters:
 
 ```bash
-uv run python validation/compare_allomorph_force_fields.py \
-  --opls-template /path/to/CNC.itp \
-  --opls-reference-gro /path/to/solute.gro \
-  --tleap-executable /path/to/ambertools/bin/tleap \
-  --parmed-python /path/to/ambertools/bin/python
+uv run python validation/validate_charmm36_reference.py \
+  --rtf /path/to/top_all36_carb.rtf \
+  --itp /path/to/CARB_12.itp \
+  --output validation/results/charmm36_reference.json
 ```
 
-The driver separately records Lennard--Jones and electrostatic 1--4 scaling.
-The current generated systems use `fudgeLJ = fudgeQQ = 1.0` for GLYCAM and
-`fudgeLJ = fudgeQQ = 0.5` for OPLS-AA. Compact results are stored in
-`results/allomorph_force_field_comparison/`; trajectories and binary run files
-remain under ignored `validation/work/` paths.
+This validates the periodic repeat against CHARMM36 `BGLC` plus cyclic `14bb`,
+checks neutrality and atom modifications, and compares the complete regenerated
+DP12 bonded graph with the source ITP. See `docs/charmm36.md` for
+the exact build CLI, engineering results, and current scientific limitations.
+The companion `audit_charmm36_coefficients.py` exhaustively checks the
+nonbonded, bond, angle/Urey--Bradley, and proper-dihedral parameter types used
+by that topology against the upstream carbohydrate PRM with explicit unit and
+functional-form conversions. Its compact result is stored in
+`results/charmm36_coefficients.json`.
+
+The periodic I-beta shape matrix additionally contains a (110) slab and the
+literature-defined 36-chain fibril at DP8. Both passed PME preprocessing and
+minimized below the configured force threshold without `-maxwarn`. Compact
+results are stored in `results/charmm36_ibeta_shapes.json`; generated GROMACS
+run files remain under the ignored `validation/work/` directory.
+
+The periodic CHARMM36 bulk matrix covers I-alpha, I-beta, II, and III-I at
+DP8. Every system passes preprocessing, PME minimization, and 1-ps NVT without
+LINCS or non-finite-energy failures. Cellulose II records its constructed
+hydroxyl hydrogens and antiparallel residue mapping. Compact evidence is stored
+in `results/charmm36_allomorph_matrix.json`.
+
+The periodic 36-chain CHARMM36 fibril matrix covers the I-alpha, I-beta, and II
+presets at DP8 (6,048 atoms each). Every fibril passes preprocessing, PME
+minimization, and 1-ps NVT without LINCS warnings or non-finite energies. The
+cellulose II mapping follows each chain's measured periodic O4--C1 path; this
+avoids assuming that fibril chain direction can be inferred from identifier
+parity. Compact evidence is stored in
+`results/charmm36_fibril_matrix.json`.
+
+Finite DP6 I-alpha, I-beta, and II fibrils and an I-beta (110) slab pass tight
+PME minimization followed by 1-ps NVT integration without LINCS or non-finite
+energy warnings. Compact results are stored in
+`results/charmm36_finite_pme_nvt.json`. The independent DP15 CHARMM-GUI
+comparison can be reproduced with:
+
+```bash
+uv run python validation/validate_finite_charmm36_reference.py \
+  --force-field-directory /path/to/charmm36.ff \
+  --itp /path/to/CHARMM-GUI/CARA.itp \
+  --output validation/results/charmm36_finite_reference.json
+```
+
+The comparison matches all atom names, types, charges, and 2,883 bonded
+interaction records exactly after normalization by residue and atom identity.
+
+Nanopolysaccharide Builder was reviewed as an independent CHARMM36 workflow
+reference. It exposes CHARMM36 primarily through PSF generation with `psfgen`;
+CelluloseForge's experimental path instead targets native GROMACS GRO/ITP/TOP
+output without making `psfgen` a runtime dependency.
 
 ## I-beta fibril smoke test
 
@@ -137,6 +137,18 @@ GLYCAM chain reference and tested with GROMACS 2024.2. `gmx grompp` completed
 with no warnings using `periodic_pme_minim.mdp`; the resulting system contained
 9,072 atoms and 432 residues. Steepest descent converged in 10 steps to a
 maximum force of 949.3 kJ mol-1 nm-1 (configured threshold: 1000).
+
+Selective-restraint validation used the same DP12 fibril with chain IDs 6, 11,
+16, 21, 26, and 31 assigned force constants of 1000 kJ mol-1 nm-2 along each
+Cartesian direction. The generated topology contained 30 free and six
+restrained molecules, covering 1,512 restrained atoms. GROMACS 2024.2
+preprocessing succeeded without `-maxwarn`; minimization reached the force
+threshold in 13 steps; and the 1 ps PME/NVT test completed without LINCS
+warnings or non-finite energies. The trajectory recorded a nonzero position-
+restraint energy, confirming that the generated interaction was active.
+Compact results are retained in
+`results/position_restraint_validation.json`; trajectory and run files remain
+untracked because they are reproducible binary artifacts.
 
 ## Large I-beta slab preprocessing test
 

@@ -1,0 +1,34 @@
+{
+  "atoms_per_repeat": 21,
+  "deleted_by_cyclic_14bb": [
+    "HO1",
+    "HO4",
+    "O1"
+  ],
+  "interaction_counts": {
+    "angles": 492,
+    "bonds": 264,
+    "dihedrals": 792,
+    "pairs": 756
+  },
+  "itp_sha256": "a7633d76ad447d53075ffdeca6da950aeb047a200ecb39d39d4e0ba2edfb72ae",
+  "modified_atoms": {
+    "C1": {
+      "charge_e": 0.29,
+      "type": "CC3162"
+    },
+    "C4": {
+      "charge_e": 0.09,
+      "type": "CC3161"
+    },
+    "O4": {
+      "charge_e": -0.36,
+      "type": "OC301"
+    }
+  },
+  "reference_dp": 12,
+  "regenerated_graph_matches_reference": true,
+  "repeat_charge_e": -1.3877787807814457e-16,
+  "rtf_sha256": "da75d7b0cb07424730058596312de8b6450f6b9f8bc686f08fb1a24e07ae791e",
+  "status": "passed"
+}

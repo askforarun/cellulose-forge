@@ -3,7 +3,9 @@
 CelluloseForge is a crystallography-first Python tool for building atomistic
 cellulose structures. It generates periodic bulk crystals, cellulose I-beta
 surface slabs, and literature-defined 36-chain fibrils. Supported systems can
-also be parameterized with GLYCAM06j-1 and written directly for GROMACS.
+also be parameterized with GLYCAM06j-1 or CHARMM36 and written
+directly for GROMACS. CHARMM36 topology generation does not require VMD or
+`psfgen` at runtime.
 
 > **Release status:** CelluloseForge 1.0.0 is the initial stable release. Its
 > supported and validated boundaries below are intentionally narrower than the
@@ -20,6 +22,8 @@ also be parameterized with GLYCAM06j-1 and written directly for GROMACS.
 - PDB and PDBx/mmCIF coordinate output.
 - Automatic mmCIF fallback when a requested PDB exceeds 99,999 atoms.
 - GLYCAM06j-1 parameterization through AmberTools and ParmEd.
+- Direct finite- and periodic-chain CHARMM36 topology generation for GROMACS without VMD
+  or `psfgen`.
 - GROMACS `.gro` and `.top` output plus a machine-readable build report.
 - Machine-readable diagnostics and deterministic outputs suitable for workflow
   managers and external LLM-based software agents.
@@ -29,12 +33,14 @@ also be parameterized with GLYCAM06j-1 and written directly for GROMACS.
 | Structure | Available allomorphs | Validation status |
 |---|---|---|
 | Unit cell | I-alpha, I-beta, II, III-I | Crystallographic cell, symmetry, and atom counts tested |
-| Periodic bulk | I-alpha, I-beta, II, III-I | GLYCAM/GROMACS preprocessing, minimization, and NVT stability tested |
+| Periodic bulk | I-alpha, I-beta, II, III-I | GLYCAM and CHARMM36 GROMACS preprocessing, minimization, and NVT stability tested |
 | Slab | I-beta chain-parallel `(h,k,0)` faces | `(110)` validated; other faces are exploratory |
-| 36-chain fibril | I-alpha, I-beta, II | Geometry presets tested; periodic I-beta DP12 validated with GLYCAM/GROMACS |
+| 36-chain fibril | I-alpha, I-beta, II | Geometry presets tested; periodic GLYCAM and finite/periodic CHARMM36 GROMACS workflows validated |
 
-CHARMM36, functionalization, OPLS, native CHARMM/PSF output, and arbitrary
-branched glycans are not implemented in the current release.
+The release supports finite and periodic GLYCAM and CHARMM36 output for GROMACS.
+It excludes functionalization, native CHARMM/PSF output, and arbitrary
+branched glycans. The CHARMM36 path generates GROMACS topology directly and
+does not require VMD or `psfgen` at runtime.
 
 ## Table of contents
 
@@ -45,6 +51,7 @@ branched glycans are not implemented in the current release.
 - [Full tutorial](#full-tutorial)
 - [Workflow-manager and LLM-agent orchestration](#workflow-manager-and-llm-agent-orchestration)
 - [GLYCAM and GROMACS workflow](#glycam-and-gromacs-workflow)
+- [CHARMM36 workflow](#charmm36-workflow)
 - [Command reference](#command-reference)
 - [Output files](#output-files)
 - [Large systems](#large-systems)
@@ -345,6 +352,52 @@ gmx mdrun -deffnm ibeta_fibril/minim
 Use `validation/finite_pme_minim.mdp` for finite-chain systems and ensure that
 the periodic box provides sufficient separation between chain ends.
 
+### Selective chain position restraints
+
+GLYCAM and CHARMM36 builds can apply GROMACS position restraints to selected
+cellulose chains. Chain IDs are deterministic, one-based identifiers reported
+in `build_report.json`. For example, the following command restrains six chains
+in the standard 36-chain fibril:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape fibril \
+  --fibril-model 36-chain \
+  --degree-polymerization 12 \
+  --chain-boundary periodic \
+  --vacuum 30 \
+  --force-field glycam \
+  --restrain-chains 6 11 16 21 26 31 \
+  --restraint-force 1000 1000 1000 \
+  --output restrained_fibril
+```
+
+The generated topology separates free and restrained chains while preserving
+the coordinate-to-topology order. The build report maps every requested chain
+ID to its GROMACS molecule index and global atom range.
+
+Enable the restraints in the simulation MDP file:
+
+```ini
+define = -DPOSRES_CELLULOSE
+```
+
+Then pass the reference coordinates with `gmx grompp -r`:
+
+```bash
+gmx grompp \
+  -f validation/position_restraint_pme_nvt_1ps.mdp \
+  -c restrained_fibril/structure.gro \
+  -r restrained_fibril/structure.gro \
+  -p restrained_fibril/system.top \
+  -o restrained_fibril/nvt.tpr
+```
+
+Omitting `-DPOSRES_CELLULOSE` disables the restraints without requiring a new
+structure or topology. The three values supplied to `--restraint-force` are
+the x, y, and z force constants in kJ mol$^{-1}$ nm$^{-2}$.
+
 ## Command reference
 
 ```text
@@ -363,18 +416,38 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--slab-width` | angstrom | Minimum transverse width |
 | `--slab-thickness` | angstrom | Minimum thickness normal to the surface |
 | `--slab-length` | angstrom | Minimum chain-direction length |
-| `--fibril-model` | `36-chain` | Named literature-defined fibril preset |
+| `--fibril-model` | `36-chain` | Literature-defined fibril preset |
 | `--chain-boundary` | `finite`, `periodic` | Terminal groups or a covalent bond across the chain boundary |
 | `--vacuum` | angstrom | Total transverse vacuum padding |
 | `--padding-x` | angstrom | Total fibril x padding; overrides `--vacuum` for x |
 | `--padding-y` | angstrom | Total fibril y padding; overrides `--vacuum` for y |
 | `--padding-z` | angstrom | Total finite-fibril chain-end padding; periodic chains require zero |
-| `--force-field` | `none`, `glycam` | Coordinate-only or GLYCAM/GROMACS output |
+| `--force-field` | `none`, `glycam`, `charmm36` | Coordinate-only, GLYCAM, or CHARMM36 GROMACS output |
 | `--tleap-executable` | executable path | `tleap` used for GLYCAM builds |
 | `--parmed-python` | Python path | Interpreter containing ParmEd |
-| `--output` | file or directory | Coordinate file for `none`; directory for `glycam` |
+| `--charmm-template` | ITP path | Optional periodic reference topology for regression studies |
+| `--charmm-force-field-directory` | directory | Optional override for the installed CHARMM36 release |
+| `--restrain-chains` | one or more IDs | Restrain selected deterministic chain IDs |
+| `--restraint-force` | `FX FY FZ` | Position-restraint force constants in kJ mol$^{-1}$ nm$^{-2}$ |
+| `--output` | file or directory | Coordinate file for `none`; directory for force-field builds |
 
 Run `cellulose-forge build --help` for the authoritative parser help.
+
+## CHARMM36 workflow
+
+Install the pinned official February 2026 CHARMM36/CGenFF 5.0 GROMACS port once:
+
+```bash
+cellulose-forge forcefield install charmm36
+```
+
+The installer verifies the archive checksum and records a stable local release;
+upstream updates are adopted only through an explicit CelluloseForge update.
+CelluloseForge reads `BGLC` from the installed force field, applies finite or
+cyclic `14bb` linkages, and writes matched GRO/ITP/TOP output
+directly without a reference-chain ITP, VMD, or `psfgen`. See
+[`docs/charmm36.md`](docs/charmm36.md) for the exact
+inputs, examples, and validation evidence.
 
 ## Output files
 

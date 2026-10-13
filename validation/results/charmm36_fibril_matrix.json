@@ -1,0 +1,45 @@
+{
+  "gromacs_version": "2024.2-Homebrew",
+  "status": "passed",
+  "protocol": {
+    "chain_boundary": "periodic",
+    "degree_polymerization": 8,
+    "electrostatics": "PME",
+    "fibril_model": "36-chain",
+    "minimization_tolerance_kj_mol_nm": 1000.0,
+    "nvt_temperature_k": 300.0,
+    "nvt_time_ps": 1.0
+  },
+  "systems": [
+    {
+      "allomorph": "I-alpha",
+      "atom_count": 6048,
+      "chain_count": 36,
+      "grompp": "passed",
+      "maximum_force_kj_mol_nm": 644.3714,
+      "minimization_steps": 428,
+      "nvt": "passed_without_lincs_warnings_or_nonfinite_energies",
+      "potential_energy_kj_mol": 164136.72
+    },
+    {
+      "allomorph": "I-beta",
+      "atom_count": 6048,
+      "chain_count": 36,
+      "grompp": "passed_with_one_initial_excluded-distance_note",
+      "maximum_force_kj_mol_nm": 927.0575,
+      "minimization_steps": 647,
+      "potential_energy_kj_mol": 143324.16,
+      "nvt": "passed_without_lincs_warnings_or_nonfinite_energies"
+    },
+    {
+      "allomorph": "II",
+      "atom_count": 6048,
+      "chain_count": 36,
+      "grompp": "passed",
+      "maximum_force_kj_mol_nm": 530.40485,
+      "minimization_steps": 14,
+      "nvt": "passed_without_lincs_warnings_or_nonfinite_energies",
+      "potential_energy_kj_mol": 118744.12
+    }
+  ]
+}

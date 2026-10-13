@@ -9,9 +9,26 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from cellulose_forge import __version__
+from cellulose_forge.charmm36 import (
+    FiniteCharmm36Topology,
+    PeriodicCharmm36Topology,
+    derive_periodic_charmm36_topology,
+    finite_charmm36_interaction_counts,
+    map_finite_charmm36,
+    map_periodic_charmm36,
+    native_finite_charmm36_topology,
+    native_periodic_charmm36_topology,
+    periodic_charmm36_interaction_counts,
+    write_charmm36_system,
+)
 from cellulose_forge.coordinates import write_coordinates
 from cellulose_forge.crystallography import AllomorphDefinition, MillerIndex, load_allomorph
 from cellulose_forge.doctor import render_json, render_text, run_diagnostics
+from cellulose_forge.forcefields import (
+    CHARMM36_RELEASE,
+    discover_charmm36_directory,
+    install_charmm36,
+)
 from cellulose_forge.geometry import (
     BulkCrystal,
     build_36_chain_fibril,
@@ -26,13 +43,10 @@ from cellulose_forge.glycam_mapping import (
     map_crystal_to_periodic_glycam,
 )
 from cellulose_forge.gromacs import write_glycam_gromacs_system
-from cellulose_forge.opls_cm5 import (
-    derive_periodic_opls_cm5_topology,
-    map_finite_dp20_opls_cm5,
-    map_periodic_opls_cm5,
-    periodic_interaction_counts,
-    write_opls_cm5_system,
-    write_periodic_opls_cm5_system,
+from cellulose_forge.restraints import (
+    ChainRestraints,
+    group_mapped_chains,
+    resolve_chain_restraints,
 )
 
 
@@ -118,19 +132,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     build.add_argument(
         "--force-field",
-        choices=["none", "glycam", "opls-cm5"],
+        choices=["none", "glycam", "charmm36"],
         default="none",
         help="write coordinates only or a simulation-ready GROMACS system",
     )
     build.add_argument(
-        "--opls-template",
+        "--charmm-template",
         type=Path,
-        help="externally supplied pristine DP20 OPLS-CM5 CNC.itp template",
+        help="externally supplied periodic CHARMM36 cellulose-chain ITP",
     )
     build.add_argument(
-        "--opls-reference-gro",
+        "--charmm-force-field-directory",
         type=Path,
-        help="externally supplied CNC GRO containing the matching DP20 chain",
+        help="CHARMM36 GROMACS force-field directory containing forcefield.itp",
     )
     build.add_argument(
         "--tleap-executable",
@@ -141,6 +155,20 @@ def build_parser() -> argparse.ArgumentParser:
         "--parmed-python",
         type=Path,
         help="optional Python interpreter containing ParmEd",
+    )
+    build.add_argument(
+        "--restrain-chains",
+        nargs="+",
+        type=int,
+        metavar="CHAIN_ID",
+        help="sequential CelluloseForge chain IDs to restrain",
+    )
+    build.add_argument(
+        "--restraint-force",
+        nargs=3,
+        type=float,
+        metavar=("FX", "FY", "FZ"),
+        help="position-restraint force constants in kJ mol^-1 nm^-2",
     )
     build.add_argument("--output", type=Path, required=True)
 
@@ -159,12 +187,37 @@ def build_parser() -> argparse.ArgumentParser:
         help="Python interpreter to check for an importable ParmEd",
     )
     doctor.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+
+    forcefield = subparsers.add_parser(
+        "forcefield", help="install or locate supported force-field data"
+    )
+    forcefield_subparsers = forcefield.add_subparsers(dest="forcefield_command", required=True)
+    forcefield_install = forcefield_subparsers.add_parser(
+        "install", help="download and install a supported force-field release"
+    )
+    forcefield_install.add_argument("name", choices=["charmm36"])
+    forcefield_install.add_argument(
+        "--archive",
+        type=Path,
+        help="install from a local official archive instead of downloading it",
+    )
+    forcefield_path = forcefield_subparsers.add_parser(
+        "path", help="print the installed path of a supported force field"
+    )
+    forcefield_path.add_argument("name", choices=["charmm36"])
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
     """Run the command-line interface."""
     args = build_parser().parse_args(argv)
+    if args.command == "forcefield":
+        if args.forcefield_command == "install":
+            installed = install_charmm36(archive_path=args.archive)
+            print(f"Installed {CHARMM36_RELEASE}: {installed}")
+        else:
+            print(discover_charmm36_directory())
+        return 0
     if args.command == "doctor":
         checks = run_diagnostics(
             tleap_executable=args.tleap_executable,
@@ -200,9 +253,17 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
             crystal = _build_fibril(args, definition, build_parser())
         if args.force_field == "glycam":
             _write_glycam_build(args, crystal, build_parser())
-        elif args.force_field == "opls-cm5":
-            _write_opls_cm5_build(args, crystal, build_parser())
+        elif args.force_field == "charmm36":
+            _write_charmm36_build(args, crystal, build_parser())
         else:
+            if any(
+                value is not None
+                for value in (
+                    args.restrain_chains,
+                    args.restraint_force,
+                )
+            ):
+                build_parser().error("chain restraints require --force-field glycam or charmm36")
             args.output.parent.mkdir(parents=True, exist_ok=True)
             written_path = write_coordinates(crystal, args.output)
             if written_path != args.output:
@@ -213,101 +274,106 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
     return 0
 
 
-def _write_opls_cm5_build(  # noqa: PLR0912
+def _write_charmm36_build(
     args: argparse.Namespace,
     crystal: BulkCrystal,
     parser: argparse.ArgumentParser,
 ) -> None:
-    """Map pristine cellulose to a finite or derived periodic OPLS-CM5 topology."""
+    """Map cellulose to a native CHARMM36 topology."""
     if args.output.suffix:
-        parser.error("--output must be a directory when --force-field opls-cm5 is selected")
-    if args.opls_template is None or args.opls_reference_gro is None:
-        parser.error(
-            "--opls-template and --opls-reference-gro are required with "
-            "--force-field opls-cm5"
-        )
-    chain_boundary = args.chain_boundary
-    if args.shape in {"bulk", "crystal", "unit-cell"}:
-        if chain_boundary != "periodic":
-            parser.error("OPLS-CM5 bulk and unit-cell builds require --chain-boundary periodic")
-    elif chain_boundary is None:
-        parser.error("--chain-boundary finite|periodic is required with OPLS-CM5")
-    assert chain_boundary is not None
+        parser.error("--output must be a directory when --force-field charmm36 is selected")
     degree_polymerization = _crystal_degree_polymerization(crystal)
-    periodic_topology = None
-    if chain_boundary == "periodic":
-        periodic_topology = derive_periodic_opls_cm5_topology(
-            args.opls_template,
-            args.opls_reference_gro,
+    force_field_directory = (
+        args.charmm_force_field_directory
+        if args.charmm_force_field_directory is not None
+        else discover_charmm36_directory()
+    )
+    topology: PeriodicCharmm36Topology | FiniteCharmm36Topology
+    if args.chain_boundary == "periodic":
+        topology = (
+            derive_periodic_charmm36_topology(
+                args.charmm_template,
+                degree_polymerization=degree_polymerization,
+            )
+            if args.charmm_template is not None
+            else native_periodic_charmm36_topology(
+                force_field_directory,
+                degree_polymerization=degree_polymerization,
+            )
+        )
+        mapped = map_periodic_charmm36(crystal, topology)
+        interaction_counts = periodic_charmm36_interaction_counts(topology)
+    else:
+        if args.charmm_template is not None:
+            parser.error("--charmm-template is only supported for periodic chains")
+        topology = native_finite_charmm36_topology(
+            force_field_directory,
             degree_polymerization=degree_polymerization,
         )
-        mapped = map_periodic_opls_cm5(crystal, periodic_topology)
-    else:
-        if args.allomorph != "I-beta":
-            parser.error("finite OPLS-CM5 currently supports I-beta only")
-        if args.shape not in {"slab", "fibril"}:
-            parser.error("finite OPLS-CM5 currently supports slabs and fibrils only")
-        mapped = map_finite_dp20_opls_cm5(
-            crystal,
-            args.opls_template,
-            args.opls_reference_gro,
+        mapped = map_finite_charmm36(crystal, topology)
+        interaction_counts = finite_charmm36_interaction_counts(topology)
+    restraints = _resolve_restraints(args, crystal, parser)
+    chain_mapping = None
+    if restraints is not None:
+        mapped, chain_mapping = group_mapped_chains(
+            mapped,
+            restraints.chain_ids,
+            free_molecule_type=topology.molecule_name,
+            restrained_molecule_type=f"{topology.molecule_name}_RESTRAINED",
         )
     args.output.mkdir(parents=True, exist_ok=True)
     coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
-    if periodic_topology is None:
-        gro_path, itp_path, topology_path = write_opls_cm5_system(
-            mapped, args.opls_template, args.output
-        )
-    else:
-        gro_path, itp_path, topology_path = write_periodic_opls_cm5_system(
-            mapped, periodic_topology, args.output
-        )
+    gro_path, itp_path, topology_path, force_field_path = write_charmm36_system(
+        mapped,
+        topology,
+        force_field_directory,
+        args.output,
+        restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
+        restraint_force=restraints.force_constants if restraints else None,
+    )
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
         "shape": args.shape,
-        "force_field": "OPLS-CM5",
-        "status": "experimental",
-        "chain_boundary": chain_boundary,
-        "degree_polymerization": degree_polymerization,
+        "force_field": "CHARMM36",
+        "status": "supported",
+        "chain_boundary": args.chain_boundary,
+        "degree_polymerization": topology.degree_polymerization,
         "chain_count": mapped.chain_count,
         "crystallographic_atom_count": crystal.atom_count,
         "force_field_atom_count": mapped.atom_count,
-        "reference_topology": str(args.opls_template),
-        "reference_coordinates": str(args.opls_reference_gro),
+        "generated_chain_charge": topology.total_charge,
+        "interaction_counts_per_chain": interaction_counts,
+        "topology_source": (
+            str(args.charmm_template)
+            if args.charmm_template is not None
+            else f"native BGLC residue with {args.chain_boundary} 14bb linkage"
+        ),
+        "reference_force_field": str(force_field_directory),
+        "charmm36_release": CHARMM36_RELEASE,
         "outputs": {
             "coordinates": coordinate_path.name,
             "gromacs_coordinates": gro_path.name,
             "gromacs_molecule_topology": itp_path.name,
             "gromacs_topology": topology_path.name,
+            "gromacs_force_field": force_field_path.name,
         },
         "geometry_annotations": list(crystal.annotations),
     }
-    if periodic_topology is not None:
-        report["periodic_topology_derivation"] = {
-            "source": "internal repeat of externally supplied finite DP20 topology",
-            "source_repeat_charge": periodic_topology.source_repeat_charge,
-            "uniform_charge_correction_per_atom": (
-                periodic_topology.charge_correction_per_atom
-            ),
-            "corrected_repeat_charge": periodic_topology.corrected_repeat_charge,
-            "interaction_counts_per_chain": periodic_interaction_counts(
-                periodic_topology
-            ),
+    if restraints is not None:
+        report["position_restraints"] = {
+            "define": "POSRES_CELLULOSE",
+            "selected_chain_ids": list(restraints.chain_ids),
+            "force_constants_kj_mol_nm2": list(restraints.force_constants),
+            "atom_selection": "all atoms in each selected chain",
+            "chain_mapping": chain_mapping,
         }
-        if crystal.allomorph == "II":
-            report["generated_force_field_coordinates"] = {
-                "atoms": ["HO2", "HO3", "HO6"],
-                "scope": "each anhydroglucose residue",
-                "method": (
-                    "OPLS hydroxyl direction from C1/C3/C5 rigid alignment with "
-                    "the source O-H bond length preserved"
-                ),
-                "reason": (
-                    "hydroxyl-hydrogen coordinates are absent from the "
-                    "diffraction dataset"
-                ),
-            }
+    if crystal.allomorph == "II":
+        report["generated_force_field_coordinates"] = {
+            "atoms": ["HO2", "HO3", "HO6"],
+            "scope": "each anhydroglucose residue",
+            "method": "I-beta reference O-H geometry aligned on C1/C3/C5",
+        }
     (args.output / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -348,12 +414,18 @@ def _write_glycam_build(
             mapped = map_crystal_to_periodic_glycam(crystal, files.pdb)
         else:
             mapped = map_crystal_to_finite_glycam(crystal, files.pdb)
+        restraints = _resolve_restraints(args, crystal, parser)
+        chain_mapping = None
+        if restraints is not None:
+            mapped, chain_mapping = group_mapped_chains(mapped, restraints.chain_ids)
         output_directory.mkdir(parents=True, exist_ok=True)
         coordinate_path = write_coordinates(crystal, output_directory / "structure.pdb")
         gro_path, topology_path = write_glycam_gromacs_system(
             mapped,
             files.gromacs_topology,
             output_directory,
+            restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
+            restraint_force=restraints.force_constants if restraints else None,
         )
 
     report = {
@@ -375,6 +447,14 @@ def _write_glycam_build(
         "geometry_annotations": list(crystal.annotations),
         "reference_generation": reference_metadata,
     }
+    if restraints is not None:
+        report["position_restraints"] = {
+            "define": "POSRES_CELLULOSE",
+            "selected_chain_ids": list(restraints.chain_ids),
+            "force_constants_kj_mol_nm2": list(restraints.force_constants),
+            "atom_selection": "all atoms in each selected chain",
+            "chain_mapping": chain_mapping,
+        }
     if crystal.allomorph == "II":
         report["generated_force_field_coordinates"] = {
             "atoms": ["HO2", "HO3", "HO6"],
@@ -411,6 +491,22 @@ def _crystal_degree_polymerization(crystal: BulkCrystal) -> int:
         msg = "GLYCAM output requires equal, nonempty cellulose chain lengths"
         raise ValueError(msg)
     return next(iter(degrees.values()))
+
+
+def _resolve_restraints(
+    args: argparse.Namespace,
+    crystal: BulkCrystal,
+    parser: argparse.ArgumentParser,
+) -> ChainRestraints | None:
+    """Resolve CLI restraint selectors, reporting validation as CLI errors."""
+    try:
+        return resolve_chain_restraints(
+            crystal,
+            chain_ids=args.restrain_chains,
+            force_constants=args.restraint_force,
+        )
+    except ValueError as error:
+        parser.error(str(error))
 
 
 def _build_fibril(

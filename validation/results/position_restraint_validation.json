@@ -1,0 +1,40 @@
+{
+  "system": {
+    "allomorph": "I-beta",
+    "shape": "36-chain fibril",
+    "degree_polymerization": 12,
+    "chain_boundary": "periodic",
+    "force_field": "GLYCAM06j-1",
+    "atom_count": 9072,
+    "residue_count": 432
+  },
+  "restraints": {
+    "selected_chain_ids": [6, 11, 16, 21, 26, 31],
+    "free_chain_count": 30,
+    "restrained_chain_count": 6,
+    "restrained_atom_count": 1512,
+    "force_constants_kj_mol_nm2": [1000.0, 1000.0, 1000.0],
+    "preprocessor_define": "POSRES_CELLULOSE"
+  },
+  "software": {
+    "gromacs": "2024.2-Homebrew"
+  },
+  "minimization": {
+    "mdp": "validation/position_restraint_minim.mdp",
+    "completed": true,
+    "converged_steps": 13,
+    "potential_energy_kj_mol": 204558.23,
+    "maximum_force_kj_mol_nm": 684.65857,
+    "configured_force_threshold_kj_mol_nm": 1000.0
+  },
+  "nvt": {
+    "mdp": "validation/position_restraint_pme_nvt_1ps.mdp",
+    "completed": true,
+    "duration_ps": 1.0,
+    "temperature_target_k": 300.0,
+    "pme": true,
+    "lincs_warnings": 0,
+    "nonfinite_energy_events": 0,
+    "mean_position_restraint_energy_kj_mol": 567.4
+  }
+}

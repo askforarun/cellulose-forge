@@ -24,3 +24,36 @@ jobs:
       - run: uv run pytest --cov=cellulose_forge --cov-report=term-missing
       - run: uv run ruff check .
       - run: uv run mypy src
+
+  clean-install:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.11", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - run: uv build
+      - run: uv venv --python ${{ matrix.python-version }} .clean-venv
+      - run: uv pip install --python .clean-venv/bin/python dist/*.whl
+      - run: .clean-venv/bin/cellulose-forge --version
+      - run: .clean-venv/bin/cellulose-forge build --allomorph I-beta --shape unit-cell --output clean-install-unit-cell.pdb
+
+  gromacs-smoke:
+    runs-on: ubuntu-latest
+    env:
+      CELLULOSE_FORGE_DATA_DIR: ${{ github.workspace }}/.cellulose-forge-data
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: sudo apt-get update && sudo apt-get install -y gromacs
+      - run: uv sync --extra dev
+      - run: uv run cellulose-forge forcefield install charmm36
+      - run: uv run pytest tests/integration/test_gromacs_workflows.py -m "gromacs and scientific_integration" -q

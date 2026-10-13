@@ -1,7 +1,7 @@
 # CelluloseForge tutorial
 
-This tutorial builds progressively from a single cellulose unit cell to a
-simulation-ready GLYCAM/GROMACS system. It is written for users who are new to
+This tutorial builds progressively from a single cellulose unit cell to
+simulation-ready GLYCAM and CHARMM36 GROMACS systems. It is written for users who are new to
 CelluloseForge but already have basic familiarity with molecular simulation
 files.
 
@@ -17,18 +17,22 @@ files.
 8. [Build a 36-chain elementary fibril](#8-build-a-36-chain-elementary-fibril)
 9. [Understand chain numbering](#9-understand-chain-numbering)
 10. [Generate a GLYCAM/GROMACS fibril](#10-generate-a-glycamgromacs-fibril)
-11. [Preprocess and minimize with GROMACS](#11-preprocess-and-minimize-with-gromacs)
-12. [Work with systems above 99,999 atoms](#12-work-with-systems-above-99999-atoms)
-13. [Visualize the results](#13-visualize-the-results)
-14. [Common errors](#14-common-errors)
-15. [Use an external workflow manager or LLM agent](#15-use-an-external-workflow-manager-or-llm-agent)
-16. [What to record in a research workflow](#16-what-to-record-in-a-research-workflow)
+11. [Generate a CHARMM36/GROMACS fibril](#11-generate-a-charmm36gromacs-fibril)
+12. [Preprocess and minimize with GROMACS](#12-preprocess-and-minimize-with-gromacs)
+13. [Work with systems above 99,999 atoms](#13-work-with-systems-above-99999-atoms)
+14. [Visualize the results](#14-visualize-the-results)
+15. [Common errors](#15-common-errors)
+16. [Use an external workflow manager or LLM agent](#16-use-an-external-workflow-manager-or-llm-agent)
+17. [What to record in a research workflow](#17-what-to-record-in-a-research-workflow)
 
 ## 1. Choose an installation mode
 
 Coordinate-only builds require Python and NumPy. GLYCAM builds additionally
-require AmberTools and ParmEd. GROMACS is needed only when preprocessing or
-simulating the generated files.
+require AmberTools and ParmEd. CHARMM36 builds require the checksum-pinned
+official GROMACS CHARMM36 distribution, installed with
+`cellulose-forge forcefield install charmm36`, but do not require a reference
+ITP, VMD, or `psfgen`. GROMACS is needed only when preprocessing or simulating
+the generated files.
 
 ### Coordinate-only environment
 
@@ -309,6 +313,32 @@ Slab chains are numbered deterministically:
 
 Fibril chains follow the stored literature-preset order. These stable numeric
 identifiers are the appropriate basis for later restraint or selection files.
+
+### Selective chain position restraints
+
+Force-field builds can create separate free and restrained cellulose molecule
+types. Select chains using their deterministic CelluloseForge chain IDs:
+
+```bash
+uv run cellulose-forge build \
+  --allomorph I-beta \
+  --shape fibril \
+  --fibril-model 36-chain \
+  --degree-polymerization 40 \
+  --chain-boundary periodic \
+  --force-field glycam \
+  --restrain-chains 6 11 16 21 26 31 \
+  --restraint-force 1000 1000 1000 \
+  --output restrained_fibril
+```
+
+The generated topology places free
+molecules before restrained molecules, and `build_report.json` records the
+mapping from original chain ID to GROMACS molecule index and global atom range.
+Enable the restraints in an MDP file with
+`define = -DPOSRES_CELLULOSE` and supply the generated coordinates to
+`gmx grompp` with `-r structure.gro`. Without this define, the same topology
+runs with the restraint section disabled.
 One-character PDB chain labels repeat after 62 chains, so use segment identifiers
 or mmCIF identifiers for larger systems.
 
@@ -359,7 +389,41 @@ cellulose-forge build [the remaining build options] \
   --output cellulose_forge_tutorial/custom_environment_build
 ```
 
-## 11. Preprocess and minimize with GROMACS
+## 11. Generate a CHARMM36/GROMACS fibril
+
+CHARMM36 supports pristine finite and periodic chains. Install the pinned
+February 2026 GROMACS force-field release once:
+
+```bash
+cellulose-forge forcefield install charmm36
+```
+
+Then build the fibril without a reference-chain topology:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape fibril \
+  --fibril-model 36-chain \
+  --degree-polymerization 8 \
+  --chain-boundary periodic \
+  --vacuum 30 \
+  --force-field charmm36 \
+  --output cellulose_forge_tutorial/ibeta_fibril_charmm36
+```
+
+CelluloseForge reads `BGLC`, applies the cyclic `14bb` linkage, generates the
+chain topology at DP8, maps the crystallographic
+coordinates, and writes `structure.gro`, `cellulose_charmm36.itp`, `system.top`,
+the local force-field directory, and `build_report.json`. This is direct
+GROMACS topology generation: VMD and `psfgen` are not invoked.
+
+Use `--chain-boundary finite` for explicit reducing and nonreducing termini, or
+`--chain-boundary periodic` for a final-to-first glycosidic linkage. Periodic bulk models are tested
+for I-alpha, I-beta, II, and III-I; periodic 36-chain fibrils are tested for
+I-alpha, I-beta, and II.
+
+## 12. Preprocess and minimize with GROMACS
 
 From the repository root, preprocess the periodic fibril:
 
@@ -392,7 +456,10 @@ The included MDP files are validation and smoke-test protocols. They are not a
 substitute for selecting and reporting an application-specific equilibration
 and production protocol.
 
-## 12. Work with systems above 99,999 atoms
+The same commands apply to a CHARMM36 output directory by replacing the GRO,
+TOP, and output paths.
+
+## 13. Work with systems above 99,999 atoms
 
 The published-size example below contains 100,800 crystallographic atoms:
 
@@ -426,13 +493,13 @@ in topology order. CelluloseForge has validated this 102,000-atom system with
 GROMACS 2024.2 `gmx grompp`, PME electrostatics, zero warnings, and no
 `-maxwarn` allowance.
 
-## 13. Visualize the results
+## 14. Visualize the results
 
 PDB and GRO files can be opened in common molecular viewers such as VMD. For
 large mmCIF structures, use a viewer version with PDBx/mmCIF support. When a
 viewer shows bonds inferred from distance, remember that coordinate-only files
 do not yet carry the force-field topology; the authoritative simulation bonds
-are in `system.top` after a GLYCAM build.
+are in `system.top` after a GLYCAM or CHARMM36 build.
 
 Useful views are:
 
@@ -440,7 +507,7 @@ Useful views are:
 - looking along `y` to inspect the slab surface plane;
 - displaying the periodic box to confirm vacuum placement.
 
-## 14. Common errors
+## 15. Common errors
 
 ### `--output must be a directory when --force-field glycam is selected`
 
@@ -470,6 +537,17 @@ identify a Python interpreter that contains it:
 --parmed-python /path/to/amber/environment/bin/python
 ```
 
+### CHARMM36 is not installed
+
+Install the pinned release from the official source:
+
+```bash
+cellulose-forge forcefield install charmm36
+```
+
+Use `cellulose-forge forcefield path charmm36` to inspect its location. A local
+official archive can be supplied with `--archive` for offline installation.
+
 ### A slab face is rejected
 
 Current slabs are limited to cellulose I-beta chain-parallel `(h,k,0)` faces.
@@ -485,7 +563,7 @@ preset. Use unit-cell or bulk geometry for III-I instead.
 Check the terminal message for a sibling `.cif` path. CelluloseForge switches
 to mmCIF rather than writing invalid wrapped PDB identifiers.
 
-## 15. Use an external workflow manager or LLM agent
+## 16. Use an external workflow manager or LLM agent
 
 CelluloseForge does not contain an LLM and does not require one. External
 workflow managers and LLM-based software agents can orchestrate it through the
@@ -520,7 +598,7 @@ cellulose-forge build \
 The command is ordinary CelluloseForge syntax: it can be inspected, rerun, and
 validated without the agent. After execution, check `build_report.json` rather
 than relying on the agent's description of success. For GLYCAM output, also run
-the GROMACS preprocessing procedure in Section 11. The retained
+the GROMACS preprocessing procedure in Section 12. The retained
 proof-of-concept evidence is documented in
 [`validation/agent_orchestration_demo/`](../validation/agent_orchestration_demo/).
 
@@ -529,14 +607,17 @@ natural-language accuracy. Applications that accept unrestricted user text
 should validate allowed values and require human review before launching costly
 simulation jobs.
 
-## 16. What to record in a research workflow
+## 17. What to record in a research workflow
 
 For reproducibility, retain:
 
 - the complete CelluloseForge command;
 - the CelluloseForge version or Git commit;
 - `build_report.json` for parameterized builds;
-- the AmberTools, ParmEd, GLYCAM, and GROMACS versions;
+- the selected force field and its exact release;
+- for GLYCAM, the AmberTools and ParmEd versions;
+- for CHARMM36, the pinned release name and force-field archive checksum;
+- the GROMACS version;
 - the MDP files and exact `gmx grompp` command;
 - checksums or an archive DOI for large generated reference files.
 

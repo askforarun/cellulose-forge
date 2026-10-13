@@ -63,3 +63,30 @@ def test_repeated_chain_topology_sets_exact_molecule_count(tmp_path: Path) -> No
     write_repeated_chain_topology(template, output, chain_count=80)
 
     assert output.read_text(encoding="utf-8").endswith("CELLULOSE_CHAIN  80\n")
+
+
+def test_repeated_chain_topology_adds_selective_position_restraints(tmp_path: Path) -> None:
+    template = tmp_path / "template.top"
+    template.write_text(
+        "[ moleculetype ]\nCELLULOSE_CHAIN 3\n\n"
+        "[ atoms ]\n1 CT 1 4GB C1 1 0.0 12.0\n2 HC 1 4GB H1 2 0.0 1.0\n\n"
+        "[ system ]\nCellulose\n\n"
+        "[ molecules ]\nCELLULOSE_CHAIN 1\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "system.top"
+
+    write_repeated_chain_topology(
+        template,
+        output,
+        chain_count=36,
+        restrained_chain_count=6,
+        restraint_force=(1000.0, 1000.0, 0.0),
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert "CELLULOSE_CHAIN_RESTRAINED  3" in text
+    assert "#ifdef POSRES_CELLULOSE" in text
+    assert "     2      1   1000.000   1000.000      0.000" in text
+    assert "CELLULOSE_CHAIN  30" in text
+    assert "CELLULOSE_CHAIN_RESTRAINED  6" in text

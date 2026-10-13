@@ -1,0 +1,17 @@
+{
+  "atom_count": 318,
+  "atom_names_types_charges_match": true,
+  "bonded_graph_matches": true,
+  "carb_rtp_sha256": "53a030ee4f0792664e9a19d2bad7d7ce1d47896471d73832e8d530dd3af1be70",
+  "chain_charge_e": -2.1094237467877974e-15,
+  "interaction_counts": {
+    "angles": 616,
+    "bonds": 332,
+    "dihedrals": 990,
+    "pairs": 945
+  },
+  "reference": "doGlycans cellulose example processed independently by CHARMM-GUI v1.7",
+  "reference_dp": 15,
+  "reference_itp_sha256": "2acb5355dc0bbce6ce50cefe5dd9f2eeb1664dccf76ce36e5f460915fe4479df",
+  "status": "passed"
+}

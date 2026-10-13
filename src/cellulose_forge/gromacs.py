@@ -9,6 +9,7 @@ import numpy as np
 
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
+from cellulose_forge.restraints import position_restraints_section
 
 _ANGSTROM_TO_NANOMETER = 0.1
 _GRO_INDEX_MODULUS = 100_000
@@ -55,12 +56,25 @@ def write_repeated_chain_topology(
     output_path: str | Path,
     *,
     chain_count: int,
+    restrained_chain_count: int = 0,
+    restraint_force: tuple[float, float, float] | None = None,
 ) -> None:
     """Write a standalone topology with the requested repeated-chain count."""
     if chain_count < 1:
         msg = "GROMACS topology chain count must be positive"
         raise ValueError(msg)
     lines = Path(template_topology).read_text(encoding="utf-8").splitlines()
+    free_chain_count = chain_count - restrained_chain_count
+    if restrained_chain_count < 0 or free_chain_count < 0:
+        msg = "restrained chain count must be between zero and the total chain count"
+        raise ValueError(msg)
+    if restrained_chain_count and restraint_force is None:
+        msg = "restraint force constants are required for restrained chains"
+        raise ValueError(msg)
+
+    if restrained_chain_count:
+        assert restraint_force is not None
+        _insert_restrained_glycam_molecule(lines, restraint_force)
     in_molecules = False
     replaced = False
     for index, line in enumerate(lines):
@@ -73,7 +87,12 @@ def write_repeated_chain_topology(
             if fields[0] != "CELLULOSE_CHAIN":
                 msg = f"unexpected GLYCAM molecule name in template: {fields[0]}"
                 raise ValueError(msg)
-            lines[index] = f"CELLULOSE_CHAIN  {chain_count}"
+            molecule_rows: list[str] = []
+            if free_chain_count:
+                molecule_rows.append(f"CELLULOSE_CHAIN  {free_chain_count}")
+            if restrained_chain_count:
+                molecule_rows.append(f"CELLULOSE_CHAIN_RESTRAINED  {restrained_chain_count}")
+            lines[index : index + 1] = molecule_rows
             replaced = True
             break
     if not replaced:
@@ -82,10 +101,45 @@ def write_repeated_chain_topology(
     Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _insert_restrained_glycam_molecule(
+    lines: list[str],
+    restraint_force: tuple[float, float, float],
+) -> None:
+    """Duplicate the one-chain molecule definition and attach position restraints."""
+    molecule_start = next(
+        index for index, line in enumerate(lines) if line.strip().lower() == "[ moleculetype ]"
+    )
+    system_index = next(
+        index for index, line in enumerate(lines) if line.strip().lower() == "[ system ]"
+    )
+    restrained_block = list(lines[molecule_start:system_index])
+    current_section = ""
+    atom_count = 0
+    molecule_name_replaced = False
+    for index, line in enumerate(restrained_block):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            current_section = stripped[1:-1].strip().lower()
+            continue
+        if not stripped or stripped.startswith(";"):
+            continue
+        if current_section == "moleculetype" and not molecule_name_replaced:
+            fields = stripped.split()
+            fields[0] = "CELLULOSE_CHAIN_RESTRAINED"
+            restrained_block[index] = "  ".join(fields)
+            molecule_name_replaced = True
+        elif current_section == "atoms" and not stripped.startswith("#"):
+            atom_count += 1
+    restrained_block.extend(position_restraints_section(atom_count, restraint_force).splitlines())
+    lines[system_index:system_index] = restrained_block
+
+
 def write_glycam_gromacs_system(
     system: GlycamMappedSystem,
     template_topology: str | Path,
     output_directory: str | Path,
+    restrained_chain_count: int = 0,
+    restraint_force: tuple[float, float, float] | None = None,
 ) -> tuple[Path, Path]:
     """Write a mapped multi-chain GLYCAM system as GRO and standalone TOP."""
     directory = Path(output_directory)
@@ -97,5 +151,7 @@ def write_glycam_gromacs_system(
         template_topology,
         topology_path,
         chain_count=system.chain_count,
+        restrained_chain_count=restrained_chain_count,
+        restraint_force=restraint_force,
     )
     return gro_path, topology_path

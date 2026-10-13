@@ -385,6 +385,60 @@ def test_cli_writes_periodic_glycam_fibril_system(
     assert report["force_field_atom_count"] == 9072
 
 
+def test_cli_writes_selectively_restrained_fibril_chains(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _use_committed_glycam_reference(monkeypatch, chain_boundary="periodic")
+    output = tmp_path / "restrained_fibril"
+
+    result = main(
+        [
+            "build",
+            "--allomorph",
+            "I-beta",
+            "--shape",
+            "fibril",
+            "--fibril-model",
+            "36-chain",
+            "--degree-polymerization",
+            "12",
+            "--chain-boundary",
+            "periodic",
+            "--force-field",
+            "glycam",
+            "--restrain-chains",
+            "6",
+            "11",
+            "16",
+            "21",
+            "26",
+            "31",
+            "--restraint-force",
+            "1000",
+            "1000",
+            "1000",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    topology = (output / "system.top").read_text(encoding="utf-8")
+    assert "CELLULOSE_CHAIN  30" in topology
+    assert "CELLULOSE_CHAIN_RESTRAINED  6" in topology
+    assert "#ifdef POSRES_CELLULOSE" in topology
+    report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
+    restraints = report["position_restraints"]
+    assert restraints["selected_chain_ids"] == [6, 11, 16, 21, 26, 31]
+    assert restraints["force_constants_kj_mol_nm2"] == [1000.0, 1000.0, 1000.0]
+    assert [
+        entry["original_chain_id"]
+        for entry in restraints["chain_mapping"]
+        if entry["restraint_status"] == "restrained"
+    ] == [6, 11, 16, 21, 26, 31]
+
+
 def test_cli_writes_finite_glycam_slab_system(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

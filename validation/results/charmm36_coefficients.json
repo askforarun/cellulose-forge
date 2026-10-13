@@ -1,0 +1,14 @@
+{
+  "angle_types": 38,
+  "atom_types": 10,
+  "bond_types": 16,
+  "conversions": {
+    "distance": "angstrom to nm",
+    "energy": "kcal/mol to kJ/mol",
+    "harmonic_factor": 2,
+    "lj": "CHARMM Rmin/2 and epsilon to GROMACS sigma and epsilon"
+  },
+  "improper_types": 0,
+  "proper_dihedral_types": 68,
+  "status": "passed"
+}

@@ -1,0 +1,38 @@
+{
+  "gromacs_version": "2024.2-Homebrew",
+  "minimization": {
+    "electrostatics": "PME",
+    "emtol_kj_mol_nm": 1000.0,
+    "periodic_molecules": true
+  },
+  "status": "passed",
+  "systems": [
+    {
+      "allomorph": "I-beta",
+      "atom_count": 1344,
+      "chain_boundary": "periodic",
+      "chain_count": 8,
+      "degree_polymerization": 8,
+      "face": [1, 1, 0],
+      "grompp": "passed_with_one_excluded-distance_note",
+      "layers": 2,
+      "maximum_force_kj_mol_nm": 944.64856,
+      "minimization_steps": 348,
+      "potential_energy_kj_mol": 40075.562,
+      "shape": "slab"
+    },
+    {
+      "allomorph": "I-beta",
+      "atom_count": 6048,
+      "chain_boundary": "periodic",
+      "chain_count": 36,
+      "degree_polymerization": 8,
+      "fibril_model": "36-chain",
+      "grompp": "passed_with_one_excluded-distance_note",
+      "maximum_force_kj_mol_nm": 927.0575,
+      "minimization_steps": 647,
+      "potential_energy_kj_mol": 143324.16,
+      "shape": "fibril"
+    }
+  ]
+}
