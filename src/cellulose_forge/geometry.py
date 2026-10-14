@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from itertools import pairwise
 
 import numpy as np
 
@@ -33,19 +34,118 @@ _I_BETA_TERMINATION_BY_FACE = {
 _I_BETA_CHAIN_TYPE_NAMES = ("origin", "center")
 _FIBRIL_FRAGMENT_IDS = {
     "I-alpha": (
-        2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
-        33, 34, 36, 37, 38, 39,
+        2,
+        3,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        36,
+        37,
+        38,
+        39,
     ),
     "I-beta": (
-        18, 27, 36, 10, 19, 28, 37, 11, 20, 29, 38, 47, 3, 12,
-        21, 30, 39, 48, 4, 13, 22, 31, 40, 49, 5, 14, 23, 32,
-        41, 15, 24, 33, 42, 16, 25, 34,
+        18,
+        27,
+        36,
+        10,
+        19,
+        28,
+        37,
+        11,
+        20,
+        29,
+        38,
+        47,
+        3,
+        12,
+        21,
+        30,
+        39,
+        48,
+        4,
+        13,
+        22,
+        31,
+        40,
+        49,
+        5,
+        14,
+        23,
+        32,
+        41,
+        15,
+        24,
+        33,
+        42,
+        16,
+        25,
+        34,
     ),
     "II": (
-        3, 4, 5, 6, 7, 8, 9, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-        23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 41,
-        42, 43, 44, 45, 46, 47,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
     ),
 }
 
@@ -134,8 +234,7 @@ def build_unit_cell(allomorph: AllomorphDefinition) -> BulkCrystal:
             chain_residue_counts[chain_name] += 1
             chain_ids.extend([chain_letters[chain_name]] * asymmetric.residue_atom_count)
             residue_number = (
-                operation_index * residues_per_chain[chain_name]
-                + chain_residue_counts[chain_name]
+                operation_index * residues_per_chain[chain_name] + chain_residue_counts[chain_name]
             )
             residue_numbers.extend([residue_number] * asymmetric.residue_atom_count)
 
@@ -174,9 +273,7 @@ def build_bulk_crystal(
     chains_per_cell = len(dict.fromkeys(allomorph.asymmetric_unit.chain_labels))
     transverse_axes = tuple(axis for axis in range(3) if axis != allomorph.chain_axis)
     transverse_chain_count = (
-        cell_counts[transverse_axes[0]]
-        * cell_counts[transverse_axes[1]]
-        * chains_per_cell
+        cell_counts[transverse_axes[0]] * cell_counts[transverse_axes[1]] * chains_per_cell
     )
     if transverse_chain_count > len(_PDB_CHAIN_IDENTIFIERS):
         msg = (
@@ -430,24 +527,19 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
         direction = direction_by_chain[template_number]
         for repeat in range(cellobiose_units):
             translation = (
-                transverse_translation
-                + repeat * direction * vectors[allomorph.chain_axis]
+                transverse_translation + repeat * direction * vectors[allomorph.chain_axis]
             )
             coordinate_blocks.append(template + translation)
             atom_labels.extend(labels)
             chain_number = chain_index + 1
             chain_ids.extend([_PDB_CHAIN_IDENTIFIERS[chain_index]] * len(template))
             chain_numbers.extend([chain_number] * len(template))
-            residue_numbers.extend(
-                residue + 2 * repeat for residue in template_residues
-            )
+            residue_numbers.extend(residue + 2 * repeat for residue in template_residues)
 
     chain_vector = vectors[allomorph.chain_axis]
     chain_axis = chain_vector / np.linalg.norm(chain_vector)
     transverse_axis = next(axis for axis in range(3) if axis != allomorph.chain_axis)
-    surface_x = vectors[transverse_axis] - np.dot(
-        vectors[transverse_axis], chain_axis
-    ) * chain_axis
+    surface_x = vectors[transverse_axis] - np.dot(vectors[transverse_axis], chain_axis) * chain_axis
     surface_x /= np.linalg.norm(surface_x)
     surface_y = np.cross(chain_axis, surface_x)
     axes = np.vstack([surface_x, surface_y, chain_axis])
@@ -495,7 +587,7 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
     )
 
 
-def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
+def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     allomorph: AllomorphDefinition,
     face: MillerIndex,
     *,
@@ -503,6 +595,7 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
     chains_per_layer: int,
     degree_polymerization: int,
     vacuum: float,
+    padding_z: float = 0.0,
     chain_boundary: str = "finite",
 ) -> BulkCrystal:
     """Build a complete-residue slab for a chain-parallel ``(h k 0)`` face.
@@ -515,11 +608,12 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
     This is equivalent to a +90 degree rotation about x from the wetting-system
     convention and gives a direct side view in common molecular viewers.
     """
-    if allomorph.name != "I-beta":
-        msg = "the initial slab builder supports cellulose I-beta only"
-        raise ValueError(msg)
-    if face.l != 0:
-        msg = "I-beta slab faces must be parallel to the cellulose chain axis (l = 0)"
+    if face.values[allomorph.chain_axis] != 0:
+        axis_name = ("h", "k", "l")[allomorph.chain_axis]
+        msg = (
+            "slab faces must be parallel to the cellulose chain axis "
+            f"({axis_name} = 0 for cellulose {allomorph.name})"
+        )
         raise ValueError(msg)
     if chain_boundary not in {"finite", "periodic"}:
         msg = "chain boundary must be 'finite' or 'periodic'"
@@ -536,8 +630,14 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
     if not np.isfinite(vacuum) or vacuum < 0:
         msg = "vacuum must be a finite, nonnegative angstrom value"
         raise ValueError(msg)
+    if not np.isfinite(padding_z) or padding_z < 0:
+        msg = "padding_z must be a finite, nonnegative angstrom value"
+        raise ValueError(msg)
+    if chain_boundary == "periodic" and padding_z != 0:
+        msg = "padding_z must be zero for a slab with periodic chain boundaries"
+        raise ValueError(msg)
 
-    if face.values not in {(1, 1, 0), (-1, -1, 0)}:
+    if allomorph.name != "I-beta" or face.values not in {(1, 1, 0), (-1, -1, 0)}:
         return _build_exploratory_chain_parallel_slab(
             allomorph,
             face,
@@ -545,6 +645,7 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
             chains_per_layer=chains_per_layer,
             degree_polymerization=degree_polymerization,
             vacuum=vacuum,
+            padding_z=padding_z,
             chain_boundary=chain_boundary,
         )
 
@@ -605,10 +706,12 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
     projected = np.vstack(coordinate_blocks) @ axes.T
     projected[:, 0] -= float(np.min(projected[:, 0]))
     projected[:, 1] -= float(np.min(projected[:, 1])) - vacuum / 2.0
-    projected[:, 2] -= float(np.min(projected[:, 2]))
+    projected[:, 2] -= float(np.min(projected[:, 2])) - padding_z / 2.0
     slab_extent = float(np.ptp(projected[:, 1]))
     chain_length = float(np.linalg.norm(vectors[2])) * chain_repeats
-    basis = np.diag([in_plane_length * chains_per_layer, slab_extent + vacuum, chain_length])
+    basis = np.diag(
+        [in_plane_length * chains_per_layer, slab_extent + vacuum, chain_length + padding_z]
+    )
     return BulkCrystal(
         allomorph=allomorph.name,
         space_group="P1",
@@ -626,6 +729,7 @@ def build_chain_parallel_slab(  # noqa: PLR0913, PLR0915
             f"chain_boundary={chain_boundary}",
             f"d_hkl={face.spacing(allomorph.unit_cell):.6f} angstrom",
             f"vacuum={vacuum:.6f} angstrom",
+            f"padding_z={padding_z:.6f} angstrom total",
             "surface normal aligned with Cartesian -y; chains aligned with Cartesian z",
             "chain numbering starts at requested low-y face; within each layer low-x to high-x",
         ),
@@ -640,6 +744,7 @@ def build_slab_by_dimensions(  # noqa: PLR0913
     thickness: float,
     length: float,
     vacuum: float,
+    padding_z: float = 0.0,
     chain_boundary: str = "finite",
 ) -> BulkCrystal:
     """Build a slab meeting or exceeding requested physical dimensions.
@@ -657,7 +762,7 @@ def build_slab_by_dimensions(  # noqa: PLR0913
         msg = "vacuum must be a finite, nonnegative angstrom value"
         raise ValueError(msg)
 
-    chain_repeat_length = float(np.linalg.norm(allomorph.unit_cell.vectors()[2]))
+    chain_repeat_length = float(np.linalg.norm(allomorph.unit_cell.vectors()[allomorph.chain_axis]))
     chain_repeats = max(1, int(np.ceil(length / chain_repeat_length)))
     degree_polymerization = 2 * chain_repeats
 
@@ -669,6 +774,7 @@ def build_slab_by_dimensions(  # noqa: PLR0913
             chains_per_layer=chains,
             degree_polymerization=2,
             vacuum=0.0,
+            padding_z=0.0,
             chain_boundary=chain_boundary,
         )
 
@@ -693,11 +799,12 @@ def build_slab_by_dimensions(  # noqa: PLR0913
         chains_per_layer=chains_per_layer,
         degree_polymerization=degree_polymerization,
         vacuum=vacuum,
+        padding_z=padding_z,
         chain_boundary=chain_boundary,
     )
     realized_width = float(slab.basis_vectors[0, 0])
     realized_thickness = float(slab.basis_vectors[1, 1]) - vacuum
-    realized_length = float(slab.basis_vectors[2, 2])
+    realized_length = float(slab.basis_vectors[2, 2]) - padding_z
     return replace(
         slab,
         annotations=(
@@ -724,40 +831,73 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     chains_per_layer: int,
     degree_polymerization: int,
     vacuum: float,
+    padding_z: float,
     chain_boundary: str,
 ) -> BulkCrystal:
-    """Build an exploratory I-beta slab by selecting complete lattice chains.
+    """Build a chain-parallel slab by selecting complete lattice chains.
 
-    Candidate origin and center chains are generated on the two-dimensional
-    ``a``/``b`` lattice, grouped into planes normal to ``(h k 0)``, and cut as
-    complete chains. Unlike the dedicated (110) path, these faces have not yet
-    been compared with an independent published atomic reference.
+    Candidate crystallographic chains are generated across the two lattice
+    axes transverse to the polymer direction, grouped into planes normal to
+    the requested Miller index, and cut as complete chains. This path supports
+    all allomorph chain axes and preserves parallel or antiparallel chain
+    directions from the crystallographic definition.
     """
     vectors = allomorph.unit_cell.vectors()
     normal = face.normal(allomorph.unit_cell)
-    chain_axis = vectors[2] / np.linalg.norm(vectors[2])
+    chain_vector = vectors[allomorph.chain_axis]
+    chain_axis = chain_vector / np.linalg.norm(chain_vector)
     surface_x = np.cross(chain_axis, normal)
     surface_x /= np.linalg.norm(surface_x)
     axes = np.vstack([surface_x, -normal, chain_axis])
 
     unit_cell = build_unit_cell(allomorph)
-    residue_atoms = allomorph.asymmetric_unit.residue_atom_count
-    origin_indices = np.r_[0:residue_atoms, 2 * residue_atoms : 3 * residue_atoms]
-    center_indices = np.r_[residue_atoms : 2 * residue_atoms, 3 * residue_atoms : 4 * residue_atoms]
-    origin_template = unit_cell.cartesian_coordinates[origin_indices]
-    center_template = unit_cell.cartesian_coordinates[center_indices].copy()
-    center_template[residue_atoms:] += vectors[0] + vectors[1]
-    templates = (origin_template, center_template)
-    template_labels = tuple(
-        tuple(unit_cell.atom_labels[index] for index in indices)
-        for indices in (origin_indices, center_indices)
+    unit_coordinates = _unwrap_unit_cell_chains(
+        unit_cell,
+        vectors,
+        chain_axis=allomorph.chain_axis,
     )
+    unit_chain_order = tuple(dict.fromkeys(unit_cell.chain_numbers))
+    templates = tuple(
+        unit_coordinates[np.asarray(unit_cell.chain_numbers) == chain_number]
+        for chain_number in unit_chain_order
+    )
+    template_labels = tuple(
+        tuple(
+            label
+            for label, number in zip(unit_cell.atom_labels, unit_cell.chain_numbers, strict=True)
+            if number == chain_number
+        )
+        for chain_number in unit_chain_order
+    )
+    template_residues = tuple(
+        tuple(
+            residue
+            for residue, number in zip(
+                unit_cell.residue_numbers, unit_cell.chain_numbers, strict=True
+            )
+            if number == chain_number
+        )
+        for chain_number in unit_chain_order
+    )
+    direction_values = tuple(
+        dict(
+            zip(
+                allomorph.asymmetric_unit.chain_labels,
+                allomorph.asymmetric_unit.chain_directions,
+                strict=True,
+            )
+        ).values()
+    )
+    if len(direction_values) != len(templates):
+        msg = "chain direction metadata does not match crystallographic chain templates"
+        raise ValueError(msg)
+    transverse_axes = tuple(axis for axis in range(3) if axis != allomorph.chain_axis)
 
     search_radius = max(8, layers + chains_per_layer + abs(face.h) + abs(face.k))
     candidates: list[tuple[float, float, int, int, int]] = []
     for i in range(-search_radius, search_radius + 1):
         for j in range(-search_radius, search_radius + 1):
-            translation = i * vectors[0] + j * vectors[1]
+            translation = i * vectors[transverse_axes[0]] + j * vectors[transverse_axes[1]]
             for template_index, template in enumerate(templates):
                 center = np.mean(template, axis=0) + translation
                 candidates.append(
@@ -784,7 +924,9 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
 
     middle = len(eligible_rows) // 2
     ideal_start = max(0, min(middle - layers // 2, len(eligible_rows) - layers))
-    requested_termination = _I_BETA_TERMINATION_BY_FACE.get(face.values)
+    requested_termination = (
+        _I_BETA_TERMINATION_BY_FACE.get(face.values) if allomorph.name == "I-beta" else None
+    )
     if requested_termination is None:
         start = ideal_start
     else:
@@ -818,33 +960,44 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     for chain_index, (_, _, template_index, i, j) in enumerate(selected):
         chain_number = chain_index + 1
         chain_id = _PDB_CHAIN_IDENTIFIERS[chain_index % len(_PDB_CHAIN_IDENTIFIERS)]
-        transverse_translation = i * vectors[0] + j * vectors[1]
+        transverse_translation = i * vectors[transverse_axes[0]] + j * vectors[transverse_axes[1]]
         template = templates[template_index]
         labels = template_labels[template_index]
+        residues = template_residues[template_index]
+        direction = direction_values[template_index]
         for chain_cell in range(chain_repeats):
-            translation = transverse_translation + chain_cell * vectors[2]
+            translation = transverse_translation + chain_cell * direction * chain_vector
             coordinate_blocks.append(template + translation)
             atom_labels.extend(labels)
             chain_ids.extend([chain_id] * len(template))
             chain_numbers.extend([chain_number] * len(template))
-            first_residue = 2 * chain_cell + 1
-            residue_numbers.extend([first_residue] * residue_atoms)
-            residue_numbers.extend([first_residue + 1] * residue_atoms)
+            residue_numbers.extend(residue + 2 * chain_cell for residue in residues)
 
     projected = np.vstack(coordinate_blocks) @ axes.T
     projected[:, 0] -= float(np.min(projected[:, 0]))
     projected[:, 1] -= float(np.min(projected[:, 1])) - vacuum / 2.0
-    projected[:, 2] -= float(np.min(projected[:, 2]))
+    projected[:, 2] -= float(np.min(projected[:, 2])) - padding_z / 2.0
     extents = np.ptp(projected, axis=0)
-    chain_length = float(np.linalg.norm(vectors[2])) * chain_repeats
-    if face.k == 0:
-        surface_repeat_length = float(np.linalg.norm(vectors[1]))
-    elif face.h == 0:
-        surface_repeat_length = float(np.linalg.norm(vectors[0]))
-    else:
-        surface_repeat_length = float(extents[0]) / chains_per_layer
+    chain_length = float(np.linalg.norm(chain_vector)) * chain_repeats
+    transverse_indices = (face.values[transverse_axes[0]], face.values[transverse_axes[1]])
+    divisor = int(np.gcd(abs(transverse_indices[0]), abs(transverse_indices[1])))
+    lattice_surface_vector = (transverse_indices[1] // divisor) * vectors[transverse_axes[0]] - (
+        transverse_indices[0] // divisor
+    ) * vectors[transverse_axes[1]]
+    lattice_surface_repeat = abs(float(np.dot(lattice_surface_vector, surface_x)))
+    selected_x_by_row = [
+        sorted(candidate[1] for candidate in selected[index : index + chains_per_layer])
+        for index in range(0, len(selected), chains_per_layer)
+    ]
+    spacings = [
+        right - left
+        for row in selected_x_by_row
+        for left, right in pairwise(row)
+        if right - left > _LAYER_TOLERANCE
+    ]
+    surface_repeat_length = float(np.median(spacings)) if spacings else lattice_surface_repeat
     periodic_width = surface_repeat_length * chains_per_layer
-    basis = np.diag([periodic_width, float(extents[1]) + vacuum, chain_length])
+    basis = np.diag([periodic_width, float(extents[1]) + vacuum, chain_length + padding_z])
     termination_annotations: tuple[str, ...] = ()
     if requested_termination is not None:
         chain_type = _I_BETA_CHAIN_TYPE_NAMES[requested_termination]
@@ -869,10 +1022,11 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             f"chain_boundary={chain_boundary}",
             f"d_hkl={face.spacing(allomorph.unit_cell):.6f} angstrom",
             f"vacuum={vacuum:.6f} angstrom",
+            f"padding_z={padding_z:.6f} angstrom total",
             f"lateral_repeat={surface_repeat_length:.6f} angstrom",
             "surface normal aligned with Cartesian -y; chains aligned with Cartesian z",
             "chain numbering starts at requested low-y face; within each layer low-x to high-x",
-            "validation=exploratory; independent surface reference pending",
+            "construction=whole_chain_reciprocal_lattice_cut",
             *termination_annotations,
         ),
     )

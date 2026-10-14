@@ -16,6 +16,7 @@ _NONREDUCING_ALIGNMENT_ATOMS = ("O4", "C4", "H4")
 _RING_ALIGNMENT_ATOMS = ("C1", "C3", "C5")
 _MISSING_CELLULOSE_II_HYDROGENS = frozenset({"HO2", "HO3", "HO6"})
 _HYDROXYL_OXYGEN_BY_GLYCAM_HYDROGEN = {"H2O": "O2", "H3O": "O3", "H6O": "O6"}
+_MAXIMUM_GLYCOSIDIC_BOND_ANGSTROM = 2.0
 
 
 @dataclass(frozen=True)
@@ -111,9 +112,7 @@ def _require_crystallographic_atoms(
     }
     missing = sorted(required.difference(crystal.atom_labels))
     if missing:
-        msg = "missing crystallographic atom coordinates required by GLYCAM: " + ", ".join(
-            missing
-        )
+        msg = "missing crystallographic atom coordinates required by GLYCAM: " + ", ".join(missing)
         raise ValueError(msg)
 
 
@@ -143,7 +142,106 @@ def _transform_coordinate(
     return (coordinate - reference_center) @ rotation + target_center
 
 
-def map_crystal_to_finite_glycam(
+def _finite_chain_residue_order(
+    crystal: BulkCrystal,
+    *,
+    chain_number: int,
+    degree_polymerization: int,
+) -> tuple[int, ...]:
+    """Order residues along an open crystallographic O4-to-C1 path."""
+    residues = tuple(range(1, degree_polymerization + 1))
+    lookups = {
+        residue: _coordinate_lookup(
+            crystal,
+            chain_number=chain_number,
+            residue_number=residue,
+        )
+        for residue in residues
+    }
+    successors: dict[int, int] = {}
+    for residue in residues:
+        candidates = sorted(
+            (
+                float(np.linalg.norm(lookups[residue]["O4"] - lookups[other]["C1"])),
+                other,
+            )
+            for other in residues
+            if other != residue
+        )
+        if candidates and candidates[0][0] <= _MAXIMUM_GLYCOSIDIC_BOND_ANGSTROM:
+            successors[residue] = candidates[0][1]
+    predecessors = set(successors.values())
+    starts = [residue for residue in residues if residue not in predecessors]
+    if len(starts) != 1:
+        msg = f"chain {chain_number} does not form one finite glycosidic path"
+        raise ValueError(msg)
+    order = [starts[0]]
+    while order[-1] in successors:
+        following = successors[order[-1]]
+        if following in order:
+            msg = f"chain {chain_number} finite residue connectivity contains a cycle"
+            raise ValueError(msg)
+        order.append(following)
+    if len(order) != degree_polymerization or set(order) != set(residues):
+        msg = f"chain {chain_number} finite residue connectivity is disconnected"
+        raise ValueError(msg)
+    return tuple(order)
+
+
+def _periodic_chain_residue_order(
+    crystal: BulkCrystal,
+    *,
+    chain_number: int,
+    degree_polymerization: int,
+) -> tuple[int, ...]:
+    """Order residues around a periodic crystallographic O4-to-C1 cycle."""
+    residues = tuple(range(1, degree_polymerization + 1))
+    lookups = {
+        residue: _coordinate_lookup(
+            crystal,
+            chain_number=chain_number,
+            residue_number=residue,
+        )
+        for residue in residues
+    }
+    inverse_box = np.linalg.inv(crystal.basis_vectors)
+
+    def distance(first: FloatArray, second: FloatArray) -> float:
+        fractional = (second - first) @ inverse_box
+        fractional -= np.round(fractional)
+        return float(np.linalg.norm(fractional @ crystal.basis_vectors))
+
+    successors: dict[int, int] = {}
+    for residue in residues:
+        candidate, bond_length = min(
+            (
+                (other, distance(lookups[residue]["O4"], lookups[other]["C1"]))
+                for other in residues
+                if other != residue
+            ),
+            key=lambda item: item[1],
+        )
+        if bond_length > _MAXIMUM_GLYCOSIDIC_BOND_ANGSTROM:
+            msg = (
+                f"chain {chain_number} has no periodic O4-C1 linkage from crystal "
+                f"residue {residue} (nearest distance {bond_length:.3f} angstrom)"
+            )
+            raise ValueError(msg)
+        successors[residue] = candidate
+    order = [1]
+    while len(order) < degree_polymerization:
+        following = successors[order[-1]]
+        if following in order:
+            msg = f"chain {chain_number} residue connectivity does not form one cycle"
+            raise ValueError(msg)
+        order.append(following)
+    if successors[order[-1]] != order[0] or set(order) != set(residues):
+        msg = f"chain {chain_number} residue connectivity is not a closed periodic cycle"
+        raise ValueError(msg)
+    return tuple(order)
+
+
+def map_crystal_to_finite_glycam(  # noqa: PLR0915
     crystal: BulkCrystal,
     reference_pdb: str | Path,
 ) -> GlycamMappedSystem:
@@ -152,10 +250,18 @@ def map_crystal_to_finite_glycam(
         msg = "GLYCAM mapping requires explicit chain and residue numbers"
         raise ValueError(msg)
     reference = _read_reference_pdb(reference_pdb)
+    generated_names = _MISSING_CELLULOSE_II_HYDROGENS if crystal.allomorph == "II" else frozenset()
     _require_crystallographic_atoms(
         crystal,
         reference,
-        constructed_names=frozenset({"O1", "HO1", "H4O"}),
+        constructed_names=frozenset(
+            {"O1", "HO1", "H4O"}
+            | {
+                name
+                for name, crystal_name in _GLYCAM_TO_CRYSTAL_NAME.items()
+                if crystal_name in generated_names
+            }
+        ),
     )
     reference_residues = _atoms_by_residue(reference)
     chain_numbers = tuple(dict.fromkeys(crystal.chain_numbers))
@@ -184,9 +290,7 @@ def map_crystal_to_finite_glycam(
     output_residue_numbers: list[int] = []
     output_chain_numbers: list[int] = []
     output_coordinates: list[FloatArray] = []
-    reducing_reference = {
-        atom.name: atom.coordinates for atom in reference_residues[2]
-    }
+    reducing_reference = {atom.name: atom.coordinates for atom in reference_residues[2]}
     cap_reference = {atom.name: atom.coordinates for atom in reference_residues[1]}
     nonreducing_reference_number = degree_polymerization + 1
     nonreducing_reference = {
@@ -194,15 +298,20 @@ def map_crystal_to_finite_glycam(
     }
 
     for chain_number in chain_numbers:
+        crystal_residue_order = _finite_chain_residue_order(
+            crystal,
+            chain_number=chain_number,
+            degree_polymerization=degree_polymerization,
+        )
         reducing_target = _coordinate_lookup(
             crystal,
             chain_number=chain_number,
-            residue_number=degree_polymerization,
+            residue_number=crystal_residue_order[0],
         )
         nonreducing_target = _coordinate_lookup(
             crystal,
             chain_number=chain_number,
-            residue_number=1,
+            residue_number=crystal_residue_order[-1],
         )
         reducing_transform = _rigid_transform(
             reducing_reference,
@@ -227,11 +336,17 @@ def map_crystal_to_finite_glycam(
                     )
                 continue
 
-            crystal_residue_number = degree_polymerization - reference_residue_number + 2
+            crystal_residue_number = crystal_residue_order[reference_residue_number - 2]
             target = _coordinate_lookup(
                 crystal,
                 chain_number=chain_number,
                 residue_number=crystal_residue_number,
+            )
+            reference_lookup = {atom.name: atom.coordinates for atom in reference_atoms}
+            hydrogen_transform = (
+                _rigid_transform(reference_lookup, target, _RING_ALIGNMENT_ATOMS)
+                if generated_names
+                else None
             )
             for atom in reference_atoms:
                 output_names.append(atom.name)
@@ -242,7 +357,25 @@ def map_crystal_to_finite_glycam(
                     coordinate = _transform_coordinate(atom.coordinates, nonreducing_transform)
                 else:
                     crystal_name = _GLYCAM_TO_CRYSTAL_NAME.get(atom.name, atom.name)
-                    coordinate = target[crystal_name]
+                    if crystal_name in generated_names:
+                        assert hydrogen_transform is not None
+                        oxygen_name = _HYDROXYL_OXYGEN_BY_GLYCAM_HYDROGEN[atom.name]
+                        aligned_hydrogen = _transform_coordinate(
+                            atom.coordinates,
+                            hydrogen_transform,
+                        )
+                        aligned_oxygen = _transform_coordinate(
+                            reference_lookup[oxygen_name],
+                            hydrogen_transform,
+                        )
+                        direction = aligned_hydrogen - aligned_oxygen
+                        direction /= np.linalg.norm(direction)
+                        bond_length = np.linalg.norm(
+                            atom.coordinates - reference_lookup[oxygen_name]
+                        )
+                        coordinate = target[oxygen_name] + direction * bond_length
+                    else:
+                        coordinate = target[crystal_name]
                 output_coordinates.append(coordinate)
 
     coordinates = np.vstack(output_coordinates)
@@ -266,11 +399,7 @@ def map_crystal_to_periodic_glycam(
         msg = "periodic GLYCAM mapping requires explicit chain and residue numbers"
         raise ValueError(msg)
     reference = _read_reference_pdb(reference_pdb)
-    generated_names = (
-        _MISSING_CELLULOSE_II_HYDROGENS
-        if crystal.allomorph == "II"
-        else frozenset()
-    )
+    generated_names = _MISSING_CELLULOSE_II_HYDROGENS if crystal.allomorph == "II" else frozenset()
     _require_crystallographic_atoms(
         crystal,
         reference,
@@ -311,13 +440,17 @@ def map_crystal_to_periodic_glycam(
     output_chain_numbers: list[int] = []
     output_coordinates: list[FloatArray] = []
     for chain_number in chain_numbers:
+        crystal_residue_order = (
+            _periodic_chain_residue_order(
+                crystal,
+                chain_number=chain_number,
+                degree_polymerization=degree_polymerization,
+            )
+            if crystal.allomorph == "II"
+            else tuple(range(degree_polymerization, 0, -1))
+        )
         for reference_residue_number, reference_atoms in reference_residues.items():
-            if crystal.allomorph == "II" and chain_number % 2 == 0:
-                crystal_residue_number = reference_residue_number
-            else:
-                crystal_residue_number = (
-                    degree_polymerization - reference_residue_number + 1
-                )
+            crystal_residue_number = crystal_residue_order[reference_residue_number - 1]
             target = _coordinate_lookup(
                 crystal,
                 chain_number=chain_number,
@@ -338,20 +471,14 @@ def map_crystal_to_periodic_glycam(
                 if crystal_name in generated_names:
                     assert hydrogen_transform is not None
                     oxygen_name = _HYDROXYL_OXYGEN_BY_GLYCAM_HYDROGEN[atom.name]
-                    aligned_hydrogen = _transform_coordinate(
-                        atom.coordinates, hydrogen_transform
-                    )
+                    aligned_hydrogen = _transform_coordinate(atom.coordinates, hydrogen_transform)
                     aligned_oxygen = _transform_coordinate(
                         reference_lookup[oxygen_name], hydrogen_transform
                     )
                     direction = aligned_hydrogen - aligned_oxygen
                     direction /= np.linalg.norm(direction)
-                    bond_length = np.linalg.norm(
-                        atom.coordinates - reference_lookup[oxygen_name]
-                    )
-                    output_coordinates.append(
-                        target[oxygen_name] + direction * bond_length
-                    )
+                    bond_length = np.linalg.norm(atom.coordinates - reference_lookup[oxygen_name])
+                    output_coordinates.append(target[oxygen_name] + direction * bond_length)
                 else:
                     output_coordinates.append(target[crystal_name])
 

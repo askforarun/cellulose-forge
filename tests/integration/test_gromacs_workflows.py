@@ -59,24 +59,34 @@ def _use_committed_glycam_reference(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("cellulose_forge.cli.generate_glycam_gromacs_reference", prepare)
 
 
+@pytest.mark.parametrize(
+    ("allomorph", "face"),
+    [
+        ("I-alpha", (0, 1, 0)),
+        ("I-beta", (1, 1, 0)),
+        ("II", (1, 1, 0)),
+        ("III-I", (1, 1, 0)),
+    ],
+)
 def test_finite_glycam_slab_passes_grompp(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    allomorph: str,
+    face: tuple[int, int, int],
 ) -> None:
     _gmx()
     _use_committed_glycam_reference(monkeypatch)
-    output = tmp_path / "glycam_finite_slab"
+    output = tmp_path / f"glycam_{allomorph}_finite_slab"
     assert (
         main(
             [
                 "build",
                 "--allomorph",
-                "I-beta",
+                allomorph,
                 "--shape",
                 "slab",
                 "--face",
-                "1",
-                "1",
-                "0",
+                *(str(value) for value in face),
                 "--layers",
                 "2",
                 "--chains-per-layer",
@@ -87,6 +97,8 @@ def test_finite_glycam_slab_passes_grompp(
                 "finite",
                 "--vacuum",
                 "30",
+                "--padding-z",
+                "12",
                 "--force-field",
                 "glycam",
                 "--output",
@@ -98,26 +110,39 @@ def test_finite_glycam_slab_passes_grompp(
     _grompp(output, Path(__file__).parents[2] / "validation/grompp_minim.mdp")
 
 
+@pytest.mark.parametrize(
+    ("allomorph", "face"),
+    [
+        ("I-alpha", (0, 1, 0)),
+        ("I-beta", (1, 1, 0)),
+        ("II", (1, 1, 0)),
+        ("III-I", (1, 1, 0)),
+    ],
+)
 @pytest.mark.parametrize("chain_boundary", ["finite", "periodic"])
-def test_charmm36_slab_passes_grompp(tmp_path: Path, chain_boundary: str) -> None:
+def test_charmm36_slab_passes_grompp(
+    tmp_path: Path,
+    chain_boundary: str,
+    allomorph: str,
+    face: tuple[int, int, int],
+) -> None:
     _gmx()
     try:
         force_field = discover_charmm36_directory()
     except FileNotFoundError:
         pytest.skip("the pinned CHARMM36 release is not installed")
-    output = tmp_path / f"charmm36_{chain_boundary}_slab"
+    output = tmp_path / f"charmm36_{allomorph}_{chain_boundary}_slab"
+    padding_arguments = ["--padding-z", "12"] if chain_boundary == "finite" else []
     assert (
         main(
             [
                 "build",
                 "--allomorph",
-                "I-beta",
+                allomorph,
                 "--shape",
                 "slab",
                 "--face",
-                "1",
-                "1",
-                "0",
+                *(str(value) for value in face),
                 "--layers",
                 "2",
                 "--chains-per-layer",
@@ -128,6 +153,7 @@ def test_charmm36_slab_passes_grompp(tmp_path: Path, chain_boundary: str) -> Non
                 chain_boundary,
                 "--vacuum",
                 "30",
+                *padding_arguments,
                 "--force-field",
                 "charmm36",
                 "--charmm-force-field-directory",

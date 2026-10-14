@@ -128,7 +128,10 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument(
         "--padding-z",
         type=float,
-        help="total chain-direction padding for finite fibrils; periodic fibrils require zero",
+        help=(
+            "total chain-direction padding for finite slabs or fibrils; "
+            "periodic chains require zero"
+        ),
     )
     build.add_argument(
         "--force-field",
@@ -241,11 +244,11 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
         }[args.allomorph]
         definition = load_allomorph(allomorph_key)
         if args.shape != "fibril" and any(
-            value is not None for value in (args.padding_x, args.padding_y, args.padding_z)
+            value is not None for value in (args.padding_x, args.padding_y)
         ):
-            build_parser().error(
-                "--padding-x, --padding-y, and --padding-z are valid only with --shape fibril"
-            )
+            build_parser().error("--padding-x and --padding-y are valid only with --shape fibril")
+        if args.shape not in {"slab", "fibril"} and args.padding_z is not None:
+            build_parser().error("--padding-z is valid only with --shape slab or fibril")
         if args.shape == "unit-cell":
             if args.cells is not None:
                 build_parser().error("--cells is not valid with --shape unit-cell")
@@ -578,6 +581,9 @@ def _build_slab(
         parser.error("--face H K L is required for slabs")
     if args.chain_boundary is None:
         parser.error("--chain-boundary finite|periodic is required for slabs")
+    if args.chain_boundary == "periodic" and args.padding_z not in {None, 0}:
+        parser.error("--padding-z must be zero with --chain-boundary periodic")
+    padding_z = 0.0 if args.padding_z is None else args.padding_z
     count_values = (args.layers, args.chains_per_layer, args.degree_polymerization)
     size_values = (args.slab_width, args.slab_thickness, args.slab_length)
     has_count_value = any(value is not None for value in count_values)
@@ -600,6 +606,7 @@ def _build_slab(
             chains_per_layer=args.chains_per_layer,
             degree_polymerization=args.degree_polymerization,
             vacuum=args.vacuum,
+            padding_z=padding_z,
             chain_boundary=args.chain_boundary,
         )
     if has_size_value:
@@ -617,6 +624,7 @@ def _build_slab(
             thickness=args.slab_thickness,
             length=args.slab_length,
             vacuum=args.vacuum,
+            padding_z=padding_z,
             chain_boundary=args.chain_boundary,
         )
     parser.error(

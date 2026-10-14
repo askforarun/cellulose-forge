@@ -1,0 +1,29 @@
+{
+  "protocol": {
+    "gromacs": "2024.2-Homebrew",
+    "geometry": "3 layers, 6 chains per layer, DP6",
+    "finite_chain_end_padding_angstrom": 12.0,
+    "transverse_vacuum_angstrom": 24.0,
+    "minimization": "PME steepest descent to Fmax < 1000 kJ mol^-1 nm^-1",
+    "dynamics": "1 ps PME/NVT smoke test at 300 K"
+  },
+  "systems": [
+    {"force_field": "CHARMM36", "allomorph": "I-alpha", "face": [0, 1, 0], "chain_boundary": "finite", "atoms": 2322, "potential_kj_mol": 43086.387, "maximum_force_kj_mol_nm": 634.27399, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "CHARMM36", "allomorph": "I-alpha", "face": [0, 1, 0], "chain_boundary": "periodic", "atoms": 2268, "potential_kj_mol": 55203.574, "maximum_force_kj_mol_nm": 719.862, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "CHARMM36", "allomorph": "I-beta", "face": [1, 1, 0], "chain_boundary": "finite", "atoms": 2322, "potential_kj_mol": 53004.535, "maximum_force_kj_mol_nm": 873.90582, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "CHARMM36", "allomorph": "I-beta", "face": [1, 1, 0], "chain_boundary": "periodic", "atoms": 2268, "potential_kj_mol": 62534.434, "maximum_force_kj_mol_nm": 908.05493, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "CHARMM36", "allomorph": "II", "face": [1, 1, 0], "chain_boundary": "finite", "atoms": 2322, "potential_kj_mol": 47359.457, "maximum_force_kj_mol_nm": 719.2168, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "CHARMM36", "allomorph": "II", "face": [1, 1, 0], "chain_boundary": "periodic", "atoms": 2268, "potential_kj_mol": 44659.879, "maximum_force_kj_mol_nm": 518.32446, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "CHARMM36", "allomorph": "III-I", "face": [1, 1, 0], "chain_boundary": "finite", "atoms": 2322, "potential_kj_mol": 43798.965, "maximum_force_kj_mol_nm": 876.55707, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "CHARMM36", "allomorph": "III-I", "face": [1, 1, 0], "chain_boundary": "periodic", "atoms": 2268, "potential_kj_mol": 107570.73, "maximum_force_kj_mol_nm": 834.94305, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "GLYCAM06j-1", "allomorph": "I-alpha", "face": [0, 1, 0], "chain_boundary": "finite", "atoms": 2322, "potential_kj_mol": 50148.664, "maximum_force_kj_mol_nm": 931.34888, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "GLYCAM06j-1", "allomorph": "I-alpha", "face": [0, 1, 0], "chain_boundary": "periodic", "atoms": 2268, "potential_kj_mol": 49093.641, "maximum_force_kj_mol_nm": 959.60065, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "GLYCAM06j-1", "allomorph": "I-beta", "face": [1, 1, 0], "chain_boundary": "finite", "atoms": 2322, "potential_kj_mol": 55997.297, "maximum_force_kj_mol_nm": 882.09894, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "GLYCAM06j-1", "allomorph": "I-beta", "face": [1, 1, 0], "chain_boundary": "periodic", "atoms": 2268, "potential_kj_mol": 56234.922, "maximum_force_kj_mol_nm": 665.15607, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "GLYCAM06j-1", "allomorph": "II", "face": [1, 1, 0], "chain_boundary": "finite", "atoms": 2322, "potential_kj_mol": 52484.512, "maximum_force_kj_mol_nm": 712.01331, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "GLYCAM06j-1", "allomorph": "II", "face": [1, 1, 0], "chain_boundary": "periodic", "atoms": 2268, "potential_kj_mol": 50731.961, "maximum_force_kj_mol_nm": 690.995, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "GLYCAM06j-1", "allomorph": "III-I", "face": [1, 1, 0], "chain_boundary": "finite", "atoms": 2322, "potential_kj_mol": 49892.973, "maximum_force_kj_mol_nm": 694.18616, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0},
+    {"force_field": "GLYCAM06j-1", "allomorph": "III-I", "face": [1, 1, 0], "chain_boundary": "periodic", "atoms": 2268, "potential_kj_mol": 48550.168, "maximum_force_kj_mol_nm": 811.2323, "grompp": "passed_without_maxwarn", "nvt_1ps": "completed", "lincs_warnings": 0}
+  ],
+  "interpretation": "These are topology and runtime smoke tests, not equilibrated material-property predictions."
+}

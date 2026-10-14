@@ -8,7 +8,7 @@ work.
 |---|---|---|
 | Unit-cell geometry | I-alpha, I-beta, II, III-I | Unit and CLI tests for cell matrices, symmetry, labels, counts, and coordinate output |
 | Periodic bulk geometry | I-alpha, I-beta, II, III-I | Replication tests and GLYCAM/CHARMM36 allomorph validation matrices |
-| Slab geometry | I-beta chain-parallel `(h,k,0)` | `(110)` is the validated reference; other accepted faces remain exploratory |
+| Slab geometry | Chain-parallel faces for I-alpha, I-beta, II, and III-I | Geometry regression tests plus finite/periodic GLYCAM and CHARMM36 validation for I-alpha `(010)`, I-beta `(110)`, II `(110)`, and III-I `(110)` |
 | Fibril geometry | Literature-defined 36-chain I-alpha, I-beta, and II presets | Geometry tests and force-field fibril matrices |
 | GLYCAM06j-1 | Finite and periodic pristine cellulose with GROMACS output | Mapping/topology tests, allomorph matrix, large-system preprocessing, and dependency-gated `grompp` integration test |
 | CHARMM36 | Finite and periodic pristine cellulose with GROMACS output | Exact periodic and finite topology comparisons, allomorph/fibril matrices, PME/NVT smoke tests, and dependency-gated `grompp` integration tests |
@@ -17,7 +17,7 @@ work.
 | Clean installation | Python 3.11 and 3.13 on Linux and macOS | CI wheel-install matrix; local isolated Python 3.13 wheel test |
 
 Explicit exclusions for Version 1 are functionalized cellulose, OPLS,
-native CHARMM/PSF output, native Amber topology output, arbitrary branched
-glycans, and slab construction for allomorphs other than I-beta.
+native CHARMM/PSF output, native Amber topology output, and arbitrary branched
+glycans.
 
 The SoftwareX manuscript and README must remain no broader than this table.

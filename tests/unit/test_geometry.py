@@ -35,8 +35,7 @@ def test_literature_36_chain_fibrils_have_complete_dp_chains(
     assert set(fibril.chain_numbers) == set(range(1, 37))
     assert set(fibril.residue_numbers) == set(range(1, 7))
     assert all(
-        sum(chain_number == chain for chain_number in fibril.chain_numbers)
-        == 6 * atoms_per_residue
+        sum(chain_number == chain for chain_number in fibril.chain_numbers) == 6 * atoms_per_residue
         for chain in range(1, 37)
     )
     assert any("fibril_model=36-chain" in value for value in fibril.annotations)
@@ -347,6 +346,92 @@ def test_i_beta_chain_parallel_faces_make_complete_aligned_slabs(
     )
 
 
+@pytest.mark.parametrize(
+    ("allomorph_key", "face"),
+    [
+        ("i_alpha", (0, 1, 0)),
+        ("ii", (1, 1, 0)),
+        ("iii_i", (1, 1, 0)),
+    ],
+)
+def test_allomorph_chain_parallel_slabs_preserve_complete_chains_and_layers(
+    allomorph_key: str,
+    face: tuple[int, int, int],
+) -> None:
+    definition = load_allomorph(allomorph_key)
+    layers = 3
+    chains_per_layer = 5
+    degree_polymerization = 4
+
+    slab = build_chain_parallel_slab(
+        definition,
+        MillerIndex(*face),
+        layers=layers,
+        chains_per_layer=chains_per_layer,
+        degree_polymerization=degree_polymerization,
+        vacuum=12.0,
+    )
+
+    expected_atoms = (
+        definition.asymmetric_unit.residue_atom_count
+        * layers
+        * chains_per_layer
+        * degree_polymerization
+    )
+    assert slab.atom_count == expected_atoms
+    assert set(slab.chain_numbers) == set(range(1, layers * chains_per_layer + 1))
+    assert set(slab.residue_numbers) == set(range(1, degree_polymerization + 1))
+    assert_allclose(slab.basis_vectors - np.diag(np.diag(slab.basis_vectors)), 0.0)
+    chain_numbers = np.asarray(slab.chain_numbers)
+    layer_centers = [
+        np.mean(
+            [
+                np.mean(slab.cartesian_coordinates[chain_numbers == chain, 1])
+                for chain in range(
+                    layer * chains_per_layer + 1,
+                    (layer + 1) * chains_per_layer + 1,
+                )
+            ]
+        )
+        for layer in range(layers)
+    ]
+    assert layer_centers == sorted(layer_centers)
+    assert "construction=whole_chain_reciprocal_lattice_cut" in slab.annotations
+
+
+def test_finite_slab_chain_end_padding_expands_and_centers_box() -> None:
+    definition = load_allomorph("i_alpha")
+    slab = build_chain_parallel_slab(
+        definition,
+        MillerIndex(0, 1, 0),
+        layers=2,
+        chains_per_layer=3,
+        degree_polymerization=4,
+        vacuum=10.0,
+        padding_z=12.0,
+        chain_boundary="finite",
+    )
+
+    assert slab.basis_vectors[2, 2] == pytest.approx(32.8)
+    assert np.min(slab.cartesian_coordinates[:, 2]) == pytest.approx(6.0)
+    assert "padding_z=12.000000 angstrom total" in slab.annotations
+
+
+def test_periodic_slab_rejects_chain_end_padding() -> None:
+    definition = load_allomorph("ii")
+    with pytest.raises(ValueError, match="padding_z must be zero"):
+        build_chain_parallel_slab(
+            definition,
+            MillerIndex(1, 1, 0),
+            layers=2,
+            chains_per_layer=3,
+            degree_polymerization=4,
+            vacuum=10.0,
+            padding_z=2.0,
+            chain_boundary="periodic",
+        )
+
+
 def test_parallel_miller_indices_retain_distinct_plane_spacings() -> None:
     definition = load_allomorph("i_beta")
     slab_100 = build_chain_parallel_slab(
@@ -455,6 +540,23 @@ def test_physical_slab_dimensions_round_up_to_complete_components() -> None:
     assert any(
         annotation.startswith("requested_width=40.000000") for annotation in slab.annotations
     )
+
+
+def test_i_alpha_physical_slab_length_uses_its_a_chain_axis() -> None:
+    definition = load_allomorph("i_alpha")
+
+    slab = build_slab_by_dimensions(
+        definition,
+        MillerIndex(0, 1, 0),
+        width=20.0,
+        thickness=12.0,
+        length=25.0,
+        vacuum=10.0,
+        padding_z=12.0,
+    )
+
+    assert slab.basis_vectors[2, 2] - 12.0 >= 25.0
+    assert slab.basis_vectors[2, 2] == pytest.approx(3 * 10.4 + 12.0)
 
 
 @pytest.mark.parametrize(

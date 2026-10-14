@@ -160,9 +160,7 @@ def test_ii_mapping_generates_force_field_hydrogens_and_maps_antiparallel_chains
                 assert 0.8 < np.linalg.norm(residue[hydrogen] - residue[oxygen]) < 1.1
     for chain_number in (1, 2):
         chain_indices = [
-            index
-            for index, chain in enumerate(mapped.chain_numbers)
-            if chain == chain_number
+            index for index, chain in enumerate(mapped.chain_numbers) if chain == chain_number
         ]
         for residue_number in range(1, 12):
             o4 = next(
@@ -181,3 +179,39 @@ def test_ii_mapping_generates_force_field_hydrogens_and_maps_antiparallel_chains
             fractional = np.linalg.solve(mapped.basis_vectors.T, displacement)
             fractional -= np.round(fractional)
             assert np.linalg.norm(fractional @ mapped.basis_vectors) < 1.7
+
+
+def test_finite_ii_slab_maps_antiparallel_chains_and_constructs_hydrogens() -> None:
+    crystal = build_chain_parallel_slab(
+        load_allomorph("ii"),
+        MillerIndex(1, 1, 0),
+        layers=1,
+        chains_per_layer=2,
+        degree_polymerization=12,
+        vacuum=30.0,
+        padding_z=12.0,
+        chain_boundary="finite",
+    )
+
+    mapped = map_crystal_to_finite_glycam(crystal, REFERENCE_PDB)
+
+    assert mapped.chain_count == 2
+    assert mapped.atom_count == 2 * 255
+    for chain_number in (1, 2):
+        for residue_number in range(2, 14):
+            residue = {
+                name: coordinate
+                for name, coordinate, chain, mapped_residue in zip(
+                    mapped.atom_names,
+                    mapped.cartesian_coordinates,
+                    mapped.chain_numbers,
+                    mapped.residue_numbers,
+                    strict=True,
+                )
+                if chain == chain_number and mapped_residue == residue_number
+            }
+            for oxygen, hydrogen in (("O2", "H2O"), ("O3", "H3O"), ("O6", "H6O")):
+                assert np.linalg.norm(residue[hydrogen] - residue[oxygen]) == pytest.approx(
+                    0.96,
+                    abs=0.08,
+                )

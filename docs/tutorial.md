@@ -13,7 +13,7 @@ files.
 4. [Replicate a periodic bulk crystal](#4-replicate-a-periodic-bulk-crystal)
 5. [Build a finite I-beta slab](#5-build-a-finite-i-beta-110-slab)
 6. [Request a slab by physical dimensions](#6-request-a-slab-by-physical-dimensions)
-7. [Explore other I-beta faces carefully](#7-explore-other-i-beta-faces-carefully)
+7. [Build other allomorph slabs](#7-build-other-allomorph-slabs)
 8. [Build a 36-chain elementary fibril](#8-build-a-36-chain-elementary-fibril)
 9. [Understand chain numbering](#9-understand-chain-numbering)
 10. [Generate a GLYCAM/GROMACS fibril](#10-generate-a-glycamgromacs-fibril)
@@ -269,7 +269,7 @@ and realized dimensions are written to the coordinate metadata.
 Do not combine `--layers` or `--chains-per-layer` with physical-dimension
 options in the same command.
 
-## 7. Explore other I-beta faces carefully
+## 7. Build other allomorph slabs
 
 For example, generate `(100)` and `(200)` slabs:
 
@@ -291,9 +291,27 @@ cellulose-forge build \
 spacings and chain-layer selections. CelluloseForge therefore preserves the
 exact Miller indices instead of reducing `(200)` to `(100)`.
 
-Only the I-beta `(110)` slab currently has independent reference validation.
-Other I-beta chain-parallel faces are explicitly marked exploratory and should
-be checked for the intended scientific application.
+The allomorph validation matrix uses I-alpha `(010)`, I-beta `(110)`, II
+`(110)`, and III-I `(110)`. For example:
+
+```bash
+cellulose-forge build \
+  --allomorph I-alpha --shape slab --face 0 1 0 \
+  --layers 3 --chains-per-layer 6 --degree-polymerization 6 \
+  --chain-boundary finite --vacuum 24 --padding-z 12 \
+  --force-field charmm36 --output ialpha_010_slab
+
+cellulose-forge build \
+  --allomorph II --shape slab --face 1 1 0 \
+  --layers 3 --chains-per-layer 6 --degree-polymerization 6 \
+  --chain-boundary periodic --vacuum 24 \
+  --force-field glycam --output cellulose_ii_110_slab
+```
+
+For I-alpha the crystallographic chain axis is `a`, so a chain-parallel face
+requires `h=0`. For I-beta, II, and III-I the chain axis is `c`, so it requires
+`l=0`. Finite slabs can use `--padding-z` to separate explicit chain ends from
+their periodic images. Periodic slabs reject nonzero chain-end padding.
 
 ## 8. Build a 36-chain elementary fibril
 
@@ -667,8 +685,9 @@ official archive can be supplied with `--archive` for offline installation.
 
 ### A slab face is rejected
 
-Current slabs are limited to cellulose I-beta chain-parallel `(h,k,0)` faces.
-The zero index `(0,0,0)` is never a valid crystallographic plane.
+Slab faces must be parallel to the cellulose chain axis: `h=0` for I-alpha and
+`l=0` for I-beta, II, and III-I. The zero index `(0,0,0)` is never a valid
+crystallographic plane.
 
 ### A fibril model is rejected for III-I
 
