@@ -149,6 +149,14 @@ _FIBRIL_FRAGMENT_IDS = {
     ),
 }
 
+# Ordered bottom-to-top row populations in the published 36-chain
+# cross-sections after applying the documented counterclockwise rotation.
+_FIBRIL_LAYER_SIZES = {
+    "I-alpha": (4, 5, 6, 6, 6, 5, 4),
+    "I-beta": (3, 4, 5, 6, 6, 5, 4, 3),
+    "II": (7, 11, 11, 7),
+}
+
 
 @dataclass(frozen=True)
 class BulkCrystal:
@@ -163,6 +171,7 @@ class BulkCrystal:
     chain_ids: tuple[str, ...] = ()
     residue_numbers: tuple[int, ...] = ()
     chain_numbers: tuple[int, ...] = ()
+    layer_numbers: tuple[int, ...] = ()
     annotations: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -186,8 +195,14 @@ class BulkCrystal:
         if self.chain_numbers and len(self.chain_numbers) != len(coordinates):
             msg = "chain numbers and Cartesian coordinates must have equal lengths"
             raise ValueError(msg)
+        if self.layer_numbers and len(self.layer_numbers) != len(coordinates):
+            msg = "layer numbers and Cartesian coordinates must have equal lengths"
+            raise ValueError(msg)
         if self.chain_numbers and min(self.chain_numbers) < 1:
             msg = "chain numbers must be one-based positive integers"
+            raise ValueError(msg)
+        if self.layer_numbers and min(self.layer_numbers) < 1:
+            msg = "layer numbers must be one-based positive integers"
             raise ValueError(msg)
         if any(value < 1 for value in self.replication):
             msg = "replication values must be positive integers"
@@ -542,7 +557,9 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
     surface_x = vectors[transverse_axis] - np.dot(vectors[transverse_axis], chain_axis) * chain_axis
     surface_x /= np.linalg.norm(surface_x)
     surface_y = np.cross(chain_axis, surface_x)
-    axes = np.vstack([surface_x, surface_y, chain_axis])
+    # Rotate the transverse cross-section 90 degrees counterclockwise relative
+    # to the crystallographic projection used by the legacy builder.
+    axes = np.vstack([-surface_y, surface_x, chain_axis])
     projected = np.vstack(coordinate_blocks) @ axes.T
     projected[:, 0] -= float(np.min(projected[:, 0])) - transverse_padding_x / 2.0
     projected[:, 1] -= float(np.min(projected[:, 1])) - transverse_padding_y / 2.0
@@ -562,6 +579,34 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
         replication_values[1],
         replication_values[2],
     )
+    original_layer_by_chain: dict[int, int] = {}
+    first_chain = 1
+    for layer_number, layer_size in enumerate(_FIBRIL_LAYER_SIZES[allomorph.name], start=1):
+        for chain_number in range(first_chain, first_chain + layer_size):
+            original_layer_by_chain[chain_number] = layer_number
+        first_chain += layer_size
+    original_chain_numbers = np.asarray(chain_numbers)
+    new_chain_by_original: dict[int, int] = {}
+    next_chain_number = 1
+    for layer_number in range(1, len(_FIBRIL_LAYER_SIZES[allomorph.name]) + 1):
+        layer_chains = [
+            chain_number
+            for chain_number, assigned_layer in original_layer_by_chain.items()
+            if assigned_layer == layer_number
+        ]
+        layer_chains.sort(
+            key=lambda chain_number: float(
+                projected[original_chain_numbers == chain_number, 0].mean()
+            )
+        )
+        for original_chain_number in layer_chains:
+            new_chain_by_original[original_chain_number] = next_chain_number
+            next_chain_number += 1
+    renumbered_chains = tuple(new_chain_by_original[value] for value in chain_numbers)
+    renumbered_chain_ids = tuple(
+        _PDB_CHAIN_IDENTIFIERS[chain_number - 1] for chain_number in renumbered_chains
+    )
+    layer_numbers = tuple(original_layer_by_chain[chain_number] for chain_number in chain_numbers)
     return BulkCrystal(
         allomorph=allomorph.name,
         space_group="P1",
@@ -569,9 +614,10 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
         cartesian_coordinates=projected,
         basis_vectors=basis,
         replication=replication,
-        chain_ids=tuple(chain_ids),
+        chain_ids=renumbered_chain_ids,
         residue_numbers=tuple(residue_numbers),
-        chain_numbers=tuple(chain_numbers),
+        chain_numbers=renumbered_chains,
+        layer_numbers=layer_numbers,
         annotations=(
             "shape=fibril fibril_model=36-chain total_chains=36",
             f"degree_polymerization={degree_polymerization} cellobiose_units={cellobiose_units}",
@@ -581,6 +627,9 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
             f"padding_y={transverse_padding_y:.6f} angstrom total",
             f"padding_z={longitudinal_padding:.6f} angstrom total",
             "chains aligned with Cartesian z",
+            "fibril cross-section rotated 90 degrees counterclockwise",
+            "fibril restraint layers numbered from low Cartesian y to high Cartesian y",
+            "fibril chains numbered from low Cartesian x to high Cartesian x within each layer",
             "legacy_fragment_ids=" + ",".join(str(value) for value in fragment_ids),
             "source=Gomes_and_Skaf_2012_Cellulose-Builder doi:10.1002/jcc.22959",
         ),

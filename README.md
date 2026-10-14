@@ -406,8 +406,8 @@ the periodic box provides sufficient separation between chain ends.
 GLYCAM and CHARMM36 builds can apply GROMACS position restraints to selected
 cellulose chains. Chain and transverse-layer IDs are deterministic, one-based
 identifiers reported in `build_report.json`. Select explicit chains with
-`--restrain-chains`, complete layers with `--restrain-layers`, or combine both.
-For example, this command restrains layer 1 plus two additional chains:
+`--restrain-chains` or complete layers with `--restrain-layers`. The two
+selectors are mutually exclusive. For example, this command restrains layer 1:
 
 ```bash
 cellulose-forge build \
@@ -419,13 +419,15 @@ cellulose-forge build \
   --vacuum 30 \
   --force-field glycam \
   --restrain-layers 1 \
-  --restrain-chains 11 16 \
   --restraint-force 1000 1000 1000 \
   --output restrained_fibril
 ```
 
-Layers are numbered from low Cartesian y to high Cartesian y after geometry
-generation. The generated topology separates free and restrained chains while
+Slab and fibril layers are numbered from low to high Cartesian `y`. Fibril
+cross-sections are displayed with the documented 90-degree counterclockwise
+rotation, and their layers follow the explicit bottom-to-top rows of the
+literature-defined preset. Within each fibril layer, chain IDs increase from
+low to high Cartesian `x`. The generated topology separates free and restrained chains while
 preserving the coordinate-to-topology order. The build report records the
 layer-to-chain expansion and maps each selected chain ID to its GROMACS
 molecule index and global atom range.

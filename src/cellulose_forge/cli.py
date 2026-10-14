@@ -159,19 +159,20 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="optional Python interpreter containing ParmEd",
     )
-    build.add_argument(
+    restraint_selector = build.add_mutually_exclusive_group()
+    restraint_selector.add_argument(
         "--restrain-chains",
         nargs="+",
         type=int,
         metavar="CHAIN_ID",
         help="sequential CelluloseForge chain IDs to restrain",
     )
-    build.add_argument(
+    restraint_selector.add_argument(
         "--restrain-layers",
         nargs="+",
         type=int,
         metavar="LAYER_ID",
-        help="one-based transverse layers to restrain, ordered from low y to high y",
+        help=("one-based transverse layers to restrain, ordered from low y to high y"),
     )
     build.add_argument(
         "--restraint-force",

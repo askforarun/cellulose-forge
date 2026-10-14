@@ -365,13 +365,16 @@ Slab chains are numbered deterministically:
 2. layer numbers increase toward high `y`;
 3. within a layer, chains increase from low `x` to high `x`.
 
-Fibril chains follow the stored literature-preset order. These stable numeric
-identifiers are the appropriate basis for later restraint or selection files.
+Fibril layers follow the stored literature preset from low to high Cartesian
+`y`; within each layer, chain IDs increase from low to high Cartesian `x`.
+These stable numeric identifiers are the appropriate basis for later restraint
+or selection files.
 
 ### Selective chain position restraints
 
 Force-field builds can create separate free and restrained cellulose molecule
-types. Select deterministic chain IDs, complete transverse layers, or both:
+types. Select either deterministic chain IDs or complete transverse layers;
+the selectors are mutually exclusive:
 
 ```bash
 uv run cellulose-forge build \
@@ -382,13 +385,15 @@ uv run cellulose-forge build \
   --chain-boundary periodic \
   --force-field glycam \
   --restrain-layers 1 3 \
-  --restrain-chains 11 16 \
   --restraint-force 1000 1000 1000 \
   --output restrained_fibril
 ```
 
-Layers are numbered from low Cartesian y to high Cartesian y. Both selectors
-are combined and duplicate chains are removed. The generated topology places
+Slab and fibril layers are numbered from low to high Cartesian `y`. Fibrils
+are displayed with their cross-section rotated counterclockwise by 90 degrees;
+their layers follow the explicit bottom-to-top rows of the literature-defined
+preset, and chain IDs within each layer increase from low to high Cartesian
+`x`. The generated topology places
 free molecules before restrained molecules, and `build_report.json` records
 the layer-to-chain expansion and mapping from original chain ID to GROMACS
 molecule index and global atom range. The same selectors work with

@@ -280,9 +280,7 @@ def test_cli_writes_literature_i_beta_36_chain_fibril(tmp_path: Path) -> None:
     lines = output.read_text(encoding="utf-8").splitlines()
     atom_lines = [line for line in lines if line.startswith("HETATM")]
     assert len(atom_lines) == 36 * 6 * 21
-    assert {line[72:76] for line in atom_lines} == {
-        f"C{chain:03d}" for chain in range(1, 37)
-    }
+    assert {line[72:76] for line in atom_lines} == {f"C{chain:03d}" for chain in range(1, 37)}
     assert any("shape=fibril fibril_model=36-chain total_chains=36" in line for line in lines)
     assert any("padding_x=24.000000" in line for line in lines)
     assert any("padding_y=32.000000" in line for line in lines)
@@ -437,6 +435,33 @@ def test_cli_writes_selectively_restrained_fibril_chains(
         for entry in restraints["chain_mapping"]
         if entry["restraint_status"] == "restrained"
     ] == [6, 11, 16, 21, 26, 31]
+
+
+def test_cli_rejects_combined_restraint_selectors(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="2"):
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "fibril",
+                "--fibril-model",
+                "36-chain",
+                "--degree-polymerization",
+                "12",
+                "--restrain-chains",
+                "1",
+                "--restrain-layers",
+                "1",
+                "--restraint-force",
+                "1000",
+                "1000",
+                "1000",
+                "--output",
+                str(tmp_path / "invalid_restraints"),
+            ]
+        )
 
 
 def test_cli_writes_finite_glycam_slab_system(

@@ -21,9 +21,31 @@ class ChainRestraints:
 
 
 def transverse_chain_layers(crystal: BulkCrystal) -> tuple[tuple[int, tuple[int, ...]], ...]:
-    """Group chains into low-y to high-y transverse molecular layers."""
+    """Group chains into deterministic transverse molecular layers.
+
+    Slab layers follow their surface-normal y direction. Fibrils carry the
+    explicit bottom-to-top row membership of their literature-defined preset.
+    """
     chain_numbers = np.asarray(crystal.chain_numbers)
     coordinates = np.asarray(crystal.cartesian_coordinates)
+    if crystal.layer_numbers:
+        return tuple(
+            (
+                layer_id,
+                tuple(
+                    sorted(
+                        {
+                            chain_id
+                            for chain_id, atom_layer in zip(
+                                crystal.chain_numbers, crystal.layer_numbers, strict=True
+                            )
+                            if atom_layer == layer_id
+                        }
+                    )
+                ),
+            )
+            for layer_id in sorted(set(crystal.layer_numbers))
+        )
     centers = [
         (chain_id, float(coordinates[chain_numbers == chain_id, 1].mean()))
         for chain_id in sorted(set(crystal.chain_numbers))
@@ -47,6 +69,8 @@ def resolve_chain_restraints(
     force_constants: list[float] | None = None,
 ) -> ChainRestraints | None:
     """Resolve universal selectors to deterministic chain IDs."""
+    if chain_ids and layer_ids:
+        raise ValueError("--restrain-chains and --restrain-layers are mutually exclusive")
     if not chain_ids and not layer_ids:
         if force_constants is not None:
             raise ValueError("--restraint-force requires a chain-restraint selector")
