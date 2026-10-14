@@ -30,6 +30,12 @@ legacy/doglycans-2017/
 legacy/source-archives/
 legacy/publications/
 legacy/SI_Cellulosewetting/
+legacy/*.zip
+legacy/*.tgz
+legacy/*.tar.gz
+
+# VMD-rendered screenshots are rendering scratch output, not curated examples.
+**/vmdscene.tga
 
 # Regenerable coordinate demonstrations; retain only curated examples.
 /examples/bulk/
