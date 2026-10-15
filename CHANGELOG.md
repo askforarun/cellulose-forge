@@ -2,31 +2,43 @@
 
 All notable changes to CelluloseForge are documented in this file.
 
-## 1.0.0 - Unreleased
+## 1.0.0 - 2026-10-15
 
-Initial stable release candidate.
+Initial stable release.
 
 ### Added
 
 - Crystallographic definitions for cellulose I-alpha, I-beta, II, and III-I.
 - Unit-cell and periodic bulk-crystal construction.
-- Cellulose I-beta chain-parallel slab construction with a validated `(110)`
-  reference workflow and explicitly marked exploratory alternative faces.
+- Chain-parallel slab construction for cellulose I-alpha, I-beta, II, and
+  III-I, with validated reference workflows for I-alpha `(010)`, I-beta
+  `(110)`, II `(110)`, and III-I `(110)`.
 - Literature-defined 36-chain fibrils for cellulose I-alpha, I-beta, and II.
 - Finite and covalently periodic chain-boundary treatments.
 - PDB and mmCIF coordinate output, including automatic mmCIF fallback for
   systems exceeding the PDB atom-serial limit.
 - GLYCAM06j-1 mapping and matched GROMACS GRO/TOP output through AmberTools and
   ParmEd.
+- Native finite- and periodic-chain CHARMM36 GROMACS topology generation from
+  a checksum-pinned official force-field release, without requiring VMD or
+  `psfgen` at runtime.
+- Deterministic chain and transverse-layer position-restraint selection for
+  GLYCAM and CHARMM36 systems.
 - Machine-readable build reports, deterministic identifiers, automated tests,
   and Linux/macOS continuous integration.
 
 ### Validation
 
-- Ninety automated tests cover crystallography, geometry, coordinate formats,
-  GLYCAM mapping, periodic interactions, and GROMACS output generation.
-- A periodic DP12 cellulose I-beta 36-chain fibril passes GROMACS preprocessing
-  and energy minimization.
+- 137 automated tests cover crystallography, geometry, coordinate formats,
+  GLYCAM and CHARMM36 mapping, finite and periodic interactions, restraints,
+  and GROMACS output generation; eight external-dependency cases are skipped
+  when their required tools are unavailable.
+- Finite and periodic GLYCAM06j-1 and CHARMM36 reference slabs for all four
+  supported allomorphs pass GROMACS preprocessing, minimization, and short NVT
+  validation workflows.
+- Periodic bulk systems for all four allomorphs and finite or periodic 36-chain
+  fibrils for the implemented presets have reproducible GROMACS validation
+  workflows.
 - A finite 102,000-atom cellulose I-beta `(110)` slab passes GROMACS
   preprocessing with PME and zero warnings.
 - The built wheel installs and generates representative structures in clean
@@ -34,7 +46,9 @@ Initial stable release candidate.
 
 ### Scope limitations
 
-- CHARMM36, OPLS, chemical functionalization, native CHARMM/PSF output, and
-  native Amber topology output are not included.
-- Slabs for cellulose I-alpha, II, and III-I are not supported in this release.
-- Cellulose I-beta slab faces other than `(110)` remain exploratory.
+- OPLS, chemical functionalization, native CHARMM/PSF output, and native Amber
+  topology output are not included.
+- Slabs are restricted to faces parallel to the crystallographic chain axis.
+  Faces outside the validated reference matrix should be assessed for their
+  intended application.
+- Fibril presets are limited to cellulose I-alpha, I-beta, and II.
