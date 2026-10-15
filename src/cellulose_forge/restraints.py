@@ -23,8 +23,8 @@ class ChainRestraints:
 def transverse_chain_layers(crystal: BulkCrystal) -> tuple[tuple[int, tuple[int, ...]], ...]:
     """Group chains into deterministic transverse molecular layers.
 
-    Slab layers follow their surface-normal y direction. Fibrils carry the
-    explicit bottom-to-top row membership of their literature-defined preset.
+    Slabs and fibrils carry explicit layer membership assigned by their geometry
+    builders. The coordinate-based fallback groups chains along Cartesian z.
     """
     chain_numbers = np.asarray(crystal.chain_numbers)
     coordinates = np.asarray(crystal.cartesian_coordinates)
@@ -47,7 +47,7 @@ def transverse_chain_layers(crystal: BulkCrystal) -> tuple[tuple[int, tuple[int,
             for layer_id in sorted(set(crystal.layer_numbers))
         )
     centers = [
-        (chain_id, float(coordinates[chain_numbers == chain_id, 1].mean()))
+        (chain_id, float(coordinates[chain_numbers == chain_id, 2].mean()))
         for chain_id in sorted(set(crystal.chain_numbers))
     ]
     grouped: list[list[tuple[int, float]]] = []

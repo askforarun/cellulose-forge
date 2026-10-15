@@ -483,7 +483,7 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--charmm-template` | ITP path | Optional periodic reference topology for regression studies |
 | `--charmm-force-field-directory` | directory | Optional override for the installed CHARMM36 release |
 | `--restrain-chains` | one or more IDs | Restrain selected deterministic chain IDs |
-| `--restrain-layers` | one or more IDs | Restrain transverse layers numbered from low y to high y |
+| `--restrain-layers` | one or more IDs | Restrain geometry-defined transverse layers |
 | `--restraint-force` | `FX FY FZ` | Position-restraint force constants in kJ mol$^{-1}$ nm$^{-2}$ |
 | `--output` | file or directory | Coordinate file for `none`; directory for force-field builds |
 
@@ -592,13 +592,14 @@ zero warnings, and no `-maxwarn` allowance.
 
 ### Slab orientation
 
-Slabs use a visualization-friendly Cartesian frame:
+Slabs use a simulation-oriented Cartesian frame compatible with GROMACS
+semi-isotropic pressure coupling:
 
 - transverse surface direction: `x`;
-- outward surface normal: `-y`;
-- cellulose chain direction: `z`.
+- cellulose chain direction: `-y`;
+- outward surface normal and vacuum direction: `-z`.
 
-The requested face is the low-`y` surface. Layers increase toward high `y`, and
+The requested face is the low-`z` surface. Layers increase toward high `z`, and
 chains within a layer are ordered from low `x` to high `x`.
 
 ### Chain identifiers

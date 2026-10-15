@@ -264,8 +264,8 @@ def test_i_beta_110_slab_is_surface_aligned_and_keeps_complete_residues() -> Non
     assert set(slab.chain_numbers) == set(range(1, 81))
     assert set(slab.residue_numbers) == set(range(1, 13))
     assert_allclose(slab.basis_vectors - np.diag(np.diag(slab.basis_vectors)), 0.0)
-    assert slab.basis_vectors[1, 1] == pytest.approx(
-        np.ptp(slab.cartesian_coordinates[:, 1]) + 30.0
+    assert slab.basis_vectors[2, 2] == pytest.approx(
+        np.ptp(slab.cartesian_coordinates[:, 2]) + 30.0
     )
 
 
@@ -286,9 +286,9 @@ def test_slab_chain_numbering_starts_at_requested_face_and_increases_with_x() ->
         for chain in range(1, 13)
     }
 
-    first_layer_y = [centers[chain][1] for chain in range(1, 5)]
-    second_layer_y = [centers[chain][1] for chain in range(5, 9)]
-    assert max(first_layer_y) < min(second_layer_y)
+    first_layer_z = [centers[chain][2] for chain in range(1, 5)]
+    second_layer_z = [centers[chain][2] for chain in range(5, 9)]
+    assert max(first_layer_z) < min(second_layer_z)
     assert [centers[chain][0] for chain in range(1, 5)] == sorted(
         centers[chain][0] for chain in range(1, 5)
     )
@@ -341,8 +341,8 @@ def test_i_beta_chain_parallel_faces_make_complete_aligned_slabs(
     assert len(set(slab.chain_numbers)) == 15
     assert set(slab.residue_numbers) == {1, 2, 3, 4}
     assert_allclose(slab.basis_vectors - np.diag(np.diag(slab.basis_vectors)), 0.0)
-    assert slab.basis_vectors[1, 1] == pytest.approx(
-        np.ptp(slab.cartesian_coordinates[:, 1]) + 12.0
+    assert slab.basis_vectors[2, 2] == pytest.approx(
+        np.ptp(slab.cartesian_coordinates[:, 2]) + 12.0
     )
 
 
@@ -386,7 +386,7 @@ def test_allomorph_chain_parallel_slabs_preserve_complete_chains_and_layers(
     layer_centers = [
         np.mean(
             [
-                np.mean(slab.cartesian_coordinates[chain_numbers == chain, 1])
+                np.mean(slab.cartesian_coordinates[chain_numbers == chain, 2])
                 for chain in range(
                     layer * chains_per_layer + 1,
                     (layer + 1) * chains_per_layer + 1,
@@ -412,9 +412,9 @@ def test_finite_slab_chain_end_padding_expands_and_centers_box() -> None:
         chain_boundary="finite",
     )
 
-    assert slab.basis_vectors[2, 2] == pytest.approx(32.8)
-    assert np.min(slab.cartesian_coordinates[:, 2]) == pytest.approx(6.0)
-    assert "padding_z=12.000000 angstrom total" in slab.annotations
+    assert slab.basis_vectors[1, 1] == pytest.approx(32.8)
+    assert np.min(slab.cartesian_coordinates[:, 1]) == pytest.approx(6.0)
+    assert any(annotation.startswith("padding_z=12.000000") for annotation in slab.annotations)
 
 
 def test_periodic_slab_rejects_chain_end_padding() -> None:
@@ -533,8 +533,8 @@ def test_physical_slab_dimensions_round_up_to_complete_components() -> None:
     )
 
     assert slab.basis_vectors[0, 0] >= 40.0
-    assert slab.basis_vectors[1, 1] - 10.0 >= 18.0
-    assert slab.basis_vectors[2, 2] >= 25.0
+    assert slab.basis_vectors[2, 2] - 10.0 >= 18.0
+    assert slab.basis_vectors[1, 1] >= 25.0
     assert slab.replication == (7, 4, 3)
     assert "size_mode=physical_dimensions" in slab.annotations
     assert any(
@@ -555,8 +555,8 @@ def test_i_alpha_physical_slab_length_uses_its_a_chain_axis() -> None:
         padding_z=12.0,
     )
 
-    assert slab.basis_vectors[2, 2] - 12.0 >= 25.0
-    assert slab.basis_vectors[2, 2] == pytest.approx(3 * 10.4 + 12.0)
+    assert slab.basis_vectors[1, 1] - 12.0 >= 25.0
+    assert slab.basis_vectors[1, 1] == pytest.approx(3 * 10.4 + 12.0)
 
 
 @pytest.mark.parametrize(
@@ -600,5 +600,5 @@ def test_si_wetting_reference_slab_counts() -> None:
     ]
     assert_allclose(chain_centers[1][0] - chain_centers[0][0], 5.964480, atol=1e-6)
     assert_allclose(chain_centers[2][0] - chain_centers[0][0], 0.279393, atol=1e-6)
-    assert_allclose(chain_centers[2][1] - chain_centers[0][1], 5.316996, atol=1e-6)
+    assert_allclose(chain_centers[2][2] - chain_centers[0][2], 5.316996, atol=1e-6)
     assert np.count_nonzero(chain_numbers == 1) == 252

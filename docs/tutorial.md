@@ -246,9 +246,12 @@ origin and center chains are mapped in opposite residue directions so their
 antiparallel beta(1->4) connectivity remains correct. The generated-coordinate
 method is included in `build_report.json`.
 
-CelluloseForge orients generated slabs consistently: the transverse surface
-direction is `x`, the outward surface normal is `-y`, and the cellulose chain
-direction is `z`.
+CelluloseForge orients generated slabs with the surface in the Cartesian
+`x-y` plane: the transverse surface direction is `x`, the cellulose chain
+direction is `-y`, and the outward surface normal and vacuum direction are
+`-z`. This convention permits GROMACS `pcoupltype = semiisotropic` to couple
+the two in-plane dimensions together while treating the surface-normal `z`
+dimension independently.
 
 ## 6. Request a slab by physical dimensions
 

@@ -172,7 +172,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         type=int,
         metavar="LAYER_ID",
-        help=("one-based transverse layers to restrain, ordered from low y to high y"),
+        help=("one-based transverse layers defined by the selected slab or fibril geometry"),
     )
     build.add_argument(
         "--restraint-force",

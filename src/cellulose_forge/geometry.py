@@ -653,9 +653,9 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     wetting reference systems. Chains in a layer are spaced by ``(a-b)/2``;
     successive layers alternate origin and center chains and advance by
     ``(a+b)/2``. The chain direction follows ``c`` and the requested face
-    normal is oriented along Cartesian -y and the cellulose chains along z.
-    This is equivalent to a +90 degree rotation about x from the wetting-system
-    convention and gives a direct side view in common molecular viewers.
+    normal is oriented along Cartesian -z and the cellulose chains along -y.
+    The resulting surface lies in the x-y plane for semi-isotropic pressure
+    coupling. A proper rotation is used so molecular chirality is preserved.
     """
     if face.values[allomorph.chain_axis] != 0:
         axis_name = ("h", "k", "l")[allomorph.chain_axis]
@@ -716,12 +716,13 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
 
     unit_cell = build_unit_cell(allomorph)
     chain_repeats = degree_polymerization // 2
-    axes = np.vstack([surface_x, -normal, chain_axis])
+    axes = np.vstack([surface_x, -chain_axis, -normal])
     coordinate_blocks: list[FloatArray] = []
     atom_labels: list[str] = []
     chain_ids: list[str] = []
     chain_numbers: list[int] = []
     residue_numbers: list[int] = []
+    layer_numbers: list[int] = []
     chain_count = layers * chains_per_layer
     residue_atoms = allomorph.asymmetric_unit.residue_atom_count
     origin_indices = np.r_[0:residue_atoms, 2 * residue_atoms : 3 * residue_atoms]
@@ -748,18 +749,19 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
                 atom_labels.extend(template_labels)
                 chain_ids.extend([chain_id] * len(template))
                 chain_numbers.extend([chain_number] * len(template))
+                layer_numbers.extend([output_layer + 1] * len(template))
                 first_residue = 2 * chain_cell + 1
                 residue_numbers.extend([first_residue] * residue_atoms)
                 residue_numbers.extend([first_residue + 1] * residue_atoms)
 
     projected = np.vstack(coordinate_blocks) @ axes.T
     projected[:, 0] -= float(np.min(projected[:, 0]))
-    projected[:, 1] -= float(np.min(projected[:, 1])) - vacuum / 2.0
-    projected[:, 2] -= float(np.min(projected[:, 2])) - padding_z / 2.0
-    slab_extent = float(np.ptp(projected[:, 1]))
+    projected[:, 1] -= float(np.min(projected[:, 1])) - padding_z / 2.0
+    projected[:, 2] -= float(np.min(projected[:, 2])) - vacuum / 2.0
+    slab_extent = float(np.ptp(projected[:, 2]))
     chain_length = float(np.linalg.norm(vectors[2])) * chain_repeats
     basis = np.diag(
-        [in_plane_length * chains_per_layer, slab_extent + vacuum, chain_length + padding_z]
+        [in_plane_length * chains_per_layer, chain_length + padding_z, slab_extent + vacuum]
     )
     return BulkCrystal(
         allomorph=allomorph.name,
@@ -771,6 +773,7 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
         chain_ids=tuple(chain_ids),
         residue_numbers=tuple(residue_numbers),
         chain_numbers=tuple(chain_numbers),
+        layer_numbers=tuple(layer_numbers),
         annotations=(
             f"shape=slab face=({face.h},{face.k},{face.l}) layers={layers}",
             f"chains_per_layer={chains_per_layer} total_chains={chain_count}",
@@ -778,9 +781,9 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             f"chain_boundary={chain_boundary}",
             f"d_hkl={face.spacing(allomorph.unit_cell):.6f} angstrom",
             f"vacuum={vacuum:.6f} angstrom",
-            f"padding_z={padding_z:.6f} angstrom total",
-            "surface normal aligned with Cartesian -y; chains aligned with Cartesian z",
-            "chain numbering starts at requested low-y face; within each layer low-x to high-x",
+            f"padding_z={padding_z:.6f} angstrom total longitudinal padding",
+            "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+            "chain numbering starts at requested low-z face; within each layer low-x to high-x",
         ),
     )
 
@@ -798,9 +801,9 @@ def build_slab_by_dimensions(  # noqa: PLR0913
 ) -> BulkCrystal:
     """Build a slab meeting or exceeding requested physical dimensions.
 
-    Dimensions are in angstrom. Width follows Cartesian x, thickness follows
-    the surface-normal Cartesian y direction, and length follows the cellulose
-    chains along Cartesian z. Counts are rounded upward so no chain, molecular
+    Dimensions are in angstrom. Width follows Cartesian x, length follows the
+    cellulose chains along Cartesian y, and thickness follows the surface-normal
+    Cartesian z direction. Counts are rounded upward so no chain, molecular
     layer, or crystallographic cellobiose repeat is cut.
     """
     requested = (width, thickness, length)
@@ -835,7 +838,7 @@ def build_slab_by_dimensions(  # noqa: PLR0913
             raise ValueError(msg)
 
     layers = 1
-    while float(probe(layers, chains_per_layer).basis_vectors[1, 1]) + _LAYER_TOLERANCE < thickness:
+    while float(probe(layers, chains_per_layer).basis_vectors[2, 2]) + _LAYER_TOLERANCE < thickness:
         layers += 1
         if layers > _MAX_SLAB_DISCRETE_COUNT:
             msg = "requested slab thickness exceeds the supported molecular-layer search limit"
@@ -852,8 +855,8 @@ def build_slab_by_dimensions(  # noqa: PLR0913
         chain_boundary=chain_boundary,
     )
     realized_width = float(slab.basis_vectors[0, 0])
-    realized_thickness = float(slab.basis_vectors[1, 1]) - vacuum
-    realized_length = float(slab.basis_vectors[2, 2]) - padding_z
+    realized_thickness = float(slab.basis_vectors[2, 2]) - vacuum
+    realized_length = float(slab.basis_vectors[1, 1]) - padding_z
     return replace(
         slab,
         annotations=(
@@ -897,7 +900,7 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     chain_axis = chain_vector / np.linalg.norm(chain_vector)
     surface_x = np.cross(chain_axis, normal)
     surface_x /= np.linalg.norm(surface_x)
-    axes = np.vstack([surface_x, -normal, chain_axis])
+    axes = np.vstack([surface_x, -chain_axis, -normal])
 
     unit_cell = build_unit_cell(allomorph)
     unit_coordinates = _unwrap_unit_cell_chains(
@@ -1006,6 +1009,7 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     chain_ids: list[str] = []
     chain_numbers: list[int] = []
     residue_numbers: list[int] = []
+    layer_numbers: list[int] = []
     for chain_index, (_, _, template_index, i, j) in enumerate(selected):
         chain_number = chain_index + 1
         chain_id = _PDB_CHAIN_IDENTIFIERS[chain_index % len(_PDB_CHAIN_IDENTIFIERS)]
@@ -1020,12 +1024,15 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             atom_labels.extend(labels)
             chain_ids.extend([chain_id] * len(template))
             chain_numbers.extend([chain_number] * len(template))
+            layer_numbers.extend(
+                [chain_index // chains_per_layer + 1] * len(template)
+            )
             residue_numbers.extend(residue + 2 * chain_cell for residue in residues)
 
     projected = np.vstack(coordinate_blocks) @ axes.T
     projected[:, 0] -= float(np.min(projected[:, 0]))
-    projected[:, 1] -= float(np.min(projected[:, 1])) - vacuum / 2.0
-    projected[:, 2] -= float(np.min(projected[:, 2])) - padding_z / 2.0
+    projected[:, 1] -= float(np.min(projected[:, 1])) - padding_z / 2.0
+    projected[:, 2] -= float(np.min(projected[:, 2])) - vacuum / 2.0
     extents = np.ptp(projected, axis=0)
     chain_length = float(np.linalg.norm(chain_vector)) * chain_repeats
     transverse_indices = (face.values[transverse_axes[0]], face.values[transverse_axes[1]])
@@ -1046,13 +1053,13 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     ]
     surface_repeat_length = float(np.median(spacings)) if spacings else lattice_surface_repeat
     periodic_width = surface_repeat_length * chains_per_layer
-    basis = np.diag([periodic_width, float(extents[1]) + vacuum, chain_length + padding_z])
+    basis = np.diag([periodic_width, chain_length + padding_z, float(extents[2]) + vacuum])
     termination_annotations: tuple[str, ...] = ()
     if requested_termination is not None:
         chain_type = _I_BETA_CHAIN_TYPE_NAMES[requested_termination]
         termination_annotations = (
             f"requested_face_chain_type={chain_type}",
-            "requested face is the low-y surface",
+            "requested face is the low-z surface",
         )
     return BulkCrystal(
         allomorph=allomorph.name,
@@ -1064,6 +1071,7 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
         chain_ids=tuple(chain_ids),
         residue_numbers=tuple(residue_numbers),
         chain_numbers=tuple(chain_numbers),
+        layer_numbers=tuple(layer_numbers),
         annotations=(
             f"shape=slab face=({face.h},{face.k},{face.l}) layers={layers}",
             f"chains_per_layer={chains_per_layer} total_chains={len(selected)}",
@@ -1071,10 +1079,10 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             f"chain_boundary={chain_boundary}",
             f"d_hkl={face.spacing(allomorph.unit_cell):.6f} angstrom",
             f"vacuum={vacuum:.6f} angstrom",
-            f"padding_z={padding_z:.6f} angstrom total",
+            f"padding_z={padding_z:.6f} angstrom total longitudinal padding",
             f"lateral_repeat={surface_repeat_length:.6f} angstrom",
-            "surface normal aligned with Cartesian -y; chains aligned with Cartesian z",
-            "chain numbering starts at requested low-y face; within each layer low-x to high-x",
+            "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+            "chain numbering starts at requested low-z face; within each layer low-x to high-x",
             "construction=whole_chain_reciprocal_lattice_cut",
             *termination_annotations,
         ),
