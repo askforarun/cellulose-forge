@@ -341,12 +341,14 @@ and II. A III-I 36-chain model is intentionally rejected because the reference
 builder did not define that preset.
 
 `--vacuum 30` adds 30 Å of total padding along both transverse box directions,
-with 15 Å on each opposing side. Use `--padding-x` and `--padding-y` when the
-two transverse dimensions need different padding. These options override
-`--vacuum` only for their respective direction.
+with 15 Å on each opposing side. Use `--padding-x` for Cartesian `x` and
+`--padding-y` for the second transverse direction, Cartesian `z`, when the two
+dimensions need different padding. These options override `--vacuum` only for
+their respective transverse direction.
 
 A fibril may also contain finite, chemically terminated chains. In that case,
-`--padding-z` adds total space beyond the two chain ends:
+`--padding-z` adds total longitudinal space beyond the two chain ends along
+Cartesian `y`; its name is retained for CLI compatibility:
 
 ```bash
 cellulose-forge build \
@@ -361,7 +363,7 @@ cellulose-forge build \
   --output cellulose_forge_tutorial/ibeta_36chain_finite_padded.pdb
 ```
 
-For a periodic fibril, CelluloseForge derives the z box length from the degree
+For a periodic fibril, CelluloseForge derives the y box length from the degree
 of polymerization and crystallographic chain repeat. It rejects nonzero
 `--padding-z`, which would otherwise separate atoms joined by the periodic
 covalent bond.
@@ -370,12 +372,12 @@ covalent bond.
 
 Slab chains are numbered deterministically:
 
-1. layer 1 begins at the requested low-`y` face;
-2. layer numbers increase toward high `y`;
+1. layer 1 begins at the requested low-`z` face;
+2. layer numbers increase toward high `z`;
 3. within a layer, chains increase from low `x` to high `x`.
 
 Fibril layers follow the stored literature preset from low to high Cartesian
-`y`; within each layer, chain IDs increase from low to high Cartesian `x`.
+`z`; within each layer, chain IDs increase from low to high Cartesian `x`.
 These stable numeric identifiers are the appropriate basis for later restraint
 or selection files.
 
@@ -398,7 +400,7 @@ uv run cellulose-forge build \
   --output restrained_fibril
 ```
 
-Slab and fibril layers are numbered from low to high Cartesian `y`. Fibrils
+Slab and fibril layers are numbered from low to high Cartesian `z`. Fibrils
 are displayed with their cross-section rotated counterclockwise by 90 degrees;
 their layers follow the explicit bottom-to-top rows of the literature-defined
 preset, and chain IDs within each layer increase from low to high Cartesian

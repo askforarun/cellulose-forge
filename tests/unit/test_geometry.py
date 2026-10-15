@@ -73,9 +73,9 @@ def test_36_chain_fibril_supports_independent_finite_box_padding() -> None:
 
     assert_allclose(
         np.diag(padded.basis_vectors) - np.diag(unpadded.basis_vectors),
-        [10.0, 20.0, 30.0],
+        [10.0, 30.0, 20.0],
     )
-    assert_allclose(np.min(padded.cartesian_coordinates, axis=0), [5.0, 10.0, 15.0])
+    assert_allclose(np.min(padded.cartesian_coordinates, axis=0), [5.0, 15.0, 10.0])
     assert any("padding_x=10.000000" in value for value in padded.annotations)
     assert any("padding_y=20.000000" in value for value in padded.annotations)
     assert any("padding_z=30.000000" in value for value in padded.annotations)

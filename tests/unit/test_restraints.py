@@ -83,7 +83,7 @@ def test_rejects_combined_chain_and_layer_selectors() -> None:
         )
 
 
-def test_fibril_layers_progress_from_low_to_high_y_after_rotation() -> None:
+def test_fibril_layers_progress_from_low_to_high_z_after_rotation() -> None:
     crystal = build_36_chain_fibril(
         load_allomorph("i_beta"),
         degree_polymerization=4,
@@ -105,7 +105,7 @@ def test_fibril_layers_progress_from_low_to_high_y_after_rotation() -> None:
     coordinates = np.asarray(crystal.cartesian_coordinates)
     chain_numbers = np.asarray(crystal.chain_numbers)
     layer_centers = [
-        np.mean([coordinates[chain_numbers == chain_id, 1].mean() for chain_id in chain_ids])
+        np.mean([coordinates[chain_numbers == chain_id, 2].mean() for chain_id in chain_ids])
         for _, chain_ids in transverse_chain_layers(crystal)
     ]
     assert layer_centers == sorted(layer_centers)

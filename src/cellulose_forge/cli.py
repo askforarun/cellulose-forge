@@ -123,13 +123,17 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument(
         "--padding-y",
         type=float,
-        help="total fibril padding along Cartesian y; overrides --vacuum for y",
+        help=(
+            "total fibril padding along the second transverse direction "
+            "(Cartesian z); overrides --vacuum"
+        ),
     )
     build.add_argument(
         "--padding-z",
         type=float,
         help=(
-            "total chain-direction padding for finite slabs or fibrils; "
+            "total chain-direction padding for finite slabs or fibrils "
+            "(Cartesian y in oriented outputs); "
             "periodic chains require zero"
         ),
     )

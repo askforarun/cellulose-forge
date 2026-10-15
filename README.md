@@ -285,10 +285,12 @@ cellulose-forge build \
 The preset is an explicit published chain arrangement, not an ideal regular
 hexagon. Cellulose III-I has no supported 36-chain reference preset.
 
-For independent transverse box control, use `--padding-x` and `--padding-y`.
-Both values are total padding and are divided equally between opposite sides.
-For a finite fibril, `--padding-z` additionally controls total padding beyond
-the chain ends:
+For independent transverse box control, use `--padding-x` for Cartesian `x`
+and `--padding-y` for the second transverse direction, Cartesian `z`. Both
+values are total padding and are divided equally between opposite sides. For a
+finite fibril, `--padding-z` controls total longitudinal padding beyond the
+chain ends along Cartesian `y` (the option name is retained for CLI
+compatibility):
 
 ```bash
 cellulose-forge build \
@@ -303,10 +305,10 @@ cellulose-forge build \
   --output ibeta_36chain_finite_padded.pdb
 ```
 
-For periodic chains, the z box length is fixed by the crystallographic repeat;
+For periodic chains, the y box length is fixed by the crystallographic repeat;
 nonzero `--padding-z` is rejected because it would break the covalent bond
 across the boundary. `--vacuum N` remains a shorthand that applies `N` total
-padding to both transverse directions unless the corresponding x or y option
+padding to both transverse directions unless the corresponding option
 overrides it.
 
 ## Full tutorial
@@ -423,7 +425,7 @@ cellulose-forge build \
   --output restrained_fibril
 ```
 
-Slab and fibril layers are numbered from low to high Cartesian `y`. Fibril
+Slab and fibril layers are numbered from low to high Cartesian `z`. Fibril
 cross-sections are displayed with the documented 90-degree counterclockwise
 rotation, and their layers follow the explicit bottom-to-top rows of the
 literature-defined preset. Within each fibril layer, chain IDs increase from
@@ -475,8 +477,8 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--chain-boundary` | `finite`, `periodic` | Terminal groups or a covalent bond across the chain boundary |
 | `--vacuum` | angstrom | Total transverse vacuum padding |
 | `--padding-x` | angstrom | Total fibril x padding; overrides `--vacuum` for x |
-| `--padding-y` | angstrom | Total fibril y padding; overrides `--vacuum` for y |
-| `--padding-z` | angstrom | Total finite slab/fibril chain-end padding; periodic chains require zero |
+| `--padding-y` | angstrom | Total fibril padding in its second transverse direction (Cartesian z); overrides `--vacuum` |
+| `--padding-z` | angstrom | Total longitudinal chain-end padding (Cartesian y in oriented outputs); periodic chains require zero |
 | `--force-field` | `none`, `glycam`, `charmm36` | Coordinate-only, GLYCAM, or CHARMM36 GROMACS output |
 | `--tleap-executable` | executable path | `tleap` used for GLYCAM builds |
 | `--parmed-python` | Python path | Interpreter containing ParmEd |

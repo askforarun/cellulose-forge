@@ -472,7 +472,7 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
         msg = "padding_z must be zero for a fibril with periodic chain boundaries"
         raise ValueError(msg)
     transverse_padding_x = vacuum if padding_x is None else padding_x
-    transverse_padding_y = vacuum if padding_y is None else padding_y
+    transverse_padding_z = vacuum if padding_y is None else padding_y
     longitudinal_padding = 0.0 if padding_z is None else padding_z
 
     cellobiose_units = degree_polymerization // 2
@@ -559,17 +559,17 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
     surface_y = np.cross(chain_axis, surface_x)
     # Rotate the transverse cross-section 90 degrees counterclockwise relative
     # to the crystallographic projection used by the legacy builder.
-    axes = np.vstack([-surface_y, surface_x, chain_axis])
+    axes = np.vstack([-surface_y, -chain_axis, surface_x])
     projected = np.vstack(coordinate_blocks) @ axes.T
     projected[:, 0] -= float(np.min(projected[:, 0])) - transverse_padding_x / 2.0
-    projected[:, 1] -= float(np.min(projected[:, 1])) - transverse_padding_y / 2.0
-    projected[:, 2] -= float(np.min(projected[:, 2])) - longitudinal_padding / 2.0
+    projected[:, 1] -= float(np.min(projected[:, 1])) - longitudinal_padding / 2.0
+    projected[:, 2] -= float(np.min(projected[:, 2])) - transverse_padding_z / 2.0
     extents = np.ptp(projected, axis=0)
     basis = np.diag(
         [
             float(extents[0]) + transverse_padding_x,
-            float(extents[1]) + transverse_padding_y,
             float(np.linalg.norm(chain_vector)) * cellobiose_units + longitudinal_padding,
+            float(extents[2]) + transverse_padding_z,
         ]
     )
     replication_values = [1, 1, 1]
@@ -624,11 +624,11 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
             f"chain_boundary={chain_boundary}",
             f"vacuum={vacuum:.6f} angstrom transverse_padding_default",
             f"padding_x={transverse_padding_x:.6f} angstrom total",
-            f"padding_y={transverse_padding_y:.6f} angstrom total",
-            f"padding_z={longitudinal_padding:.6f} angstrom total",
-            "chains aligned with Cartesian z",
+            f"padding_y={transverse_padding_z:.6f} angstrom total transverse-z padding",
+            f"padding_z={longitudinal_padding:.6f} angstrom total longitudinal padding",
+            "chains aligned with Cartesian -y",
             "fibril cross-section rotated 90 degrees counterclockwise",
-            "fibril restraint layers numbered from low Cartesian y to high Cartesian y",
+            "fibril restraint layers numbered from low Cartesian z to high Cartesian z",
             "fibril chains numbered from low Cartesian x to high Cartesian x within each layer",
             "legacy_fragment_ids=" + ",".join(str(value) for value in fragment_ids),
             "source=Gomes_and_Skaf_2012_Cellulose-Builder doi:10.1002/jcc.22959",
