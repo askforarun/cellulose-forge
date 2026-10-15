@@ -293,7 +293,8 @@ def _write_coordinate_only_report(
     coordinate_path: Path,
 ) -> Path:
     """Write a sibling build report for a coordinate-only construction."""
-    report_path = args.output.with_suffix(".build_report.json")
+    requested_output = Path(args.output)
+    report_path = requested_output.with_suffix(".build_report.json")
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
@@ -303,7 +304,7 @@ def _write_coordinate_only_report(
         "degree_polymerization": _crystal_degree_polymerization(crystal),
         "chain_count": len(set(crystal.chain_numbers)),
         "crystallographic_atom_count": crystal.atom_count,
-        "requested_output": str(args.output),
+        "requested_output": str(requested_output),
         "outputs": {"coordinates": coordinate_path.name},
         "geometry_annotations": list(crystal.annotations),
     }
