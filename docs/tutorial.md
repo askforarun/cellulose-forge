@@ -275,8 +275,25 @@ The requested dimensions are minima. CelluloseForge rounds upward to retain
 whole chains, whole molecular layers, and whole cellobiose repeats. Requested
 and realized dimensions are written to the coordinate metadata.
 
-Do not combine `--layers` or `--chains-per-layer` with physical-dimension
-options in the same command.
+Sizing choices are independent by axis. Supply exactly one member of each pair:
+
+- transverse width: `--chains-per-layer` or `--slab-width`;
+- surface-normal thickness: `--layers` or `--slab-thickness`;
+- chain length: `--degree-polymerization` or `--slab-length`.
+
+For example, retain exactly four layers while deriving the chain count and DP
+needed to reach minimum width and length targets:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape slab --face 1 1 0 \
+  --layers 4 --slab-width 40 --slab-length 40 \
+  --chain-boundary finite --vacuum 30 \
+  --output cellulose_forge_tutorial/ibeta_110_hybrid.pdb
+```
+
+Options within the same pair are mutually exclusive. The coordinate metadata
+and build report record the derived counts and realized physical dimensions.
 
 ## 7. Build other allomorph slabs
 

@@ -33,8 +33,7 @@ from cellulose_forge.geometry import (
     BulkCrystal,
     build_36_chain_fibril,
     build_bulk_crystal,
-    build_chain_parallel_slab,
-    build_slab_by_dimensions,
+    build_slab_with_sizing,
     build_unit_cell,
 )
 from cellulose_forge.glycam import GLYCAM_LEAPRC, generate_glycam_gromacs_reference
@@ -608,7 +607,7 @@ def _build_slab(
     definition: AllomorphDefinition,
     parser: argparse.ArgumentParser,
 ) -> BulkCrystal:
-    """Resolve mutually exclusive slab sizing modes and build the slab."""
+    """Resolve independent discrete or physical sizing for each slab axis."""
     if args.cells is not None:
         parser.error("--cells is not valid with --shape slab")
     if args.face is None:
@@ -618,42 +617,28 @@ def _build_slab(
     if args.chain_boundary == "periodic" and args.padding_z not in {None, 0}:
         parser.error("--padding-z must be zero with --chain-boundary periodic")
     padding_z = 0.0 if args.padding_z is None else args.padding_z
-    count_values = (args.layers, args.chains_per_layer, args.degree_polymerization)
-    size_values = (args.slab_width, args.slab_thickness, args.slab_length)
-    has_count_value = any(value is not None for value in count_values)
-    has_size_value = any(value is not None for value in size_values)
-    if has_count_value and has_size_value:
-        parser.error("exact-count and physical-size slab options cannot be combined")
-    if has_count_value:
-        if not all(value is not None for value in count_values):
-            parser.error(
-                "--layers N, --chains-per-layer N, and --degree-polymerization N "
-                "must be supplied together"
-            )
-        assert args.layers is not None
-        assert args.chains_per_layer is not None
-        assert args.degree_polymerization is not None
-        return build_chain_parallel_slab(
+    axis_options = (
+        ("--chains-per-layer", args.chains_per_layer, "--slab-width", args.slab_width),
+        ("--layers", args.layers, "--slab-thickness", args.slab_thickness),
+        (
+            "--degree-polymerization",
+            args.degree_polymerization,
+            "--slab-length",
+            args.slab_length,
+        ),
+    )
+    for count_name, count, size_name, size in axis_options:
+        if count is not None and size is not None:
+            parser.error(f"{count_name} and {size_name} are mutually exclusive")
+        if count is None and size is None:
+            parser.error(f"supply one of {count_name} or {size_name}")
+    try:
+        return build_slab_with_sizing(
             definition,
             MillerIndex(*args.face),
             layers=args.layers,
             chains_per_layer=args.chains_per_layer,
             degree_polymerization=args.degree_polymerization,
-            vacuum=args.vacuum,
-            padding_z=padding_z,
-            chain_boundary=args.chain_boundary,
-        )
-    if has_size_value:
-        if not all(value is not None for value in size_values):
-            parser.error(
-                "--slab-width A, --slab-thickness A, and --slab-length A must be supplied together"
-            )
-        assert args.slab_width is not None
-        assert args.slab_thickness is not None
-        assert args.slab_length is not None
-        return build_slab_by_dimensions(
-            definition,
-            MillerIndex(*args.face),
             width=args.slab_width,
             thickness=args.slab_thickness,
             length=args.slab_length,
@@ -661,11 +646,8 @@ def _build_slab(
             padding_z=padding_z,
             chain_boundary=args.chain_boundary,
         )
-    parser.error(
-        "supply either exact counts (--layers, --chains-per-layer, "
-        "--degree-polymerization) or physical dimensions (--slab-width, "
-        "--slab-thickness, --slab-length)"
-    )
+    except ValueError as error:
+        parser.error(str(error))
 
 
 if __name__ == "__main__":

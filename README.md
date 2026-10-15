@@ -267,7 +267,19 @@ cellulose-forge build \
   --output ibeta_110_sized_slab.pdb
 ```
 
-Exact-count options and physical-dimension options are mutually exclusive.
+Sizing is selected independently for each axis. Supply exactly one option from
+each pair: `--chains-per-layer` or `--slab-width`, `--layers` or
+`--slab-thickness`, and `--degree-polymerization` or `--slab-length`. This
+allows hybrid requests such as four exact layers with minimum 40 Å width and
+40 Å chain length:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape slab --face 1 1 0 \
+  --layers 4 --slab-width 40 --slab-length 40 \
+  --chain-boundary finite --vacuum 30 \
+  --output ibeta_110_hybrid.pdb
+```
 
 ### Literature-defined 36-chain fibril
 

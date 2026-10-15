@@ -12,6 +12,7 @@ from cellulose_forge.geometry import (
     build_bulk_crystal,
     build_chain_parallel_slab,
     build_slab_by_dimensions,
+    build_slab_with_sizing,
     build_unit_cell,
 )
 
@@ -540,6 +541,29 @@ def test_physical_slab_dimensions_round_up_to_complete_components() -> None:
     assert any(
         annotation.startswith("requested_width=40.000000") for annotation in slab.annotations
     )
+
+
+def test_mixed_slab_sizing_preserves_layers_and_derives_width_and_dp() -> None:
+    slab = build_slab_with_sizing(
+        load_allomorph("i_beta"),
+        MillerIndex(1, 1, 0),
+        layers=4,
+        width=40.0,
+        length=40.0,
+        vacuum=10.0,
+    )
+
+    assert slab.replication == (7, 4, 4)
+    assert len(set(slab.chain_numbers)) == 28
+    assert set(slab.residue_numbers) == set(range(1, 9))
+    assert "size_mode=mixed" in slab.annotations
+    assert any(
+        annotation.startswith("requested_width=40.000000") for annotation in slab.annotations
+    )
+    assert any(
+        annotation.startswith("requested_length=40.000000") for annotation in slab.annotations
+    )
+    assert not any(annotation.startswith("requested_thickness=") for annotation in slab.annotations)
 
 
 def test_i_alpha_physical_slab_length_uses_its_a_chain_axis() -> None:

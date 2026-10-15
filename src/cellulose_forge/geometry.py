@@ -806,17 +806,55 @@ def build_slab_by_dimensions(  # noqa: PLR0913
     Cartesian z direction. Counts are rounded upward so no chain, molecular
     layer, or crystallographic cellobiose repeat is cut.
     """
-    requested = (width, thickness, length)
-    if any(not np.isfinite(value) or value <= 0 for value in requested):
-        msg = "slab width, thickness, and length must be finite positive angstrom values"
-        raise ValueError(msg)
+    return build_slab_with_sizing(
+        allomorph,
+        face,
+        width=width,
+        thickness=thickness,
+        length=length,
+        vacuum=vacuum,
+        padding_z=padding_z,
+        chain_boundary=chain_boundary,
+    )
+
+
+def build_slab_with_sizing(  # noqa: PLR0913
+    allomorph: AllomorphDefinition,
+    face: MillerIndex,
+    *,
+    layers: int | None = None,
+    chains_per_layer: int | None = None,
+    degree_polymerization: int | None = None,
+    width: float | None = None,
+    thickness: float | None = None,
+    length: float | None = None,
+    vacuum: float,
+    padding_z: float = 0.0,
+    chain_boundary: str = "finite",
+) -> BulkCrystal:
+    """Build a slab using an independent discrete or physical choice per axis."""
+    pairs = (
+        ("chains_per_layer", chains_per_layer, "width", width),
+        ("layers", layers, "thickness", thickness),
+        ("degree_polymerization", degree_polymerization, "length", length),
+    )
+    for count_name, count, size_name, size in pairs:
+        if (count is None) == (size is None):
+            msg = f"supply exactly one of {count_name} or {size_name}"
+            raise ValueError(msg)
+    for name, value in (("width", width), ("thickness", thickness), ("length", length)):
+        if value is not None and (not np.isfinite(value) or value <= 0):
+            msg = f"slab {name} must be a finite positive angstrom value"
+            raise ValueError(msg)
     if not np.isfinite(vacuum) or vacuum < 0:
         msg = "vacuum must be a finite, nonnegative angstrom value"
         raise ValueError(msg)
 
     chain_repeat_length = float(np.linalg.norm(allomorph.unit_cell.vectors()[allomorph.chain_axis]))
-    chain_repeats = max(1, int(np.ceil(length / chain_repeat_length)))
-    degree_polymerization = 2 * chain_repeats
+    if degree_polymerization is None:
+        assert length is not None
+        chain_repeats = max(1, int(np.ceil(length / chain_repeat_length)))
+        degree_polymerization = 2 * chain_repeats
 
     def probe(layers: int, chains: int) -> BulkCrystal:
         return build_chain_parallel_slab(
@@ -830,19 +868,26 @@ def build_slab_by_dimensions(  # noqa: PLR0913
             chain_boundary=chain_boundary,
         )
 
-    chains_per_layer = 1
-    while float(probe(1, chains_per_layer).basis_vectors[0, 0]) + _LAYER_TOLERANCE < width:
-        chains_per_layer += 1
-        if chains_per_layer > _MAX_SLAB_DISCRETE_COUNT:
-            msg = "requested slab width exceeds the supported discrete-chain search limit"
-            raise ValueError(msg)
+    if chains_per_layer is None:
+        assert width is not None
+        chains_per_layer = 1
+        while float(probe(1, chains_per_layer).basis_vectors[0, 0]) + _LAYER_TOLERANCE < width:
+            chains_per_layer += 1
+            if chains_per_layer > _MAX_SLAB_DISCRETE_COUNT:
+                msg = "requested slab width exceeds the supported discrete-chain search limit"
+                raise ValueError(msg)
 
-    layers = 1
-    while float(probe(layers, chains_per_layer).basis_vectors[2, 2]) + _LAYER_TOLERANCE < thickness:
-        layers += 1
-        if layers > _MAX_SLAB_DISCRETE_COUNT:
-            msg = "requested slab thickness exceeds the supported molecular-layer search limit"
-            raise ValueError(msg)
+    if layers is None:
+        assert thickness is not None
+        layers = 1
+        while (
+            float(probe(layers, chains_per_layer).basis_vectors[2, 2]) + _LAYER_TOLERANCE
+            < thickness
+        ):
+            layers += 1
+            if layers > _MAX_SLAB_DISCRETE_COUNT:
+                msg = "requested slab thickness exceeds the supported molecular-layer search limit"
+                raise ValueError(msg)
 
     slab = build_chain_parallel_slab(
         allomorph,
@@ -857,20 +902,44 @@ def build_slab_by_dimensions(  # noqa: PLR0913
     realized_width = float(slab.basis_vectors[0, 0])
     realized_thickness = float(slab.basis_vectors[2, 2]) - vacuum
     realized_length = float(slab.basis_vectors[1, 1]) - padding_z
-    return replace(
-        slab,
-        annotations=(
-            *slab.annotations,
-            "size_mode=physical_dimensions",
-            f"requested_width={width:.6f} angstrom realized_width={realized_width:.6f} angstrom",
+    physical_axes = sum(value is not None for value in (width, thickness, length))
+    size_mode = (
+        "physical_dimensions"
+        if physical_axes == len(pairs)
+        else "exact_counts"
+        if physical_axes == 0
+        else "mixed"
+    )
+    dimension_annotations = tuple(
+        annotation
+        for annotation in (
+            (
+                f"requested_width={width:.6f} angstrom "
+                f"realized_width={realized_width:.6f} angstrom"
+                if width is not None
+                else None
+            ),
             (
                 f"requested_thickness={thickness:.6f} angstrom "
                 f"realized_thickness={realized_thickness:.6f} angstrom"
+                if thickness is not None
+                else None
             ),
             (
                 f"requested_length={length:.6f} angstrom "
                 f"realized_length={realized_length:.6f} angstrom"
+                if length is not None
+                else None
             ),
+        )
+        if annotation is not None
+    )
+    return replace(
+        slab,
+        annotations=(
+            *slab.annotations,
+            f"size_mode={size_mode}",
+            *dimension_annotations,
         ),
     )
 
