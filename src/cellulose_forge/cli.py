@@ -278,12 +278,40 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
                 build_parser().error("chain restraints require --force-field glycam or charmm36")
             args.output.parent.mkdir(parents=True, exist_ok=True)
             written_path = write_coordinates(crystal, args.output)
+            _write_coordinate_only_report(args, crystal, written_path)
             if written_path != args.output:
                 print(
                     f"Requested structure has {crystal.atom_count} atoms; "
                     f"wrote mmCIF instead of PDB: {written_path}"
                 )
     return 0
+
+
+def _write_coordinate_only_report(
+    args: argparse.Namespace,
+    crystal: BulkCrystal,
+    coordinate_path: Path,
+) -> Path:
+    """Write a sibling build report for a coordinate-only construction."""
+    report_path = args.output.with_suffix(".build_report.json")
+    report = {
+        "cellulose_forge_version": __version__,
+        "allomorph": crystal.allomorph,
+        "shape": args.shape,
+        "force_field": "none",
+        "chain_boundary": args.chain_boundary,
+        "degree_polymerization": _crystal_degree_polymerization(crystal),
+        "chain_count": len(set(crystal.chain_numbers)),
+        "crystallographic_atom_count": crystal.atom_count,
+        "requested_output": str(args.output),
+        "outputs": {"coordinates": coordinate_path.name},
+        "geometry_annotations": list(crystal.annotations),
+    }
+    report_path.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return report_path
 
 
 def _write_charmm36_build(
@@ -510,7 +538,7 @@ def _crystal_degree_polymerization(crystal: BulkCrystal) -> int:
         for chain_number in dict.fromkeys(crystal.chain_numbers)
     }
     if not degrees or len(set(degrees.values())) != 1:
-        msg = "GLYCAM output requires equal, nonempty cellulose chain lengths"
+        msg = "output requires equal, nonempty cellulose chain lengths"
         raise ValueError(msg)
     return next(iter(degrees.values()))
 

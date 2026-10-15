@@ -541,13 +541,22 @@ the implementation and validation evidence.
 
 ### Coordinate-only mode
 
-The filename extension selects PDB or PDBx/mmCIF:
+The filename extension selects PDB or PDBx/mmCIF. Every coordinate-only build
+also writes a sibling `<structure>.build_report.json` containing the interpreted
+geometry, chain count, derived degree of polymerization, and actual coordinate
+filename:
 
 ```text
 structure.pdb
+structure.build_report.json
 structure.cif
 structure.mmcif
 ```
+
+When physical slab dimensions are requested, the report records both the
+requested and realized dimensions in `geometry_annotations`. The reported DP
+is the even number of anhydroglucose units obtained by rounding the requested
+chain-direction length upward to complete cellobiose repeats.
 
 ### GLYCAM mode
 

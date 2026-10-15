@@ -164,6 +164,12 @@ head -n 8 cellulose_forge_tutorial/ibeta_unit_cell.pdb
 grep -c '^HETATM' cellulose_forge_tutorial/ibeta_unit_cell.pdb
 ```
 
+The same command writes
+`cellulose_forge_tutorial/ibeta_unit_cell.build_report.json`. Coordinate-only
+reports record the chain count, degree of polymerization, geometry annotations,
+and the coordinate file actually written. For dimension-driven slabs, inspect
+this report to find the derived DP and the requested versus realized dimensions.
+
 The unit-cell file is a crystallographic coordinate model. In coordinate-only
 mode it does not contain a molecular-mechanics topology.
 
@@ -754,7 +760,8 @@ For reproducibility, retain:
 
 - the complete CelluloseForge command;
 - the CelluloseForge version or Git commit;
-- `build_report.json` for parameterized builds;
+- `build_report.json` for parameterized builds or the sibling
+  `<structure>.build_report.json` for coordinate-only builds;
 - the selected force field and its exact release;
 - for GLYCAM, the AmberTools and ParmEd versions;
 - for CHARMM36, the pinned release name and force-field archive checksum;

@@ -58,6 +58,13 @@ def test_cli_writes_annotated_i_beta_unit_cell(tmp_path: Path) -> None:
         ("B", 1),
         ("B", 2),
     }
+    report = json.loads(
+        (tmp_path / "i_beta_unit_cell.build_report.json").read_text(encoding="utf-8")
+    )
+    assert report["force_field"] == "none"
+    assert report["degree_polymerization"] == 2
+    assert report["chain_count"] == 2
+    assert report["outputs"]["coordinates"] == output.name
 
 
 def test_cli_writes_i_beta_bulk_supercell(tmp_path: Path) -> None:
