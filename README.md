@@ -417,24 +417,28 @@ the periodic box provides sufficient separation between chain ends.
 
 ### Selective chain position restraints
 
-GLYCAM and CHARMM36 builds can apply GROMACS position restraints to selected
-cellulose chains. Chain and transverse-layer IDs are deterministic, one-based
+GLYCAM and CHARMM36 builds can apply GROMACS position restraints to the heavy
+atoms of selected cellulose chains. Hydrogens remain unrestrained. Chain and transverse-layer IDs are deterministic, one-based
 identifiers reported in `build_report.json`. Select explicit chains with
 `--restrain-chains` or complete layers with `--restrain-layers`. The two
-selectors are mutually exclusive. For example, this command restrains layer 1:
+selectors are mutually exclusive. For example, this one-sided four-layer slab
+restrains the heavy atoms in layers 1 and 2 while layers 3 and 4 remain fully
+flexible:
 
 ```bash
 cellulose-forge build \
   --allomorph I-beta \
-  --shape fibril \
-  --fibril-model 36-chain \
+  --shape slab \
+  --face 1 1 0 \
+  --layers 4 \
+  --chains-per-layer 20 \
   --degree-polymerization 12 \
-  --chain-boundary periodic \
+  --chain-boundary finite \
   --vacuum 30 \
   --force-field glycam \
-  --restrain-layers 1 \
+  --restrain-layers 1 2 \
   --restraint-force 1000 1000 1000 \
-  --output restrained_fibril
+  --output restrained_4layer_slab
 ```
 
 Slab and fibril layers are numbered from low to high Cartesian `z`. Fibril
@@ -444,7 +448,8 @@ literature-defined preset. Within each fibril layer, chain IDs increase from
 low to high Cartesian `x`. The generated topology separates free and restrained chains while
 preserving the coordinate-to-topology order. The build report records the
 layer-to-chain expansion and maps each selected chain ID to its GROMACS
-molecule index and global atom range.
+molecule index and global atom range. Its `atom_selection` field records that
+only heavy atoms in those chains are restrained.
 
 Enable the restraints in the simulation MDP file:
 
@@ -457,10 +462,10 @@ Then pass the reference coordinates with `gmx grompp -r`:
 ```bash
 gmx grompp \
   -f validation/position_restraint_pme_nvt_1ps.mdp \
-  -c restrained_fibril/structure.gro \
-  -r restrained_fibril/structure.gro \
-  -p restrained_fibril/system.top \
-  -o restrained_fibril/nvt.tpr
+  -c restrained_4layer_slab/structure.gro \
+  -r restrained_4layer_slab/structure.gro \
+  -p restrained_4layer_slab/system.top \
+  -o restrained_4layer_slab/nvt.tpr
 ```
 
 Omitting `-DPOSRES_CELLULOSE` disables the restraints without requiring a new

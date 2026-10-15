@@ -114,7 +114,7 @@ def _insert_restrained_glycam_molecule(
     )
     restrained_block = list(lines[molecule_start:system_index])
     current_section = ""
-    atom_count = 0
+    atom_names: list[str] = []
     molecule_name_replaced = False
     for index, line in enumerate(restrained_block):
         stripped = line.strip()
@@ -129,8 +129,14 @@ def _insert_restrained_glycam_molecule(
             restrained_block[index] = "  ".join(fields)
             molecule_name_replaced = True
         elif current_section == "atoms" and not stripped.startswith("#"):
-            atom_count += 1
-    restrained_block.extend(position_restraints_section(atom_count, restraint_force).splitlines())
+            fields = stripped.split()
+            try:
+                atom_name = fields[4]
+            except IndexError as error:
+                msg = "malformed GROMACS [ atoms ] row in GLYCAM topology"
+                raise ValueError(msg) from error
+            atom_names.append(atom_name)
+    restrained_block.extend(position_restraints_section(atom_names, restraint_force).splitlines())
     lines[system_index:system_index] = restrained_block
 
 

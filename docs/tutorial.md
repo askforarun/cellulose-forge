@@ -401,20 +401,26 @@ or selection files.
 ### Selective chain position restraints
 
 Force-field builds can create separate free and restrained cellulose molecule
-types. Select either deterministic chain IDs or complete transverse layers;
-the selectors are mutually exclusive:
+types. Position restraints are written only for heavy atoms in the selected
+chains; their hydrogen atoms remain unrestrained. Select either deterministic
+chain IDs or complete transverse layers; the selectors are mutually exclusive.
+For a one-sided four-layer slab, the following command restrains layers 1 and 2
+and leaves layers 3 and 4 fully flexible:
 
 ```bash
 uv run cellulose-forge build \
   --allomorph I-beta \
-  --shape fibril \
-  --fibril-model 36-chain \
-  --degree-polymerization 40 \
-  --chain-boundary periodic \
+  --shape slab \
+  --face 1 1 0 \
+  --layers 4 \
+  --chains-per-layer 20 \
+  --degree-polymerization 12 \
+  --chain-boundary finite \
+  --vacuum 30 \
   --force-field glycam \
-  --restrain-layers 1 3 \
+  --restrain-layers 1 2 \
   --restraint-force 1000 1000 1000 \
-  --output restrained_fibril
+  --output restrained_4layer_slab
 ```
 
 Slab and fibril layers are numbered from low to high Cartesian `z`. Fibrils
@@ -425,7 +431,8 @@ preset, and chain IDs within each layer increase from low to high Cartesian
 free molecules before restrained molecules, and `build_report.json` records
 the layer-to-chain expansion and mapping from original chain ID to GROMACS
 molecule index and global atom range. The same selectors work with
-`--force-field charmm36`.
+`--force-field charmm36`. The report's `atom_selection` field explicitly records
+the heavy-atom-only policy.
 Enable the restraints in an MDP file with
 `define = -DPOSRES_CELLULOSE` and supply the generated coordinates to
 `gmx grompp` with `-r structure.gro`. Without this define, the same topology

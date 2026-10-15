@@ -8,9 +8,22 @@ from cellulose_forge.geometry import build_36_chain_fibril, build_chain_parallel
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
 from cellulose_forge.restraints import (
     group_mapped_chains,
+    position_restraints_section,
     resolve_chain_restraints,
     transverse_chain_layers,
 )
+
+
+def test_position_restraints_include_only_heavy_atoms() -> None:
+    section = position_restraints_section(
+        ("C1", "H1", "O5", "HO5"),
+        (1000.0, 500.0, 0.0),
+    )
+
+    assert "     1      1   1000.000    500.000      0.000" in section
+    assert "     3      1   1000.000    500.000      0.000" in section
+    assert "     2      1" not in section
+    assert "     4      1" not in section
 
 
 def test_resolves_universal_chain_ids() -> None:

@@ -87,6 +87,7 @@ def test_repeated_chain_topology_adds_selective_position_restraints(tmp_path: Pa
     text = output.read_text(encoding="utf-8")
     assert "CELLULOSE_CHAIN_RESTRAINED  3" in text
     assert "#ifdef POSRES_CELLULOSE" in text
-    assert "     2      1   1000.000   1000.000      0.000" in text
+    assert "     1      1   1000.000   1000.000      0.000" in text
+    assert "     2      1   1000.000   1000.000      0.000" not in text
     assert "CELLULOSE_CHAIN  30" in text
     assert "CELLULOSE_CHAIN_RESTRAINED  6" in text

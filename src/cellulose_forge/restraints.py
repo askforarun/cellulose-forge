@@ -153,10 +153,10 @@ def group_mapped_chains(
 
 
 def position_restraints_section(
-    atom_count: int,
+    atom_names: tuple[str, ...] | list[str],
     force_constants: tuple[float, float, float],
 ) -> str:
-    """Render conditional GROMACS position restraints for every atom in a chain."""
+    """Render conditional GROMACS position restraints for chain heavy atoms."""
     fx, fy, fz = force_constants
     lines = [
         "#ifdef POSRES_CELLULOSE",
@@ -164,7 +164,9 @@ def position_restraints_section(
         "; atom  funct       fx       fy       fz",
     ]
     lines.extend(
-        f"{atom:6d}      1 {fx:10.3f} {fy:10.3f} {fz:10.3f}" for atom in range(1, atom_count + 1)
+        f"{atom:6d}      1 {fx:10.3f} {fy:10.3f} {fz:10.3f}"
+        for atom, atom_name in enumerate(atom_names, start=1)
+        if not atom_name.upper().startswith("H")
     )
     lines.extend(("#endif", ""))
     return "\n".join(lines)

@@ -182,7 +182,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs=3,
         type=float,
         metavar=("FX", "FY", "FZ"),
-        help="position-restraint force constants in kJ mol^-1 nm^-2",
+        help="heavy-atom position-restraint force constants in kJ mol^-1 nm^-2",
     )
     build.add_argument("--output", type=Path, required=True)
 
@@ -414,7 +414,7 @@ def _write_charmm36_build(
                 for layer_id, chain_ids in restraints.layer_mapping
             ],
             "force_constants_kj_mol_nm2": list(restraints.force_constants),
-            "atom_selection": "all atoms in each selected chain",
+            "atom_selection": "heavy atoms in each selected chain",
             "chain_mapping": chain_mapping,
         }
     if crystal.allomorph == "II":
@@ -506,7 +506,7 @@ def _write_glycam_build(
                 for layer_id, chain_ids in restraints.layer_mapping
             ],
             "force_constants_kj_mol_nm2": list(restraints.force_constants),
-            "atom_selection": "all atoms in each selected chain",
+            "atom_selection": "heavy atoms in each selected chain",
             "chain_mapping": chain_mapping,
         }
     if crystal.allomorph == "II":
