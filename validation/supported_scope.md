@@ -20,4 +20,4 @@ Explicit exclusions for Version 1 are functionalized cellulose, OPLS,
 native CHARMM/PSF output, native Amber topology output, and arbitrary branched
 glycans.
 
-The SoftwareX manuscript and README must remain no broader than this table.
+The README and other documentation must remain no broader than this table.
