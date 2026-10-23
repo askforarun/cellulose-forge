@@ -13,15 +13,9 @@ site/
 tmp/
 .DS_Store
 mdout.mdp
-softwarex/*.pdf
-!softwarex/manuscript.pdf
-softwarex/*.aux
-softwarex/*.bbl
-softwarex/*.blg
-softwarex/*.log
-softwarex/*.out
-softwarex/*.spl
-softwarex/missfont.log
+
+# The SoftwareX manuscript is maintained outside version control.
+softwarex/
 
 # Third-party reference distributions and locally downloaded literature are
 # cited in the provenance documentation rather than vendored in this project.
