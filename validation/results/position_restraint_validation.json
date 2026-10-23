@@ -12,19 +12,21 @@
     "selected_chain_ids": [6, 11, 16, 21, 26, 31],
     "free_chain_count": 30,
     "restrained_chain_count": 6,
-    "restrained_atom_count": 1512,
+    "restrained_atom_count": 792,
+    "restrained_atoms": "heavy atoms only",
     "force_constants_kj_mol_nm2": [1000.0, 1000.0, 1000.0],
     "preprocessor_define": "POSRES_CELLULOSE"
   },
   "software": {
+    "cellulose_forge": "1.1.0",
     "gromacs": "2024.2-Homebrew"
   },
   "minimization": {
     "mdp": "validation/position_restraint_minim.mdp",
     "completed": true,
-    "converged_steps": 13,
-    "potential_energy_kj_mol": 204558.23,
-    "maximum_force_kj_mol_nm": 684.65857,
+    "converged_steps": 15,
+    "potential_energy_kj_mol": 202994.66,
+    "maximum_force_kj_mol_nm": 950.93188,
     "configured_force_threshold_kj_mol_nm": 1000.0
   },
   "nvt": {
@@ -35,6 +37,6 @@
     "pme": true,
     "lincs_warnings": 0,
     "nonfinite_energy_events": 0,
-    "mean_position_restraint_energy_kj_mol": 567.4
+    "mean_position_restraint_energy_kj_mol": 269.591
   }
 }

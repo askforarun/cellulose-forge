@@ -147,17 +147,19 @@ tests, not equilibrated material-property predictions.
 The literature-defined DP12 36-chain I-beta fibril was mapped to the periodic
 GLYCAM chain reference and tested with GROMACS 2024.2. `gmx grompp` completed
 with no warnings using `periodic_pme_minim.mdp`; the resulting system contained
-9,072 atoms and 432 residues. Steepest descent converged in 10 steps to a
-maximum force of 949.3 kJ mol-1 nm-1 (configured threshold: 1000).
+9,072 atoms and 432 residues. A version 1.1.0 rerun converged in nine steps to
+a maximum force of 768.4 kJ mol-1 nm-1 (configured threshold: 1000).
 
 Selective-restraint validation used the same DP12 fibril with chain IDs 6, 11,
 16, 21, 26, and 31 assigned force constants of 1000 kJ mol-1 nm-2 along each
 Cartesian direction. The generated topology contained 30 free and six
-restrained molecules, covering 1,512 restrained atoms. GROMACS 2024.2
-preprocessing succeeded without `-maxwarn`; minimization reached the force
-threshold in 13 steps; and the 1 ps PME/NVT test completed without LINCS
-warnings or non-finite energies. The trajectory recorded a nonzero position-
-restraint energy, confirming that the generated interaction was active.
+restrained molecules, covering 792 restrained heavy atoms. This workflow was
+rerun with CelluloseForge 1.1.0 after the heavy-atom restraint and orientation
+changes. GROMACS 2024.2 preprocessing succeeded without `-maxwarn`;
+minimization reached the force threshold in 15 steps; and the 1 ps PME/NVT
+test completed without LINCS warnings or non-finite energies. The trajectory
+recorded a mean position-restraint energy of 269.591 kJ mol-1, confirming that
+the generated interaction was active.
 Compact results are retained in
 `results/position_restraint_validation.json`; trajectory and run files remain
 untracked because they are reproducible binary artifacts.
