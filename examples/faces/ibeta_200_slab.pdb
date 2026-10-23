@@ -15,6 +15,7 @@ REMARK  chain numbering starts at requested low-z face; within each layer low-x 
 REMARK  construction=whole_chain_reciprocal_lattice_cut
 REMARK  requested_face_chain_type=center
 REMARK  requested face is the low-z surface
+REMARK  size_mode=exact_counts
 CRYST1   65.608   31.140   30.388  90.00  90.00  90.00 P1           1
 REMARK  crystal basis vector 1: ( 65.608000 0.000000 0.000000 )
 REMARK  crystal basis vector 2: ( 0.000000 31.140000 0.000000 )

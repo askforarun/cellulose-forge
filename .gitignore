@@ -41,6 +41,10 @@ legacy/*.tar.gz
 /examples/bulk/
 /examples/slabs/
 /examples/ibeta_*.pdb
+/examples/ibeta_*.build_report.json
+
+# Microsoft Office lock files.
+~$*
 
 # AmberTools intermediates. The PDB and GROMACS TOP files are retained as
 # compact, independently generated test fixtures.

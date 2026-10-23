@@ -1,0 +1,30 @@
+{
+  "allomorph": "I-beta",
+  "cellulose_forge_version": "1.1.0",
+  "chain_boundary": "finite",
+  "chain_count": 24,
+  "crystallographic_atom_count": 3024,
+  "degree_polymerization": 6,
+  "force_field": "none",
+  "geometry_annotations": [
+    "shape=slab face=(1,0,0) layers=3",
+    "chains_per_layer=8 total_chains=24",
+    "degree_polymerization=6",
+    "chain_boundary=finite",
+    "d_hkl=7.733963 angstrom",
+    "vacuum=20.000000 angstrom",
+    "padding_z=0.000000 angstrom total longitudinal padding",
+    "lateral_repeat=8.201000 angstrom",
+    "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+    "chain numbering starts at requested low-z face; within each layer low-x to high-x",
+    "construction=whole_chain_reciprocal_lattice_cut",
+    "requested_face_chain_type=origin",
+    "requested face is the low-z surface",
+    "size_mode=exact_counts"
+  ],
+  "outputs": {
+    "coordinates": "ibeta_100_slab.pdb"
+  },
+  "requested_output": "examples/faces/ibeta_100_slab.pdb",
+  "shape": "slab"
+}

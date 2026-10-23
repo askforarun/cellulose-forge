@@ -2,6 +2,37 @@
 
 All notable changes to CelluloseForge are documented in this file.
 
+## 1.1.0 - 2026-10-23
+
+### Added
+
+- Coordinate-only builds write a sibling `<structure>.build_report.json`
+  recording the interpreted geometry, chain count, derived degree of
+  polymerization, and coordinate filename.
+- Slab sizing is selected independently for each axis, allowing hybrid
+  requests such as an exact layer count with minimum width and chain length.
+  Requested and realized dimensions are recorded in the build report.
+
+### Changed
+
+- Slabs use a simulation-oriented Cartesian frame compatible with GROMACS
+  semi-isotropic pressure coupling: chains lie along `-y`, and the outward
+  surface normal and vacuum direction lie along `-z`. Slabs built with 1.0.0
+  used a `-y` surface normal and chains along `z`; coordinates for identical
+  requests therefore differ by a rigid rotation.
+- Fibrils follow the same convention, with chains along Cartesian `y` and the
+  cross-section in the `xz` plane. Slab and fibril layers are numbered from low
+  to high Cartesian `z`. `--padding-y` now pads the second transverse direction
+  (Cartesian `z`), and `--padding-z` pads along the chain direction; the option
+  names are retained for compatibility.
+- Position restraints apply only to heavy atoms of the selected chains;
+  hydrogens remain unrestrained. The build report records this in its
+  `atom_selection` field.
+
+### Fixed
+
+- Type annotation of the coordinate-only build-report path.
+
 ## 1.0.0 - 2026-10-15
 
 Initial stable release.

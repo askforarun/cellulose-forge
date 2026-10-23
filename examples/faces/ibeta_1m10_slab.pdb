@@ -13,6 +13,7 @@ REMARK  lateral_repeat=5.324332 angstrom
 REMARK  surface normal aligned with Cartesian -z; chains aligned with Cartesian -y
 REMARK  chain numbering starts at requested low-z face; within each layer low-x to high-x
 REMARK  construction=whole_chain_reciprocal_lattice_cut
+REMARK  size_mode=exact_counts
 CRYST1   42.595   31.140   37.977  90.00  90.00  90.00 P1           1
 REMARK  crystal basis vector 1: ( 42.594656 0.000000 0.000000 )
 REMARK  crystal basis vector 2: ( 0.000000 31.140000 0.000000 )

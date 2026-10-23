@@ -1,0 +1,29 @@
+{
+  "allomorph": "I-beta",
+  "cellulose_forge_version": "1.1.0",
+  "chain_boundary": "periodic",
+  "chain_count": 36,
+  "crystallographic_atom_count": 9072,
+  "degree_polymerization": 12,
+  "force_field": "none",
+  "geometry_annotations": [
+    "shape=fibril fibril_model=36-chain total_chains=36",
+    "degree_polymerization=12 cellobiose_units=6",
+    "chain_boundary=periodic",
+    "vacuum=30.000000 angstrom transverse_padding_default",
+    "padding_x=30.000000 angstrom total",
+    "padding_y=30.000000 angstrom total transverse-z padding",
+    "padding_z=0.000000 angstrom total longitudinal padding",
+    "chains aligned with Cartesian -y",
+    "fibril cross-section rotated 90 degrees counterclockwise",
+    "fibril restraint layers numbered from low Cartesian z to high Cartesian z",
+    "fibril chains numbered from low Cartesian x to high Cartesian x within each layer",
+    "legacy_fragment_ids=18,27,36,10,19,28,37,11,20,29,38,47,3,12,21,30,39,48,4,13,22,31,40,49,5,14,23,32,41,15,24,33,42,16,25,34",
+    "source=Gomes_and_Skaf_2012_Cellulose-Builder doi:10.1002/jcc.22959"
+  ],
+  "outputs": {
+    "coordinates": "ibeta_36chain_dp12.pdb"
+  },
+  "requested_output": "examples/fibrils/ibeta_36chain_dp12.pdb",
+  "shape": "fibril"
+}

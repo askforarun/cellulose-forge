@@ -11,6 +11,7 @@ REMARK  vacuum=20.000000 angstrom
 REMARK  padding_z=0.000000 angstrom total longitudinal padding
 REMARK  surface normal aligned with Cartesian -z; chains aligned with Cartesian -y
 REMARK  chain numbering starts at requested low-z face; within each layer low-x to high-x
+REMARK  size_mode=exact_counts
 CRYST1   47.716   31.140   35.717  90.00  90.00  90.00 P1           1
 REMARK  crystal basis vector 1: ( 47.715837 0.000000 0.000000 )
 REMARK  crystal basis vector 2: ( 0.000000 31.140000 0.000000 )

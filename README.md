@@ -7,7 +7,7 @@ also be parameterized with GLYCAM06j-1 or CHARMM36 and written
 directly for GROMACS. CHARMM36 topology generation does not require VMD or
 `psfgen` at runtime.
 
-> **Release status:** CelluloseForge 1.0.0 is the initial stable release. Its
+> **Release status:** CelluloseForge 1.1.0 is the current stable release. Its
 > supported and validated boundaries below are intentionally narrower than the
 > long-term project plan.
 
