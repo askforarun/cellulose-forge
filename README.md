@@ -7,6 +7,8 @@ also be parameterized with GLYCAM06j-1 or CHARMM36 and written
 directly for GROMACS. CHARMM36 topology generation does not require VMD or
 `psfgen` at runtime.
 
+![CelluloseForge overview showing supported cellulose structures and GROMACS force-field outputs](docs/assets/celluloseforge-overview.png)
+
 > **Release status:** CelluloseForge 1.1.0 is the current stable release. Its
 > supported and validated boundaries below are intentionally narrower than the
 > long-term project plan.
