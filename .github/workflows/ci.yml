@@ -64,7 +64,7 @@ jobs:
           curl --fail --location --retry 3 --retry-all-errors \
             --connect-timeout 20 --max-time 120 \
             --output charmm36-feb2026_cgenff-5.0.ff.tgz \
-            "https://mackerell.umaryland.edu/download.php?filename=CHARMM_ff_params_files/charmm36-feb2026_cgenff-5.0.ff.tgz"
+            "http://mackerell.umaryland.edu/download.php?filename=CHARMM_ff_params_files/charmm36-feb2026_cgenff-5.0.ff.tgz"
       - name: Install checksum-verified CHARMM36 archive
         run: |
           uv run cellulose-forge forcefield install charmm36 \
