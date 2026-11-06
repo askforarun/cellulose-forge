@@ -44,7 +44,11 @@ jobs:
       - run: .clean-venv/bin/cellulose-forge build --allomorph I-beta --shape unit-cell --output clean-install-unit-cell.pdb
 
   gromacs-smoke:
-    runs-on: ubuntu-latest
+    # Ubuntu 26.04 currently exposes a GROMACS package with unresolved
+    # dependencies on GitHub-hosted runners. Pin the scientific smoke test to
+    # the stable 24.04 image; the general test matrix still exercises
+    # ubuntu-latest above.
+    runs-on: ubuntu-24.04
     env:
       CELLULOSE_FORGE_DATA_DIR: ${{ github.workspace }}/.cellulose-forge-data
     steps:
