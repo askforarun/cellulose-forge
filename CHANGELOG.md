@@ -2,6 +2,22 @@
 
 All notable changes to CelluloseForge are documented in this file.
 
+## 1.1.1 - 2026-11-06
+
+### Added
+
+- Canonical GPL-3.0-or-later license metadata and the CelluloseForge Zenodo
+  concept DOI.
+- A project overview image in the README.
+
+### Fixed
+
+- GROMACS scientific-validation CI now uses Ubuntu 24.04 and a bounded,
+  checksum-verified download of the pinned CHARMM36 distribution.
+
+This patch release does not change the scientific models or generated
+topologies from version 1.1.0.
+
 ## 1.1.0 - 2026-10-23
 
 ### Added

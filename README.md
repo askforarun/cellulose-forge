@@ -9,7 +9,7 @@ directly for GROMACS. CHARMM36 topology generation does not require VMD or
 
 ![CelluloseForge overview showing supported cellulose structures and GROMACS force-field outputs](docs/assets/celluloseforge-overview.png)
 
-> **Release status:** CelluloseForge 1.1.0 is the current stable release. Its
+> **Release status:** CelluloseForge 1.1.1 is the current stable release. Its
 > supported and validated boundaries below are intentionally narrower than the
 > long-term project plan.
 
