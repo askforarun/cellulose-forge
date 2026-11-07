@@ -379,12 +379,15 @@ def _validate_longitudinal_padding(
 
 def _validate_written_periodic_topology(
     mapped: GlycamMappedSystem,
-    topology_path: Path,
+    molecule_topology_path: Path,
+    system_topology_path: Path,
     parser: argparse.ArgumentParser,
 ) -> dict[str, float | int]:
     """Validate the bonds actually emitted in a GROMACS molecule topology."""
     try:
-        return validate_periodic_gromacs_topology_bonds(mapped, topology_path)
+        return validate_periodic_gromacs_topology_bonds(
+            mapped, molecule_topology_path, system_topology_path
+        )
     except ValueError as error:
         parser.error(str(error))
 
@@ -405,6 +408,7 @@ def _write_charmm36_build(  # noqa: PLR0912
     )
     topology: PeriodicCharmm36Topology | FiniteCharmm36Topology
     periodic_bond_validation = None
+    written_periodic_bond_validation = None
     if args.chain_boundary == "periodic":
         topology = (
             derive_periodic_charmm36_topology(
@@ -458,8 +462,8 @@ def _write_charmm36_build(  # noqa: PLR0912
         restraint_force=restraints.force_constants if restraints else None,
     )
     if args.chain_boundary == "periodic":
-        periodic_bond_validation = _validate_written_periodic_topology(
-            mapped, itp_path, parser
+        written_periodic_bond_validation = _validate_written_periodic_topology(
+            mapped, itp_path, topology_path, parser
         )
     report = {
         "cellulose_forge_version": __version__,
@@ -495,7 +499,10 @@ def _write_charmm36_build(  # noqa: PLR0912
             periodic_image_contact.as_dict()
         )
     if periodic_bond_validation is not None:
-        report["periodic_glycosidic_bond_validation"] = periodic_bond_validation
+        report["periodic_glycosidic_bond_validation"] = {
+            "mapped_geometry": periodic_bond_validation,
+            "written_topology": written_periodic_bond_validation,
+        }
     if restraints is not None:
         report["position_restraints"] = {
             "define": "POSRES_CELLULOSE",
@@ -557,6 +564,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             mapped = map_crystal_to_finite_glycam(crystal, files.pdb)
         periodic_image_contact = None
         periodic_bond_validation = None
+        written_periodic_bond_validation = None
         if chain_boundary == "periodic":
             try:
                 periodic_bond_validation = validate_periodic_glycosidic_bonds(mapped)
@@ -581,8 +589,8 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             restraint_force=restraints.force_constants if restraints else None,
         )
         if chain_boundary == "periodic":
-            periodic_bond_validation = _validate_written_periodic_topology(
-                mapped, topology_path, parser
+            written_periodic_bond_validation = _validate_written_periodic_topology(
+                mapped, topology_path, topology_path, parser
             )
 
     report = {
@@ -609,7 +617,10 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             periodic_image_contact.as_dict()
         )
     if periodic_bond_validation is not None:
-        report["periodic_glycosidic_bond_validation"] = periodic_bond_validation
+        report["periodic_glycosidic_bond_validation"] = {
+            "mapped_geometry": periodic_bond_validation,
+            "written_topology": written_periodic_bond_validation,
+        }
     if restraints is not None:
         report["position_restraints"] = {
             "define": "POSRES_CELLULOSE",

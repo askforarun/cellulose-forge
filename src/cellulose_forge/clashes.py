@@ -18,7 +18,7 @@ _MAXIMUM_GLYCOSIDIC_BOND_ANGSTROM = 2.0
 _GROMACS_ATOM_FIELD_COUNT = 5
 _GROMACS_BOND_FIELD_COUNT = 2
 
-_TopologyBlock = tuple[dict[int, tuple[int, str]], list[tuple[int, int]]]
+_TopologyBlock = tuple[str, dict[int, tuple[int, str]], list[tuple[int, int]]]
 
 
 @dataclass(frozen=True)
@@ -187,6 +187,7 @@ def _read_gromacs_molecule_blocks(topology_path: str | Path) -> list[_TopologyBl
     blocks: list[_TopologyBlock] = []
     atoms: dict[int, tuple[int, str]] | None = None
     bonds: list[tuple[int, int]] = []
+    molecule_name: str | None = None
     section = ""
     for raw_line in Path(topology_path).read_text(encoding="utf-8").splitlines():
         stripped = raw_line.split(";", 1)[0].strip()
@@ -195,25 +196,48 @@ def _read_gromacs_molecule_blocks(topology_path: str | Path) -> list[_TopologyBl
         if stripped.startswith("[") and stripped.endswith("]"):
             new_section = stripped[1:-1].strip().lower()
             if new_section == "moleculetype":
-                if atoms is not None:
-                    blocks.append((atoms, bonds))
+                if atoms is not None and molecule_name is not None:
+                    blocks.append((molecule_name, atoms, bonds))
                 atoms = {}
                 bonds = []
+                molecule_name = None
             section = new_section
             continue
         if atoms is None:
             continue
         fields = stripped.split()
-        if section == "atoms" and len(fields) >= _GROMACS_ATOM_FIELD_COUNT:
+        if section == "moleculetype" and molecule_name is None:
+            molecule_name = fields[0]
+        elif section == "atoms" and len(fields) >= _GROMACS_ATOM_FIELD_COUNT:
             atoms[int(fields[0])] = (int(fields[2]), fields[4])
         elif section == "bonds" and len(fields) >= _GROMACS_BOND_FIELD_COUNT:
             bonds.append((int(fields[0]), int(fields[1])))
-    if atoms is not None:
-        blocks.append((atoms, bonds))
+    if atoms is not None and molecule_name is not None:
+        blocks.append((molecule_name, atoms, bonds))
     if not blocks:
         msg = f"no [ moleculetype ] definition found in {topology_path}"
         raise ValueError(msg)
     return blocks
+
+
+def _read_gromacs_molecule_counts(topology_path: str | Path) -> list[tuple[str, int]]:
+    """Read the ordered molecule inventory from a complete system topology."""
+    rows: list[tuple[str, int]] = []
+    section = ""
+    for raw_line in Path(topology_path).read_text(encoding="utf-8").splitlines():
+        stripped = raw_line.split(";", 1)[0].strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("[") and stripped.endswith("]"):
+            section = stripped[1:-1].strip().lower()
+            continue
+        if section == "molecules":
+            fields = stripped.split()
+            rows.append((fields[0], int(fields[1])))
+    if not rows:
+        msg = f"no [ molecules ] inventory found in {topology_path}"
+        raise ValueError(msg)
+    return rows
 
 
 def _validate_gromacs_molecule_block(
@@ -223,7 +247,7 @@ def _validate_gromacs_molecule_block(
     inverse: FloatArray,
 ) -> tuple[int, float]:
     """Validate actual inter-residue glycosidic bonds in one molecule type."""
-    block_atoms, block_bonds = block
+    _, block_atoms, block_bonds = block
     if not block_atoms:
         return 0, 0.0
     local_count = max(block_atoms)
@@ -267,10 +291,14 @@ def _validate_gromacs_molecule_block(
 
 def validate_periodic_gromacs_topology_bonds(
     system: GlycamMappedSystem,
-    topology_path: str | Path,
+    molecule_topology_path: str | Path,
+    system_topology_path: str | Path | None = None,
 ) -> dict[str, float | int]:
-    """Validate O4--C1 bonds read independently from a written GROMACS topology."""
-    blocks = _read_gromacs_molecule_blocks(topology_path)
+    """Validate every instantiated O4--C1 bond in written GROMACS topology."""
+    blocks = _read_gromacs_molecule_blocks(molecule_topology_path)
+    definitions = {block[0]: block for block in blocks}
+    inventory_path = system_topology_path or molecule_topology_path
+    molecule_counts = _read_gromacs_molecule_counts(inventory_path)
 
     basis = np.asarray(system.basis_vectors, dtype=float)
     if basis.shape != (3, 3) or abs(np.linalg.det(basis)) < _BOX_DETERMINANT_TOLERANCE:
@@ -280,21 +308,36 @@ def validate_periodic_gromacs_topology_bonds(
     coordinates = np.asarray(system.cartesian_coordinates, dtype=float)
     maximum = 0.0
     linkage_count = 0
-    validated_types = 0
-    for block in blocks:
-        count, block_maximum = _validate_gromacs_molecule_block(
-            block, coordinates, basis, inverse
+    validated_types: set[str] = set()
+    molecule_count = 0
+    coordinate_offset = 0
+    for molecule_name, copies in molecule_counts:
+        try:
+            block = definitions[molecule_name]
+        except KeyError as error:
+            msg = f"[ molecules ] references undefined molecule type {molecule_name}"
+            raise ValueError(msg) from error
+        _, block_atoms, _ = block
+        local_count = max(block_atoms)
+        for _ in range(copies):
+            molecule_coordinates = coordinates[coordinate_offset : coordinate_offset + local_count]
+            count, block_maximum = _validate_gromacs_molecule_block(
+                block, molecule_coordinates, basis, inverse
+            )
+            linkage_count += count
+            maximum = max(maximum, block_maximum)
+            coordinate_offset += local_count
+            molecule_count += 1
+        validated_types.add(molecule_name)
+    if coordinate_offset != len(coordinates):
+        msg = (
+            "GROMACS [ molecules ] inventory covers "
+            f"{coordinate_offset} atoms but mapped coordinates contain {len(coordinates)}"
         )
-        if count == 0:
-            continue
-        linkage_count += count
-        maximum = max(maximum, block_maximum)
-        validated_types += 1
-    if validated_types == 0:
-        msg = "written GROMACS topology contains no atom-bearing molecule type"
         raise ValueError(msg)
     return {
-        "molecule_type_count": validated_types,
+        "molecule_type_count": len(validated_types),
+        "molecule_count": molecule_count,
         "bond_count": linkage_count,
         "maximum_distance_angstrom": maximum,
     }

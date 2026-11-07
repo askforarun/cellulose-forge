@@ -77,12 +77,55 @@ CELLULOSE 3
 [ bonds ]
 1 4 1
 3 2 1
+[ system ]
+Cellulose
+[ molecules ]
+CELLULOSE 1
 """,
         encoding="utf-8",
     )
     result = validate_periodic_gromacs_topology_bonds(system, topology)
     assert result == {
         "molecule_type_count": 1,
+        "molecule_count": 1,
         "bond_count": 2,
         "maximum_distance_angstrom": pytest.approx(1.0),
     }
+
+
+def test_written_topology_validation_checks_every_molecule_copy(tmp_path) -> None:
+    first_chain = np.asarray(
+        [[0.0, 0.0, 0.0], [0.0, 9.0, 0.0], [0.0, 8.0, 0.0], [0.0, 1.0, 0.0]]
+    )
+    second_chain = np.asarray(
+        [[5.0, 0.0, 0.0], [5.0, 5.0, 0.0], [5.0, 8.0, 0.0], [5.0, 4.0, 0.0]]
+    )
+    system = GlycamMappedSystem(
+        atom_names=("O4", "C1", "O4", "C1") * 2,
+        residue_names=("4GB",) * 8,
+        residue_numbers=(1, 1, 2, 2, 3, 3, 4, 4),
+        chain_numbers=(1,) * 4 + (2,) * 4,
+        cartesian_coordinates=np.vstack([first_chain, second_chain]),
+        basis_vectors=np.diag([20.0, 10.0, 20.0]),
+    )
+    topology = tmp_path / "cellulose.top"
+    topology.write_text(
+        """[ moleculetype ]
+CELLULOSE 3
+[ atoms ]
+1 Os 1 4GB O4 1 0 16
+2 Cg 1 4GB C1 2 0 12
+3 Os 2 4GB O4 3 0 16
+4 Cg 2 4GB C1 4 0 12
+[ bonds ]
+1 4 1
+3 2 1
+[ system ]
+Cellulose
+[ molecules ]
+CELLULOSE 2
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="written GROMACS glycosidic bond is too long"):
+        validate_periodic_gromacs_topology_bonds(system, topology)

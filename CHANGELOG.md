@@ -42,7 +42,10 @@ All notable changes to CelluloseForge are documented in this file.
   unpadded finite force-field slab.
 - Added allomorph-wide periodic glycosidic-bond regression tests.
 - Periodic builds now independently parse the emitted GROMACS molecule
-  topology and validate every inter-residue O4--C1 bond that it contains.
+  topology, expand its `[ molecules ]` inventory, and validate every
+  instantiated inter-residue O4--C1 bond that it contains.
+- Build reports preserve the mapped-geometry and written-topology bond checks
+  as separate results.
 - GROMACS single-point integration tests require an initial bond energy below
   50 kJ mol-1 per atom.
 
