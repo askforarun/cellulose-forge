@@ -1,0 +1,11 @@
+name: cellulose-forge
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - numpy>=1.26,<2.3
+  - ambertools
+  - parmed
+  - pip
+  - pip:
+      - -e .

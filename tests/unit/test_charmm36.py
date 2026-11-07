@@ -18,8 +18,13 @@ from cellulose_forge.charmm36 import (
     render_finite_charmm36_itp,
     render_periodic_charmm36_itp,
 )
-from cellulose_forge.crystallography import load_allomorph
-from cellulose_forge.geometry import build_36_chain_fibril, build_bulk_crystal
+from cellulose_forge.clashes import validate_periodic_glycosidic_bonds
+from cellulose_forge.crystallography import MillerIndex, load_allomorph
+from cellulose_forge.geometry import (
+    build_36_chain_fibril,
+    build_bulk_crystal,
+    build_chain_parallel_slab,
+)
 
 
 def _write_template(path: Path, *, charge: float = 0.0) -> None:
@@ -211,7 +216,16 @@ def test_builds_native_periodic_topology_from_bglc(
     }
 
     finite = native_finite_charmm36_topology(tmp_path, degree_polymerization=4)
-    finite_crystal = build_bulk_crystal(load_allomorph("i_beta"), (1, 1, 2))
+    finite_crystal = build_chain_parallel_slab(
+        load_allomorph("i_beta"),
+        MillerIndex(1, 1, 0),
+        layers=1,
+        chains_per_layer=2,
+        degree_polymerization=4,
+        vacuum=20.0,
+        padding_z=12.0,
+        chain_boundary="finite",
+    )
     finite_mapped = map_finite_charmm36(finite_crystal, finite)
     names_by_residue = {
         residue: {
@@ -284,6 +298,9 @@ def test_maps_periodic_charmm36_allomorphs(
 
     assert mapped.atom_count == mapped.chain_count * topology.atom_count
     assert set(mapped.atom_names) == {atom.atom_name for atom in topology.topology_atoms}
+    validation = validate_periodic_glycosidic_bonds(mapped)
+    assert validation["bond_count"] == mapped.chain_count * topology.degree_polymerization
+    assert validation["maximum_distance_angstrom"] < 2.0
 
 
 def test_maps_cellulose_ii_fibril_in_glycosidic_order(tmp_path: Path) -> None:

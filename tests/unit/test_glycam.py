@@ -10,9 +10,29 @@ from cellulose_forge.glycam import (
     GlycamPeriodicChainSpec,
     _gromacs_section_rows,
     _replace_gromacs_molecule_name,
+    _tleap_output_failed,
     write_tleap_chain_input,
     write_tleap_periodic_chain_input,
 )
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        "Errors = 1",
+        "Errors=2",
+        "Errors   =   17",
+        "FATAL: missing atom type",
+        "Parameter file was not saved",
+    ],
+)
+def test_tleap_failure_detection_catches_any_reported_error(output: str) -> None:
+    assert _tleap_output_failed(output)
+
+
+@pytest.mark.parametrize("output", ["Errors = 0", "Checking Unit.", ""])
+def test_tleap_failure_detection_accepts_success_output(output: str) -> None:
+    assert not _tleap_output_failed(output)
 
 
 def test_dp12_glycam_sequence_has_correct_terminals_and_internal_residues() -> None:

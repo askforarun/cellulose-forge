@@ -136,9 +136,11 @@ Chain-parallel slab construction is exercised for I-alpha `(010)`, I-beta
 `(110)`, II `(110)`, and III-I `(110)`. For each allomorph, finite and periodic
 DP6 systems containing three layers and six chains per layer were generated
 with both GLYCAM06j-1 and CHARMM36. Finite chains used 12 angstrom of total
-chain-end padding. All 16 systems passed PME preprocessing without `-maxwarn`,
-minimized below 1000 kJ mol-1 nm-1, and completed 1 ps NVT without LINCS
-warnings or non-finite energies. Compact results are stored in
+chain-end padding. All 16 systems passed PME preprocessing without `-maxwarn`.
+Finite systems minimized below 100 kJ mol-1 nm-1 and periodic systems below
+1000 kJ mol-1 nm-1; every system then completed 1 ps NVT without LINCS
+warnings or non-finite energies. Periodic O4--C1 linkages were checked before
+output and were shorter than 2 angstrom. Compact results are stored in
 `results/slab_allomorph_matrix.json`. These are topology and runtime smoke
 tests, not equilibrated material-property predictions.
 

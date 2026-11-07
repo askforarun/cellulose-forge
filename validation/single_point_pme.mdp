@@ -1,0 +1,17 @@
+; Zero-step single-point energy evaluation for topology regression tests.
+integrator               = md
+nsteps                   = 0
+dt                       = 0.001
+continuation             = yes
+constraints              = none
+cutoff-scheme            = Verlet
+nstlist                  = 10
+rlist                    = 0.8
+coulombtype              = PME
+rcoulomb                 = 0.8
+vdwtype                  = Cut-off
+rvdw                     = 0.8
+pbc                      = xyz
+nstenergy                = 1
+nstlog                   = 1
+nstxout-compressed       = 0

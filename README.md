@@ -9,9 +9,13 @@ directly for GROMACS. CHARMM36 topology generation does not require VMD or
 
 ![CelluloseForge overview showing supported cellulose structures and GROMACS force-field outputs](docs/assets/celluloseforge-overview.png)
 
-> **Release status:** CelluloseForge 1.1.1 is the current stable release. Its
+> **Release status:** CelluloseForge 1.1.2 is the current stable release. Its
 > supported and validated boundaries below are intentionally narrower than the
 > long-term project plan.
+
+> **Geometry validation:** version 1.1.2 enforces right-handed slab orientation
+> transforms and directly tests stereocentre preservation for supported
+> allomorphs and reference faces.
 
 ## Key features
 
@@ -126,16 +130,33 @@ On Windows PowerShell, activate the environment with
 
 ### Recommended GLYCAM installation
 
-Create one conda environment containing CelluloseForge, AmberTools, and ParmEd:
+The repository provides an `environment.yml` containing CelluloseForge,
+AmberTools, and ParmEd.
+Create it from the repository root:
 
 ```bash
-conda create -n cellulose-forge -c conda-forge \
-  python=3.12 ambertools parmed pip
-conda activate cellulose-forge
 git clone https://github.com/askforarun/cellulose-forge.git
 cd cellulose-forge
-python -m pip install -e .
+conda env create -f environment.yml
+conda activate cellulose-forge
+cellulose-forge doctor
 ```
+
+AmberTools supplies `antechamber`, `parmchk2`, and `tleap`; the current GLYCAM
+adapter uses `tleap`, while ParmEd converts and writes the matched GROMACS
+topology. The editable package entry in `environment.yml` installs the local
+CelluloseForge checkout, so run `conda env create` from the repository root.
+GROMACS is not installed by this environment; install it separately when
+preprocessing or simulation validation is required.
+
+To update an existing environment after the file changes:
+
+```bash
+conda env update -n cellulose-forge -f environment.yml --prune
+```
+
+Users who only need coordinate generation or CHARMM36 construction may use the
+lighter `uv` or `pip` installation above instead.
 
 ### Install the CHARMM36 force field
 
@@ -250,6 +271,17 @@ cellulose-forge build \
   --output ibeta_110_slab.pdb
 ```
 
+> **Finite-chain simulation boxes require longitudinal padding.** The
+> `--vacuum` option pads the slab-normal direction; it does not separate the
+> chemically capped chain ends from their periodic images. Before using a
+> finite slab with GROMACS, supply at least 3 Å of chain-direction padding with
+> `--padding-longitudinal` (for example, `--padding-longitudinal 20`). Without it, terminal atoms can
+> overlap their periodic images and produce catastrophically large nonbonded
+> energies. Values below 12 Å produce a warning because the ends may remain
+> within a typical nonbonded cutoff; validated examples use 12--20 Å. Periodic
+> chains must instead use zero longitudinal padding because
+> their final and first residues are intentionally bonded across the box.
+
 ### I-beta `(110)` slab using physical dimensions
 
 Dimensions are specified in angstrom. CelluloseForge rounds upward to complete
@@ -302,9 +334,8 @@ hexagon. Cellulose III-I has no supported 36-chain reference preset.
 For independent transverse box control, use `--padding-x` for Cartesian `x`
 and `--padding-y` for the second transverse direction, Cartesian `z`. Both
 values are total padding and are divided equally between opposite sides. For a
-finite fibril, `--padding-z` controls total longitudinal padding beyond the
-chain ends along Cartesian `y` (the option name is retained for CLI
-compatibility):
+finite fibril, `--padding-longitudinal` controls total padding beyond the
+chain ends along the chain axis:
 
 ```bash
 cellulose-forge build \
@@ -315,15 +346,16 @@ cellulose-forge build \
   --chain-boundary finite \
   --padding-x 30 \
   --padding-y 40 \
-  --padding-z 20 \
+  --padding-longitudinal 20 \
   --output ibeta_36chain_finite_padded.pdb
 ```
 
 For periodic chains, the y box length is fixed by the crystallographic repeat;
-nonzero `--padding-z` is rejected because it would break the covalent bond
+nonzero `--padding-longitudinal` is rejected because it would break the covalent bond
 across the boundary. `--vacuum N` remains a shorthand that applies `N` total
 padding to both transverse directions unless the corresponding option
-overrides it.
+overrides it. The historical `--padding-z` spelling is accepted as a
+deprecated alias.
 
 ## Full tutorial
 
@@ -360,6 +392,7 @@ cellulose-forge build \
   --degree-polymerization 12 \
   --chain-boundary finite \
   --vacuum 30 \
+  --padding-longitudinal 20 \
   --force-field glycam \
   --output ibeta_110_slab
 ```
@@ -437,6 +470,7 @@ cellulose-forge build \
   --degree-polymerization 12 \
   --chain-boundary finite \
   --vacuum 30 \
+  --padding-longitudinal 20 \
   --force-field glycam \
   --restrain-layers 1 2 \
   --restraint-force 1000 1000 1000 \
@@ -497,7 +531,8 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--vacuum` | angstrom | Total transverse vacuum padding |
 | `--padding-x` | angstrom | Total fibril x padding; overrides `--vacuum` for x |
 | `--padding-y` | angstrom | Total fibril padding in its second transverse direction (Cartesian z); overrides `--vacuum` |
-| `--padding-z` | angstrom | Total longitudinal chain-end padding (Cartesian y in oriented outputs); periodic chains require zero |
+| `--padding-longitudinal` | angstrom | Total chain-axis padding; periodic chains require zero |
+| `--padding-z` | angstrom | Deprecated alias for `--padding-longitudinal` |
 | `--force-field` | `none`, `glycam`, `charmm36` | Coordinate-only, GLYCAM, or CHARMM36 GROMACS output |
 | `--tleap-executable` | executable path | `tleap` used for GLYCAM builds |
 | `--parmed-python` | Python path | Interpreter containing ParmEd |
@@ -531,6 +566,7 @@ cellulose-forge build \
   --degree-polymerization 12 \
   --chain-boundary finite \
   --vacuum 30 \
+  --padding-longitudinal 20 \
   --force-field charmm36 \
   --output ibeta_110_charmm36
 ```

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -45,6 +46,46 @@ def _grompp(directory: Path, mdp: Path) -> None:
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert (directory / "smoke.tpr").is_file()
+
+
+def _single_point_bond_energy_per_atom(directory: Path) -> float:
+    """Return the initial bonded energy normalized by the mapped atom count."""
+    mdp = Path(__file__).parents[2] / "validation/single_point_pme.mdp"
+    _grompp(directory, mdp)
+    completed = subprocess.run(
+        [
+            _gmx(),
+            "mdrun",
+            "-s",
+            "smoke.tpr",
+            "-deffnm",
+            "single_point",
+            "-ntmpi",
+            "1",
+            "-ntomp",
+            "1",
+            "-rdd",
+            "1.2",
+        ],
+        cwd=directory,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    energy = subprocess.run(
+        [_gmx(), "energy", "-f", "single_point.edr", "-o", "bond_energy.xvg"],
+        cwd=directory,
+        input="Bond\n0\n",
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert energy.returncode == 0, energy.stdout + energy.stderr
+    match = re.search(r"^Bond\s+([-+0-9.eE]+)", energy.stdout, flags=re.MULTILINE)
+    assert match is not None, energy.stdout
+    atom_count = int((directory / "structure.gro").read_text(encoding="utf-8").splitlines()[1])
+    return float(match.group(1)) / atom_count
 
 
 def _use_committed_glycam_reference(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -97,7 +138,7 @@ def test_finite_glycam_slab_passes_grompp(
                 "finite",
                 "--vacuum",
                 "30",
-                "--padding-z",
+                "--padding-longitudinal",
                 "12",
                 "--force-field",
                 "glycam",
@@ -108,6 +149,7 @@ def test_finite_glycam_slab_passes_grompp(
         == 0
     )
     _grompp(output, Path(__file__).parents[2] / "validation/grompp_minim.mdp")
+    assert _single_point_bond_energy_per_atom(output) < 1000.0
 
 
 @pytest.mark.parametrize(
@@ -132,7 +174,9 @@ def test_charmm36_slab_passes_grompp(
     except FileNotFoundError:
         pytest.skip("the pinned CHARMM36 release is not installed")
     output = tmp_path / f"charmm36_{allomorph}_{chain_boundary}_slab"
-    padding_arguments = ["--padding-z", "12"] if chain_boundary == "finite" else []
+    padding_arguments = (
+        ["--padding-longitudinal", "12"] if chain_boundary == "finite" else []
+    )
     assert (
         main(
             [
@@ -165,3 +209,4 @@ def test_charmm36_slab_passes_grompp(
         == 0
     )
     _grompp(output, Path(__file__).parents[2] / "validation/grompp_minim.mdp")
+    assert _single_point_bond_energy_per_atom(output) < 1000.0

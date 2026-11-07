@@ -21,6 +21,7 @@ _NONZERO_VECTOR_TOLERANCE = 1e-12
 _PDB_CHAIN_IDENTIFIERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 _LAYER_TOLERANCE = 1e-6
 _MAX_SLAB_DISCRETE_COUNT = 10_000
+_PROPER_ROTATION_TOLERANCE = 1e-10
 _I_BETA_TERMINATION_BY_FACE = {
     (1, 0, 0): 0,
     (-1, 0, 0): 0,
@@ -32,6 +33,22 @@ _I_BETA_TERMINATION_BY_FACE = {
     (0, -2, 0): 1,
 }
 _I_BETA_CHAIN_TYPE_NAMES = ("origin", "center")
+
+
+def _proper_slab_axes(
+    surface_x: FloatArray,
+    chain_axis: FloatArray,
+    normal: FloatArray,
+) -> FloatArray:
+    """Return a right-handed slab basis with chains along -y and normal along -z."""
+    axes = np.vstack([surface_x, -chain_axis, -normal])
+    if np.linalg.det(axes) < 0:
+        axes[0] *= -1
+    determinant = float(np.linalg.det(axes))
+    if not np.isclose(determinant, 1.0, atol=_PROPER_ROTATION_TOLERANCE):
+        msg = f"slab orientation is not a proper rotation (determinant={determinant:.12g})"
+        raise ValueError(msg)
+    return axes
 _FIBRIL_FRAGMENT_IDS = {
     "I-alpha": (
         2,
@@ -716,7 +733,8 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
 
     unit_cell = build_unit_cell(allomorph)
     chain_repeats = degree_polymerization // 2
-    axes = np.vstack([surface_x, -chain_axis, -normal])
+    axes = _proper_slab_axes(surface_x, chain_axis, normal)
+    surface_order_reversed = float(np.dot(axes[0], surface_x)) < 0
     coordinate_blocks: list[FloatArray] = []
     atom_labels: list[str] = []
     chain_ids: list[str] = []
@@ -742,7 +760,12 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             chain_index = output_layer * chains_per_layer + surface_chain
             chain_number = chain_index + 1
             chain_id = _PDB_CHAIN_IDENTIFIERS[chain_index % len(_PDB_CHAIN_IDENTIFIERS)]
-            surface_translation = surface_chain * in_plane_vector
+            lattice_chain = (
+                chains_per_layer - 1 - surface_chain
+                if surface_order_reversed
+                else surface_chain
+            )
+            surface_translation = lattice_chain * in_plane_vector
             for chain_cell in range(chain_repeats):
                 translation = layer_translation + surface_translation + chain_cell * vectors[2]
                 coordinate_blocks.append(template + translation)
@@ -783,6 +806,7 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             f"vacuum={vacuum:.6f} angstrom",
             f"padding_z={padding_z:.6f} angstrom total longitudinal padding",
             "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+            "orientation_transform=proper_rotation determinant=+1",
             "chain numbering starts at requested low-z face; within each layer low-x to high-x",
         ),
     )
@@ -969,7 +993,7 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     chain_axis = chain_vector / np.linalg.norm(chain_vector)
     surface_x = np.cross(chain_axis, normal)
     surface_x /= np.linalg.norm(surface_x)
-    axes = np.vstack([surface_x, -chain_axis, -normal])
+    axes = _proper_slab_axes(surface_x, chain_axis, normal)
 
     unit_cell = build_unit_cell(allomorph)
     unit_coordinates = _unwrap_unit_cell_chains(

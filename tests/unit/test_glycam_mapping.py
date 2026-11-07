@@ -18,7 +18,7 @@ PERIODIC_REFERENCE_PDB = Path(
 )
 
 
-def _dp12_slab(chains: int = 1):
+def _dp12_slab(chains: int = 1, *, periodic: bool = False):
     return build_chain_parallel_slab(
         load_allomorph("i_beta"),
         MillerIndex(1, 1, 0),
@@ -26,6 +26,8 @@ def _dp12_slab(chains: int = 1):
         chains_per_layer=chains,
         degree_polymerization=12,
         vacuum=30.0,
+        padding_z=0.0 if periodic else 12.0,
+        chain_boundary="periodic" if periodic else "finite",
     )
 
 
@@ -108,6 +110,38 @@ def test_constructed_terminal_bonds_have_chemical_lengths() -> None:
     )
 
 
+def test_constructed_finite_end_caps_have_no_subangstrom_nonbonded_clashes() -> None:
+    mapped = map_crystal_to_finite_glycam(_dp12_slab(), REFERENCE_PDB)
+    identities = list(
+        zip(mapped.residue_numbers, mapped.atom_names, strict=True)
+    )
+    intended_terminal_bonds = {
+        frozenset({(1, "HO1"), (1, "O1")}),
+        frozenset({(1, "O1"), (2, "C1")}),
+        frozenset({(13, "H4O"), (13, "O4")}),
+    }
+    terminal_atoms = {(1, "HO1"), (1, "O1"), (13, "H4O")}
+    nonbonded_terminal_distances: list[float] = []
+    for first, first_identity in enumerate(identities):
+        if first_identity not in terminal_atoms:
+            continue
+        for second, second_identity in enumerate(identities):
+            if first == second:
+                continue
+            if frozenset({first_identity, second_identity}) in intended_terminal_bonds:
+                continue
+            nonbonded_terminal_distances.append(
+                float(
+                    np.linalg.norm(
+                        mapped.cartesian_coordinates[first]
+                        - mapped.cartesian_coordinates[second]
+                    )
+                )
+            )
+
+    assert min(nonbonded_terminal_distances) > 0.8
+
+
 def test_multiple_chains_repeat_the_same_255_atom_topology() -> None:
     mapped = map_crystal_to_finite_glycam(_dp12_slab(chains=3), REFERENCE_PDB)
 
@@ -117,7 +151,9 @@ def test_multiple_chains_repeat_the_same_255_atom_topology() -> None:
 
 
 def test_periodic_mapping_has_252_atoms_without_terminal_groups() -> None:
-    mapped = map_crystal_to_periodic_glycam(_dp12_slab(chains=2), PERIODIC_REFERENCE_PDB)
+    mapped = map_crystal_to_periodic_glycam(
+        _dp12_slab(chains=2, periodic=True), PERIODIC_REFERENCE_PDB
+    )
 
     assert mapped.atom_count == 2 * 252
     assert mapped.chain_count == 2

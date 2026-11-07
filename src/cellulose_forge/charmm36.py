@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
+from cellulose_forge.clashes import validate_finite_periodic_image_contact
 from cellulose_forge.crystallography import FloatArray, load_allomorph
 from cellulose_forge.geometry import BulkCrystal, build_bulk_crystal
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
@@ -713,14 +714,10 @@ def map_periodic_charmm36(
     generated_names = _MISSING_CELLULOSE_II_HYDROGENS if crystal.allomorph == "II" else frozenset()
     hydrogen_reference = _hydrogen_reference() if generated_names else {}
     for chain_number in chain_numbers:
-        crystal_residue_order = (
-            _chain_residue_order(
-                crystal,
-                chain_number=chain_number,
-                degree_polymerization=topology.degree_polymerization,
-            )
-            if crystal.allomorph == "II"
-            else tuple(range(1, topology.degree_polymerization + 1))
+        crystal_residue_order = _chain_residue_order(
+            crystal,
+            chain_number=chain_number,
+            degree_polymerization=topology.degree_polymerization,
         )
         for residue_number in range(1, topology.degree_polymerization + 1):
             crystal_residue_number = crystal_residue_order[residue_number - 1]
@@ -877,7 +874,7 @@ def map_finite_charmm36(
                 output_coordinates.append(coordinate)
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)
-    return GlycamMappedSystem(
+    system = GlycamMappedSystem(
         atom_names=tuple(output_names),
         residue_names=tuple(output_residue_names),
         residue_numbers=tuple(output_residue_numbers),
@@ -885,6 +882,8 @@ def map_finite_charmm36(
         cartesian_coordinates=coordinates,
         basis_vectors=crystal.basis_vectors,
     )
+    validate_finite_periodic_image_contact(system)
+    return system
 
 
 def _instantiate_periodic_interactions(

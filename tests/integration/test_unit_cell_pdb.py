@@ -384,7 +384,7 @@ def test_cli_writes_finite_fibril_with_longitudinal_padding(tmp_path: Path) -> N
             "20",
             "--padding-y",
             "30",
-            "--padding-z",
+            "--padding-longitudinal",
             "40",
             "--output",
             str(output),
@@ -411,7 +411,7 @@ def test_cli_rejects_longitudinal_padding_for_periodic_fibril(tmp_path: Path) ->
                 "6",
                 "--chain-boundary",
                 "periodic",
-                "--padding-z",
+                "--padding-longitudinal",
                 "20",
                 "--output",
                 str(tmp_path / "invalid_periodic_fibril.pdb"),
@@ -571,6 +571,8 @@ def test_cli_writes_finite_glycam_slab_system(
             "finite",
             "--vacuum",
             "30",
+            "--padding-longitudinal",
+            "12",
             "--force-field",
             "glycam",
             "--output",
@@ -583,4 +585,69 @@ def test_cli_writes_finite_glycam_slab_system(
     assert report["chain_boundary"] == "finite"
     assert report["chain_count"] == 2
     assert report["force_field_atom_count"] == 510
+    assert report["closest_longitudinal_periodic_image_contact"][
+        "distance_angstrom"
+    ] >= 1.0
     assert "CELLULOSE_CHAIN  2" in (output / "system.top").read_text(encoding="utf-8")
+
+
+def test_cli_rejects_unpadded_finite_force_field_slab(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="2"):
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "slab",
+                "--face",
+                "1",
+                "1",
+                "0",
+                "--layers",
+                "1",
+                "--chains-per-layer",
+                "2",
+                "--degree-polymerization",
+                "12",
+                "--chain-boundary",
+                "finite",
+                "--force-field",
+                "glycam",
+                "--output",
+                str(tmp_path / "unsafe"),
+            ]
+        )
+
+
+def test_cli_accepts_deprecated_longitudinal_padding_alias(tmp_path: Path) -> None:
+    output = tmp_path / "finite_coordinates.pdb"
+    with pytest.warns(FutureWarning, match="padding-z is deprecated"):
+        assert (
+            main(
+                [
+                    "build",
+                    "--allomorph",
+                    "I-beta",
+                    "--shape",
+                    "slab",
+                    "--face",
+                    "1",
+                    "1",
+                    "0",
+                    "--layers",
+                    "1",
+                    "--chains-per-layer",
+                    "2",
+                    "--degree-polymerization",
+                    "12",
+                    "--chain-boundary",
+                    "finite",
+                    "--padding-z",
+                    "12",
+                    "--output",
+                    str(output),
+                ]
+            )
+            == 0
+        )

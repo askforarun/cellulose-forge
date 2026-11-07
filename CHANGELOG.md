@@ -2,6 +2,46 @@
 
 All notable changes to CelluloseForge are documented in this file.
 
+## 1.1.2 - 2026-11-07
+
+### Added
+
+- Added a Conda `environment.yml` that installs CelluloseForge together with
+  AmberTools and ParmEd for GLYCAM construction.
+
+### Fixed
+
+- Enforce a right-handed slab orientation matrix with determinant `+1`, while
+  retaining chains along Cartesian `-y`, the requested surface normal along
+  Cartesian `-z`, and low-to-high `x` chain numbering.
+- Detect any nonzero `tleap` `Errors = N` report rather than only the literal
+  values 1 or 2.
+- Finite-chain GLYCAM and CHARMM36 slab or fibril builds now reject less than
+  3 angstrom of longitudinal padding and warn below the documented 12
+  angstrom baseline, preventing capped chain ends from overlapping their
+  periodic images.
+- Force-field builds now validate and report the closest same-chain contact
+  across the longitudinal periodic boundary.
+- Periodic CHARMM36 and GLYCAM mappings now derive residue order from the
+  crystallographic O4--C1 connectivity for every supported allomorph.
+- Periodic force-field builds reject any mapped O4--C1 glycosidic bond longer
+  than 2 angstrom and record the maximum mapped linkage length in the build
+  report.
+
+### Changed
+
+- Added `--padding-longitudinal` as the coordinate-independent chain-axis
+  option. The historical `--padding-z` spelling remains as a deprecated alias.
+
+### Validation
+
+- Added direct C1 stereocentre-volume tests for positive and negative reference
+  faces of all four supported allomorphs.
+- Added a finite-GLYCAM terminal-contact regression test.
+- Added periodic-image contact tests and a CLI regression test that refuses an
+  unpadded finite force-field slab.
+- Added allomorph-wide periodic glycosidic-bond regression tests.
+
 ## 1.1.1 - 2026-11-06
 
 ### Added

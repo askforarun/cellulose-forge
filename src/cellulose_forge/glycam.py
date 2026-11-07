@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -14,6 +15,15 @@ GLYCAM_CHARGE_SCALE = 18.2223
 _SCALE_TOLERANCE = 1.0e-8
 _GROMACS_MOLECULE_NAME = "CELLULOSE_CHAIN"
 _MINIMUM_PERIODIC_DEGREE = 2
+_TLEAP_ERROR_COUNT = re.compile(r"\bErrors\s*=\s*(\d+)\b", re.IGNORECASE)
+
+
+def _tleap_output_failed(output: str) -> bool:
+    """Return whether tleap output reports a fatal condition or nonzero errors."""
+    lowered = output.lower()
+    if "fatal" in lowered or "parameter file was not saved" in lowered:
+        return True
+    return any(int(match.group(1)) > 0 for match in _TLEAP_ERROR_COUNT.finditer(output))
 
 
 @dataclass(frozen=True)
@@ -273,7 +283,7 @@ def run_tleap_periodic_chain_reference(
         text=True,
     )
     combined_output = f"{result.stdout}\n{result.stderr}"
-    if result.returncode != 0 or "Errors = 1" in combined_output:
+    if result.returncode != 0 or _tleap_output_failed(combined_output):
         msg = f"tleap periodic-chain generation failed:\n{combined_output}"
         raise RuntimeError(msg)
     validation = validate_periodic_glycam_prmtop(files.prmtop, spec)
@@ -320,8 +330,7 @@ def run_tleap_chain_reference(
         text=True,
     )
     combined_output = f"{result.stdout}\n{result.stderr}"
-    failure_markers = ("FATAL", "Errors = 1", "Errors = 2", "Parameter file was not saved")
-    if result.returncode != 0 or any(marker in combined_output for marker in failure_markers):
+    if result.returncode != 0 or _tleap_output_failed(combined_output):
         msg = f"tleap failed with exit code {result.returncode}:\n{combined_output}"
         raise RuntimeError(msg)
 

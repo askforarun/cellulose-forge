@@ -1,6 +1,6 @@
 {
   "allomorph": "I-beta",
-  "cellulose_forge_version": "1.1.0",
+  "cellulose_forge_version": "1.1.2",
   "chain_boundary": "finite",
   "chain_count": 24,
   "crystallographic_atom_count": 3024,
@@ -15,6 +15,7 @@
     "vacuum=20.000000 angstrom",
     "padding_z=0.000000 angstrom total longitudinal padding",
     "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+    "orientation_transform=proper_rotation determinant=+1",
     "chain numbering starts at requested low-z face; within each layer low-x to high-x",
     "size_mode=exact_counts"
   ],

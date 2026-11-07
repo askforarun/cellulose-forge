@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import tempfile
+import warnings
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -20,6 +21,10 @@ from cellulose_forge.charmm36 import (
     native_periodic_charmm36_topology,
     periodic_charmm36_interaction_counts,
     write_charmm36_system,
+)
+from cellulose_forge.clashes import (
+    validate_finite_periodic_image_contact,
+    validate_periodic_glycosidic_bonds,
 )
 from cellulose_forge.coordinates import write_coordinates
 from cellulose_forge.crystallography import AllomorphDefinition, MillerIndex, load_allomorph
@@ -47,6 +52,9 @@ from cellulose_forge.restraints import (
     group_mapped_chains,
     resolve_chain_restraints,
 )
+
+_MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 3.0
+_RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 12.0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -128,13 +136,17 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     build.add_argument(
-        "--padding-z",
+        "--padding-longitudinal",
         type=float,
         help=(
-            "total chain-direction padding for finite slabs or fibrils "
-            "(Cartesian y in oriented outputs); "
+            "total chain-direction padding for finite slabs or fibrils; "
             "periodic chains require zero"
         ),
+    )
+    build.add_argument(
+        "--padding-z",
+        type=float,
+        help="deprecated alias for --padding-longitudinal",
     )
     build.add_argument(
         "--force-field",
@@ -240,6 +252,21 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
         print(render_json(checks) if args.json else render_text(checks))
         return 0 if all(check.ok for check in checks if check.name != "gmx") else 1
     if args.command == "build":
+        if args.padding_longitudinal is not None and args.padding_z is not None:
+            build_parser().error(
+                "--padding-longitudinal and deprecated --padding-z are mutually exclusive"
+            )
+        if args.padding_z is not None:
+            warnings.warn(
+                "--padding-z is deprecated; use --padding-longitudinal",
+                FutureWarning,
+                stacklevel=1,
+            )
+        args.padding_longitudinal = (
+            args.padding_z
+            if args.padding_longitudinal is None
+            else args.padding_longitudinal
+        )
         allomorph_key = {
             "I-alpha": "i_alpha",
             "I-beta": "i_beta",
@@ -251,8 +278,11 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
             value is not None for value in (args.padding_x, args.padding_y)
         ):
             build_parser().error("--padding-x and --padding-y are valid only with --shape fibril")
-        if args.shape not in {"slab", "fibril"} and args.padding_z is not None:
-            build_parser().error("--padding-z is valid only with --shape slab or fibril")
+        if args.shape not in {"slab", "fibril"} and args.padding_longitudinal is not None:
+            build_parser().error(
+                "--padding-longitudinal is valid only with --shape slab or fibril"
+            )
+        _validate_longitudinal_padding(args, build_parser())
         if args.shape == "unit-cell":
             if args.cells is not None:
                 build_parser().error("--cells is not valid with --shape unit-cell")
@@ -318,6 +348,33 @@ def _write_coordinate_only_report(
     return report_path
 
 
+def _validate_longitudinal_padding(
+    args: argparse.Namespace,
+    parser: argparse.ArgumentParser,
+) -> None:
+    """Reject overlapping finite force-field boxes and warn below the safe baseline."""
+    if args.shape not in {"slab", "fibril"} or args.chain_boundary != "finite":
+        return
+    padding = 0.0 if args.padding_longitudinal is None else args.padding_longitudinal
+    if (
+        args.force_field != "none"
+        and padding < _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM
+    ):
+        parser.error(
+            "finite force-field chains require at least 3 angstrom longitudinal "
+            "padding; use --padding-longitudinal 12 or greater"
+        )
+    if padding < _RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM:
+        qualifier = "coordinate-only " if args.force_field == "none" else ""
+        warnings.warn(
+            f"{qualifier}finite chains have only {padding:g} angstrom longitudinal "
+            "padding; use at least 12 angstrom before periodic simulation so chain "
+            "ends do not interact with their own images",
+            UserWarning,
+            stacklevel=1,
+        )
+
+
 def _write_charmm36_build(
     args: argparse.Namespace,
     crystal: BulkCrystal,
@@ -333,6 +390,7 @@ def _write_charmm36_build(
         else discover_charmm36_directory()
     )
     topology: PeriodicCharmm36Topology | FiniteCharmm36Topology
+    periodic_bond_validation = None
     if args.chain_boundary == "periodic":
         topology = (
             derive_periodic_charmm36_topology(
@@ -346,6 +404,10 @@ def _write_charmm36_build(
             )
         )
         mapped = map_periodic_charmm36(crystal, topology)
+        try:
+            periodic_bond_validation = validate_periodic_glycosidic_bonds(mapped)
+        except ValueError as error:
+            parser.error(str(error))
         interaction_counts = periodic_charmm36_interaction_counts(topology)
     else:
         if args.charmm_template is not None:
@@ -356,6 +418,12 @@ def _write_charmm36_build(
         )
         mapped = map_finite_charmm36(crystal, topology)
         interaction_counts = finite_charmm36_interaction_counts(topology)
+    periodic_image_contact = None
+    if args.chain_boundary == "finite":
+        try:
+            periodic_image_contact = validate_finite_periodic_image_contact(mapped)
+        except ValueError as error:
+            parser.error(str(error))
     restraints = _resolve_restraints(args, crystal, parser)
     chain_mapping = None
     if restraints is not None:
@@ -404,6 +472,12 @@ def _write_charmm36_build(
         },
         "geometry_annotations": list(crystal.annotations),
     }
+    if periodic_image_contact is not None:
+        report["closest_longitudinal_periodic_image_contact"] = (
+            periodic_image_contact.as_dict()
+        )
+    if periodic_bond_validation is not None:
+        report["periodic_glycosidic_bond_validation"] = periodic_bond_validation
     if restraints is not None:
         report["position_restraints"] = {
             "define": "POSRES_CELLULOSE",
@@ -429,7 +503,7 @@ def _write_charmm36_build(
     )
 
 
-def _write_glycam_build(
+def _write_glycam_build(  # noqa: PLR0912
     args: argparse.Namespace,
     crystal: BulkCrystal,
     parser: argparse.ArgumentParser,
@@ -463,6 +537,18 @@ def _write_glycam_build(
             mapped = map_crystal_to_periodic_glycam(crystal, files.pdb)
         else:
             mapped = map_crystal_to_finite_glycam(crystal, files.pdb)
+        periodic_image_contact = None
+        periodic_bond_validation = None
+        if chain_boundary == "periodic":
+            try:
+                periodic_bond_validation = validate_periodic_glycosidic_bonds(mapped)
+            except ValueError as error:
+                parser.error(str(error))
+        if chain_boundary == "finite":
+            try:
+                periodic_image_contact = validate_finite_periodic_image_contact(mapped)
+            except ValueError as error:
+                parser.error(str(error))
         restraints = _resolve_restraints(args, crystal, parser)
         chain_mapping = None
         if restraints is not None:
@@ -496,6 +582,12 @@ def _write_glycam_build(
         "geometry_annotations": list(crystal.annotations),
         "reference_generation": reference_metadata,
     }
+    if periodic_image_contact is not None:
+        report["closest_longitudinal_periodic_image_contact"] = (
+            periodic_image_contact.as_dict()
+        )
+    if periodic_bond_validation is not None:
+        report["periodic_glycosidic_bond_validation"] = periodic_bond_validation
     if restraints is not None:
         report["position_restraints"] = {
             "define": "POSRES_CELLULOSE",
@@ -589,15 +681,17 @@ def _build_fibril(
         parser.error("--degree-polymerization N is required for fibrils")
     if args.chain_boundary is None:
         parser.error("--chain-boundary finite|periodic is required for fibrils")
-    if args.chain_boundary == "periodic" and args.padding_z not in {None, 0}:
-        parser.error("--padding-z must be zero with --chain-boundary periodic")
+    if args.chain_boundary == "periodic" and args.padding_longitudinal not in {None, 0}:
+        parser.error(
+            "--padding-longitudinal must be zero with --chain-boundary periodic"
+        )
     return build_36_chain_fibril(
         definition,
         degree_polymerization=args.degree_polymerization,
         vacuum=args.vacuum,
         padding_x=args.padding_x,
         padding_y=args.padding_y,
-        padding_z=args.padding_z,
+        padding_z=args.padding_longitudinal,
         chain_boundary=args.chain_boundary,
     )
 
@@ -614,9 +708,13 @@ def _build_slab(
         parser.error("--face H K L is required for slabs")
     if args.chain_boundary is None:
         parser.error("--chain-boundary finite|periodic is required for slabs")
-    if args.chain_boundary == "periodic" and args.padding_z not in {None, 0}:
-        parser.error("--padding-z must be zero with --chain-boundary periodic")
-    padding_z = 0.0 if args.padding_z is None else args.padding_z
+    if args.chain_boundary == "periodic" and args.padding_longitudinal not in {None, 0}:
+        parser.error(
+            "--padding-longitudinal must be zero with --chain-boundary periodic"
+        )
+    padding_z = (
+        0.0 if args.padding_longitudinal is None else args.padding_longitudinal
+    )
     axis_options = (
         ("--chains-per-layer", args.chains_per_layer, "--slab-width", args.slab_width),
         ("--layers", args.layers, "--slab-thickness", args.slab_thickness),

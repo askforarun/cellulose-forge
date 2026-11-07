@@ -49,12 +49,25 @@ example, `cellulose-forge build ...` becomes `uv run cellulose-forge build ...`.
 ### GLYCAM environment
 
 ```bash
-conda create -n cellulose-forge -c conda-forge \
-  python=3.12 ambertools parmed pip
-conda activate cellulose-forge
 git clone https://github.com/askforarun/cellulose-forge.git
 cd cellulose-forge
-python -m pip install -e .
+conda env create -f environment.yml
+conda activate cellulose-forge
+cellulose-forge doctor
+```
+
+This environment installs AmberTools (including `antechamber`, `parmchk2`, and
+`tleap`), ParmEd, and the local CelluloseForge checkout. CelluloseForge
+currently calls `tleap` and ParmEd for GLYCAM construction; the remaining
+AmberTools programs are available for related parameterization workflows. Run
+the creation command from the repository root because the environment installs
+CelluloseForge in editable mode with `-e .`. GROMACS remains a separate,
+optional dependency for preprocessing and simulation validation.
+
+Update the environment reproducibly with:
+
+```bash
+conda env update -n cellulose-forge -f environment.yml --prune
 ```
 
 ### CHARMM36 environment and force-field installation
@@ -236,7 +249,11 @@ The important arguments are:
 
 The coordinate-only structure contains crystallographic atoms. Force-field
 mode later constructs the additional terminal atoms required for finite GLYCAM
-chains.
+chains. Coordinate-only finite builds may omit longitudinal padding, but they
+emit a warning because a periodic simulation box must separate the capped ends
+from their images. Finite force-field slabs and fibrils require at least 3 Å
+and should use at least 12 Å through `--padding-longitudinal`; the validated
+examples use 12--20 Å.
 
 Cellulose II is a separate documented case: its diffraction dataset omits
 HO2, HO3, and HO6. GLYCAM output generates those hydrogen coordinates using
@@ -324,7 +341,7 @@ The allomorph validation matrix uses I-alpha `(010)`, I-beta `(110)`, II
 cellulose-forge build \
   --allomorph I-alpha --shape slab --face 0 1 0 \
   --layers 3 --chains-per-layer 6 --degree-polymerization 6 \
-  --chain-boundary finite --vacuum 24 --padding-z 12 \
+  --chain-boundary finite --vacuum 24 --padding-longitudinal 12 \
   --force-field charmm36 --output ialpha_010_slab
 
 cellulose-forge build \
@@ -336,8 +353,9 @@ cellulose-forge build \
 
 For I-alpha the crystallographic chain axis is `a`, so a chain-parallel face
 requires `h=0`. For I-beta, II, and III-I the chain axis is `c`, so it requires
-`l=0`. Finite slabs can use `--padding-z` to separate explicit chain ends from
-their periodic images. Periodic slabs reject nonzero chain-end padding.
+`l=0`. Finite slabs use `--padding-longitudinal` to separate explicit chain
+ends from their periodic images. Periodic slabs reject nonzero chain-end
+padding. The historical `--padding-z` spelling remains a deprecated alias.
 
 ## 8. Build a 36-chain elementary fibril
 
@@ -364,8 +382,8 @@ dimensions need different padding. These options override `--vacuum` only for
 their respective transverse direction.
 
 A fibril may also contain finite, chemically terminated chains. In that case,
-`--padding-z` adds total longitudinal space beyond the two chain ends along
-Cartesian `y`; its name is retained for CLI compatibility:
+`--padding-longitudinal` adds total space beyond the two chain ends along the
+chain axis:
 
 ```bash
 cellulose-forge build \
@@ -376,13 +394,13 @@ cellulose-forge build \
   --chain-boundary finite \
   --padding-x 30 \
   --padding-y 40 \
-  --padding-z 20 \
+  --padding-longitudinal 20 \
   --output cellulose_forge_tutorial/ibeta_36chain_finite_padded.pdb
 ```
 
 For a periodic fibril, CelluloseForge derives the y box length from the degree
 of polymerization and crystallographic chain repeat. It rejects nonzero
-`--padding-z`, which would otherwise separate atoms joined by the periodic
+`--padding-longitudinal`, which would otherwise separate atoms joined by the periodic
 covalent bond.
 
 ## 9. Understand chain numbering
@@ -417,6 +435,7 @@ uv run cellulose-forge build \
   --degree-polymerization 12 \
   --chain-boundary finite \
   --vacuum 30 \
+  --padding-longitudinal 20 \
   --force-field glycam \
   --restrain-layers 1 2 \
   --restraint-force 1000 1000 1000 \
@@ -516,6 +535,7 @@ cellulose-forge build \
   --degree-polymerization 12 \
   --chain-boundary finite \
   --vacuum 30 \
+  --padding-longitudinal 20 \
   --force-field charmm36 \
   --output cellulose_forge_tutorial/ibeta_110_finite_charmm36
 ```
@@ -655,7 +675,8 @@ Although `.pdb` was requested, CelluloseForge writes `large_slab.cif` because
 PDB atom serials cannot uniquely represent the system. This is reported on the
 terminal.
 
-For a GLYCAM build, add `--force-field glycam` and make `--output` a directory.
+For a GLYCAM build, add `--force-field glycam`, add at least
+`--padding-longitudinal 12`, and make `--output` a directory.
 The resulting finite system contains 102,000 atoms after terminal atoms are
 added. Use:
 
@@ -767,6 +788,7 @@ cellulose-forge build \
   --degree-polymerization 12 \
   --chain-boundary finite \
   --vacuum 30 \
+  --padding-longitudinal 20 \
   --force-field glycam \
   --output cellulose_forge_tutorial/ibeta_110_slab
 ```

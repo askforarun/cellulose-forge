@@ -8,6 +8,7 @@ from numpy.testing import assert_allclose
 
 from cellulose_forge.crystallography import MillerIndex, fractional_to_cartesian, load_allomorph
 from cellulose_forge.geometry import (
+    BulkCrystal,
     build_36_chain_fibril,
     build_bulk_crystal,
     build_chain_parallel_slab,
@@ -15,6 +16,73 @@ from cellulose_forge.geometry import (
     build_slab_with_sizing,
     build_unit_cell,
 )
+
+
+def _c1_signed_volumes(crystal: BulkCrystal) -> np.ndarray:
+    """Return C1 stereocentre volumes using O5, C2, and H1 substituents."""
+    labels = np.asarray(crystal.atom_labels)
+    chains = np.asarray(crystal.chain_numbers)
+    residues = np.asarray(crystal.residue_numbers)
+    volumes: list[float] = []
+    for chain, residue in sorted(set(zip(chains, residues, strict=True))):
+        mask = (chains == chain) & (residues == residue)
+        lookup = dict(
+            zip(labels[mask], crystal.cartesian_coordinates[mask], strict=True)
+        )
+        if not {"C1", "O5", "C2", "H1"}.issubset(lookup):
+            continue
+        center = lookup["C1"]
+        volumes.append(
+            float(
+                np.linalg.det(
+                    np.vstack(
+                        [
+                            lookup["O5"] - center,
+                            lookup["C2"] - center,
+                            lookup["H1"] - center,
+                        ]
+                    )
+                )
+            )
+        )
+    return np.asarray(volumes)
+
+
+@pytest.mark.parametrize(
+    ("allomorph_key", "face"),
+    [
+        ("i_alpha", (0, 1, 0)),
+        ("i_alpha", (0, -1, 0)),
+        ("i_beta", (1, 1, 0)),
+        ("i_beta", (-1, -1, 0)),
+        ("ii", (1, 1, 0)),
+        ("ii", (-1, -1, 0)),
+        ("iii_i", (1, 1, 0)),
+        ("iii_i", (-1, -1, 0)),
+    ],
+)
+def test_slab_orientation_preserves_glucose_chirality(
+    allomorph_key: str,
+    face: tuple[int, int, int],
+) -> None:
+    definition = load_allomorph(allomorph_key)
+    source_volumes = _c1_signed_volumes(build_unit_cell(definition))
+    slab_volumes = _c1_signed_volumes(
+        build_chain_parallel_slab(
+            definition,
+            MillerIndex(*face),
+            layers=2,
+            chains_per_layer=3,
+            degree_polymerization=2,
+            vacuum=0.0,
+        )
+    )
+
+    assert source_volumes.size > 0
+    assert slab_volumes.size > 0
+    assert np.all(np.abs(source_volumes) > 1e-6)
+    assert np.all(np.abs(slab_volumes) > 1e-6)
+    assert set(np.sign(slab_volumes)) == set(np.sign(source_volumes))
 
 
 @pytest.mark.parametrize(
@@ -623,6 +691,6 @@ def test_si_wetting_reference_slab_counts() -> None:
         np.mean(slab.cartesian_coordinates[chain_numbers == chain], axis=0) for chain in (1, 2, 101)
     ]
     assert_allclose(chain_centers[1][0] - chain_centers[0][0], 5.964480, atol=1e-6)
-    assert_allclose(chain_centers[2][0] - chain_centers[0][0], 0.279393, atol=1e-6)
+    assert_allclose(chain_centers[2][0] - chain_centers[0][0], -0.279393, atol=1e-6)
     assert_allclose(chain_centers[2][2] - chain_centers[0][2], 5.316996, atol=1e-6)
     assert np.count_nonzero(chain_numbers == 1) == 252

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
+from cellulose_forge.clashes import validate_finite_periodic_image_contact
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
 
@@ -380,7 +381,7 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0915
 
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)
-    return GlycamMappedSystem(
+    system = GlycamMappedSystem(
         atom_names=tuple(output_names),
         residue_names=tuple(output_residue_names),
         residue_numbers=tuple(output_residue_numbers),
@@ -388,6 +389,8 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0915
         cartesian_coordinates=coordinates,
         basis_vectors=crystal.basis_vectors,
     )
+    validate_finite_periodic_image_contact(system)
+    return system
 
 
 def map_crystal_to_periodic_glycam(
@@ -440,14 +443,10 @@ def map_crystal_to_periodic_glycam(
     output_chain_numbers: list[int] = []
     output_coordinates: list[FloatArray] = []
     for chain_number in chain_numbers:
-        crystal_residue_order = (
-            _periodic_chain_residue_order(
-                crystal,
-                chain_number=chain_number,
-                degree_polymerization=degree_polymerization,
-            )
-            if crystal.allomorph == "II"
-            else tuple(range(degree_polymerization, 0, -1))
+        crystal_residue_order = _periodic_chain_residue_order(
+            crystal,
+            chain_number=chain_number,
+            degree_polymerization=degree_polymerization,
         )
         for reference_residue_number, reference_atoms in reference_residues.items():
             crystal_residue_number = crystal_residue_order[reference_residue_number - 1]
