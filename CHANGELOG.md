@@ -38,6 +38,18 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Validation
 
+- Added residue-level D-cellulose chirality reporting and regression tests for
+  unit-cell, bulk, slab, and fibril constructions.
+- Added independent checks of mapped and written periodic glycosidic bonds,
+  including a 50 kJ mol-1 per-atom initial bonded-energy ceiling in the
+  dependency-gated GROMACS tests.
+- Regenerated the I-beta `(110)` reference slab and reran finite and periodic
+  GLYCAM06j-1 and CHARMM36 minimization and one-ps NVT smoke tests.
+- Added an I-beta `(110)` site-assignment regression: origin and center chains
+  alternate within each layer, no interchain contact is shorter than 1.7
+  angstrom, and the two central layers retain a 0.780 angstrom minimum-image
+  RMSD in the periodic GLYCAM one-ps NVT test.
+
 - Added direct C1 stereocentre-volume tests for positive and negative reference
   faces of all four supported allomorphs.
 - Added a finite-GLYCAM terminal-contact regression test.

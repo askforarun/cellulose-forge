@@ -143,9 +143,11 @@ warnings or non-finite energies. Periodic O4--C1 linkages were checked before
 output and were shorter than 2 angstrom. Compact results are stored in
 `results/slab_allomorph_matrix.json`. These are topology and runtime smoke
 tests, not equilibrated material-property predictions. The original complete
-matrix was run from the `v1.1.2` tag at commit `73f6543`; the four I-beta
-finite/periodic GLYCAM and CHARMM36 entries were subsequently regenerated and
-rerun after the alternating lattice-site validation was added.
+matrix was initially run at commit `73f6543`; the four I-beta finite/periodic
+GLYCAM and CHARMM36 entries were regenerated and rerun with the final 1.1.2
+implementation committed as `63675a2`, after the alternating lattice-site
+validation was added. The remaining allomorph results exercise code paths not
+changed by that I-beta-specific correction.
 
 The I-beta `(110)` lattice construction additionally has a site-assignment
 regression requiring origin and center conformations to alternate within each

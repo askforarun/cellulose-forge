@@ -1,6 +1,7 @@
 {
   "validation_date": "2026-11-07",
-  "cellulose_forge_version": "1.1.2 development tree",
+  "cellulose_forge_version": "1.1.2",
+  "validated_code_commit": "63675a2cc0abf068d986a167f6ae725e7122cce9",
   "geometry": {
     "allomorph": "I-beta",
     "face": [1, 1, 0],
