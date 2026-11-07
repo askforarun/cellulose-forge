@@ -149,7 +149,7 @@ def test_finite_glycam_slab_passes_grompp(
         == 0
     )
     _grompp(output, Path(__file__).parents[2] / "validation/grompp_minim.mdp")
-    assert _single_point_bond_energy_per_atom(output) < 1000.0
+    assert _single_point_bond_energy_per_atom(output) < 50.0
 
 
 @pytest.mark.parametrize(
@@ -209,4 +209,4 @@ def test_charmm36_slab_passes_grompp(
         == 0
     )
     _grompp(output, Path(__file__).parents[2] / "validation/grompp_minim.mdp")
-    assert _single_point_bond_energy_per_atom(output) < 1000.0
+    assert _single_point_bond_energy_per_atom(output) < 50.0

@@ -25,6 +25,7 @@ from cellulose_forge.charmm36 import (
 from cellulose_forge.clashes import (
     validate_finite_periodic_image_contact,
     validate_periodic_glycosidic_bonds,
+    validate_periodic_gromacs_topology_bonds,
 )
 from cellulose_forge.coordinates import write_coordinates
 from cellulose_forge.crystallography import AllomorphDefinition, MillerIndex, load_allomorph
@@ -43,6 +44,7 @@ from cellulose_forge.geometry import (
 )
 from cellulose_forge.glycam import GLYCAM_LEAPRC, generate_glycam_gromacs_reference
 from cellulose_forge.glycam_mapping import (
+    GlycamMappedSystem,
     map_crystal_to_finite_glycam,
     map_crystal_to_periodic_glycam,
 )
@@ -375,7 +377,19 @@ def _validate_longitudinal_padding(
         )
 
 
-def _write_charmm36_build(
+def _validate_written_periodic_topology(
+    mapped: GlycamMappedSystem,
+    topology_path: Path,
+    parser: argparse.ArgumentParser,
+) -> dict[str, float | int]:
+    """Validate the bonds actually emitted in a GROMACS molecule topology."""
+    try:
+        return validate_periodic_gromacs_topology_bonds(mapped, topology_path)
+    except ValueError as error:
+        parser.error(str(error))
+
+
+def _write_charmm36_build(  # noqa: PLR0912
     args: argparse.Namespace,
     crystal: BulkCrystal,
     parser: argparse.ArgumentParser,
@@ -443,6 +457,10 @@ def _write_charmm36_build(
         restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
         restraint_force=restraints.force_constants if restraints else None,
     )
+    if args.chain_boundary == "periodic":
+        periodic_bond_validation = _validate_written_periodic_topology(
+            mapped, itp_path, parser
+        )
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
@@ -503,7 +521,7 @@ def _write_charmm36_build(
     )
 
 
-def _write_glycam_build(  # noqa: PLR0912
+def _write_glycam_build(  # noqa: PLR0912, PLR0915
     args: argparse.Namespace,
     crystal: BulkCrystal,
     parser: argparse.ArgumentParser,
@@ -562,6 +580,10 @@ def _write_glycam_build(  # noqa: PLR0912
             restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
             restraint_force=restraints.force_constants if restraints else None,
         )
+        if chain_boundary == "periodic":
+            periodic_bond_validation = _validate_written_periodic_topology(
+                mapped, topology_path, parser
+            )
 
     report = {
         "cellulose_forge_version": __version__,

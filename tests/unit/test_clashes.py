@@ -7,6 +7,7 @@ from cellulose_forge.clashes import (
     closest_longitudinal_periodic_image_contact,
     validate_finite_periodic_image_contact,
     validate_periodic_glycosidic_bonds,
+    validate_periodic_gromacs_topology_bonds,
 )
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
 
@@ -51,3 +52,37 @@ def test_rejects_long_periodic_glycosidic_bond() -> None:
     )
     with pytest.raises(ValueError, match=r"glycosidic bond is too long"):
         validate_periodic_glycosidic_bonds(system)
+
+
+def test_validates_bonds_read_from_written_gromacs_topology(tmp_path) -> None:
+    system = GlycamMappedSystem(
+        atom_names=("O4", "C1", "O4", "C1"),
+        residue_names=("4GB",) * 4,
+        residue_numbers=(1, 1, 2, 2),
+        chain_numbers=(1,) * 4,
+        cartesian_coordinates=np.asarray(
+            [[0.0, 0.0, 0.0], [0.0, 9.0, 0.0], [0.0, 8.0, 0.0], [0.0, 1.0, 0.0]]
+        ),
+        basis_vectors=np.diag([20.0, 10.0, 20.0]),
+    )
+    topology = tmp_path / "cellulose.itp"
+    topology.write_text(
+        """[ moleculetype ]
+CELLULOSE 3
+[ atoms ]
+1 Os 1 4GB O4 1 0 16
+2 Cg 1 4GB C1 2 0 12
+3 Os 2 4GB O4 3 0 16
+4 Cg 2 4GB C1 4 0 12
+[ bonds ]
+1 4 1
+3 2 1
+""",
+        encoding="utf-8",
+    )
+    result = validate_periodic_gromacs_topology_bonds(system, topology)
+    assert result == {
+        "molecule_type_count": 1,
+        "bond_count": 2,
+        "maximum_distance_angstrom": pytest.approx(1.0),
+    }

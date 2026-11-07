@@ -3,15 +3,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
+
+from cellulose_forge.crystallography import FloatArray
 
 if TYPE_CHECKING:
     from cellulose_forge.glycam_mapping import GlycamMappedSystem
 
 _BOX_DETERMINANT_TOLERANCE = 1.0e-12
 _MAXIMUM_GLYCOSIDIC_BOND_ANGSTROM = 2.0
+_GROMACS_ATOM_FIELD_COUNT = 5
+_GROMACS_BOND_FIELD_COUNT = 2
+
+_TopologyBlock = tuple[dict[int, tuple[int, str]], list[tuple[int, int]]]
 
 
 @dataclass(frozen=True)
@@ -173,3 +180,121 @@ def validate_periodic_glycosidic_bonds(
         msg = "periodic glycosidic bond validation found no cellulose linkages"
         raise ValueError(msg)
     return {"bond_count": count, "maximum_distance_angstrom": maximum}
+
+
+def _read_gromacs_molecule_blocks(topology_path: str | Path) -> list[_TopologyBlock]:
+    """Read local atoms and bonds from every molecule type in a topology."""
+    blocks: list[_TopologyBlock] = []
+    atoms: dict[int, tuple[int, str]] | None = None
+    bonds: list[tuple[int, int]] = []
+    section = ""
+    for raw_line in Path(topology_path).read_text(encoding="utf-8").splitlines():
+        stripped = raw_line.split(";", 1)[0].strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("[") and stripped.endswith("]"):
+            new_section = stripped[1:-1].strip().lower()
+            if new_section == "moleculetype":
+                if atoms is not None:
+                    blocks.append((atoms, bonds))
+                atoms = {}
+                bonds = []
+            section = new_section
+            continue
+        if atoms is None:
+            continue
+        fields = stripped.split()
+        if section == "atoms" and len(fields) >= _GROMACS_ATOM_FIELD_COUNT:
+            atoms[int(fields[0])] = (int(fields[2]), fields[4])
+        elif section == "bonds" and len(fields) >= _GROMACS_BOND_FIELD_COUNT:
+            bonds.append((int(fields[0]), int(fields[1])))
+    if atoms is not None:
+        blocks.append((atoms, bonds))
+    if not blocks:
+        msg = f"no [ moleculetype ] definition found in {topology_path}"
+        raise ValueError(msg)
+    return blocks
+
+
+def _validate_gromacs_molecule_block(
+    block: _TopologyBlock,
+    coordinates: FloatArray,
+    basis: FloatArray,
+    inverse: FloatArray,
+) -> tuple[int, float]:
+    """Validate actual inter-residue glycosidic bonds in one molecule type."""
+    block_atoms, block_bonds = block
+    if not block_atoms:
+        return 0, 0.0
+    local_count = max(block_atoms)
+    if local_count > len(coordinates):
+        msg = "GROMACS molecule topology contains more atoms than mapped coordinates"
+        raise ValueError(msg)
+    maximum = 0.0
+    block_linkages = 0
+    block_residues = {residue for residue, _ in block_atoms.values()}
+    for first, second in block_bonds:
+        if first not in block_atoms or second not in block_atoms:
+            msg = "GROMACS [ bonds ] row references an undefined local atom"
+            raise ValueError(msg)
+        first_residue, first_name = block_atoms[first]
+        second_residue, second_name = block_atoms[second]
+        if first_residue == second_residue or {first_name, second_name} != {"O4", "C1"}:
+            continue
+        displacement = coordinates[second - 1] - coordinates[first - 1]
+        fractional = displacement @ inverse
+        fractional -= np.rint(fractional)
+        distance = float(np.linalg.norm(fractional @ basis))
+        if distance > _MAXIMUM_GLYCOSIDIC_BOND_ANGSTROM:
+            msg = (
+                "written GROMACS glycosidic bond is too long: "
+                f"local atoms {first}--{second} ({first_name}--{second_name}) = "
+                f"{distance:.3f} angstrom "
+                f"(maximum {_MAXIMUM_GLYCOSIDIC_BOND_ANGSTROM:.1f})"
+            )
+            raise ValueError(msg)
+        maximum = max(maximum, distance)
+        block_linkages += 1
+    if block_linkages != len(block_residues):
+        msg = (
+            "written periodic GROMACS molecule has an unexpected number of "
+            f"inter-residue O4--C1 bonds: {block_linkages} for "
+            f"{len(block_residues)} residues"
+        )
+        raise ValueError(msg)
+    return block_linkages, maximum
+
+
+def validate_periodic_gromacs_topology_bonds(
+    system: GlycamMappedSystem,
+    topology_path: str | Path,
+) -> dict[str, float | int]:
+    """Validate O4--C1 bonds read independently from a written GROMACS topology."""
+    blocks = _read_gromacs_molecule_blocks(topology_path)
+
+    basis = np.asarray(system.basis_vectors, dtype=float)
+    if basis.shape != (3, 3) or abs(np.linalg.det(basis)) < _BOX_DETERMINANT_TOLERANCE:
+        msg = "topology bond validation requires an invertible 3x3 box"
+        raise ValueError(msg)
+    inverse = np.linalg.inv(basis)
+    coordinates = np.asarray(system.cartesian_coordinates, dtype=float)
+    maximum = 0.0
+    linkage_count = 0
+    validated_types = 0
+    for block in blocks:
+        count, block_maximum = _validate_gromacs_molecule_block(
+            block, coordinates, basis, inverse
+        )
+        if count == 0:
+            continue
+        linkage_count += count
+        maximum = max(maximum, block_maximum)
+        validated_types += 1
+    if validated_types == 0:
+        msg = "written GROMACS topology contains no atom-bearing molecule type"
+        raise ValueError(msg)
+    return {
+        "molecule_type_count": validated_types,
+        "bond_count": linkage_count,
+        "maximum_distance_angstrom": maximum,
+    }
