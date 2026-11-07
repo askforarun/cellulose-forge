@@ -41,6 +41,7 @@ from cellulose_forge.geometry import (
     build_bulk_crystal,
     build_slab_with_sizing,
     build_unit_cell,
+    validate_cellulose_chirality,
 )
 from cellulose_forge.glycam import GLYCAM_LEAPRC, generate_glycam_gromacs_reference
 from cellulose_forge.glycam_mapping import (
@@ -342,6 +343,7 @@ def _write_coordinate_only_report(
         "requested_output": str(requested_output),
         "outputs": {"coordinates": coordinate_path.name},
         "geometry_annotations": list(crystal.annotations),
+        "chirality_validation": validate_cellulose_chirality(crystal),
     }
     report_path.write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
@@ -493,6 +495,7 @@ def _write_charmm36_build(  # noqa: PLR0912
             "gromacs_force_field": force_field_path.name,
         },
         "geometry_annotations": list(crystal.annotations),
+        "chirality_validation": validate_cellulose_chirality(crystal),
     }
     if periodic_image_contact is not None:
         report["closest_longitudinal_periodic_image_contact"] = (
@@ -610,6 +613,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             "gromacs_topology": topology_path.name,
         },
         "geometry_annotations": list(crystal.annotations),
+        "chirality_validation": validate_cellulose_chirality(crystal),
         "reference_generation": reference_metadata,
     }
     if periodic_image_contact is not None:

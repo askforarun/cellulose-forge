@@ -1,6 +1,7 @@
 """Tests for I-beta unit-cell and legacy-compatible bulk geometry."""
 
 from collections import Counter
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -15,6 +16,7 @@ from cellulose_forge.geometry import (
     build_slab_by_dimensions,
     build_slab_with_sizing,
     build_unit_cell,
+    validate_cellulose_chirality,
 )
 
 
@@ -83,6 +85,28 @@ def test_slab_orientation_preserves_glucose_chirality(
     assert np.all(np.abs(source_volumes) > 1e-6)
     assert np.all(np.abs(slab_volumes) > 1e-6)
     assert set(np.sign(slab_volumes)) == set(np.sign(source_volumes))
+
+
+@pytest.mark.parametrize("allomorph_key", ["i_alpha", "i_beta", "ii", "iii_i"])
+def test_chirality_validation_reports_d_cellulose(allomorph_key: str) -> None:
+    result = validate_cellulose_chirality(build_unit_cell(load_allomorph(allomorph_key)))
+
+    assert result["status"] == "passed"
+    assert result["configuration"] == "D-cellulose"
+    assert result["expected_signed_volume_sign"] == "negative"
+    assert result["residue_count"] > 0
+
+
+def test_chirality_validation_rejects_mirrored_geometry() -> None:
+    crystal = build_unit_cell(load_allomorph("i_beta"))
+    mirrored = replace(
+        crystal,
+        cartesian_coordinates=crystal.cartesian_coordinates * np.asarray([-1.0, 1.0, 1.0]),
+        basis_vectors=crystal.basis_vectors * np.asarray([-1.0, 1.0, 1.0]),
+    )
+
+    with pytest.raises(ValueError, match="mirrored C1 geometry"):
+        validate_cellulose_chirality(mirrored)
 
 
 @pytest.mark.parametrize(

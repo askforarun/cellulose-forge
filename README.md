@@ -398,7 +398,8 @@ cellulose-forge build \
 ```
 
 The generated `build_report.json` records the interpreted scientific choices
-and realized system. Consumers should inspect that report and run the normal
+and realized system, including a residue-level C1 chirality check confirming
+D-cellulose geometry. Consumers should inspect that report and run the normal
 validation workflow instead of trusting an agent's textual account. A retained
 proof-of-concept record is available in
 [`validation/agent_orchestration_demo/`](validation/agent_orchestration_demo/).

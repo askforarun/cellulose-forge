@@ -22,6 +22,7 @@ _PDB_CHAIN_IDENTIFIERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01
 _LAYER_TOLERANCE = 1e-6
 _MAX_SLAB_DISCRETE_COUNT = 10_000
 _PROPER_ROTATION_TOLERANCE = 1e-10
+_CHIRALITY_VOLUME_TOLERANCE = 1e-6
 _I_BETA_TERMINATION_BY_FACE = {
     (1, 0, 0): 0,
     (-1, 0, 0): 0,
@@ -49,6 +50,65 @@ def _proper_slab_axes(
         msg = f"slab orientation is not a proper rotation (determinant={determinant:.12g})"
         raise ValueError(msg)
     return axes
+
+
+def validate_cellulose_chirality(crystal: BulkCrystal) -> dict[str, object]:
+    """Validate the C1 configuration of every complete glucose residue.
+
+    The signed volume uses the ordered C1 substituents O5, C2, and H1.  The
+    crystallographic D-cellulose definitions supplied with CelluloseForge have
+    a negative sign under this convention.  Checking the molecular geometry,
+    rather than only a transformation determinant, also detects an already
+    mirrored input structure.
+    """
+    labels = np.asarray(crystal.atom_labels)
+    chains = np.asarray(crystal.chain_numbers)
+    residues = np.asarray(crystal.residue_numbers)
+    signed_volumes: list[float] = []
+    for chain, residue in sorted(set(zip(chains, residues, strict=True))):
+        mask = (chains == chain) & (residues == residue)
+        lookup = dict(zip(labels[mask], crystal.cartesian_coordinates[mask], strict=True))
+        required = {"C1", "O5", "C2", "H1"}
+        if not required.issubset(lookup):
+            msg = (
+                "cannot validate cellulose chirality for "
+                f"chain {chain}, residue {residue}: missing "
+                f"{', '.join(sorted(required - lookup.keys()))}"
+            )
+            raise ValueError(msg)
+        center = lookup["C1"]
+        signed_volumes.append(
+            float(
+                np.linalg.det(
+                    np.vstack(
+                        [
+                            lookup["O5"] - center,
+                            lookup["C2"] - center,
+                            lookup["H1"] - center,
+                        ]
+                    )
+                )
+            )
+        )
+
+    if not signed_volumes:
+        raise ValueError("cannot validate cellulose chirality: no residues found")
+    volumes = np.asarray(signed_volumes)
+    if np.any(np.abs(volumes) <= _CHIRALITY_VOLUME_TOLERANCE):
+        raise ValueError("cellulose chirality validation found a degenerate C1 centre")
+    if np.any(volumes > 0.0):
+        raise ValueError("cellulose chirality validation found mirrored C1 geometry")
+    return {
+        "status": "passed",
+        "configuration": "D-cellulose",
+        "stereocentre": "C1",
+        "substituent_order": ["O5", "C2", "H1"],
+        "expected_signed_volume_sign": "negative",
+        "residue_count": len(signed_volumes),
+        "minimum_absolute_signed_volume_angstrom3": float(np.min(np.abs(volumes))),
+    }
+
+
 _FIBRIL_FRAGMENT_IDS = {
     "I-alpha": (
         2,

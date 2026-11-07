@@ -459,6 +459,10 @@ def test_cli_writes_periodic_glycam_fibril_system(
     assert report["degree_polymerization"] == 12
     assert report["chain_count"] == 36
     assert report["force_field_atom_count"] == 9072
+    chirality = report["chirality_validation"]
+    assert chirality["status"] == "passed"
+    assert chirality["configuration"] == "D-cellulose"
+    assert chirality["residue_count"] == 432
 
 
 def test_cli_writes_selectively_restrained_fibril_chains(
