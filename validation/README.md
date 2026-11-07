@@ -142,7 +142,8 @@ Finite systems minimized below 100 kJ mol-1 nm-1 and periodic systems below
 warnings or non-finite energies. Periodic O4--C1 linkages were checked before
 output and were shorter than 2 angstrom. Compact results are stored in
 `results/slab_allomorph_matrix.json`. These are topology and runtime smoke
-tests, not equilibrated material-property predictions.
+tests, not equilibrated material-property predictions. The complete matrix was
+rerun from the exact `v1.1.2` tag at commit `73f6543`.
 
 ## I-beta fibril smoke test
 
