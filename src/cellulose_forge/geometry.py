@@ -727,9 +727,9 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     """Build a complete-residue slab for a chain-parallel ``(h k 0)`` face.
 
     This implementation follows the chain-layer construction in the cellulose
-    wetting reference systems. Chains in a layer are spaced by ``(a-b)/2``;
-    successive layers alternate origin and center chains and advance by
-    ``(a+b)/2``. The chain direction follows ``c`` and the requested face
+    wetting reference systems. Chains in a layer are spaced by ``(a-b)/2``
+    and alternate between origin and center sites; successive layers advance
+    by ``(a+b)/2``. The chain direction follows ``c`` and the requested face
     normal is oriented along Cartesian -z and the cellulose chains along -y.
     The resulting surface lies in the x-y plane for semi-isotropic pressure
     coupling. A proper rotation is used so molecular chirality is preserved.
@@ -774,6 +774,12 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             padding_z=padding_z,
             chain_boundary=chain_boundary,
         )
+    if chains_per_layer % 2:
+        msg = (
+            "cellulose I-beta (110) slabs require an even number of chains per "
+            "layer so the transverse box is a complete lattice repeat"
+        )
+        raise ValueError(msg)
 
     vectors = allomorph.unit_cell.vectors()
     in_plane_vector = (vectors[0] - vectors[1]) / 2.0
@@ -810,12 +816,9 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     center_template[residue_atoms:] += vectors[0] + vectors[1]
     origin_labels = tuple(unit_cell.atom_labels[index] for index in origin_indices)
     center_labels = tuple(unit_cell.atom_labels[index] for index in center_indices)
+    layer_step = (vectors[0] + vectors[1]) / 2.0
 
     for output_layer, crystal_layer in enumerate(reversed(range(layers))):
-        is_center_layer = bool(crystal_layer % 2)
-        template = center_template if is_center_layer else origin_template
-        template_labels = center_labels if is_center_layer else origin_labels
-        layer_translation = (crystal_layer // 2) * (vectors[0] + vectors[1])
         for surface_chain in range(chains_per_layer):
             chain_index = output_layer * chains_per_layer + surface_chain
             chain_number = chain_index + 1
@@ -825,9 +828,13 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
                 if surface_order_reversed
                 else surface_chain
             )
-            surface_translation = lattice_chain * in_plane_vector
+            is_center = bool((crystal_layer + lattice_chain) % 2)
+            template = center_template if is_center else origin_template
+            template_labels = center_labels if is_center else origin_labels
+            site = crystal_layer * layer_step + lattice_chain * in_plane_vector
+            base_translation = site - layer_step if is_center else site
             for chain_cell in range(chain_repeats):
-                translation = layer_translation + surface_translation + chain_cell * vectors[2]
+                translation = base_translation + chain_cell * vectors[2]
                 coordinate_blocks.append(template + translation)
                 atom_labels.extend(template_labels)
                 chain_ids.extend([chain_id] * len(template))
@@ -954,9 +961,13 @@ def build_slab_with_sizing(  # noqa: PLR0913
 
     if chains_per_layer is None:
         assert width is not None
-        chains_per_layer = 1
+        special_i_beta_110 = allomorph.name == "I-beta" and face.values in {
+            (1, 1, 0),
+            (-1, -1, 0),
+        }
+        chains_per_layer = 2 if special_i_beta_110 else 1
         while float(probe(1, chains_per_layer).basis_vectors[0, 0]) + _LAYER_TOLERANCE < width:
-            chains_per_layer += 1
+            chains_per_layer += 2 if special_i_beta_110 else 1
             if chains_per_layer > _MAX_SLAB_DISCRETE_COUNT:
                 msg = "requested slab width exceeds the supported discrete-chain search limit"
                 raise ValueError(msg)

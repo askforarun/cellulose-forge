@@ -27,6 +27,9 @@ All notable changes to CelluloseForge are documented in this file.
 - Periodic force-field builds reject any mapped O4--C1 glycosidic bond longer
   than 2 angstrom and record the maximum mapped linkage length in the build
   report.
+- I-beta `(110)` slabs assign alternating origin and center conformations to
+  their corresponding lattice sites. Explicit chain counts must be even, and
+  physical-width requests round upward to a complete transverse lattice repeat.
 
 ### Changed
 
@@ -48,6 +51,9 @@ All notable changes to CelluloseForge are documented in this file.
   as separate results.
 - GROMACS single-point integration tests require an initial bond energy below
   50 kJ mol-1 per atom.
+- Added an I-beta `(110)` interchain-contact regression and a one-ps periodic
+  GLYCAM/NVT core-geometry stability test.
+- Build reports record a residue-level C1 signed-volume chirality validation.
 
 ## 1.1.1 - 2026-11-06
 

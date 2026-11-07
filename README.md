@@ -256,7 +256,10 @@ cellulose-forge build \
 ### I-beta `(110)` slab using exact counts
 
 Degree of polymerization is the number of anhydroglucose units in each chain.
-The current slab builder requires an even value.
+The current slab builder requires an even value. I-beta `(110)` slabs also
+require an even `--chains-per-layer` so the transverse periodic box contains a
+complete origin/center-chain lattice repeat. Dimension-based width requests
+round upward to the next even chain count automatically.
 
 ```bash
 cellulose-forge build \

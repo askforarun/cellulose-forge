@@ -289,13 +289,13 @@ def test_cli_writes_slab_with_mixed_axis_sizing(tmp_path: Path) -> None:
     lines = output.read_text(encoding="utf-8").splitlines()
     assert any("size_mode=mixed" in line for line in lines)
     assert any("shape=slab face=(1,1,0) layers=4" in line for line in lines)
-    assert any("chains_per_layer=7 total_chains=28" in line for line in lines)
+    assert any("chains_per_layer=8 total_chains=32" in line for line in lines)
     assert any("degree_polymerization=8" in line for line in lines)
     report = json.loads(
         (tmp_path / "i_beta_110_mixed_slab.build_report.json").read_text(encoding="utf-8")
     )
     assert report["degree_polymerization"] == 8
-    assert report["chain_count"] == 28
+    assert report["chain_count"] == 32
 
 
 def test_cli_rejects_two_sizing_options_for_same_slab_axis(tmp_path: Path) -> None:

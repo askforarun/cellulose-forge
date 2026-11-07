@@ -74,7 +74,7 @@ def test_slab_orientation_preserves_glucose_chirality(
             definition,
             MillerIndex(*face),
             layers=2,
-            chains_per_layer=3,
+            chains_per_layer=4,
             degree_polymerization=2,
             vacuum=0.0,
         )
@@ -362,6 +362,78 @@ def test_i_beta_110_slab_is_surface_aligned_and_keeps_complete_residues() -> Non
     )
 
 
+def test_i_beta_110_slab_rejects_incomplete_transverse_lattice_repeat() -> None:
+    with pytest.raises(ValueError, match="even number of chains per layer"):
+        build_chain_parallel_slab(
+            load_allomorph("i_beta"),
+            MillerIndex(1, 1, 0),
+            layers=2,
+            chains_per_layer=3,
+            degree_polymerization=2,
+            vacuum=10.0,
+        )
+
+
+def test_i_beta_110_chain_types_alternate_within_each_layer() -> None:
+    definition = load_allomorph("i_beta")
+    slab = build_chain_parallel_slab(
+        definition,
+        MillerIndex(1, 1, 0),
+        layers=2,
+        chains_per_layer=4,
+        degree_polymerization=2,
+        vacuum=10.0,
+    )
+    unit_cell = build_unit_cell(definition)
+    residue_atoms = definition.asymmetric_unit.residue_atom_count
+    origin_indices = np.r_[0:residue_atoms, 2 * residue_atoms : 3 * residue_atoms]
+    center_indices = np.r_[residue_atoms : 2 * residue_atoms, 3 * residue_atoms : 4 * residue_atoms]
+    origin = unit_cell.cartesian_coordinates[origin_indices]
+    center = unit_cell.cartesian_coordinates[center_indices].copy()
+    center[residue_atoms:] += definition.unit_cell.vectors()[0] + definition.unit_cell.vectors()[1]
+
+    def distance_matrix(coordinates: np.ndarray) -> np.ndarray:
+        differences = coordinates[:, None, :] - coordinates[None, :, :]
+        return np.linalg.norm(differences, axis=2)
+
+    references = (distance_matrix(origin), distance_matrix(center))
+    chain_numbers = np.asarray(slab.chain_numbers)
+    chain_types: list[int] = []
+    for chain in range(1, 9):
+        coordinates = slab.cartesian_coordinates[chain_numbers == chain]
+        signature = distance_matrix(coordinates)
+        errors = [float(np.max(np.abs(signature - reference))) for reference in references]
+        chain_types.append(int(np.argmin(errors)))
+        assert min(errors) < 1e-8
+
+    assert chain_types[:4] in ([0, 1, 0, 1], [1, 0, 1, 0])
+    assert chain_types[4:] in ([0, 1, 0, 1], [1, 0, 1, 0])
+
+
+def test_i_beta_110_slab_has_no_short_interchain_contacts() -> None:
+    slab = build_chain_parallel_slab(
+        load_allomorph("i_beta"),
+        MillerIndex(1, 1, 0),
+        layers=2,
+        chains_per_layer=4,
+        degree_polymerization=2,
+        vacuum=10.0,
+        chain_boundary="periodic",
+    )
+    coordinates = slab.cartesian_coordinates
+    chains = np.asarray(slab.chain_numbers)
+    box = np.diag(slab.basis_vectors)
+    minimum = np.inf
+    for first in range(1, 9):
+        first_coordinates = coordinates[chains == first]
+        for second in range(first + 1, 9):
+            differences = first_coordinates[:, None, :] - coordinates[chains == second][None, :, :]
+            differences -= np.round(differences / box) * box
+            minimum = min(minimum, float(np.min(np.linalg.norm(differences, axis=2))))
+
+    assert minimum >= 1.7
+
+
 def test_slab_chain_numbering_starts_at_requested_face_and_increases_with_x() -> None:
     definition = load_allomorph("i_beta")
     chains_per_layer = 4
@@ -420,18 +492,19 @@ def test_i_beta_chain_parallel_faces_make_complete_aligned_slabs(
 ) -> None:
     definition = load_allomorph("i_beta")
     miller = MillerIndex(*face)
+    chains_per_layer = 6 if face == (-1, -1, 0) else 5
 
     slab = build_chain_parallel_slab(
         definition,
         miller,
         layers=3,
-        chains_per_layer=5,
+        chains_per_layer=chains_per_layer,
         degree_polymerization=4,
         vacuum=12.0,
     )
 
-    assert slab.atom_count == 21 * 3 * 5 * 4
-    assert len(set(slab.chain_numbers)) == 15
+    assert slab.atom_count == 21 * 3 * chains_per_layer * 4
+    assert len(set(slab.chain_numbers)) == 3 * chains_per_layer
     assert set(slab.residue_numbers) == {1, 2, 3, 4}
     assert_allclose(slab.basis_vectors - np.diag(np.diag(slab.basis_vectors)), 0.0)
     assert slab.basis_vectors[2, 2] == pytest.approx(
@@ -628,7 +701,7 @@ def test_physical_slab_dimensions_round_up_to_complete_components() -> None:
     assert slab.basis_vectors[0, 0] >= 40.0
     assert slab.basis_vectors[2, 2] - 10.0 >= 18.0
     assert slab.basis_vectors[1, 1] >= 25.0
-    assert slab.replication == (7, 4, 3)
+    assert slab.replication == (8, 4, 3)
     assert "size_mode=physical_dimensions" in slab.annotations
     assert any(
         annotation.startswith("requested_width=40.000000") for annotation in slab.annotations
@@ -645,8 +718,8 @@ def test_mixed_slab_sizing_preserves_layers_and_derives_width_and_dp() -> None:
         vacuum=10.0,
     )
 
-    assert slab.replication == (7, 4, 4)
-    assert len(set(slab.chain_numbers)) == 28
+    assert slab.replication == (8, 4, 4)
+    assert len(set(slab.chain_numbers)) == 32
     assert set(slab.residue_numbers) == set(range(1, 9))
     assert "size_mode=mixed" in slab.annotations
     assert any(

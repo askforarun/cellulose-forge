@@ -1,6 +1,6 @@
 {
   "protocol": {
-    "cellulose_forge": "1.1.2 (tagged commit 73f6543)",
+    "cellulose_forge": "1.1.2 development tree; I-beta (110) entries rerun after alternating-site validation",
     "validation_date": "2026-11-07",
     "gromacs": "2024.2-Homebrew",
     "geometry": "3 layers, 6 chains per layer, DP6",
@@ -13,16 +13,16 @@
   "systems": [
     {"force_field":"CHARMM36","allomorph":"I-alpha","chain_boundary":"finite","atoms":2322,"minimization_steps":1281,"potential_kj_mol":39577.160,"maximum_force_kj_mol_nm":93.463135,"nvt_mean_temperature_k":212.317},
     {"force_field":"CHARMM36","allomorph":"I-alpha","chain_boundary":"periodic","atoms":2268,"minimization_steps":25,"potential_kj_mol":41596.336,"maximum_force_kj_mol_nm":951.656,"nvt_mean_temperature_k":254.615},
-    {"force_field":"CHARMM36","allomorph":"I-beta","chain_boundary":"finite","atoms":2322,"minimization_steps":887,"potential_kj_mol":44152.965,"maximum_force_kj_mol_nm":98.9446,"nvt_mean_temperature_k":246.258},
-    {"force_field":"CHARMM36","allomorph":"I-beta","chain_boundary":"periodic","atoms":2268,"minimization_steps":15,"potential_kj_mol":51738.395,"maximum_force_kj_mol_nm":890.444,"nvt_mean_temperature_k":351.579},
+    {"force_field":"CHARMM36","allomorph":"I-beta","chain_boundary":"finite","atoms":2322,"minimization_steps":781,"potential_kj_mol":39854.941,"maximum_force_kj_mol_nm":99.056725,"nvt_mean_temperature_k":217.407},
+    {"force_field":"CHARMM36","allomorph":"I-beta","chain_boundary":"periodic","atoms":2268,"minimization_steps":9,"potential_kj_mol":41679.867,"maximum_force_kj_mol_nm":827.05133,"nvt_mean_temperature_k":250.689},
     {"force_field":"CHARMM36","allomorph":"II","chain_boundary":"finite","atoms":2322,"minimization_steps":777,"potential_kj_mol":40673.359,"maximum_force_kj_mol_nm":99.483292,"nvt_mean_temperature_k":220.778},
     {"force_field":"CHARMM36","allomorph":"II","chain_boundary":"periodic","atoms":2268,"minimization_steps":12,"potential_kj_mol":45084.492,"maximum_force_kj_mol_nm":599.074,"nvt_mean_temperature_k":301.615},
     {"force_field":"CHARMM36","allomorph":"III-I","chain_boundary":"finite","atoms":2322,"minimization_steps":222,"potential_kj_mol":41256.957,"maximum_force_kj_mol_nm":96.544106,"nvt_mean_temperature_k":216.048},
     {"force_field":"CHARMM36","allomorph":"III-I","chain_boundary":"periodic","atoms":2268,"minimization_steps":13,"potential_kj_mol":41731.730,"maximum_force_kj_mol_nm":853.288,"nvt_mean_temperature_k":239.440},
     {"force_field":"GLYCAM06j-1","allomorph":"I-alpha","chain_boundary":"finite","atoms":2322,"minimization_steps":778,"potential_kj_mol":43863.586,"maximum_force_kj_mol_nm":90.2777,"nvt_mean_temperature_k":215.059},
     {"force_field":"GLYCAM06j-1","allomorph":"I-alpha","chain_boundary":"periodic","atoms":2268,"minimization_steps":16,"potential_kj_mol":47814.715,"maximum_force_kj_mol_nm":991.772,"nvt_mean_temperature_k":272.005},
-    {"force_field":"GLYCAM06j-1","allomorph":"I-beta","chain_boundary":"finite","atoms":2322,"minimization_steps":517,"potential_kj_mol":48470.418,"maximum_force_kj_mol_nm":91.8179,"nvt_mean_temperature_k":252.973},
-    {"force_field":"GLYCAM06j-1","allomorph":"I-beta","chain_boundary":"periodic","atoms":2268,"minimization_steps":18,"potential_kj_mol":56269.609,"maximum_force_kj_mol_nm":778.489,"nvt_mean_temperature_k":344.586},
+    {"force_field":"GLYCAM06j-1","allomorph":"I-beta","chain_boundary":"finite","atoms":2322,"minimization_steps":870,"potential_kj_mol":43398.305,"maximum_force_kj_mol_nm":99.427292,"nvt_mean_temperature_k":213.203},
+    {"force_field":"GLYCAM06j-1","allomorph":"I-beta","chain_boundary":"periodic","atoms":2268,"minimization_steps":9,"potential_kj_mol":46520.395,"maximum_force_kj_mol_nm":774.07568,"nvt_mean_temperature_k":248.554},
     {"force_field":"GLYCAM06j-1","allomorph":"II","chain_boundary":"finite","atoms":2322,"minimization_steps":766,"potential_kj_mol":46314.707,"maximum_force_kj_mol_nm":93.1725,"nvt_mean_temperature_k":221.433},
     {"force_field":"GLYCAM06j-1","allomorph":"II","chain_boundary":"periodic","atoms":2268,"minimization_steps":9,"potential_kj_mol":50748.012,"maximum_force_kj_mol_nm":749.756,"nvt_mean_temperature_k":300.211},
     {"force_field":"GLYCAM06j-1","allomorph":"III-I","chain_boundary":"finite","atoms":2322,"minimization_steps":349,"potential_kj_mol":46485.281,"maximum_force_kj_mol_nm":88.5264,"nvt_mean_temperature_k":226.497},

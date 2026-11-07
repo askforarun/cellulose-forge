@@ -1,0 +1,30 @@
+{
+  "validation_date": "2026-11-07",
+  "cellulose_forge_version": "1.1.2 development tree",
+  "geometry": {
+    "allomorph": "I-beta",
+    "face": [1, 1, 0],
+    "origin_center_assignment": "alternating within every molecular layer",
+    "minimum_interchain_contact_angstrom": 1.78285413,
+    "short_interchain_contacts_below_1_7_angstrom": 0,
+    "explicit_odd_chains_per_layer": "rejected",
+    "physical_width_rounding": "next complete even-chain lattice repeat"
+  },
+  "gromacs": {
+    "force_field": "GLYCAM06j-1",
+    "chain_boundary": "periodic",
+    "layers": 4,
+    "chains_per_layer": 4,
+    "degree_polymerization": 12,
+    "atom_count": 4032,
+    "minimization_steps": 9,
+    "minimized_potential_energy_kj_mol": 81389.82,
+    "minimized_maximum_force_kj_mol_nm": 747.25665,
+    "nvt_duration_ps": 1.0,
+    "core_layers": [2, 3],
+    "core_rmsd_angstrom": 0.779613,
+    "lincs_warnings": 0,
+    "non_finite_energies": 0
+  },
+  "interpretation": "A crystallographic lattice regression and short runtime stability test, not an equilibrium material-property prediction."
+}

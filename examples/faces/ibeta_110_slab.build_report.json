@@ -3,6 +3,19 @@
   "cellulose_forge_version": "1.1.2",
   "chain_boundary": "finite",
   "chain_count": 24,
+  "chirality_validation": {
+    "configuration": "D-cellulose",
+    "expected_signed_volume_sign": "negative",
+    "minimum_absolute_signed_volume_angstrom3": 1.4897228914310843,
+    "residue_count": 144,
+    "status": "passed",
+    "stereocentre": "C1",
+    "substituent_order": [
+      "O5",
+      "C2",
+      "H1"
+    ]
+  },
   "crystallographic_atom_count": 3024,
   "degree_polymerization": 6,
   "force_field": "none",

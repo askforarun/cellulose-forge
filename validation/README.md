@@ -142,8 +142,20 @@ Finite systems minimized below 100 kJ mol-1 nm-1 and periodic systems below
 warnings or non-finite energies. Periodic O4--C1 linkages were checked before
 output and were shorter than 2 angstrom. Compact results are stored in
 `results/slab_allomorph_matrix.json`. These are topology and runtime smoke
-tests, not equilibrated material-property predictions. The complete matrix was
-rerun from the exact `v1.1.2` tag at commit `73f6543`.
+tests, not equilibrated material-property predictions. The original complete
+matrix was run from the `v1.1.2` tag at commit `73f6543`; the four I-beta
+finite/periodic GLYCAM and CHARMM36 entries were subsequently regenerated and
+rerun after the alternating lattice-site validation was added.
+
+The I-beta `(110)` lattice construction additionally has a site-assignment
+regression requiring origin and center conformations to alternate within each
+layer, no interchain contact below 1.7 angstrom, and rejection of incomplete
+odd-chain transverse repeats. A four-layer, four-chain-per-layer periodic DP12
+GLYCAM slab minimized in nine steps and completed a one-ps PME/NVT test without
+LINCS warnings or non-finite energies. The two central layers retained a
+minimum-image RMSD of 0.780 angstrom from the minimized structure. Results are
+stored in `results/ibeta_110_lattice_validation.json`; this is a short
+stability check rather than an equilibrium material-property prediction.
 
 ## I-beta fibril smoke test
 

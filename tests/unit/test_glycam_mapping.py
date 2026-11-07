@@ -18,7 +18,7 @@ PERIODIC_REFERENCE_PDB = Path(
 )
 
 
-def _dp12_slab(chains: int = 1, *, periodic: bool = False):
+def _dp12_slab(chains: int = 2, *, periodic: bool = False):
     return build_chain_parallel_slab(
         load_allomorph("i_beta"),
         MillerIndex(1, 1, 0),
@@ -34,8 +34,8 @@ def _dp12_slab(chains: int = 1, *, periodic: bool = False):
 def test_dp12_mapping_matches_validated_glycam_atom_and_residue_order() -> None:
     mapped = map_crystal_to_finite_glycam(_dp12_slab(), REFERENCE_PDB)
 
-    assert mapped.atom_count == 255
-    assert mapped.chain_count == 1
+    assert mapped.atom_count == 2 * 255
+    assert mapped.chain_count == 2
     assert mapped.atom_names[:5] == ("HO1", "O1", "C1", "H1", "O5")
     assert mapped.residue_names[:2] == ("ROH", "ROH")
     assert set(mapped.residue_numbers) == set(range(1, 14))
@@ -143,11 +143,16 @@ def test_constructed_finite_end_caps_have_no_subangstrom_nonbonded_clashes() -> 
 
 
 def test_multiple_chains_repeat_the_same_255_atom_topology() -> None:
-    mapped = map_crystal_to_finite_glycam(_dp12_slab(chains=3), REFERENCE_PDB)
+    mapped = map_crystal_to_finite_glycam(_dp12_slab(chains=4), REFERENCE_PDB)
 
-    assert mapped.atom_count == 3 * 255
-    assert mapped.chain_count == 3
-    assert [mapped.chain_numbers.count(chain) for chain in (1, 2, 3)] == [255, 255, 255]
+    assert mapped.atom_count == 4 * 255
+    assert mapped.chain_count == 4
+    assert [mapped.chain_numbers.count(chain) for chain in (1, 2, 3, 4)] == [
+        255,
+        255,
+        255,
+        255,
+    ]
 
 
 def test_periodic_mapping_has_252_atoms_without_terminal_groups() -> None:

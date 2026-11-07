@@ -7,6 +7,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from cellulose_forge.cli import main
@@ -88,13 +89,31 @@ def _single_point_bond_energy_per_atom(directory: Path) -> float:
     return float(match.group(1)) / atom_count
 
 
-def _use_committed_glycam_reference(monkeypatch: pytest.MonkeyPatch) -> None:
+def _gro_coordinates_and_box(path: Path) -> tuple[np.ndarray, np.ndarray]:
+    """Read Cartesian coordinates and an orthorhombic box from a GRO file."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    atom_count = int(lines[1])
+    coordinates = np.asarray(
+        [
+            [float(line[20:28]), float(line[28:36]), float(line[36:44])]
+            for line in lines[2 : atom_count + 2]
+        ]
+    )
+    box = np.asarray([float(value) for value in lines[atom_count + 2].split()[:3]])
+    return coordinates, box
+
+
+def _use_committed_glycam_reference(
+    monkeypatch: pytest.MonkeyPatch, *, periodic: bool = False
+) -> None:
     def prepare(**kwargs: object) -> tuple[GlycamChainFiles, dict[str, object]]:
         directory = Path(str(kwargs["directory"]))
-        files = GlycamChainFiles(directory, "cellulose_chain")
-        source = Path(__file__).parents[2] / "examples/glycam/dp12_reference"
-        shutil.copyfile(source / "cellulose_chain.pdb", files.pdb)
-        shutil.copyfile(source / "cellulose_chain.top", files.gromacs_topology)
+        stem = "cellulose_periodic_chain" if periodic else "cellulose_chain"
+        fixture = "dp12_periodic_reference" if periodic else "dp12_reference"
+        files = GlycamChainFiles(directory, stem)
+        source = Path(__file__).parents[2] / f"examples/glycam/{fixture}"
+        shutil.copyfile(source / f"{stem}.pdb", files.pdb)
+        shutil.copyfile(source / f"{stem}.top", files.gromacs_topology)
         return files, {"test_fixture": "dp12_reference"}
 
     monkeypatch.setattr("cellulose_forge.cli.generate_glycam_gromacs_reference", prepare)
@@ -210,3 +229,91 @@ def test_charmm36_slab_passes_grompp(
     )
     _grompp(output, Path(__file__).parents[2] / "validation/grompp_minim.mdp")
     assert _single_point_bond_energy_per_atom(output) < 50.0
+
+
+def test_periodic_i_beta_glycam_slab_retains_core_geometry_during_short_nvt(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Check that corrected I-beta (110) lattice sites remain stable for 1 ps."""
+    _gmx()
+    _use_committed_glycam_reference(monkeypatch, periodic=True)
+    output = tmp_path / "glycam_i_beta_periodic_nvt"
+    assert (
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "slab",
+                "--face",
+                "1",
+                "1",
+                "0",
+                "--layers",
+                "4",
+                "--chains-per-layer",
+                "4",
+                "--degree-polymerization",
+                "12",
+                "--chain-boundary",
+                "periodic",
+                "--vacuum",
+                "30",
+                "--force-field",
+                "glycam",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    root = Path(__file__).parents[2]
+    _grompp(output, root / "validation/periodic_pme_minim.mdp")
+    minimization = subprocess.run(
+        [_gmx(), "mdrun", "-s", "smoke.tpr", "-deffnm", "minim", "-ntmpi", "1", "-ntomp", "1"],
+        cwd=output,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert minimization.returncode == 0, minimization.stdout + minimization.stderr
+    preprocessing = subprocess.run(
+        [
+            _gmx(),
+            "grompp",
+            "-f",
+            str((root / "validation/periodic_pme_nvt_1ps.mdp").resolve()),
+            "-c",
+            "minim.gro",
+            "-p",
+            "system.top",
+            "-o",
+            "nvt.tpr",
+        ],
+        cwd=output,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert preprocessing.returncode == 0, preprocessing.stdout + preprocessing.stderr
+    dynamics = subprocess.run(
+        [_gmx(), "mdrun", "-s", "nvt.tpr", "-deffnm", "nvt", "-ntmpi", "1", "-ntomp", "1"],
+        cwd=output,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert dynamics.returncode == 0, dynamics.stdout + dynamics.stderr
+    assert "LINCS WARNING" not in (dynamics.stdout + dynamics.stderr)
+
+    reference, box = _gro_coordinates_and_box(output / "minim.gro")
+    final, _ = _gro_coordinates_and_box(output / "nvt.gro")
+    atoms_per_chain = 12 * 21
+    core = slice(4 * atoms_per_chain, 12 * atoms_per_chain)
+    displacement = final[core] - reference[core]
+    displacement -= np.round(displacement / box) * box
+    displacement -= np.mean(displacement, axis=0)
+    core_rmsd_nm = float(np.sqrt(np.mean(np.sum(displacement**2, axis=1))))
+    assert core_rmsd_nm < 0.1

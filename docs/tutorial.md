@@ -290,7 +290,9 @@ cellulose-forge build \
 
 The requested dimensions are minima. CelluloseForge rounds upward to retain
 whole chains, whole molecular layers, and whole cellobiose repeats. Requested
-and realized dimensions are written to the coordinate metadata.
+and realized dimensions are written to the coordinate metadata. For I-beta
+`(110)`, the realized width contains an even number of chains so origin and
+center conformations alternate across a complete transverse lattice repeat.
 
 Sizing choices are independent by axis. Supply exactly one member of each pair:
 
