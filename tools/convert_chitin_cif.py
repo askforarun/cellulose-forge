@@ -54,7 +54,7 @@ SOURCES = {
     },
     "beta": {
         "allomorph": "beta",
-        "space_group": "P2_1",
+        "space_group": "P 1 1 21",
         "citation": (
             "Nishiyama, Y.; Noishiki, Y.; Wada, M. Macromolecules 2011, 44, 950-957."
         ),
@@ -245,6 +245,7 @@ def convert(allomorph: str, cif: Path, disorder_group: str | None) -> dict[str, 
     screw_rotation, screw_translation = _operation(str(source["chain_generator"]))
     return {
         "polymer": "chitin",
+        "residue_name": "NAG",
         "allomorph": source["allomorph"],
         "space_group": source["space_group"],
         "chain_axis": "c",

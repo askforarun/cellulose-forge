@@ -7,7 +7,6 @@ import json
 import tempfile
 import warnings
 from collections.abc import Sequence
-from dataclasses import replace
 from pathlib import Path
 
 from cellulose_forge import __version__
@@ -320,7 +319,7 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
+def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
     """Run the command-line interface."""
     args = build_parser().parse_args(argv)
     if args.command == "forcefield":
@@ -375,8 +374,6 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
             crystal = _build_slab(args, definition, build_parser())
         else:
             crystal = _build_fibril(args, definition, build_parser())
-        if args.polymer == "chitin":
-            crystal = replace(crystal, residue_name="NAG")
         if args.force_field == "glycam":
             _write_glycam_build(args, crystal, build_parser())
         elif args.force_field == "charmm36":
@@ -393,7 +390,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
                 build_parser().error("chain restraints require --force-field glycam or charmm36")
             args.output.parent.mkdir(parents=True, exist_ok=True)
             written_path = write_coordinates(crystal, args.output)
-            _write_coordinate_only_report(args, crystal, written_path)
+            _write_coordinate_only_report(args, crystal, written_path, definition)
             if written_path != args.output:
                 print(
                     f"Requested structure has {crystal.atom_count} atoms; "
@@ -466,6 +463,7 @@ def _write_coordinate_only_report(
     args: argparse.Namespace,
     crystal: BulkCrystal,
     coordinate_path: Path,
+    definition: AllomorphDefinition,
 ) -> Path:
     """Write a sibling build report for a coordinate-only construction."""
     requested_output = Path(args.output)
@@ -491,8 +489,16 @@ def _write_coordinate_only_report(
     }
     if args.polymer != "cellulose":
         report["polymer"] = args.polymer
-        if args.o6_conformation is not None:
-            report["o6_conformation"] = args.o6_conformation
+        report["residue_name"] = definition.residue_name
+        report["crystallographic_source"] = {
+            "definition": f"{definition.polymer}/{definition.name}",
+            "space_group": definition.space_group,
+            "citation": definition.citation,
+            "doi": definition.doi,
+            "temperature_k": definition.temperature_k,
+        }
+        if args.allomorph == "alpha":
+            report["o6_conformation"] = args.o6_conformation or "major"
     report_path.write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

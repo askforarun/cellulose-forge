@@ -211,6 +211,8 @@ class AllomorphDefinition:
     citation: str
     doi: str
     polymer: str = "cellulose"
+    residue_name: str = "BGC"
+    temperature_k: float | None = None
 
     def __post_init__(self) -> None:
         if not self.name or not self.space_group or not self.symmetry_operations:
@@ -285,6 +287,10 @@ def load_allomorph(name: str, polymer: str = "cellulose") -> AllomorphDefinition
         citation=str(provenance["citation"]),
         doi=str(provenance["doi"]),
         polymer=str(payload.get("polymer", "cellulose")),
+        residue_name=str(payload.get("residue_name", "BGC")),
+        temperature_k=(
+            float(provenance["temperature_k"]) if "temperature_k" in provenance else None
+        ),
     )
 
 

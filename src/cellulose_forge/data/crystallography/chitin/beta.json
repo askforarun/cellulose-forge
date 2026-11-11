@@ -1,7 +1,8 @@
 {
  "polymer": "chitin",
+ "residue_name": "NAG",
  "allomorph": "beta",
- "space_group": "P2_1",
+ "space_group": "P 1 1 21",
  "chain_axis": "c",
  "provenance": {
   "citation": "Nishiyama, Y.; Noishiki, Y.; Wada, M. Macromolecules 2011, 44, 950-957.",

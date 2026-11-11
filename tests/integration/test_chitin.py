@@ -17,6 +17,8 @@ from cellulose_forge.geometry import (
     build_unit_cell,
     validate_pyranose_chirality,
 )
+from cellulose_forge.mmcif import write_mmcif
+from cellulose_forge.pdb import write_pdb
 
 DEFINITIONS = ("alpha", "alpha_o6_minor", "beta")
 RESIDUE_ATOMS = 27
@@ -135,6 +137,39 @@ def test_cli_writes_chitin_bulk_with_nag_residues(tmp_path: Path) -> None:
     assert report["polymer"] == "chitin"
     assert report["chirality_validation"]["configuration"] == "N-acetyl-beta-D-glucosamine"
     assert report["chain_count"] == 4
+    assert "P 1 1 21" in pdb
+    assert report["residue_name"] == "NAG"
+    assert report["crystallographic_source"]["doi"] == "10.1021/ma102240r"
+    assert report["crystallographic_source"]["temperature_k"] == 293.0
+    assert "o6_conformation" not in report
+
+
+def test_default_alpha_report_records_major_o6(tmp_path: Path) -> None:
+    output = tmp_path / "alpha.pdb"
+
+    assert main(
+        [
+            "build", "--polymer", "chitin", "--allomorph", "alpha",
+            "--shape", "unit-cell", "--output", str(output),
+        ]
+    ) == 0
+
+    report = json.loads(output.with_suffix(".build_report.json").read_text(encoding="utf-8"))
+    assert report["o6_conformation"] == "major"
+    assert report["crystallographic_source"]["definition"] == "chitin/alpha"
+
+
+def test_python_api_writes_nag_residues(tmp_path: Path) -> None:
+    definition = load_allomorph("beta", polymer="chitin")
+    crystal = build_bulk_crystal(definition, (1, 1, 2))
+    write_pdb(crystal, tmp_path / "beta.pdb")
+    write_mmcif(crystal, tmp_path / "beta.cif")
+
+    assert build_unit_cell(definition).residue_name == "NAG"
+    assert crystal.residue_name == "NAG"
+    assert " NAG " in (tmp_path / "beta.pdb").read_text(encoding="utf-8")
+    assert " NAG " in (tmp_path / "beta.cif").read_text(encoding="utf-8")
+    assert build_unit_cell(load_allomorph("i_beta")).residue_name == "BGC"
 
 
 def test_cli_selects_minor_alpha_o6_conformation(tmp_path: Path) -> None:

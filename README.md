@@ -88,10 +88,10 @@ cellulose-forge build --polymer chitin --allomorph alpha \
   --shape bulk --cells 4 2 3 --output alpha_chitin.pdb
 ```
 
-The alpha-chitin structure (P2<sub>1</sub>2<sub>1</sub>2<sub>1</sub>, 300 K) is
+The alpha-chitin structure (P2<sub>1</sub>2<sub>1</sub>2<sub>1</sub>, 293 K) is
 from Sikorski, Hori and Wada, *Biomacromolecules* 2009, 10, 1100-1105
 (doi:10.1021/bm801251e); its disordered hydroxymethyl group is selected with
-`--o6-conformation major|minor`. Anhydrous beta-chitin (P2<sub>1</sub>) is from
+`--o6-conformation major|minor`. Anhydrous beta-chitin (P2<sub>1</sub>, setting P 1 1 2<sub>1</sub>, 293 K) is from
 Nishiyama, Noishiki and Wada, *Macromolecules* 2011, 44, 950-957
 (doi:10.1021/ma102240r). Residues are written as `NAG`, and every residue's
 C1-C5 configuration is checked against N-acetyl-beta-D-glucosamine. Slabs,

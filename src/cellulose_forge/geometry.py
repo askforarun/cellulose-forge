@@ -408,6 +408,7 @@ def build_unit_cell(allomorph: AllomorphDefinition) -> BulkCrystal:
         residue_numbers=tuple(residue_numbers),
         chain_numbers=tuple(1 if chain_id == "A" else 2 for chain_id in chain_ids),
         annotations=_allomorph_chain_annotations(allomorph),
+        residue_name=allomorph.residue_name,
     )
 
 
@@ -494,6 +495,7 @@ def build_bulk_crystal(
         residue_numbers=tuple(residue_numbers),
         chain_numbers=tuple(chain_numbers),
         annotations=_allomorph_chain_annotations(allomorph),
+        residue_name=allomorph.residue_name,
     )
 
 

@@ -1,5 +1,6 @@
 {
  "polymer": "chitin",
+ "residue_name": "NAG",
  "allomorph": "alpha",
  "space_group": "P 21 21 21",
  "chain_axis": "c",
