@@ -41,6 +41,37 @@ angles, proper and improper dihedrals, and 1-4 pairs, including both
 termini. Implementation may start, but chitin CHARMM36 output must not be
 enabled until this comparison passes.
 
+### Canonical patch definition
+
+The canonical CHARMM topology confirms these values. `top_all36_carb.rtf` in
+`toppar_c36_feb26.tgz` (the February 2026 release matching the pinned GROMACS
+port; SHA-256
+`7d4d21ebdb216a48f600fadee862dc77d369a10d5753150635f35e09c3209e08`,
+downloaded from mackerell.umaryland.edu) defines
+
+```
+PRES 14bb   ! (i)1->4(i-1) equatorial at C1 and equatorial at C4
+dele atom 1HO4
+dele atom 2HO1
+dele atom 2O1
+ATOM 1C4  CC3161    0.09
+ATOM 1O4  OC301    -0.36
+ATOM 2C1  CC3162    0.29
+BOND 1O4  2C1
+```
+
+which matches the constants in `charmm36.py`. The patch refers only to atoms
+named C1, C4, O4, O1, HO1, and HO4, so it applies to any hexopyranose with
+those atoms, including `BGLCNA`. (The header's "0.02" is a label; the listed
+deletions and charge changes sum to zero.) `RESI BGLCNA` in the same file has
+the same 30 atoms, types, charges, and the two `IMPR` entries as the GROMACS
+`carb.rtp`.
+
+This confirms the linkage definition. The topology-level gate still applies:
+the generated chitin topology must be compared with an independently built
+reference (CHARMM-GUI, or psfgen/ParmEd applied to this RTF) before output is
+enabled.
+
 ## Terminal chemistry
 
 Finite chains use the CHARMM free-sugar termini, as for cellulose: the
