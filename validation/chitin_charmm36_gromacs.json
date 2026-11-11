@@ -25,10 +25,8 @@
       "residues_per_chain": 6,
       "glycosidic_bonds_initial": {
         "within_range": true,
-        "range_angstrom": [
-          1.35,
-          1.55
-        ],
+        "range_minimum_angstrom": 1.35,
+        "range_maximum_angstrom": 1.55,
         "chains": 24,
         "bonds_checked": 144,
         "boundary_crossing_bonds": 24,
@@ -39,17 +37,15 @@
       },
       "glycosidic_bonds_final_nvt": {
         "within_range": true,
-        "range_angstrom": [
-          1.25,
-          1.7
-        ],
+        "range_minimum_angstrom": 1.25,
+        "range_maximum_angstrom": 1.7,
         "chains": 24,
         "bonds_checked": 144,
         "boundary_crossing_bonds": 24,
-        "minimum_angstrom": 1.3249,
-        "maximum_angstrom": 1.475,
-        "boundary_minimum_angstrom": 1.3634,
-        "boundary_maximum_angstrom": 1.4518
+        "minimum_angstrom": 1.332,
+        "maximum_angstrom": 1.4777,
+        "boundary_minimum_angstrom": 1.332,
+        "boundary_maximum_angstrom": 1.4494
       },
       "impropers_per_chain": 12,
       "log_problems": [],
@@ -70,7 +66,7 @@
         "Bond": 1300.270508,
         "U-B": 3002.232422,
         "Proper-Dih.": 14662.938477,
-        "Improper-Dih.": 68.474983,
+        "Improper-Dih.": 68.474968,
         "LJ-14": 2407.858887,
         "Coulomb-14": 44776.847656,
         "LJ-(SR)": -10019.615234,
@@ -81,18 +77,18 @@
       "minimization_maximum_force_kj_mol_nm": 842.90271,
       "nvt_final_frame_time_ps": 1.0,
       "nvt_final_energy_kj_mol": {
-        "Bond": 2932.062256,
-        "U-B": 7810.602539,
-        "Proper-Dih.": 13959.213867,
-        "Improper-Dih.": 210.866257,
-        "LJ-14": 2425.521484,
-        "Coulomb-14": 45201.203125,
-        "LJ-(SR)": -8127.755859,
-        "Coulomb-(SR)": -54312.746094,
-        "Coul.-recip.": 391.522705,
-        "Potential": 10490.487305
+        "Bond": 3063.325439,
+        "U-B": 7667.36377,
+        "Proper-Dih.": 14054.007812,
+        "Improper-Dih.": 178.434494,
+        "LJ-14": 2357.513916,
+        "Coulomb-14": 44887.160156,
+        "LJ-(SR)": -8160.634277,
+        "Coulomb-(SR)": -54159.121094,
+        "Coul.-recip.": 390.379974,
+        "Potential": 10278.430664
       },
-      "nvt_smoke_test_mean_temperature_k": 286.375,
+      "nvt_smoke_test_mean_temperature_k": 287.326,
       "checks": {
         "initial_bonds_within_range": true,
         "all_energy_terms_present_and_finite": true,
@@ -125,10 +121,8 @@
       "residues_per_chain": 6,
       "glycosidic_bonds_initial": {
         "within_range": true,
-        "range_angstrom": [
-          1.35,
-          1.55
-        ],
+        "range_minimum_angstrom": 1.35,
+        "range_maximum_angstrom": 1.55,
         "chains": 15,
         "bonds_checked": 90,
         "boundary_crossing_bonds": 15,
@@ -139,17 +133,15 @@
       },
       "glycosidic_bonds_final_nvt": {
         "within_range": true,
-        "range_angstrom": [
-          1.25,
-          1.7
-        ],
+        "range_minimum_angstrom": 1.25,
+        "range_maximum_angstrom": 1.7,
         "chains": 15,
         "bonds_checked": 90,
         "boundary_crossing_bonds": 15,
-        "minimum_angstrom": 1.3237,
-        "maximum_angstrom": 1.4673,
-        "boundary_minimum_angstrom": 1.3573,
-        "boundary_maximum_angstrom": 1.441
+        "minimum_angstrom": 1.3465,
+        "maximum_angstrom": 1.462,
+        "boundary_minimum_angstrom": 1.3747,
+        "boundary_maximum_angstrom": 1.4496
       },
       "impropers_per_chain": 12,
       "log_problems": [],
@@ -181,18 +173,18 @@
       "minimization_maximum_force_kj_mol_nm": 984.87189,
       "nvt_final_frame_time_ps": 1.0,
       "nvt_final_energy_kj_mol": {
-        "Bond": 1865.444458,
-        "U-B": 4807.677734,
-        "Proper-Dih.": 8698.833984,
-        "Improper-Dih.": 161.465881,
-        "LJ-14": 1404.847168,
-        "Coulomb-14": 27840.589844,
-        "LJ-(SR)": -5119.095703,
-        "Coulomb-(SR)": -33788.0625,
-        "Coul.-recip.": 237.460449,
-        "Potential": 6109.163574
+        "Bond": 1880.009399,
+        "U-B": 4852.723145,
+        "Proper-Dih.": 8707.070312,
+        "Improper-Dih.": 169.79924,
+        "LJ-14": 1421.258057,
+        "Coulomb-14": 27915.910156,
+        "LJ-(SR)": -5142.666992,
+        "Coulomb-(SR)": -33718.933594,
+        "Coul.-recip.": 254.038391,
+        "Potential": 6339.206543
       },
-      "nvt_smoke_test_mean_temperature_k": 235.496,
+      "nvt_smoke_test_mean_temperature_k": 239.934,
       "checks": {
         "initial_bonds_within_range": true,
         "all_energy_terms_present_and_finite": true,
@@ -229,10 +221,8 @@
       "residues_per_chain": 6,
       "glycosidic_bonds_initial": {
         "within_range": true,
-        "range_angstrom": [
-          1.35,
-          1.55
-        ],
+        "range_minimum_angstrom": 1.35,
+        "range_maximum_angstrom": 1.55,
         "chains": 6,
         "bonds_checked": 36,
         "boundary_crossing_bonds": 6,
@@ -243,17 +233,15 @@
       },
       "glycosidic_bonds_final_nvt": {
         "within_range": true,
-        "range_angstrom": [
-          1.25,
-          1.7
-        ],
+        "range_minimum_angstrom": 1.25,
+        "range_maximum_angstrom": 1.7,
         "chains": 6,
         "bonds_checked": 36,
         "boundary_crossing_bonds": 6,
-        "minimum_angstrom": 1.3534,
-        "maximum_angstrom": 1.4589,
-        "boundary_minimum_angstrom": 1.3534,
-        "boundary_maximum_angstrom": 1.4498
+        "minimum_angstrom": 1.3609,
+        "maximum_angstrom": 1.4576,
+        "boundary_minimum_angstrom": 1.3727,
+        "boundary_maximum_angstrom": 1.4403
       },
       "impropers_per_chain": 12,
       "log_problems": [],
@@ -285,18 +273,18 @@
       "minimization_maximum_force_kj_mol_nm": 792.09589,
       "nvt_final_frame_time_ps": 1.0,
       "nvt_final_energy_kj_mol": {
-        "Bond": 720.736267,
-        "U-B": 2104.058594,
-        "Proper-Dih.": 3506.03833,
-        "Improper-Dih.": 48.571686,
-        "LJ-14": 634.788696,
-        "Coulomb-14": 11218.875,
-        "LJ-(SR)": -1257.619995,
-        "Coulomb-(SR)": -12749.657227,
-        "Coul.-recip.": 304.33136,
-        "Potential": 4530.123535
+        "Bond": 744.984009,
+        "U-B": 1938.807251,
+        "Proper-Dih.": 3540.315186,
+        "Improper-Dih.": 40.475971,
+        "LJ-14": 631.135071,
+        "Coulomb-14": 11115.211914,
+        "LJ-(SR)": -1258.533813,
+        "Coulomb-(SR)": -12515.200195,
+        "Coul.-recip.": 296.622589,
+        "Potential": 4533.818848
       },
-      "nvt_smoke_test_mean_temperature_k": 292.667,
+      "nvt_smoke_test_mean_temperature_k": 294.497,
       "checks": {
         "initial_bonds_within_range": true,
         "all_energy_terms_present_and_finite": true,
@@ -333,10 +321,8 @@
       "residues_per_chain": 6,
       "glycosidic_bonds_initial": {
         "within_range": true,
-        "range_angstrom": [
-          1.35,
-          1.55
-        ],
+        "range_minimum_angstrom": 1.35,
+        "range_maximum_angstrom": 1.55,
         "chains": 9,
         "bonds_checked": 54,
         "boundary_crossing_bonds": 9,
@@ -347,17 +333,15 @@
       },
       "glycosidic_bonds_final_nvt": {
         "within_range": true,
-        "range_angstrom": [
-          1.25,
-          1.7
-        ],
+        "range_minimum_angstrom": 1.25,
+        "range_maximum_angstrom": 1.7,
         "chains": 9,
         "bonds_checked": 54,
         "boundary_crossing_bonds": 9,
-        "minimum_angstrom": 1.3561,
-        "maximum_angstrom": 1.4507,
-        "boundary_minimum_angstrom": 1.3824,
-        "boundary_maximum_angstrom": 1.4264
+        "minimum_angstrom": 1.3581,
+        "maximum_angstrom": 1.4558,
+        "boundary_minimum_angstrom": 1.3788,
+        "boundary_maximum_angstrom": 1.4243
       },
       "impropers_per_chain": 12,
       "log_problems": [],
@@ -389,18 +373,18 @@
       "minimization_maximum_force_kj_mol_nm": 314.397,
       "nvt_final_frame_time_ps": 1.0,
       "nvt_final_energy_kj_mol": {
-        "Bond": 1109.940308,
-        "U-B": 3005.36084,
-        "Proper-Dih.": 5216.631348,
-        "Improper-Dih.": 93.121956,
-        "LJ-14": 791.807983,
-        "Coulomb-14": 16466.876953,
-        "LJ-(SR)": -2616.703857,
-        "Coulomb-(SR)": -19054.804688,
-        "Coul.-recip.": 345.638184,
-        "Potential": 5357.868652
+        "Bond": 1086.950439,
+        "U-B": 2923.317139,
+        "Proper-Dih.": 5220.358887,
+        "Improper-Dih.": 89.654015,
+        "LJ-14": 839.77655,
+        "Coulomb-14": 16609.080078,
+        "LJ-(SR)": -2524.518311,
+        "Coulomb-(SR)": -19312.554688,
+        "Coul.-recip.": 350.727539,
+        "Potential": 5282.791992
       },
-      "nvt_smoke_test_mean_temperature_k": 238.087,
+      "nvt_smoke_test_mean_temperature_k": 243.874,
       "checks": {
         "initial_bonds_within_range": true,
         "all_energy_terms_present_and_finite": true,
@@ -452,10 +436,8 @@
       "residues_per_chain": 6,
       "glycosidic_bonds_initial": {
         "within_range": true,
-        "range_angstrom": [
-          1.35,
-          1.55
-        ],
+        "range_minimum_angstrom": 1.35,
+        "range_maximum_angstrom": 1.55,
         "chains": 6,
         "bonds_checked": 30,
         "boundary_crossing_bonds": 0,
@@ -466,15 +448,13 @@
       },
       "glycosidic_bonds_final_nvt": {
         "within_range": true,
-        "range_angstrom": [
-          1.25,
-          1.7
-        ],
+        "range_minimum_angstrom": 1.25,
+        "range_maximum_angstrom": 1.7,
         "chains": 6,
         "bonds_checked": 30,
         "boundary_crossing_bonds": 0,
-        "minimum_angstrom": 1.3693,
-        "maximum_angstrom": 1.4584,
+        "minimum_angstrom": 1.3362,
+        "maximum_angstrom": 1.4668,
         "boundary_minimum_angstrom": null,
         "boundary_maximum_angstrom": null
       },
@@ -508,18 +488,18 @@
       "minimization_maximum_force_kj_mol_nm": 541.32416,
       "nvt_final_frame_time_ps": 1.0,
       "nvt_final_energy_kj_mol": {
-        "Bond": 801.192871,
-        "U-B": 2132.001221,
-        "Proper-Dih.": 3548.271973,
-        "Improper-Dih.": 57.623619,
-        "LJ-14": 628.922302,
-        "Coulomb-14": 11787.702148,
-        "LJ-(SR)": -1106.832886,
-        "Coulomb-(SR)": -13104.457031,
-        "Coul.-recip.": 336.101501,
-        "Potential": 5080.527344
+        "Bond": 761.01532,
+        "U-B": 2063.986572,
+        "Proper-Dih.": 3542.585205,
+        "Improper-Dih.": 61.545807,
+        "LJ-14": 675.237488,
+        "Coulomb-14": 11798.669922,
+        "LJ-(SR)": -1098.153564,
+        "Coulomb-(SR)": -13021.529297,
+        "Coul.-recip.": 353.476135,
+        "Potential": 5136.831543
       },
-      "nvt_smoke_test_mean_temperature_k": 282.348,
+      "nvt_smoke_test_mean_temperature_k": 280.311,
       "checks": {
         "initial_bonds_within_range": true,
         "all_energy_terms_present_and_finite": true,
@@ -571,10 +551,8 @@
       "residues_per_chain": 6,
       "glycosidic_bonds_initial": {
         "within_range": true,
-        "range_angstrom": [
-          1.35,
-          1.55
-        ],
+        "range_minimum_angstrom": 1.35,
+        "range_maximum_angstrom": 1.55,
         "chains": 9,
         "bonds_checked": 45,
         "boundary_crossing_bonds": 0,
@@ -585,15 +563,13 @@
       },
       "glycosidic_bonds_final_nvt": {
         "within_range": true,
-        "range_angstrom": [
-          1.25,
-          1.7
-        ],
+        "range_minimum_angstrom": 1.25,
+        "range_maximum_angstrom": 1.7,
         "chains": 9,
         "bonds_checked": 45,
         "boundary_crossing_bonds": 0,
-        "minimum_angstrom": 1.3327,
-        "maximum_angstrom": 1.4578,
+        "minimum_angstrom": 1.3619,
+        "maximum_angstrom": 1.4501,
         "boundary_minimum_angstrom": null,
         "boundary_maximum_angstrom": null
       },
@@ -627,18 +603,18 @@
       "minimization_maximum_force_kj_mol_nm": 696.15485,
       "nvt_final_frame_time_ps": 1.0,
       "nvt_final_energy_kj_mol": {
-        "Bond": 1306.889282,
-        "U-B": 3171.895752,
-        "Proper-Dih.": 5262.029785,
-        "Improper-Dih.": 134.844467,
-        "LJ-14": 825.119202,
-        "Coulomb-14": 17589.896484,
-        "LJ-(SR)": -2466.057617,
-        "Coulomb-(SR)": -19874.732422,
-        "Coul.-recip.": 387.346405,
-        "Potential": 6337.230957
+        "Bond": 1187.714478,
+        "U-B": 3029.895264,
+        "Proper-Dih.": 5316.712402,
+        "Improper-Dih.": 108.652733,
+        "LJ-14": 913.597717,
+        "Coulomb-14": 17548.505859,
+        "LJ-(SR)": -2475.480225,
+        "Coulomb-(SR)": -19963.740234,
+        "Coul.-recip.": 388.772644,
+        "Potential": 6054.629883
       },
-      "nvt_smoke_test_mean_temperature_k": 263.085,
+      "nvt_smoke_test_mean_temperature_k": 264.256,
       "checks": {
         "initial_bonds_within_range": true,
         "all_energy_terms_present_and_finite": true,

@@ -34,8 +34,12 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+import numpy.typing as npt
 
 from cellulose_forge.charmm36 import (
+    Charmm36TemplateAtom,
+    FiniteCharmm36Topology,
+    PeriodicCharmm36Topology,
     map_finite_charmm36,
     map_periodic_charmm36,
     native_finite_charmm36_topology,
@@ -45,7 +49,8 @@ from cellulose_forge.charmm36 import (
 from cellulose_forge.clashes import validate_finite_periodic_image_contact
 from cellulose_forge.crystallography import MillerIndex, load_allomorph
 from cellulose_forge.forcefields import discover_charmm36_directory
-from cellulose_forge.geometry import build_bulk_crystal, build_slab_with_sizing
+from cellulose_forge.geometry import BulkCrystal, build_bulk_crystal, build_slab_with_sizing
+from cellulose_forge.glycam_mapping import GlycamMappedSystem
 
 _ROOT = Path(__file__).resolve().parents[1]
 _ATOMS_PER_RESIDUE = 27
@@ -164,7 +169,7 @@ def _temperature(directory: Path, edr: str) -> float:
     return float(match.group(1))
 
 
-def _read_gro(path: Path) -> tuple[np.ndarray, np.ndarray]:
+def _read_gro(path: Path) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Return GRO coordinates and box vectors in angstrom."""
     lines = path.read_text(encoding="utf-8").splitlines()
     count = int(lines[1])
@@ -186,9 +191,9 @@ def _read_gro(path: Path) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _periodic_bonds(
-    system,
-    coordinates: np.ndarray | None = None,
-    basis: np.ndarray | None = None,
+    system: GlycamMappedSystem,
+    coordinates: npt.NDArray[np.float64] | None = None,
+    basis: npt.NDArray[np.float64] | None = None,
     bond_range: tuple[float, float] = _BOND_RANGE,
     *,
     periodic: bool = True,
@@ -231,7 +236,8 @@ def _periodic_bonds(
     return {
         "within_range": len(crossing) == (len(chains) if periodic else 0)
         and all(bond_range[0] <= d <= bond_range[1] for d in distances),
-        "range_angstrom": list(bond_range),
+        "range_minimum_angstrom": bond_range[0],
+        "range_maximum_angstrom": bond_range[1],
         "chains": len(chains),
         "bonds_checked": len(distances),
         "boundary_crossing_bonds": len(crossing),
@@ -242,13 +248,14 @@ def _periodic_bonds(
     }
 
 
-def _build(allomorph: str, shape: str, boundary: str, minimum_box_nm: float):
+def _build(
+    allomorph: str, shape: str, boundary: str, minimum_box_nm: float
+) -> tuple[BulkCrystal, dict[str, object]]:
     definition = load_allomorph(allomorph, polymer="chitin")
     if shape == "bulk":
         cell = definition.unit_cell
-        replication = tuple(
-            math.ceil(10.0 * minimum_box_nm / length) for length in (cell.a, cell.b, cell.c)
-        )
+        a, b, c = (math.ceil(10.0 * minimum_box_nm / length) for length in (cell.a, cell.b, cell.c))
+        replication = (a, b, c)
         return build_bulk_crystal(definition, replication), {"replication": list(replication)}
     crystal = build_slab_with_sizing(
         definition,
@@ -271,7 +278,7 @@ def _build(allomorph: str, shape: str, boundary: str, minimum_box_nm: float):
 
 def _validate(  # noqa: PLR0913, PLR0915, PLR0917
     allomorph: str, shape: str, boundary: str, minimum_box_nm: float, work: Path, ff: Path
-) -> dict:
+) -> dict[str, object]:
     periodic = boundary == "periodic"
     crystal, geometry = _build(allomorph, shape, boundary, minimum_box_nm)
     residues_per_chain = len(
@@ -282,23 +289,26 @@ def _validate(  # noqa: PLR0913, PLR0915, PLR0917
         }
     )
     image_contact = None
+    topology: PeriodicCharmm36Topology | FiniteCharmm36Topology
     if periodic:
-        topology = native_periodic_charmm36_topology(
+        periodic_topology = native_periodic_charmm36_topology(
             ff, degree_polymerization=residues_per_chain, residue="BGLCNA"
         )
-        system = map_periodic_charmm36(crystal, topology)
+        topology = periodic_topology
+        system = map_periodic_charmm36(crystal, periodic_topology)
     else:
-        topology = native_finite_charmm36_topology(
+        finite = native_finite_charmm36_topology(
             ff, degree_polymerization=residues_per_chain, residue="BGLCNA"
         )
-        system = map_finite_charmm36(crystal, topology)
+        topology = finite
+        system = map_finite_charmm36(crystal, finite)
         contact = validate_finite_periodic_image_contact(system)
         image_contact = {
             key: value for key, value in vars(contact).items() if not key.startswith("_")
         }
     bonds = _periodic_bonds(system, periodic=periodic)
 
-    residue_atoms: dict[int, list] = defaultdict(list)
+    residue_atoms: dict[int, list[Charmm36TemplateAtom]] = defaultdict(list)
     for atom in topology.topology_atoms:
         residue_atoms[atom.residue_number].append(atom)
     summary = [
