@@ -78,7 +78,8 @@ def test_render_json_is_valid_and_matches_check_count() -> None:
         "coordinate_only_ready",
         "glycam_gromacs_files_ready",
         "charmm36_gromacs_files_ready",
-        "gromacs_simulation_ready",
+        "glycam_gromacs_simulation_ready",
+        "charmm36_gromacs_simulation_ready",
         "glycam_openmm_ready",
         "charmm36_openmm_ready",
     }
@@ -99,6 +100,9 @@ def test_charmm36_openmm_readiness_does_not_require_glycam_tools(
     assert payload["glycam_gromacs_files_ready"] is False
     assert payload["glycam_openmm_ready"] is False
     assert payload["charmm36_gromacs_files_ready"] is True
+    gmx_ok = {check.name: check.ok for check in checks}["gmx"]
+    assert payload["glycam_gromacs_simulation_ready"] is False
+    assert payload["charmm36_gromacs_simulation_ready"] is gmx_ok
     assert payload["charmm36_openmm_ready"] is openmm_ok
 
 

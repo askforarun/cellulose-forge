@@ -214,7 +214,8 @@ def _readiness(checks: tuple[DiagnosticCheck, ...]) -> dict[str, bool]:
         "coordinate_only_ready": coordinate_ready,
         "glycam_gromacs_files_ready": glycam_ready,
         "charmm36_gromacs_files_ready": charmm36_ready,
-        "gromacs_simulation_ready": glycam_ready and all_ok("gmx"),
+        "glycam_gromacs_simulation_ready": glycam_ready and all_ok("gmx"),
+        "charmm36_gromacs_simulation_ready": charmm36_ready and all_ok("gmx"),
         "glycam_openmm_ready": glycam_ready and all_ok("openmm"),
         "charmm36_openmm_ready": charmm36_ready and all_ok("openmm"),
     }
@@ -254,7 +255,10 @@ def render_text(checks: tuple[DiagnosticCheck, ...]) -> str:
             f"coordinate-only builds ready: {ready['coordinate_only_ready']}",
             f"GLYCAM/GROMACS-file builds ready: {ready['glycam_gromacs_files_ready']}",
             f"CHARMM36/GROMACS-file builds ready: {ready['charmm36_gromacs_files_ready']}",
-            f"GROMACS preprocessing/simulation ready: {ready['gromacs_simulation_ready']}",
+            "GLYCAM/GROMACS preprocessing/simulation ready: "
+            f"{ready['glycam_gromacs_simulation_ready']}",
+            "CHARMM36/GROMACS preprocessing/simulation ready: "
+            f"{ready['charmm36_gromacs_simulation_ready']}",
             f"GLYCAM/OpenMM builds ready: {ready['glycam_openmm_ready']}",
             f"CHARMM36/OpenMM builds ready: {ready['charmm36_openmm_ready']}",
         )
