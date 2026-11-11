@@ -60,7 +60,7 @@ class OpenMMSystemFiles:
     runner: Path
 
 
-_BUILDER = r'''
+_BUILDER = r"""
 import json
 import sys
 
@@ -226,7 +226,7 @@ print(json.dumps({
     "harmonic_bond_count": bond_count,
     "maximum_bond_length_deviation_nm": maximum_deviation,
 }))
-'''
+"""
 
 
 _RUNNER = '''#!/usr/bin/env python3
@@ -240,6 +240,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 import openmm
 from openmm import unit
@@ -249,6 +250,7 @@ CHAIN_AXIS = __CHAIN_AXIS__
 PERIODIC_CHAINS = __PERIODIC_CHAINS__
 HAS_RESTRAINTS = __HAS_RESTRAINTS__
 AXES = "xyz"
+BOX_TILT_TOLERANCE = 1e-9
 
 
 def main() -> None:
@@ -277,9 +279,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    with open("system.xml", encoding="utf-8") as handle:
+    with Path("system.xml").open(encoding="utf-8") as handle:
         system = openmm.XmlSerializer.deserialize(handle.read())
-    with open("state.xml", encoding="utf-8") as handle:
+    with Path("state.xml").open(encoding="utf-8") as handle:
         state = openmm.XmlSerializer.deserialize(handle.read())
     topology = PDBxFile("topology.cif").topology
 
@@ -298,7 +300,7 @@ def main() -> None:
                 "OpenMM barostats move molecules rigidly, so that axis must stay fixed"
             )
         box = state.getPeriodicBoxVectors(asNumpy=True).value_in_unit(unit.nanometer)
-        if any(abs(float(box[row][column])) > 1e-9 for row in range(3)
+        if any(abs(float(box[row][column])) > BOX_TILT_TOLERANCE for row in range(3)
                for column in range(3) if row != column):
             parser.error("the anisotropic barostat requires a rectangular box")
         system.addForce(
@@ -344,9 +346,9 @@ def main() -> None:
             )
         simulation.step(args.steps)
     final = simulation.context.getState(getPositions=True, getEnergy=True)
-    with open("final_state.xml", "w", encoding="utf-8") as handle:
+    with Path("final_state.xml").open("w", encoding="utf-8") as handle:
         handle.write(openmm.XmlSerializer.serialize(final))
-    with open("final.cif", "w", encoding="utf-8") as handle:
+    with Path("final.cif").open("w", encoding="utf-8") as handle:
         PDBxFile.writeFile(topology, final.getPositions(), handle, keepIds=True)
     energy = final.getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
     print(f"Final potential energy: {energy:.6f} kJ/mol")
@@ -406,9 +408,7 @@ def heavy_atom_restraints(
     return OpenMMPositionRestraints(indices, force_constants_kj_mol_nm2)
 
 
-def render_openmm_runner(
-    *, chain_axis: str, periodic_chains: bool, has_restraints: bool
-) -> str:
+def render_openmm_runner(*, chain_axis: str, periodic_chains: bool, has_restraints: bool) -> str:
     """Return the standalone runner text for one generated system."""
     return (
         _RUNNER.replace("__CHAIN_AXIS__", repr(chain_axis))

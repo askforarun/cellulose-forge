@@ -9,15 +9,17 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 import openmm
 from openmm import unit
 from openmm.app import DCDReporter, PDBxFile, Simulation, StateDataReporter
 
-CHAIN_AXIS = 'y'
+CHAIN_AXIS = "y"
 PERIODIC_CHAINS = True
 HAS_RESTRAINTS = False
 AXES = "xyz"
+BOX_TILT_TOLERANCE = 1e-9
 
 
 def main() -> None:
@@ -46,16 +48,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    with open("system.xml", encoding="utf-8") as handle:
+    with Path("system.xml").open(encoding="utf-8") as handle:
         system = openmm.XmlSerializer.deserialize(handle.read())
-    with open("state.xml", encoding="utf-8") as handle:
+    with Path("state.xml").open(encoding="utf-8") as handle:
         state = openmm.XmlSerializer.deserialize(handle.read())
     topology = PDBxFile("topology.cif").topology
 
     if args.pressure_bar is not None:
-        axes = args.pressure_axes or "".join(
-            axis for axis in AXES if axis != CHAIN_AXIS
-        )
+        axes = args.pressure_axes or "".join(axis for axis in AXES if axis != CHAIN_AXIS)
         if HAS_RESTRAINTS and not args.no_restraints:
             parser.error(
                 "position restraints use fixed reference coordinates that a barostat "
@@ -67,13 +67,16 @@ def main() -> None:
                 "OpenMM barostats move molecules rigidly, so that axis must stay fixed"
             )
         box = state.getPeriodicBoxVectors(asNumpy=True).value_in_unit(unit.nanometer)
-        if any(abs(float(box[row][column])) > 1e-9 for row in range(3)
-               for column in range(3) if row != column):
+        if any(
+            abs(float(box[row][column])) > BOX_TILT_TOLERANCE
+            for row in range(3)
+            for column in range(3)
+            if row != column
+        ):
             parser.error("the anisotropic barostat requires a rectangular box")
         system.addForce(
             openmm.MonteCarloAnisotropicBarostat(
-                openmm.Vec3(args.pressure_bar, args.pressure_bar, args.pressure_bar)
-                * unit.bar,
+                openmm.Vec3(args.pressure_bar, args.pressure_bar, args.pressure_bar) * unit.bar,
                 args.temperature * unit.kelvin,
                 "x" in axes,
                 "y" in axes,
@@ -86,9 +89,7 @@ def main() -> None:
         args.friction / unit.picosecond,
         args.timestep_fs * unit.femtosecond,
     )
-    platform = (
-        openmm.Platform.getPlatformByName(args.platform) if args.platform else None
-    )
+    platform = openmm.Platform.getPlatformByName(args.platform) if args.platform else None
     simulation = Simulation(topology, system, integrator, platform)
     simulation.context.setState(state)
     if HAS_RESTRAINTS and args.no_restraints:
@@ -113,9 +114,9 @@ def main() -> None:
             )
         simulation.step(args.steps)
     final = simulation.context.getState(getPositions=True, getEnergy=True)
-    with open("final_state.xml", "w", encoding="utf-8") as handle:
+    with Path("final_state.xml").open("w", encoding="utf-8") as handle:
         handle.write(openmm.XmlSerializer.serialize(final))
-    with open("final.cif", "w", encoding="utf-8") as handle:
+    with Path("final.cif").open("w", encoding="utf-8") as handle:
         PDBxFile.writeFile(topology, final.getPositions(), handle, keepIds=True)
     energy = final.getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
     print(f"Final potential energy: {energy:.6f} kJ/mol")
