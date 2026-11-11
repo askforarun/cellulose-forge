@@ -1,0 +1,16 @@
+integrator = md
+nsteps = 0
+continuation = yes
+constraints = none
+cutoff-scheme = Verlet
+coulombtype = PME
+rcoulomb = 1.0
+vdwtype = cutoff
+rvdw = 1.0
+vdw-modifier = None
+coulomb-modifier = None
+ewald-rtol = 1e-5
+DispCorr = no
+pbc = xyz
+periodic-molecules = yes
+nstenergy = 1

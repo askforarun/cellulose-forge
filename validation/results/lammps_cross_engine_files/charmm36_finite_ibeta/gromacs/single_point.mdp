@@ -1,0 +1,15 @@
+integrator = md
+nsteps = 0
+constraints = none
+cutoff-scheme = Verlet
+coulombtype = PME
+rcoulomb = 1.2
+vdwtype = cutoff
+rvdw = 1.2
+vdw-modifier = force-switch
+rvdw-switch = 1.0
+coulomb-modifier = None
+ewald-rtol = 1e-5
+DispCorr = no
+pbc = xyz
+nstenergy = 1

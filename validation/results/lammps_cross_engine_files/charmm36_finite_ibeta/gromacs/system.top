@@ -1,0 +1,8 @@
+#include "charmm36.ff/forcefield.itp"
+#include "cellulose_charmm36.itp"
+
+[ system ]
+Periodic cellulose CHARMM36
+
+[ molecules ]
+CARB_6_FINITE  12

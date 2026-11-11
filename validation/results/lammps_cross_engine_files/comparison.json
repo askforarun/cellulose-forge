@@ -1,0 +1,40 @@
+{
+  "generated_on": "2026-11-11",
+  "engines": {
+    "gromacs": "2024.2",
+    "lammps": "22 Jul 2025",
+    "openmm": "8.5"
+  },
+  "cases": {
+    "glycam_periodic_ibeta": {
+      "reference_engine": "OpenMM",
+      "openmm_potential_kj_mol": 56615.829927988205,
+      "lammps_potential_kj_mol": 56618.34824,
+      "relative_difference": 0.000044480705
+    },
+    "charmm36_finite_ibeta": {
+      "reference_engine": "GROMACS",
+      "gromacs_potential_kj_mol": 44606.832031,
+      "lammps_potential_kj_mol": 44616.263912,
+      "relative_difference": 0.000211444762
+    },
+    "charmm36_periodic_ibeta": {
+      "reference_engine": "GROMACS",
+      "gromacs_potential_kj_mol": 42367.550781,
+      "lammps_potential_kj_mol": 42378.120976,
+      "relative_difference": 0.000249487988
+    },
+    "glycam_periodic_ii": {
+      "reference_engine": "OpenMM",
+      "openmm_potential_kj_mol": 61222.26969028177,
+      "lammps_potential_kj_mol": 61221.551568,
+      "relative_difference": 0.000011729756
+    },
+    "charmm36_periodic_ii": {
+      "reference_engine": "GROMACS",
+      "gromacs_potential_kj_mol": 46705.046875,
+      "lammps_potential_kj_mol": 46714.690536,
+      "relative_difference": 0.000206480063
+    }
+  }
+}

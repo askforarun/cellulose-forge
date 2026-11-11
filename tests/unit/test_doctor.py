@@ -82,18 +82,18 @@ def test_render_json_is_valid_and_matches_check_count() -> None:
         "charmm36_gromacs_simulation_ready",
         "glycam_openmm_ready",
         "charmm36_openmm_ready",
+        "glycam_lammps_files_ready",
+        "charmm36_lammps_files_ready",
+        "glycam_lammps_simulation_ready",
+        "charmm36_lammps_simulation_ready",
     }
 
 
 def test_charmm36_openmm_readiness_does_not_require_glycam_tools(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(
-        "cellulose_forge.doctor.discover_charmm36_directory", lambda: tmp_path
-    )
-    checks = run_diagnostics(
-        tleap_executable="/definitely/not/tleap", openmm_python=sys.executable
-    )
+    monkeypatch.setattr("cellulose_forge.doctor.discover_charmm36_directory", lambda: tmp_path)
+    checks = run_diagnostics(tleap_executable="/definitely/not/tleap", openmm_python=sys.executable)
     payload = json.loads(render_json(checks))
     openmm_ok = {check.name: check.ok for check in checks}["openmm"]
 
@@ -117,3 +117,20 @@ def test_missing_charmm36_release_is_reported_with_install_command(
 
     assert by_name["charmm36"].ok is False
     assert by_name["charmm36"].fix == "cellulose-forge forcefield install charmm36"
+
+
+def test_missing_lammps_executable_is_reported_without_disabling_file_generation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr("cellulose_forge.doctor.discover_charmm36_directory", lambda: tmp_path)
+    checks = run_diagnostics(
+        tleap_executable="definitely-not-tleap",
+        openmm_python=sys.executable,
+        lammps_executable="definitely-not-lammps",
+    )
+    payload = json.loads(render_json(checks))
+    openmm_ok = {check.name: check.ok for check in checks}["openmm"]
+
+    assert payload["charmm36_lammps_files_ready"] is openmm_ok
+    assert payload["charmm36_lammps_simulation_ready"] is False
+    assert {check.name: check.ok for check in checks}["lammps"] is False

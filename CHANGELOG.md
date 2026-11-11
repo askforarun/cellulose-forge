@@ -6,6 +6,11 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Added
 
+- Added experimental `--md-engine lammps` output for finite and periodic
+  GLYCAM06j-1 and CHARMM36 systems. The exact converter writes `system.data`
+  and `in.cellulose`, preserves CHARMM Urey--Bradley and pair-specific 1--4
+  terms, and rejects unsupported force terms or non-equivalent semantics.
+
 - Added repeatable `--md-engine gromacs|amber` selection and recorded the
   resolved engines in each build report. `--topology-format` remains as a
   deprecated compatibility alias.
@@ -27,6 +32,12 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Validation
 
+- LAMMPS `run 0` passes for finite and periodic I-beta and periodic cellulose
+  II slabs. GLYCAM bond, angle, torsion, Lennard--Jones, and electrostatic
+  categories are compared independently with GROMACS. CHARMM36 bond,
+  angle/Urey--Bradley, and torsion energies agree within 2e-5 relative and
+  total potential energies within 5e-4 using matched official force-switch
+  settings. Periodic GLYCAM totals agree with OpenMM within 5e-4.
 - The 18-chain finite and 24-chain periodic I-beta presets pass GROMACS 2024.2
   preprocessing with both GLYCAM06j-1 and CHARMM36.
 - A finite 18-chain DP6 dual-format GLYCAM build passes GROMACS preprocessing

@@ -1,0 +1,33 @@
+# This file was created Wed Nov 11 18:19:32 2026
+# Created by:
+#                 :-) GROMACS - gmx energy, 2024.2-Homebrew (-:
+# 
+# Executable:   /opt/homebrew/bin/../Cellar/gromacs/2024.2/bin/gmx
+# Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2024.2
+# Working dir:  <local-path>
+# Command line:
+#   gmx energy -f glycam_single_point.edr -o glycam_energy.xvg
+# gmx energy is part of G R O M A C S:
+#
+# Great Red Owns Many ACres of Sand 
+#
+@    title "GROMACS Energies"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "(kJ/mol)"
+@TYPE xy
+@ view 0.15, 0.15, 0.75, 0.85
+@ legend on
+@ legend box on
+@ legend loctype view
+@ legend 0.78, 0.8
+@ legend length 2
+@ s0 legend "Bond"
+@ s1 legend "Angle"
+@ s2 legend "Proper Dih."
+@ s3 legend "LJ-14"
+@ s4 legend "Coulomb-14"
+@ s5 legend "LJ (SR)"
+@ s6 legend "Coulomb (SR)"
+@ s7 legend "Coul. recip."
+@ s8 legend "Potential"
+    0.000000  13267.604492  2182.294922  3063.876953  4573.486328  80428.203125  -5150.532715  -42519.074219  765.416443  56611.281250

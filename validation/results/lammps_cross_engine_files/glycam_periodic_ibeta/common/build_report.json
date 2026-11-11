@@ -1,0 +1,119 @@
+{
+  "allomorph": "I-beta",
+  "cellulose_forge_version": "1.1.2",
+  "chain_boundary": "periodic",
+  "chain_count": 8,
+  "chirality_validation": {
+    "configuration": "D-cellulose",
+    "expected_signed_volume_sign": "negative",
+    "minimum_absolute_signed_volume_angstrom3": 1.4897228914310885,
+    "residue_count": 96,
+    "status": "passed",
+    "stereocentre": "C1",
+    "substituent_order": [
+      "O5",
+      "C2",
+      "H1"
+    ]
+  },
+  "crystallographic_atom_count": 2016,
+  "degree_polymerization": 12,
+  "force_field": "GLYCAM",
+  "force_field_atom_count": 2016,
+  "force_field_release": "leaprc.GLYCAM_06j-1",
+  "geometry_annotations": [
+    "shape=slab face=(1,1,0) layers=2",
+    "chains_per_layer=4 total_chains=8",
+    "degree_polymerization=12",
+    "chain_boundary=periodic",
+    "d_hkl=5.316996 angstrom",
+    "vacuum=30.000000 angstrom",
+    "padding_z=0.000000 angstrom total longitudinal padding",
+    "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+    "orientation_transform=proper_rotation determinant=+1",
+    "chain numbering starts at requested low-z face; within each layer low-x to high-x",
+    "size_mode=exact_counts"
+  ],
+  "lammps_validation": {
+    "angle_count": 3936,
+    "atom_count": 2016,
+    "atom_type_count": 6,
+    "bond_count": 2112,
+    "data": "system.data",
+    "dihedral_count": 7488,
+    "dispersion_correction": false,
+    "input": "in.cellulose",
+    "input_scope": "single-point run 0 validation; not a dynamics protocol",
+    "special_bonds": "lj/coul 0 0 1",
+    "urey_bradley_count": 0,
+    "weighted_one_four_count": 0
+  },
+  "md_engines": [
+    "openmm",
+    "lammps"
+  ],
+  "openmm_validation": {
+    "chain_axis": "y",
+    "constraint_count": 960,
+    "dispersion_correction": false,
+    "forces": [
+      "NonbondedForce",
+      "HarmonicBondForce",
+      "HarmonicAngleForce",
+      "PeriodicTorsionForce",
+      "CMMotionRemover"
+    ],
+    "harmonic_bond_count": 2112,
+    "initial_energies_kj_mol": {
+      "CMMotionRemover": 0.0,
+      "HarmonicAngleForce": 2182.2992962886424,
+      "HarmonicBondForce": 13267.637806011155,
+      "NonbondedForce": 38102.00988242974,
+      "NonbondedForce exceptions (1-4)": 85001.44910167955,
+      "PeriodicTorsionForce": 3063.882943258675
+    },
+    "initial_potential_energy_kj_mol": 56615.829927988205,
+    "maximum_bond_length_deviation_nm": 0.012475391738686711,
+    "minimization_iterations_requested": 10,
+    "minimized_potential_energy_kj_mol": 42245.465076930486,
+    "nonbonded_cutoff_nm": 1.0,
+    "openmm_version": "8.5",
+    "particle_count": 2016,
+    "periodic_chains": true,
+    "periodic_forces": [
+      "NonbondedForce exceptions",
+      "HarmonicBondForce",
+      "HarmonicAngleForce",
+      "PeriodicTorsionForce"
+    ],
+    "position_restraint_atom_count": 0,
+    "position_restraint_parameter": null,
+    "python_executable": "python with OpenMM 8.5",
+    "serialized_constraints": "HBonds",
+    "serialized_ewald_error_tolerance": 0.0005,
+    "status": "passed",
+    "validation_constraints": "none",
+    "validation_ewald_error_tolerance": 1e-05,
+    "validation_platform": "Reference"
+  },
+  "outputs": {
+    "coordinates": "structure.pdb",
+    "lammps_data": "system.data",
+    "lammps_input": "in.cellulose",
+    "openmm_runner": "run_openmm.py",
+    "openmm_state": "state.xml",
+    "openmm_system": "system.xml",
+    "openmm_topology": "topology.cif"
+  },
+  "periodic_glycosidic_bond_validation": {
+    "mapped_geometry": {
+      "bond_count": 96,
+      "maximum_distance_angstrom": 1.428976320843138
+    },
+    "written_topology": null
+  },
+  "reference_generation": {
+    "test_fixture": "dp12_periodic_reference"
+  },
+  "shape": "slab"
+}
