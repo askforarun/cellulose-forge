@@ -1,6 +1,6 @@
 # 0002: CHARMM36 parameterization of chitin (audit)
 
-- Status: proposed
+- Status: accepted after review; output gated on the reference comparison
 - Branch: `feature/chitin-charmm36`
 - Force field: CHARMM36 February 2026 GROMACS release
   (`charmm36-feb2026_cgenff-5.0.ff`), as already pinned for cellulose.
@@ -48,13 +48,27 @@ reducing end keeps O1/HO1 (beta anomeric hydroxyl, C1 unpatched) and the
 non-reducing end keeps HO4 (C4/O4 unpatched). No other terminal patches are
 applied. The reducing-end anomer follows the crystal (beta).
 
+Terminal residues are not individually neutral, which is normal for CHARMM
+free-sugar termini:
+
+| Residue | Atoms | Charge (e) | Changes from BGLCNA |
+|---|---|---|---|
+| Internal | 27 | 0.00 | O1, HO1, HO4 deleted; C1, C4, O4 patched |
+| Reducing end | 29 | -0.18 | HO4 deleted; C4, O4 patched |
+| Non-reducing end | 28 | +0.18 | O1, HO1 deleted; C1 patched |
+
+A finite chain of DP N therefore has 27N + 3 atoms and zero net charge. The
+reference comparison must check these per-residue charges, not require each
+residue to be neutral.
+
 ## Periodic linkage
 
 For covalently periodic chains every residue is patched on both sides: O4 of
-the last residue bonds C1 of the first across the chain-axis boundary, and
-angles, dihedrals, 1-4 pairs, and impropers are generated from that cyclic
-bond graph, exactly as for cellulose. Impropers are local to the acetyl group
-and never span the boundary.
+the last residue bonds C1 of the first across the chain-axis boundary.
+Bonds, angles, proper dihedrals, and 1-4 pairs are generated from that cyclic
+bond graph, exactly as for cellulose. The two acetyl impropers are not
+generated from the graph: they are residue-local terms imported from the
+`BGLCNA` definition, two per residue, and never cross the periodic boundary.
 
 ## Atom-name mapping
 
@@ -77,13 +91,16 @@ termini can be reused because the ring atoms are shared.
    cellulose hash test and existing GROMACS tests must pass unmodified).
 3. GROMACS: impropers are resolved by `grompp` from `ffbonded.itp`.
 4. OpenMM: `GromacsTopFile` creates a `CustomTorsionForce` for function-2
-   impropers. The OpenMM writer already enables periodic boundary conditions
-   on every bonded force that supports them; this must be confirmed for the
-   improper force across the periodic boundary.
-5. LAMMPS: the converter currently rejects `CustomTorsionForce`. CHARMM
-   harmonic impropers map to `improper_style harmonic` (K in kcal mol^-1
-   rad^-2 with LAMMPS's E = K(chi - chi0)^2 convention); this must be added
-   before chitin LAMMPS output is enabled.
+   impropers. Because the impropers never span the boundary, the check is
+   that both improper terms per residue survive parsing and serialization into
+   `system.xml` and that their energy matches GROMACS term by term.
+5. LAMMPS: the converter currently rejects `CustomTorsionForce`. GROMACS
+   function-2 impropers use E = (1/2) k (xi - xi0)^2, whereas LAMMPS
+   `improper_style harmonic` uses E = K (chi - chi0)^2, so
+   K_LAMMPS = k_GROMACS / 2 after converting kJ mol^-1 to kcal mol^-1
+   (divide by 4.184). Omitting the factor of one half would double the
+   improper energy. This must be added and validated against GROMACS before
+   chitin LAMMPS output is enabled.
 
 ## Validation plan
 
