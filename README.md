@@ -78,7 +78,7 @@ OpenMM for those. The software excludes functionalization, native CHARMM/PSF
 output, and arbitrary branched glycans. The CHARMM36 path generates GROMACS topology directly and
 does not require VMD or `psfgen` at runtime.
 
-### Chitin (development, coordinate-only)
+### Chitin
 
 `--polymer chitin` builds alpha- and beta-chitin unit cells, periodic bulk
 crystals, and chain-parallel slabs:
@@ -109,7 +109,32 @@ Slab geometry is tested for beta (100), (010), and (110) and alpha (100), (010),
 and (110): chain directions, periodic O4-C1 bonds, flat layers, an exact
 lattice repeat across the periodic box, and no interchain clashes. Reference
 faces for force-field validation have not yet been selected from the
-literature. Fibrils and force-field output for chitin are not yet available.
+literature.
+
+#### CHARMM36 for GROMACS
+
+`--force-field charmm36` builds chitin with the CHARMM36 `BGLCNA` residue,
+linked by the `14bb` patch, for GROMACS only:
+
+```bash
+cellulose-forge build --polymer chitin --allomorph beta --shape slab \
+  --face 1 0 0 --layers 3 --chains-per-layer 4 --degree-polymerization 6 \
+  --chain-boundary periodic --vacuum 20 --force-field charmm36 --output beta_chitin_100
+```
+
+The output directory contains `chitin_charmm36.itp` (cellulose keeps
+`cellulose_charmm36.itp`), `system.top`, `structure.gro`, and a local
+`charmm36.ff`. Each residue carries the two acetyl impropers. Finite chains
+use free-sugar termini: the reducing end keeps O1/HO1 (-0.18 e) and the
+non-reducing end keeps HO4 (+0.18 e).
+
+The topology was compared term by term with a psfgen build of the canonical
+`top_all36_carb.rtf` (`validation/validate_chitin_charmm36_reference.py`), and
+alpha and beta periodic bulk, periodic (1 0 0) slabs, and finite (1 0 0) slabs
+pass `gmx grompp`, minimization, and a 1 ps NVT smoke test
+(`validation/validate_chitin_charmm36_gromacs.py`). psfgen was used only to
+build that reference; CelluloseForge does not need it. OpenMM and LAMMPS
+output, GLYCAM/Amber, and fibrils are not yet available for chitin.
 
 ## Table of contents
 

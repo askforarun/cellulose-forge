@@ -327,8 +327,8 @@ def _validate(  # noqa: PLR0913, PLR0915, PLR0917
     directory = work / name
     if directory.exists():
         shutil.rmtree(directory)
-    write_charmm36_system(system, topology, ff, directory)
-    itp = (directory / "cellulose_charmm36.itp").read_text(encoding="utf-8")
+    write_charmm36_system(system, topology, ff, directory, polymer="chitin")
+    itp = (directory / "chitin_charmm36.itp").read_text(encoding="utf-8")
     impropers = sum(
         1
         for line in itp.splitlines()

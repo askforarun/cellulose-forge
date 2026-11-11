@@ -874,9 +874,7 @@ def map_finite_charmm36(
         raise ValueError(msg)
 
     atoms_by_residue: dict[int, tuple[Charmm36TemplateAtom, ...]] = {
-        residue: tuple(
-            atom for atom in topology.topology_atoms if atom.residue_number == residue
-        )
+        residue: tuple(atom for atom in topology.topology_atoms if atom.residue_number == residue)
         for residue in range(1, topology.degree_polymerization + 1)
     }
     output_names: list[str] = []
@@ -902,9 +900,7 @@ def map_finite_charmm36(
                 residue_number=crystal_residue_number,
             )
             reducing_transform = (
-                _rigid_transform(_REDUCING_END_REFERENCE, lookup)
-                if residue_number == 1
-                else None
+                _rigid_transform(_REDUCING_END_REFERENCE, lookup) if residue_number == 1 else None
             )
             nonreducing_transform = (
                 _rigid_transform(_NONREDUCING_END_REFERENCE, lookup)
@@ -936,9 +932,7 @@ def map_finite_charmm36(
                     aligned_hydrogen = _transform(
                         hydrogen_reference[atom.atom_name], hydrogen_transform
                     )
-                    aligned_oxygen = _transform(
-                        hydrogen_reference[oxygen_name], hydrogen_transform
-                    )
+                    aligned_oxygen = _transform(hydrogen_reference[oxygen_name], hydrogen_transform)
                     direction = aligned_hydrogen - aligned_oxygen
                     direction /= np.linalg.norm(direction)
                     bond_length = np.linalg.norm(
@@ -1068,8 +1062,13 @@ def write_charmm36_system(  # noqa: PLR0913
     *,
     restrained_chain_count: int = 0,
     restraint_force: tuple[float, float, float] | None = None,
+    polymer: str = "cellulose",
 ) -> tuple[Path, Path, Path, Path]:
-    """Write an experimental CHARMM36 GROMACS system and local FF copy."""
+    """Write a CHARMM36 GROMACS system and local FF copy.
+
+    Cellulose keeps the historical ``cellulose_charmm36.itp`` name; chitin
+    writes ``chitin_charmm36.itp``.
+    """
     source_force_field = Path(force_field_directory)
     if not (source_force_field / "forcefield.itp").is_file():
         msg = "CHARMM36 force-field directory must contain forcefield.itp"
@@ -1077,7 +1076,7 @@ def write_charmm36_system(  # noqa: PLR0913
     directory = Path(output_directory)
     directory.mkdir(parents=True, exist_ok=True)
     gro_path = directory / "structure.gro"
-    itp_path = directory / "cellulose_charmm36.itp"
+    itp_path = directory / f"{polymer}_charmm36.itp"
     top_path = directory / "system.top"
     force_field_path = directory / "charmm36.ff"
     write_gro(system, gro_path)
@@ -1116,9 +1115,15 @@ def write_charmm36_system(  # noqa: PLR0913
     shutil.copytree(source_force_field, force_field_path, dirs_exist_ok=True)
     top_path.write_text(
         '#include "charmm36.ff/forcefield.itp"\n'
-        '#include "cellulose_charmm36.itp"\n\n'
-        "[ system ]\nPeriodic cellulose CHARMM36\n\n"
-        "[ molecules ]\n" + "\n".join(molecule_rows) + "\n",
+        f'#include "{itp_path.name}"\n\n'
+        + (
+            "[ system ]\nPeriodic cellulose CHARMM36\n\n"
+            if polymer == "cellulose"
+            else f"[ system ]\n{polymer} CHARMM36\n\n"
+        )
+        + "[ molecules ]\n"
+        + "\n".join(molecule_rows)
+        + "\n",
         encoding="utf-8",
     )
     return gro_path, itp_path, top_path, force_field_path

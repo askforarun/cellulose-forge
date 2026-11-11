@@ -377,7 +377,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
         if args.force_field == "glycam":
             _write_glycam_build(args, crystal, build_parser())
         elif args.force_field == "charmm36":
-            _write_charmm36_build(args, crystal, build_parser())
+            _write_charmm36_build(args, crystal, build_parser(), definition)
         else:
             if any(
                 value is not None
@@ -415,8 +415,18 @@ def _load_definition(
         parser.error("--o6-conformation applies only to alpha-chitin")
     if args.shape not in _CHITIN_SHAPES:
         parser.error("chitin currently supports --shape unit-cell, bulk, and slab")
-    if args.force_field != "none":
-        parser.error("chitin currently supports coordinate-only output (--force-field none)")
+    if args.force_field not in {"none", "charmm36"}:
+        parser.error(
+            "chitin supports --force-field none or charmm36; "
+            "GLYCAM/Amber chitin topologies are not implemented"
+        )
+    if args.force_field == "charmm36" and set(args.md_engines) != {"gromacs"}:
+        parser.error(
+            "chitin CHARMM36 is validated for --md-engine gromacs only; "
+            "OpenMM and LAMMPS chitin output are not yet supported"
+        )
+    if args.force_field == "charmm36" and args.charmm_template is not None:
+        parser.error("--charmm-template is not supported for chitin")
     name = _CHITIN_ALLOMORPHS[args.allomorph]
     if args.o6_conformation == "minor":
         name = "alpha_o6_minor"
@@ -459,6 +469,26 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
     args.md_engines = engines
 
 
+def _polymer_report_fields(
+    args: argparse.Namespace, definition: AllomorphDefinition
+) -> dict[str, object]:
+    """Return polymer and crystal-source fields for non-cellulose reports."""
+    fields: dict[str, object] = {
+        "polymer": args.polymer,
+        "residue_name": definition.residue_name,
+        "crystallographic_source": {
+            "definition": f"{definition.polymer}/{definition.name}",
+            "space_group": definition.space_group,
+            "citation": definition.citation,
+            "doi": definition.doi,
+            "temperature_k": definition.temperature_k,
+        },
+    }
+    if args.allomorph == "alpha":
+        fields["o6_conformation"] = args.o6_conformation or "major"
+    return fields
+
+
 def _write_coordinate_only_report(
     args: argparse.Namespace,
     crystal: BulkCrystal,
@@ -488,17 +518,7 @@ def _write_coordinate_only_report(
         ),
     }
     if args.polymer != "cellulose":
-        report["polymer"] = args.polymer
-        report["residue_name"] = definition.residue_name
-        report["crystallographic_source"] = {
-            "definition": f"{definition.polymer}/{definition.name}",
-            "space_group": definition.space_group,
-            "citation": definition.citation,
-            "doi": definition.doi,
-            "temperature_k": definition.temperature_k,
-        }
-        if args.allomorph == "alpha":
-            report["o6_conformation"] = args.o6_conformation or "major"
+        report.update(_polymer_report_fields(args, definition))
     report_path.write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -633,8 +653,10 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
     args: argparse.Namespace,
     crystal: BulkCrystal,
     parser: argparse.ArgumentParser,
+    definition: AllomorphDefinition,
 ) -> None:
-    """Map cellulose to a native CHARMM36 topology."""
+    """Map cellulose or chitin to a native CHARMM36 topology."""
+    residue = "BGLCNA" if args.polymer == "chitin" else "BGLC"
     if args.output.suffix:
         parser.error("--output must be a directory when --force-field charmm36 is selected")
     degree_polymerization = _crystal_degree_polymerization(crystal)
@@ -656,6 +678,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             else native_periodic_charmm36_topology(
                 force_field_directory,
                 degree_polymerization=degree_polymerization,
+                residue=residue,
             )
         )
         mapped = map_periodic_charmm36(crystal, topology)
@@ -670,6 +693,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         topology = native_finite_charmm36_topology(
             force_field_directory,
             degree_polymerization=degree_polymerization,
+            residue=residue,
         )
         mapped = map_finite_charmm36(crystal, topology)
         interaction_counts = finite_charmm36_interaction_counts(topology)
@@ -704,6 +728,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             gromacs_directory,
             restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
             restraint_force=restraints.force_constants if restraints else None,
+            polymer=args.polymer,
         )
         if args.chain_boundary == "periodic":
             written_periodic_bond_validation = _validate_written_periodic_topology(
@@ -744,7 +769,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         "topology_source": (
             str(args.charmm_template)
             if args.charmm_template is not None
-            else f"native BGLC residue with {args.chain_boundary} 14bb linkage"
+            else f"native {residue} residue with {args.chain_boundary} 14bb linkage"
         ),
         "reference_force_field": str(force_field_directory),
         "charmm36_release": CHARMM36_RELEASE,
@@ -762,8 +787,22 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             lammps_files,
         ),
         "geometry_annotations": list(crystal.annotations),
-        "chirality_validation": validate_cellulose_chirality(crystal),
+        "chirality_validation": (
+            validate_cellulose_chirality(crystal)
+            if args.polymer == "cellulose"
+            else validate_pyranose_chirality(crystal, "N-acetyl-beta-D-glucosamine")
+        ),
     }
+    if args.polymer != "cellulose":
+        report.update(_polymer_report_fields(args, definition))
+        report["charmm36_residue"] = residue
+        report["validation_scope"] = {
+            "engines": ["gromacs"],
+            "reference": "validation/chitin_charmm36_reference_dp6.json (psfgen, DP6)",
+            "gromacs": "validation/chitin_charmm36_gromacs.json "
+            "(alpha/beta bulk, periodic and finite (1 0 0) slabs)",
+            "not_validated": ["openmm", "lammps"],
+        }
     if openmm_metadata is not None:
         report["openmm_validation"] = openmm_metadata
     if lammps_metadata is not None:
