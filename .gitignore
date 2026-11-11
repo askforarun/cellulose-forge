@@ -61,3 +61,7 @@ validation/results/force_field_comparison/**/*.trr
 validation/results/force_field_comparison/**/*.edr
 validation/results/force_field_comparison/**/*.tpr
 validation/results/force_field_comparison/**/*.cpt
+
+# Example MD inputs: the CHARMM36 GROMACS port is third-party and is installed
+# with `cellulose-forge forcefield install charmm36`, not redistributed here.
+examples/md_inputs/**/charmm36.ff/

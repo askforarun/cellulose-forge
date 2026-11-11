@@ -17,3 +17,6 @@ The [`fibrils/ibeta_36chain_dp12.pdb`](fibrils/ibeta_36chain_dp12.pdb)
 example is the literature-defined I-beta elementary fibril: 36 chains, six
 cellobiose repeats per chain (DP 12), periodic chain-boundary metadata, and 30
 angstrom of total padding along each transverse direction.
+
+The [`md_inputs`](md_inputs/) folder holds small simulation-ready systems
+for GROMACS, OpenMM, LAMMPS, and Amber; see its README for run commands.
