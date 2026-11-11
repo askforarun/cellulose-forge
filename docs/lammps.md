@@ -25,7 +25,8 @@ cellulose-forge build \
   --output ibeta_charmm36_lammps
 ```
 
-The output contains `system.data`, `in.cellulose`, crystallographic
+The output contains `system.data`, `in.cellulose` (`in.chitin` for
+`--polymer chitin`), crystallographic
 coordinates, and `build_report.json`. The generated LAMMPS model uses `real`
 units, `atom_style full`, harmonic bonds and angles, CHARMM-style periodic
 torsions with zero dihedral 1--4 weights,
@@ -46,7 +47,7 @@ readiness.
 
 - GLYCAM and CHARMM36 finite and periodic chains are implemented.
 - Position restraints are not yet implemented.
-- `in.cellulose` performs `run 0` for initial-energy validation. It is not a
+- `in.cellulose` (or `in.chitin`) performs `run 0` for initial-energy validation. It is not a
   minimization or molecular-dynamics protocol; users must supply simulation
   controls appropriate to their scientific application.
 - The backend rejects unsupported OpenMM force classes and non-equivalent 1--4

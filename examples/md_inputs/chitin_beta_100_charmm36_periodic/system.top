@@ -1,0 +1,8 @@
+#include "charmm36.ff/forcefield.itp"
+#include "chitin_charmm36.itp"
+
+[ system ]
+chitin CHARMM36
+
+[ molecules ]
+CARB_6  8

@@ -1,0 +1,191 @@
+{
+  "allomorph": "I-beta",
+  "amber_validation": {
+    "atom_count": 1548,
+    "box": [
+      35.7868779,
+      43.14,
+      41.122093,
+      90.0,
+      90.0,
+      90.0
+    ],
+    "chain_count": 12,
+    "coordinates": "structure.inpcrd",
+    "parmed_python_executable": "<local-path>",
+    "residue_count": 84,
+    "topology": "structure.prmtop",
+    "total_charge_e": 2.6645352591003757e-15
+  },
+  "cellulose_forge_version": "1.1.2",
+  "chain_boundary": "finite",
+  "chain_count": 12,
+  "chirality_validation": {
+    "configuration": "D-cellulose",
+    "expected_signed_volume_sign": "negative",
+    "minimum_absolute_signed_volume_angstrom3": 1.4897228914310898,
+    "residue_count": 72,
+    "status": "passed",
+    "stereocentre": "C1",
+    "substituent_order": [
+      "O5",
+      "C2",
+      "H1"
+    ]
+  },
+  "closest_longitudinal_periodic_image_contact": {
+    "atom_index": 250,
+    "atom_name": "H4O",
+    "chain_id": 2,
+    "distance_angstrom": 10.631414737116348,
+    "image_atom_index": 130,
+    "image_atom_name": "HO1"
+  },
+  "crystallographic_atom_count": 1512,
+  "degree_polymerization": 6,
+  "force_field": "GLYCAM",
+  "force_field_atom_count": 1548,
+  "force_field_release": "leaprc.GLYCAM_06j-1",
+  "geometry_annotations": [
+    "shape=slab face=(1,1,0) layers=2",
+    "chains_per_layer=6 total_chains=12",
+    "degree_polymerization=6",
+    "chain_boundary=finite",
+    "d_hkl=5.316996 angstrom",
+    "vacuum=30.000000 angstrom",
+    "padding_z=12.000000 angstrom total longitudinal padding",
+    "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+    "orientation_transform=proper_rotation determinant=+1",
+    "chain numbering starts at requested low-z face; within each layer low-x to high-x",
+    "size_mode=exact_counts"
+  ],
+  "lammps_validation": {
+    "angle_count": 2964,
+    "atom_count": 1548,
+    "atom_type_count": 6,
+    "bond_count": 1608,
+    "data": "system.data",
+    "dihedral_count": 5616,
+    "dispersion_correction": false,
+    "improper_count": 0,
+    "input": "in.cellulose",
+    "input_scope": "single-point run 0 validation; not a dynamics protocol",
+    "special_bonds": "lj/coul 0 0 1",
+    "urey_bradley_count": 0,
+    "weighted_one_four_count": 0,
+    "zero_force_constant_one_four_dihedrals": 0
+  },
+  "md_engines": [
+    "gromacs",
+    "amber",
+    "openmm",
+    "lammps"
+  ],
+  "openmm_validation": {
+    "chain_axis": "y",
+    "constraint_count": 744,
+    "dispersion_correction": false,
+    "forces": [
+      "NonbondedForce",
+      "HarmonicBondForce",
+      "HarmonicAngleForce",
+      "PeriodicTorsionForce",
+      "CMMotionRemover"
+    ],
+    "harmonic_bond_count": 1608,
+    "initial_energies_kj_mol": {
+      "CMMotionRemover": 0.0,
+      "HarmonicAngleForce": 1609.367689751698,
+      "HarmonicBondForce": 9951.59531121887,
+      "NonbondedForce": 30226.474244918125,
+      "NonbondedForce exceptions (1-4)": 65027.44282102301,
+      "PeriodicTorsionForce": 2266.5269138971175
+    },
+    "initial_potential_energy_kj_mol": 44053.96415978581,
+    "maximum_bond_length_deviation_nm": 0.013031255087919386,
+    "minimization_iterations_requested": 10,
+    "minimized_potential_energy_kj_mol": 32790.61717193838,
+    "nonbonded_cutoff_nm": 1.0,
+    "openmm_version": "8.1.1",
+    "particle_count": 1548,
+    "periodic_chains": false,
+    "periodic_forces": [],
+    "position_restraint_atom_count": 0,
+    "position_restraint_parameter": null,
+    "python_executable": "<local-path>",
+    "serialized_constraints": "HBonds",
+    "serialized_ewald_error_tolerance": 0.0005,
+    "status": "passed",
+    "validation_constraints": "none",
+    "validation_ewald_error_tolerance": 1e-05,
+    "validation_platform": "Reference"
+  },
+  "outputs": {
+    "amber_coordinates": "structure.inpcrd",
+    "amber_topology": "structure.prmtop",
+    "coordinates": "structure.pdb",
+    "gromacs_coordinates": "structure.gro",
+    "gromacs_topology": "system.top",
+    "lammps_data": "system.data",
+    "lammps_input": "in.cellulose",
+    "openmm_runner": "run_openmm.py",
+    "openmm_state": "state.xml",
+    "openmm_system": "system.xml",
+    "openmm_topology": "topology.cif"
+  },
+  "reference_generation": {
+    "chemical_residues": [
+      "0GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "ROH"
+    ],
+    "degree_polymerization": 6,
+    "force_field": "GLYCAM",
+    "gromacs_conversion": {
+      "fudge_lj": 1.0,
+      "fudge_qq": 1.0,
+      "gromacs_coordinates": "cellulose_chain.gro",
+      "gromacs_topology": "cellulose_chain.top",
+      "molecule_count": 1,
+      "molecule_name": "CELLULOSE_CHAIN",
+      "parmed_python_executable": "<local-path>"
+    },
+    "leaprc": "leaprc.GLYCAM_06j-1",
+    "outputs": {
+      "inpcrd": "cellulose_chain.inpcrd",
+      "leap": "cellulose_chain.leap",
+      "pdb": "cellulose_chain.pdb",
+      "prmtop": "cellulose_chain.prmtop"
+    },
+    "tleap_executable": "tleap",
+    "tleap_residues": [
+      "ROH",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "4GB",
+      "0GB"
+    ],
+    "validation": {
+      "atom_count": 129,
+      "cap_residue_count": 1,
+      "glucose_residue_count": 6,
+      "scaling": {
+        "SCEE_SCALE_FACTOR": [
+          1.0
+        ],
+        "SCNB_SCALE_FACTOR": [
+          1.0
+        ]
+      },
+      "topology_residue_count": 7,
+      "total_charge": 2.220446049250313e-16
+    }
+  },
+  "shape": "slab"
+}

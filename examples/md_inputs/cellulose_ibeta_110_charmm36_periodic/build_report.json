@@ -1,0 +1,138 @@
+{
+  "allomorph": "I-beta",
+  "cellulose_forge_version": "1.1.2",
+  "chain_boundary": "periodic",
+  "chain_count": 8,
+  "charmm36_release": "charmm36-feb2026_cgenff-5.0.ff",
+  "chirality_validation": {
+    "configuration": "D-cellulose",
+    "expected_signed_volume_sign": "negative",
+    "minimum_absolute_signed_volume_angstrom3": 1.4897228914310885,
+    "residue_count": 48,
+    "status": "passed",
+    "stereocentre": "C1",
+    "substituent_order": [
+      "O5",
+      "C2",
+      "H1"
+    ]
+  },
+  "crystallographic_atom_count": 1008,
+  "degree_polymerization": 6,
+  "force_field": "CHARMM36",
+  "force_field_atom_count": 1008,
+  "generated_chain_charge": -8.326672684688674e-16,
+  "geometry_annotations": [
+    "shape=slab face=(1,1,0) layers=2",
+    "chains_per_layer=4 total_chains=8",
+    "degree_polymerization=6",
+    "chain_boundary=periodic",
+    "d_hkl=5.316996 angstrom",
+    "vacuum=30.000000 angstrom",
+    "padding_z=0.000000 angstrom total longitudinal padding",
+    "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+    "orientation_transform=proper_rotation determinant=+1",
+    "chain numbering starts at requested low-z face; within each layer low-x to high-x",
+    "size_mode=exact_counts"
+  ],
+  "interaction_counts_per_chain": {
+    "angles": 246,
+    "bonds": 132,
+    "dihedrals": 396,
+    "pairs": 378
+  },
+  "lammps_validation": {
+    "angle_count": 1968,
+    "atom_count": 1008,
+    "atom_type_count": 7,
+    "bond_count": 1056,
+    "data": "system.data",
+    "dihedral_count": 4560,
+    "dispersion_correction": false,
+    "improper_count": 0,
+    "input": "in.cellulose",
+    "input_scope": "single-point run 0 validation; not a dynamics protocol",
+    "special_bonds": "charmm",
+    "urey_bradley_count": 768,
+    "weighted_one_four_count": 3024,
+    "zero_force_constant_one_four_dihedrals": 0
+  },
+  "md_engines": [
+    "gromacs",
+    "openmm",
+    "lammps"
+  ],
+  "openmm_validation": {
+    "chain_axis": "y",
+    "constraint_count": 480,
+    "dispersion_correction": false,
+    "forces": [
+      "NonbondedForce",
+      "HarmonicBondForce",
+      "HarmonicAngleForce",
+      "PeriodicTorsionForce",
+      "CMMotionRemover"
+    ],
+    "harmonic_bond_count": 1824,
+    "initial_energies_kj_mol": {
+      "CMMotionRemover": 0.0,
+      "HarmonicAngleForce": 920.4686431950936,
+      "HarmonicBondForce": 9232.08367152899,
+      "NonbondedForce": 11322.826633771645,
+      "NonbondedForce exceptions (1-4)": 28797.61942099292,
+      "PeriodicTorsionForce": 6711.981079646052
+    },
+    "initial_potential_energy_kj_mol": 28187.36002814178,
+    "maximum_bond_length_deviation_nm": 0.023755121528379886,
+    "minimization_iterations_requested": 10,
+    "minimized_potential_energy_kj_mol": 19749.062418150672,
+    "nonbonded_cutoff_nm": 1.0,
+    "openmm_version": "8.1.1",
+    "particle_count": 1008,
+    "periodic_chains": true,
+    "periodic_forces": [
+      "NonbondedForce exceptions",
+      "HarmonicBondForce",
+      "HarmonicAngleForce",
+      "PeriodicTorsionForce"
+    ],
+    "position_restraint_atom_count": 0,
+    "position_restraint_parameter": null,
+    "python_executable": "<local-path>",
+    "serialized_constraints": "HBonds",
+    "serialized_ewald_error_tolerance": 0.0005,
+    "status": "passed",
+    "validation_constraints": "none",
+    "validation_ewald_error_tolerance": 1e-05,
+    "validation_platform": "Reference"
+  },
+  "outputs": {
+    "coordinates": "structure.pdb",
+    "gromacs_coordinates": "structure.gro",
+    "gromacs_force_field": "charmm36.ff",
+    "gromacs_molecule_topology": "cellulose_charmm36.itp",
+    "gromacs_topology": "system.top",
+    "lammps_data": "system.data",
+    "lammps_input": "in.cellulose",
+    "openmm_runner": "run_openmm.py",
+    "openmm_state": "state.xml",
+    "openmm_system": "system.xml",
+    "openmm_topology": "topology.cif"
+  },
+  "periodic_glycosidic_bond_validation": {
+    "mapped_geometry": {
+      "bond_count": 48,
+      "maximum_distance_angstrom": 1.4289763208431332
+    },
+    "written_topology": {
+      "bond_count": 48,
+      "maximum_distance_angstrom": 1.4289763208431332,
+      "molecule_count": 8,
+      "molecule_type_count": 1
+    }
+  },
+  "reference_force_field": "charmm36-feb2026_cgenff-5.0.ff",
+  "shape": "slab",
+  "status": "supported",
+  "topology_source": "native BGLC residue with periodic 14bb linkage"
+}

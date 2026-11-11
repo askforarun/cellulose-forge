@@ -1,0 +1,19 @@
+units real
+atom_style full
+boundary p p p
+bond_style harmonic
+angle_style charmm
+dihedral_style charmmfsw
+improper_style harmonic
+pair_style lj/charmmfsw/coul/long 10.0 12.0
+pair_modify mix arithmetic tail no
+special_bonds charmm
+read_data system.data
+kspace_style pppm 1.0e-5
+thermo 100
+thermo_style custom step temp pe ebond eangle edihed evdwl ecoul elong eimp
+timestep 1.0
+# This file is an initial-energy validation input, not a dynamics protocol.
+run 0
+# Explicit termination avoids an exit-time fault in some packaged LAMMPS builds.
+quit 0

@@ -1,0 +1,202 @@
+{
+  "allomorph": "beta",
+  "cellulose_forge_version": "1.1.2",
+  "chain_boundary": "periodic",
+  "chain_count": 8,
+  "charmm36_release": "charmm36-feb2026_cgenff-5.0.ff",
+  "charmm36_residue": "BGLCNA",
+  "chirality_validation": {
+    "configuration": "N-acetyl-beta-D-glucosamine",
+    "expected_signed_volume_signs": {
+      "C1": "negative",
+      "C2": "positive",
+      "C3": "negative",
+      "C4": "positive",
+      "C5": "negative"
+    },
+    "minimum_absolute_signed_volume_angstrom3": {
+      "C1": 1.4071535618282474,
+      "C2": 1.8896462868555106,
+      "C3": 1.8074287737567885,
+      "C4": 1.6165652258089445,
+      "C5": 1.74579660245983
+    },
+    "residue_count": 48,
+    "status": "passed",
+    "stereocentres": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "C5"
+    ],
+    "substituent_orders": {
+      "C1": [
+        "O5",
+        "C2",
+        "H1"
+      ],
+      "C2": [
+        "C1",
+        "C3",
+        "H2"
+      ],
+      "C3": [
+        "C2",
+        "C4",
+        "H3"
+      ],
+      "C4": [
+        "C3",
+        "C5",
+        "H4"
+      ],
+      "C5": [
+        "C4",
+        "O5",
+        "H5"
+      ]
+    }
+  },
+  "crystallographic_atom_count": 1296,
+  "crystallographic_source": {
+    "citation": "Nishiyama, Y.; Noishiki, Y.; Wada, M. Macromolecules 2011, 44, 950-957.",
+    "definition": "chitin/beta",
+    "doi": "10.1021/ma102240r",
+    "space_group": "P 1 1 21",
+    "temperature_k": 293.0
+  },
+  "degree_polymerization": 6,
+  "force_field": "CHARMM36",
+  "force_field_atom_count": 1296,
+  "generated_chain_charge": -6.661338147750939e-16,
+  "geometry_annotations": [
+    "shape=slab face=(1,0,0) layers=2",
+    "chains_per_layer=4 total_chains=8",
+    "degree_polymerization=6",
+    "chain_boundary=periodic",
+    "d_hkl=4.781421 angstrom",
+    "vacuum=30.000000 angstrom",
+    "padding_z=0.000000 angstrom total longitudinal padding",
+    "lateral_repeat=9.239000 angstrom",
+    "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+    "chain numbering starts at requested low-z face; within each layer low-x to high-x",
+    "construction=whole_chain_reciprocal_lattice_cut",
+    "size_mode=exact_counts"
+  ],
+  "interaction_counts_per_chain": {
+    "angles": 312,
+    "bonds": 168,
+    "dihedrals": 486,
+    "pairs": 456
+  },
+  "lammps_validation": {
+    "angle_count": 2496,
+    "atom_count": 1296,
+    "atom_type_count": 12,
+    "bond_count": 1344,
+    "data": "system.data",
+    "dihedral_count": 4992,
+    "dispersion_correction": false,
+    "improper_count": 96,
+    "input": "in.chitin",
+    "input_scope": "single-point run 0 validation; not a dynamics protocol",
+    "special_bonds": "charmm",
+    "urey_bradley_count": 1056,
+    "weighted_one_four_count": 3648,
+    "zero_force_constant_one_four_dihedrals": 480
+  },
+  "md_engines": [
+    "gromacs",
+    "openmm",
+    "lammps"
+  ],
+  "openmm_validation": {
+    "chain_axis": "y",
+    "constraint_count": 624,
+    "dispersion_correction": false,
+    "forces": [
+      "NonbondedForce",
+      "HarmonicBondForce",
+      "HarmonicAngleForce",
+      "PeriodicTorsionForce",
+      "HarmonicTorsionForce",
+      "CMMotionRemover"
+    ],
+    "harmonic_bond_count": 2400,
+    "initial_energies_kj_mol": {
+      "CMMotionRemover": 0.0,
+      "HarmonicAngleForce": 3521.2670361121,
+      "HarmonicBondForce": 23217.322637334702,
+      "HarmonicTorsionForce": 14.866350605573388,
+      "NonbondedForce": -1722.4506966959798,
+      "NonbondedForce exceptions (1-4)": 16123.910410178225,
+      "PeriodicTorsionForce": 5580.828960454524
+    },
+    "initial_potential_energy_kj_mol": 30611.83428781092,
+    "maximum_bond_length_deviation_nm": 0.026437209881397777,
+    "minimization_iterations_requested": 10,
+    "minimized_potential_energy_kj_mol": 4034.0333098840633,
+    "nonbonded_cutoff_nm": 1.0,
+    "openmm_version": "8.1.1",
+    "particle_count": 1296,
+    "periodic_chains": true,
+    "periodic_forces": [
+      "NonbondedForce exceptions",
+      "HarmonicBondForce",
+      "HarmonicAngleForce",
+      "PeriodicTorsionForce",
+      "CustomTorsionForce"
+    ],
+    "position_restraint_atom_count": 0,
+    "position_restraint_parameter": null,
+    "python_executable": "<local-path>",
+    "serialized_constraints": "HBonds",
+    "serialized_ewald_error_tolerance": 0.0005,
+    "status": "passed",
+    "validation_constraints": "none",
+    "validation_ewald_error_tolerance": 1e-05,
+    "validation_platform": "Reference"
+  },
+  "outputs": {
+    "coordinates": "structure.pdb",
+    "gromacs_coordinates": "structure.gro",
+    "gromacs_force_field": "charmm36.ff",
+    "gromacs_molecule_topology": "chitin_charmm36.itp",
+    "gromacs_topology": "system.top",
+    "lammps_data": "system.data",
+    "lammps_input": "in.chitin",
+    "openmm_runner": "run_openmm.py",
+    "openmm_state": "state.xml",
+    "openmm_system": "system.xml",
+    "openmm_topology": "topology.cif"
+  },
+  "periodic_glycosidic_bond_validation": {
+    "mapped_geometry": {
+      "bond_count": 48,
+      "maximum_distance_angstrom": 1.4639960659350162
+    },
+    "written_topology": {
+      "bond_count": 48,
+      "maximum_distance_angstrom": 1.4639960659350162,
+      "molecule_count": 8,
+      "molecule_type_count": 1
+    }
+  },
+  "polymer": "chitin",
+  "reference_force_field": "charmm36-feb2026_cgenff-5.0.ff",
+  "residue_name": "NAG",
+  "shape": "slab",
+  "status": "supported",
+  "topology_source": "native BGLCNA residue with periodic 14bb linkage",
+  "validation_scope": {
+    "cross_engine": "validation/chitin_charmm36_engines.json (alpha/beta periodic and finite (1 0 0) slabs, term-by-term vs GROMACS)",
+    "engines": [
+      "gromacs",
+      "openmm",
+      "lammps"
+    ],
+    "gromacs": "validation/chitin_charmm36_gromacs.json (alpha/beta bulk, periodic and finite (1 0 0) slabs)",
+    "reference": "validation/chitin_charmm36_reference_dp6.json (psfgen, DP6)"
+  }
+}

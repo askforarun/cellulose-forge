@@ -78,7 +78,7 @@ OpenMM for those. The software excludes functionalization, native CHARMM/PSF
 output, and arbitrary branched glycans. The CHARMM36 path generates GROMACS topology directly and
 does not require VMD or `psfgen` at runtime.
 
-### Chitin (development, coordinate-only)
+### Chitin
 
 `--polymer chitin` builds alpha- and beta-chitin unit cells, periodic bulk
 crystals, and chain-parallel slabs:
@@ -109,7 +109,53 @@ Slab geometry is tested for beta (100), (010), and (110) and alpha (100), (010),
 and (110): chain directions, periodic O4-C1 bonds, flat layers, an exact
 lattice repeat across the periodic box, and no interchain clashes. Reference
 faces for force-field validation have not yet been selected from the
-literature. Fibrils and force-field output for chitin are not yet available.
+literature.
+
+#### CHARMM36 (GROMACS, OpenMM, LAMMPS)
+
+`--force-field charmm36` builds chitin with the CHARMM36 `BGLCNA` residue,
+linked by the `14bb` patch, for GROMACS and, with `--md-engine openmm` or
+`--md-engine lammps`, for OpenMM and LAMMPS:
+
+```bash
+cellulose-forge build --polymer chitin --allomorph beta --shape slab \
+  --face 1 0 0 --layers 3 --chains-per-layer 4 --degree-polymerization 6 \
+  --chain-boundary periodic --vacuum 20 --force-field charmm36 --output beta_chitin_100
+```
+
+The output directory contains `chitin_charmm36.itp` (cellulose keeps
+`cellulose_charmm36.itp`), `system.top`, `structure.gro`, and a local
+`charmm36.ff`. Each residue carries the two acetyl impropers. Finite chains
+use free-sugar termini: the reducing end keeps O1/HO1 (-0.18 e) and the
+non-reducing end keeps HO4 (+0.18 e).
+
+The generated finite DP6 topology was compared with an independent psfgen
+build from the canonical `top_all36_carb.rtf`
+(`validation/validate_chitin_charmm36_reference.py`), covering atom
+properties, terminal composition, interaction graphs, impropers, 1-4 pairs,
+and function types. Numerical parameters were resolved and exercised through
+the GROMACS validation workflows: alpha and beta periodic bulk, periodic
+(1 0 0) slabs, and finite (1 0 0) slabs pass `gmx grompp`, minimization, and a
+1 ps NVT smoke test (`validation/validate_chitin_charmm36_gromacs.py`).
+Position restraints for chitin use the `POSRES_CHITIN` define. psfgen was used only to
+build that reference; CelluloseForge does not need it.
+
+OpenMM and LAMMPS energies were compared with GROMACS term by term for alpha
+and beta, finite and periodic (1 0 0) slabs
+(`validation/validate_chitin_charmm36_engines.py`): bonds, angles,
+Urey-Bradley, proper dihedrals, the acetyl impropers, 1-4 Lennard-Jones, 1-4
+electrostatics, and total nonbonded energy. Bonded terms agree within
+0.03 kJ/mol and nonbonded totals within 0.7 kJ/mol. LAMMPS impropers use
+`improper_style harmonic` with K = k/2 (GROMACS E = k xi^2 / 2). The LAMMPS
+comparison removes three documented conventions: the CHARMM Coulomb constant
+(332.0716 vs 332.0637), the constant 1-4 LJ offsets of
+`dihedral_style charmmfsw`, and the constant shift between CHARMM vfswitch and
+GROMACS force-switch. The two Lennard-Jones convention differences are
+constant potential offsets and do not affect forces. The different Coulomb
+constants produce a small proportional difference (about 2.4e-5) in
+electrostatic energies and forces, which is accounted for in the energy
+comparison. GLYCAM/Amber and
+fibrils are not yet available for chitin.
 
 ## Table of contents
 

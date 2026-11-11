@@ -70,6 +70,7 @@ jobs:
           uv run cellulose-forge forcefield install charmm36 \
             --archive charmm36-feb2026_cgenff-5.0.ff.tgz
       - run: uv run pytest tests/integration/test_gromacs_workflows.py -m "gromacs and scientific_integration" -q
+      - run: uv run pytest tests/integration/test_chitin_charmm36.py tests/unit/test_charmm36_chitin.py -q -rs
 
   openmm-gromacs-integration:
     # Exercise the native OpenMM output against independent GROMACS
@@ -131,3 +132,16 @@ jobs:
         run: |
           uv run pytest tests/integration/test_lammps_workflows.py \
             -m "lammps and openmm and scientific_integration" -q
+      - name: Chitin CHARMM36 CLI builds for GROMACS, OpenMM and LAMMPS (no skips)
+        run: |
+          uv run pytest tests/integration/test_chitin_charmm36.py \
+            tests/unit/test_charmm36_chitin.py -q -rs | tee chitin-tests.log
+          if grep -q "skipped" chitin-tests.log; then
+            echo "chitin engine tests were skipped"; exit 1
+          fi
+      - name: Chitin term-by-term energies vs GROMACS (OpenMM and LAMMPS)
+        run: |
+          uv run python validation/validate_chitin_charmm36_engines.py \
+            --work-directory chitin-engines \
+            --openmm-python "$(uv run python -c 'import sys; print(sys.executable)')" \
+            --lammps "$(command -v lmp)" --output chitin-engines.json

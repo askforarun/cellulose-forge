@@ -1,0 +1,2113 @@
+data_cell
+# Created with OpenMM 8.1.1, 2026-11-11
+#
+_cell.length_a        23.8579
+_cell.length_b        31.1400
+_cell.length_c        41.1221
+_cell.angle_alpha     90.0000
+_cell.angle_beta      90.0000
+_cell.angle_gamma     90.0000
+#
+loop_
+_struct_conn.id
+_struct_conn.conn_type_id
+_struct_conn.ptnr1_label_asym_id
+_struct_conn.ptnr1_label_comp_id
+_struct_conn.ptnr1_label_seq_id
+_struct_conn.ptnr1_label_atom_id
+_struct_conn.ptnr2_label_asym_id
+_struct_conn.ptnr2_label_comp_id
+_struct_conn.ptnr2_label_seq_id
+_struct_conn.ptnr2_label_atom_id
+bond1 covale 1 BGLC     1 C1   1 BGLC     1 H1  
+bond2 covale 1 BGLC     1 C1   1 BGLC     1 O5  
+bond3 covale 1 BGLC     1 C1   1 BGLC     1 C2  
+bond4 covale 1 BGLC     1 C5   1 BGLC     1 H5  
+bond5 covale 1 BGLC     1 C5   1 BGLC     1 O5  
+bond6 covale 1 BGLC     1 C5   1 BGLC     1 C4  
+bond7 covale 1 BGLC     1 C5   1 BGLC     1 C6  
+bond8 covale 1 BGLC     1 C2   1 BGLC     1 H2  
+bond9 covale 1 BGLC     1 C2   1 BGLC     1 O2  
+bond10 covale 1 BGLC     1 C2   1 BGLC     1 C3  
+bond11 covale 1 BGLC     1 O2   1 BGLC     1 HO2 
+bond12 covale 1 BGLC     1 C3   1 BGLC     1 H3  
+bond13 covale 1 BGLC     1 C3   1 BGLC     1 O3  
+bond14 covale 1 BGLC     1 C3   1 BGLC     1 C4  
+bond15 covale 1 BGLC     1 O3   1 BGLC     1 HO3 
+bond16 covale 1 BGLC     1 C4   1 BGLC     1 H4  
+bond17 covale 1 BGLC     1 C4   1 BGLC     1 O4  
+bond18 covale 1 BGLC     1 O4   1 BGLC     2 C1  
+bond19 covale 1 BGLC     1 C6   1 BGLC     1 H61 
+bond20 covale 1 BGLC     1 C6   1 BGLC     1 H62 
+bond21 covale 1 BGLC     1 C6   1 BGLC     1 O6  
+bond22 covale 1 BGLC     1 O6   1 BGLC     1 HO6 
+bond23 covale 1 BGLC     2 C1   1 BGLC     2 H1  
+bond24 covale 1 BGLC     2 C1   1 BGLC     2 O5  
+bond25 covale 1 BGLC     2 C1   1 BGLC     2 C2  
+bond26 covale 1 BGLC     2 C5   1 BGLC     2 H5  
+bond27 covale 1 BGLC     2 C5   1 BGLC     2 O5  
+bond28 covale 1 BGLC     2 C5   1 BGLC     2 C4  
+bond29 covale 1 BGLC     2 C5   1 BGLC     2 C6  
+bond30 covale 1 BGLC     2 C2   1 BGLC     2 H2  
+bond31 covale 1 BGLC     2 C2   1 BGLC     2 O2  
+bond32 covale 1 BGLC     2 C2   1 BGLC     2 C3  
+bond33 covale 1 BGLC     2 O2   1 BGLC     2 HO2 
+bond34 covale 1 BGLC     2 C3   1 BGLC     2 H3  
+bond35 covale 1 BGLC     2 C3   1 BGLC     2 O3  
+bond36 covale 1 BGLC     2 C3   1 BGLC     2 C4  
+bond37 covale 1 BGLC     2 O3   1 BGLC     2 HO3 
+bond38 covale 1 BGLC     2 C4   1 BGLC     2 H4  
+bond39 covale 1 BGLC     2 C4   1 BGLC     2 O4  
+bond40 covale 1 BGLC     2 O4   1 BGLC     3 C1  
+bond41 covale 1 BGLC     2 C6   1 BGLC     2 H61 
+bond42 covale 1 BGLC     2 C6   1 BGLC     2 H62 
+bond43 covale 1 BGLC     2 C6   1 BGLC     2 O6  
+bond44 covale 1 BGLC     2 O6   1 BGLC     2 HO6 
+bond45 covale 1 BGLC     3 C1   1 BGLC     3 H1  
+bond46 covale 1 BGLC     3 C1   1 BGLC     3 O5  
+bond47 covale 1 BGLC     3 C1   1 BGLC     3 C2  
+bond48 covale 1 BGLC     3 C5   1 BGLC     3 H5  
+bond49 covale 1 BGLC     3 C5   1 BGLC     3 O5  
+bond50 covale 1 BGLC     3 C5   1 BGLC     3 C4  
+bond51 covale 1 BGLC     3 C5   1 BGLC     3 C6  
+bond52 covale 1 BGLC     3 C2   1 BGLC     3 H2  
+bond53 covale 1 BGLC     3 C2   1 BGLC     3 O2  
+bond54 covale 1 BGLC     3 C2   1 BGLC     3 C3  
+bond55 covale 1 BGLC     3 O2   1 BGLC     3 HO2 
+bond56 covale 1 BGLC     3 C3   1 BGLC     3 H3  
+bond57 covale 1 BGLC     3 C3   1 BGLC     3 O3  
+bond58 covale 1 BGLC     3 C3   1 BGLC     3 C4  
+bond59 covale 1 BGLC     3 O3   1 BGLC     3 HO3 
+bond60 covale 1 BGLC     3 C4   1 BGLC     3 H4  
+bond61 covale 1 BGLC     3 C4   1 BGLC     3 O4  
+bond62 covale 1 BGLC     3 O4   1 BGLC     4 C1  
+bond63 covale 1 BGLC     3 C6   1 BGLC     3 H61 
+bond64 covale 1 BGLC     3 C6   1 BGLC     3 H62 
+bond65 covale 1 BGLC     3 C6   1 BGLC     3 O6  
+bond66 covale 1 BGLC     3 O6   1 BGLC     3 HO6 
+bond67 covale 1 BGLC     4 C1   1 BGLC     4 H1  
+bond68 covale 1 BGLC     4 C1   1 BGLC     4 O5  
+bond69 covale 1 BGLC     4 C1   1 BGLC     4 C2  
+bond70 covale 1 BGLC     4 C5   1 BGLC     4 H5  
+bond71 covale 1 BGLC     4 C5   1 BGLC     4 O5  
+bond72 covale 1 BGLC     4 C5   1 BGLC     4 C4  
+bond73 covale 1 BGLC     4 C5   1 BGLC     4 C6  
+bond74 covale 1 BGLC     4 C2   1 BGLC     4 H2  
+bond75 covale 1 BGLC     4 C2   1 BGLC     4 O2  
+bond76 covale 1 BGLC     4 C2   1 BGLC     4 C3  
+bond77 covale 1 BGLC     4 O2   1 BGLC     4 HO2 
+bond78 covale 1 BGLC     4 C3   1 BGLC     4 H3  
+bond79 covale 1 BGLC     4 C3   1 BGLC     4 O3  
+bond80 covale 1 BGLC     4 C3   1 BGLC     4 C4  
+bond81 covale 1 BGLC     4 O3   1 BGLC     4 HO3 
+bond82 covale 1 BGLC     4 C4   1 BGLC     4 H4  
+bond83 covale 1 BGLC     4 C4   1 BGLC     4 O4  
+bond84 covale 1 BGLC     4 O4   1 BGLC     5 C1  
+bond85 covale 1 BGLC     4 C6   1 BGLC     4 H61 
+bond86 covale 1 BGLC     4 C6   1 BGLC     4 H62 
+bond87 covale 1 BGLC     4 C6   1 BGLC     4 O6  
+bond88 covale 1 BGLC     4 O6   1 BGLC     4 HO6 
+bond89 covale 1 BGLC     5 C1   1 BGLC     5 H1  
+bond90 covale 1 BGLC     5 C1   1 BGLC     5 O5  
+bond91 covale 1 BGLC     5 C1   1 BGLC     5 C2  
+bond92 covale 1 BGLC     5 C5   1 BGLC     5 H5  
+bond93 covale 1 BGLC     5 C5   1 BGLC     5 O5  
+bond94 covale 1 BGLC     5 C5   1 BGLC     5 C4  
+bond95 covale 1 BGLC     5 C5   1 BGLC     5 C6  
+bond96 covale 1 BGLC     5 C2   1 BGLC     5 H2  
+bond97 covale 1 BGLC     5 C2   1 BGLC     5 O2  
+bond98 covale 1 BGLC     5 C2   1 BGLC     5 C3  
+bond99 covale 1 BGLC     5 O2   1 BGLC     5 HO2 
+bond100 covale 1 BGLC     5 C3   1 BGLC     5 H3  
+bond101 covale 1 BGLC     5 C3   1 BGLC     5 O3  
+bond102 covale 1 BGLC     5 C3   1 BGLC     5 C4  
+bond103 covale 1 BGLC     5 O3   1 BGLC     5 HO3 
+bond104 covale 1 BGLC     5 C4   1 BGLC     5 H4  
+bond105 covale 1 BGLC     5 C4   1 BGLC     5 O4  
+bond106 covale 1 BGLC     5 O4   1 BGLC     6 C1  
+bond107 covale 1 BGLC     5 C6   1 BGLC     5 H61 
+bond108 covale 1 BGLC     5 C6   1 BGLC     5 H62 
+bond109 covale 1 BGLC     5 C6   1 BGLC     5 O6  
+bond110 covale 1 BGLC     5 O6   1 BGLC     5 HO6 
+bond111 covale 1 BGLC     6 C1   1 BGLC     6 H1  
+bond112 covale 1 BGLC     6 C1   1 BGLC     6 O5  
+bond113 covale 1 BGLC     6 C1   1 BGLC     6 C2  
+bond114 covale 1 BGLC     6 C5   1 BGLC     6 H5  
+bond115 covale 1 BGLC     6 C5   1 BGLC     6 O5  
+bond116 covale 1 BGLC     6 C5   1 BGLC     6 C4  
+bond117 covale 1 BGLC     6 C5   1 BGLC     6 C6  
+bond118 covale 1 BGLC     6 C2   1 BGLC     6 H2  
+bond119 covale 1 BGLC     6 C2   1 BGLC     6 O2  
+bond120 covale 1 BGLC     6 C2   1 BGLC     6 C3  
+bond121 covale 1 BGLC     6 O2   1 BGLC     6 HO2 
+bond122 covale 1 BGLC     6 C3   1 BGLC     6 H3  
+bond123 covale 1 BGLC     6 C3   1 BGLC     6 O3  
+bond124 covale 1 BGLC     6 C3   1 BGLC     6 C4  
+bond125 covale 1 BGLC     6 O3   1 BGLC     6 HO3 
+bond126 covale 1 BGLC     6 C4   1 BGLC     6 H4  
+bond127 covale 1 BGLC     6 C4   1 BGLC     6 O4  
+bond128 covale 1 BGLC     6 O4   1 BGLC     1 C1  
+bond129 covale 1 BGLC     6 C6   1 BGLC     6 H61 
+bond130 covale 1 BGLC     6 C6   1 BGLC     6 H62 
+bond131 covale 1 BGLC     6 C6   1 BGLC     6 O6  
+bond132 covale 1 BGLC     6 O6   1 BGLC     6 HO6 
+bond133 covale 2 BGLC     7 C1   2 BGLC     7 H1  
+bond134 covale 2 BGLC     7 C1   2 BGLC     7 O5  
+bond135 covale 2 BGLC     7 C1   2 BGLC     7 C2  
+bond136 covale 2 BGLC     7 C5   2 BGLC     7 H5  
+bond137 covale 2 BGLC     7 C5   2 BGLC     7 O5  
+bond138 covale 2 BGLC     7 C5   2 BGLC     7 C4  
+bond139 covale 2 BGLC     7 C5   2 BGLC     7 C6  
+bond140 covale 2 BGLC     7 C2   2 BGLC     7 H2  
+bond141 covale 2 BGLC     7 C2   2 BGLC     7 O2  
+bond142 covale 2 BGLC     7 C2   2 BGLC     7 C3  
+bond143 covale 2 BGLC     7 O2   2 BGLC     7 HO2 
+bond144 covale 2 BGLC     7 C3   2 BGLC     7 H3  
+bond145 covale 2 BGLC     7 C3   2 BGLC     7 O3  
+bond146 covale 2 BGLC     7 C3   2 BGLC     7 C4  
+bond147 covale 2 BGLC     7 O3   2 BGLC     7 HO3 
+bond148 covale 2 BGLC     7 C4   2 BGLC     7 H4  
+bond149 covale 2 BGLC     7 C4   2 BGLC     7 O4  
+bond150 covale 2 BGLC     7 O4   2 BGLC     8 C1  
+bond151 covale 2 BGLC     7 C6   2 BGLC     7 H61 
+bond152 covale 2 BGLC     7 C6   2 BGLC     7 H62 
+bond153 covale 2 BGLC     7 C6   2 BGLC     7 O6  
+bond154 covale 2 BGLC     7 O6   2 BGLC     7 HO6 
+bond155 covale 2 BGLC     8 C1   2 BGLC     8 H1  
+bond156 covale 2 BGLC     8 C1   2 BGLC     8 O5  
+bond157 covale 2 BGLC     8 C1   2 BGLC     8 C2  
+bond158 covale 2 BGLC     8 C5   2 BGLC     8 H5  
+bond159 covale 2 BGLC     8 C5   2 BGLC     8 O5  
+bond160 covale 2 BGLC     8 C5   2 BGLC     8 C4  
+bond161 covale 2 BGLC     8 C5   2 BGLC     8 C6  
+bond162 covale 2 BGLC     8 C2   2 BGLC     8 H2  
+bond163 covale 2 BGLC     8 C2   2 BGLC     8 O2  
+bond164 covale 2 BGLC     8 C2   2 BGLC     8 C3  
+bond165 covale 2 BGLC     8 O2   2 BGLC     8 HO2 
+bond166 covale 2 BGLC     8 C3   2 BGLC     8 H3  
+bond167 covale 2 BGLC     8 C3   2 BGLC     8 O3  
+bond168 covale 2 BGLC     8 C3   2 BGLC     8 C4  
+bond169 covale 2 BGLC     8 O3   2 BGLC     8 HO3 
+bond170 covale 2 BGLC     8 C4   2 BGLC     8 H4  
+bond171 covale 2 BGLC     8 C4   2 BGLC     8 O4  
+bond172 covale 2 BGLC     8 O4   2 BGLC     9 C1  
+bond173 covale 2 BGLC     8 C6   2 BGLC     8 H61 
+bond174 covale 2 BGLC     8 C6   2 BGLC     8 H62 
+bond175 covale 2 BGLC     8 C6   2 BGLC     8 O6  
+bond176 covale 2 BGLC     8 O6   2 BGLC     8 HO6 
+bond177 covale 2 BGLC     9 C1   2 BGLC     9 H1  
+bond178 covale 2 BGLC     9 C1   2 BGLC     9 O5  
+bond179 covale 2 BGLC     9 C1   2 BGLC     9 C2  
+bond180 covale 2 BGLC     9 C5   2 BGLC     9 H5  
+bond181 covale 2 BGLC     9 C5   2 BGLC     9 O5  
+bond182 covale 2 BGLC     9 C5   2 BGLC     9 C4  
+bond183 covale 2 BGLC     9 C5   2 BGLC     9 C6  
+bond184 covale 2 BGLC     9 C2   2 BGLC     9 H2  
+bond185 covale 2 BGLC     9 C2   2 BGLC     9 O2  
+bond186 covale 2 BGLC     9 C2   2 BGLC     9 C3  
+bond187 covale 2 BGLC     9 O2   2 BGLC     9 HO2 
+bond188 covale 2 BGLC     9 C3   2 BGLC     9 H3  
+bond189 covale 2 BGLC     9 C3   2 BGLC     9 O3  
+bond190 covale 2 BGLC     9 C3   2 BGLC     9 C4  
+bond191 covale 2 BGLC     9 O3   2 BGLC     9 HO3 
+bond192 covale 2 BGLC     9 C4   2 BGLC     9 H4  
+bond193 covale 2 BGLC     9 C4   2 BGLC     9 O4  
+bond194 covale 2 BGLC     9 O4   2 BGLC    10 C1  
+bond195 covale 2 BGLC     9 C6   2 BGLC     9 H61 
+bond196 covale 2 BGLC     9 C6   2 BGLC     9 H62 
+bond197 covale 2 BGLC     9 C6   2 BGLC     9 O6  
+bond198 covale 2 BGLC     9 O6   2 BGLC     9 HO6 
+bond199 covale 2 BGLC    10 C1   2 BGLC    10 H1  
+bond200 covale 2 BGLC    10 C1   2 BGLC    10 O5  
+bond201 covale 2 BGLC    10 C1   2 BGLC    10 C2  
+bond202 covale 2 BGLC    10 C5   2 BGLC    10 H5  
+bond203 covale 2 BGLC    10 C5   2 BGLC    10 O5  
+bond204 covale 2 BGLC    10 C5   2 BGLC    10 C4  
+bond205 covale 2 BGLC    10 C5   2 BGLC    10 C6  
+bond206 covale 2 BGLC    10 C2   2 BGLC    10 H2  
+bond207 covale 2 BGLC    10 C2   2 BGLC    10 O2  
+bond208 covale 2 BGLC    10 C2   2 BGLC    10 C3  
+bond209 covale 2 BGLC    10 O2   2 BGLC    10 HO2 
+bond210 covale 2 BGLC    10 C3   2 BGLC    10 H3  
+bond211 covale 2 BGLC    10 C3   2 BGLC    10 O3  
+bond212 covale 2 BGLC    10 C3   2 BGLC    10 C4  
+bond213 covale 2 BGLC    10 O3   2 BGLC    10 HO3 
+bond214 covale 2 BGLC    10 C4   2 BGLC    10 H4  
+bond215 covale 2 BGLC    10 C4   2 BGLC    10 O4  
+bond216 covale 2 BGLC    10 O4   2 BGLC    11 C1  
+bond217 covale 2 BGLC    10 C6   2 BGLC    10 H61 
+bond218 covale 2 BGLC    10 C6   2 BGLC    10 H62 
+bond219 covale 2 BGLC    10 C6   2 BGLC    10 O6  
+bond220 covale 2 BGLC    10 O6   2 BGLC    10 HO6 
+bond221 covale 2 BGLC    11 C1   2 BGLC    11 H1  
+bond222 covale 2 BGLC    11 C1   2 BGLC    11 O5  
+bond223 covale 2 BGLC    11 C1   2 BGLC    11 C2  
+bond224 covale 2 BGLC    11 C5   2 BGLC    11 H5  
+bond225 covale 2 BGLC    11 C5   2 BGLC    11 O5  
+bond226 covale 2 BGLC    11 C5   2 BGLC    11 C4  
+bond227 covale 2 BGLC    11 C5   2 BGLC    11 C6  
+bond228 covale 2 BGLC    11 C2   2 BGLC    11 H2  
+bond229 covale 2 BGLC    11 C2   2 BGLC    11 O2  
+bond230 covale 2 BGLC    11 C2   2 BGLC    11 C3  
+bond231 covale 2 BGLC    11 O2   2 BGLC    11 HO2 
+bond232 covale 2 BGLC    11 C3   2 BGLC    11 H3  
+bond233 covale 2 BGLC    11 C3   2 BGLC    11 O3  
+bond234 covale 2 BGLC    11 C3   2 BGLC    11 C4  
+bond235 covale 2 BGLC    11 O3   2 BGLC    11 HO3 
+bond236 covale 2 BGLC    11 C4   2 BGLC    11 H4  
+bond237 covale 2 BGLC    11 C4   2 BGLC    11 O4  
+bond238 covale 2 BGLC    11 O4   2 BGLC    12 C1  
+bond239 covale 2 BGLC    11 C6   2 BGLC    11 H61 
+bond240 covale 2 BGLC    11 C6   2 BGLC    11 H62 
+bond241 covale 2 BGLC    11 C6   2 BGLC    11 O6  
+bond242 covale 2 BGLC    11 O6   2 BGLC    11 HO6 
+bond243 covale 2 BGLC    12 C1   2 BGLC    12 H1  
+bond244 covale 2 BGLC    12 C1   2 BGLC    12 O5  
+bond245 covale 2 BGLC    12 C1   2 BGLC    12 C2  
+bond246 covale 2 BGLC    12 C5   2 BGLC    12 H5  
+bond247 covale 2 BGLC    12 C5   2 BGLC    12 O5  
+bond248 covale 2 BGLC    12 C5   2 BGLC    12 C4  
+bond249 covale 2 BGLC    12 C5   2 BGLC    12 C6  
+bond250 covale 2 BGLC    12 C2   2 BGLC    12 H2  
+bond251 covale 2 BGLC    12 C2   2 BGLC    12 O2  
+bond252 covale 2 BGLC    12 C2   2 BGLC    12 C3  
+bond253 covale 2 BGLC    12 O2   2 BGLC    12 HO2 
+bond254 covale 2 BGLC    12 C3   2 BGLC    12 H3  
+bond255 covale 2 BGLC    12 C3   2 BGLC    12 O3  
+bond256 covale 2 BGLC    12 C3   2 BGLC    12 C4  
+bond257 covale 2 BGLC    12 O3   2 BGLC    12 HO3 
+bond258 covale 2 BGLC    12 C4   2 BGLC    12 H4  
+bond259 covale 2 BGLC    12 C4   2 BGLC    12 O4  
+bond260 covale 2 BGLC    12 O4   2 BGLC     7 C1  
+bond261 covale 2 BGLC    12 C6   2 BGLC    12 H61 
+bond262 covale 2 BGLC    12 C6   2 BGLC    12 H62 
+bond263 covale 2 BGLC    12 C6   2 BGLC    12 O6  
+bond264 covale 2 BGLC    12 O6   2 BGLC    12 HO6 
+bond265 covale 3 BGLC    13 C1   3 BGLC    13 H1  
+bond266 covale 3 BGLC    13 C1   3 BGLC    13 O5  
+bond267 covale 3 BGLC    13 C1   3 BGLC    13 C2  
+bond268 covale 3 BGLC    13 C5   3 BGLC    13 H5  
+bond269 covale 3 BGLC    13 C5   3 BGLC    13 O5  
+bond270 covale 3 BGLC    13 C5   3 BGLC    13 C4  
+bond271 covale 3 BGLC    13 C5   3 BGLC    13 C6  
+bond272 covale 3 BGLC    13 C2   3 BGLC    13 H2  
+bond273 covale 3 BGLC    13 C2   3 BGLC    13 O2  
+bond274 covale 3 BGLC    13 C2   3 BGLC    13 C3  
+bond275 covale 3 BGLC    13 O2   3 BGLC    13 HO2 
+bond276 covale 3 BGLC    13 C3   3 BGLC    13 H3  
+bond277 covale 3 BGLC    13 C3   3 BGLC    13 O3  
+bond278 covale 3 BGLC    13 C3   3 BGLC    13 C4  
+bond279 covale 3 BGLC    13 O3   3 BGLC    13 HO3 
+bond280 covale 3 BGLC    13 C4   3 BGLC    13 H4  
+bond281 covale 3 BGLC    13 C4   3 BGLC    13 O4  
+bond282 covale 3 BGLC    13 O4   3 BGLC    14 C1  
+bond283 covale 3 BGLC    13 C6   3 BGLC    13 H61 
+bond284 covale 3 BGLC    13 C6   3 BGLC    13 H62 
+bond285 covale 3 BGLC    13 C6   3 BGLC    13 O6  
+bond286 covale 3 BGLC    13 O6   3 BGLC    13 HO6 
+bond287 covale 3 BGLC    14 C1   3 BGLC    14 H1  
+bond288 covale 3 BGLC    14 C1   3 BGLC    14 O5  
+bond289 covale 3 BGLC    14 C1   3 BGLC    14 C2  
+bond290 covale 3 BGLC    14 C5   3 BGLC    14 H5  
+bond291 covale 3 BGLC    14 C5   3 BGLC    14 O5  
+bond292 covale 3 BGLC    14 C5   3 BGLC    14 C4  
+bond293 covale 3 BGLC    14 C5   3 BGLC    14 C6  
+bond294 covale 3 BGLC    14 C2   3 BGLC    14 H2  
+bond295 covale 3 BGLC    14 C2   3 BGLC    14 O2  
+bond296 covale 3 BGLC    14 C2   3 BGLC    14 C3  
+bond297 covale 3 BGLC    14 O2   3 BGLC    14 HO2 
+bond298 covale 3 BGLC    14 C3   3 BGLC    14 H3  
+bond299 covale 3 BGLC    14 C3   3 BGLC    14 O3  
+bond300 covale 3 BGLC    14 C3   3 BGLC    14 C4  
+bond301 covale 3 BGLC    14 O3   3 BGLC    14 HO3 
+bond302 covale 3 BGLC    14 C4   3 BGLC    14 H4  
+bond303 covale 3 BGLC    14 C4   3 BGLC    14 O4  
+bond304 covale 3 BGLC    14 O4   3 BGLC    15 C1  
+bond305 covale 3 BGLC    14 C6   3 BGLC    14 H61 
+bond306 covale 3 BGLC    14 C6   3 BGLC    14 H62 
+bond307 covale 3 BGLC    14 C6   3 BGLC    14 O6  
+bond308 covale 3 BGLC    14 O6   3 BGLC    14 HO6 
+bond309 covale 3 BGLC    15 C1   3 BGLC    15 H1  
+bond310 covale 3 BGLC    15 C1   3 BGLC    15 O5  
+bond311 covale 3 BGLC    15 C1   3 BGLC    15 C2  
+bond312 covale 3 BGLC    15 C5   3 BGLC    15 H5  
+bond313 covale 3 BGLC    15 C5   3 BGLC    15 O5  
+bond314 covale 3 BGLC    15 C5   3 BGLC    15 C4  
+bond315 covale 3 BGLC    15 C5   3 BGLC    15 C6  
+bond316 covale 3 BGLC    15 C2   3 BGLC    15 H2  
+bond317 covale 3 BGLC    15 C2   3 BGLC    15 O2  
+bond318 covale 3 BGLC    15 C2   3 BGLC    15 C3  
+bond319 covale 3 BGLC    15 O2   3 BGLC    15 HO2 
+bond320 covale 3 BGLC    15 C3   3 BGLC    15 H3  
+bond321 covale 3 BGLC    15 C3   3 BGLC    15 O3  
+bond322 covale 3 BGLC    15 C3   3 BGLC    15 C4  
+bond323 covale 3 BGLC    15 O3   3 BGLC    15 HO3 
+bond324 covale 3 BGLC    15 C4   3 BGLC    15 H4  
+bond325 covale 3 BGLC    15 C4   3 BGLC    15 O4  
+bond326 covale 3 BGLC    15 O4   3 BGLC    16 C1  
+bond327 covale 3 BGLC    15 C6   3 BGLC    15 H61 
+bond328 covale 3 BGLC    15 C6   3 BGLC    15 H62 
+bond329 covale 3 BGLC    15 C6   3 BGLC    15 O6  
+bond330 covale 3 BGLC    15 O6   3 BGLC    15 HO6 
+bond331 covale 3 BGLC    16 C1   3 BGLC    16 H1  
+bond332 covale 3 BGLC    16 C1   3 BGLC    16 O5  
+bond333 covale 3 BGLC    16 C1   3 BGLC    16 C2  
+bond334 covale 3 BGLC    16 C5   3 BGLC    16 H5  
+bond335 covale 3 BGLC    16 C5   3 BGLC    16 O5  
+bond336 covale 3 BGLC    16 C5   3 BGLC    16 C4  
+bond337 covale 3 BGLC    16 C5   3 BGLC    16 C6  
+bond338 covale 3 BGLC    16 C2   3 BGLC    16 H2  
+bond339 covale 3 BGLC    16 C2   3 BGLC    16 O2  
+bond340 covale 3 BGLC    16 C2   3 BGLC    16 C3  
+bond341 covale 3 BGLC    16 O2   3 BGLC    16 HO2 
+bond342 covale 3 BGLC    16 C3   3 BGLC    16 H3  
+bond343 covale 3 BGLC    16 C3   3 BGLC    16 O3  
+bond344 covale 3 BGLC    16 C3   3 BGLC    16 C4  
+bond345 covale 3 BGLC    16 O3   3 BGLC    16 HO3 
+bond346 covale 3 BGLC    16 C4   3 BGLC    16 H4  
+bond347 covale 3 BGLC    16 C4   3 BGLC    16 O4  
+bond348 covale 3 BGLC    16 O4   3 BGLC    17 C1  
+bond349 covale 3 BGLC    16 C6   3 BGLC    16 H61 
+bond350 covale 3 BGLC    16 C6   3 BGLC    16 H62 
+bond351 covale 3 BGLC    16 C6   3 BGLC    16 O6  
+bond352 covale 3 BGLC    16 O6   3 BGLC    16 HO6 
+bond353 covale 3 BGLC    17 C1   3 BGLC    17 H1  
+bond354 covale 3 BGLC    17 C1   3 BGLC    17 O5  
+bond355 covale 3 BGLC    17 C1   3 BGLC    17 C2  
+bond356 covale 3 BGLC    17 C5   3 BGLC    17 H5  
+bond357 covale 3 BGLC    17 C5   3 BGLC    17 O5  
+bond358 covale 3 BGLC    17 C5   3 BGLC    17 C4  
+bond359 covale 3 BGLC    17 C5   3 BGLC    17 C6  
+bond360 covale 3 BGLC    17 C2   3 BGLC    17 H2  
+bond361 covale 3 BGLC    17 C2   3 BGLC    17 O2  
+bond362 covale 3 BGLC    17 C2   3 BGLC    17 C3  
+bond363 covale 3 BGLC    17 O2   3 BGLC    17 HO2 
+bond364 covale 3 BGLC    17 C3   3 BGLC    17 H3  
+bond365 covale 3 BGLC    17 C3   3 BGLC    17 O3  
+bond366 covale 3 BGLC    17 C3   3 BGLC    17 C4  
+bond367 covale 3 BGLC    17 O3   3 BGLC    17 HO3 
+bond368 covale 3 BGLC    17 C4   3 BGLC    17 H4  
+bond369 covale 3 BGLC    17 C4   3 BGLC    17 O4  
+bond370 covale 3 BGLC    17 O4   3 BGLC    18 C1  
+bond371 covale 3 BGLC    17 C6   3 BGLC    17 H61 
+bond372 covale 3 BGLC    17 C6   3 BGLC    17 H62 
+bond373 covale 3 BGLC    17 C6   3 BGLC    17 O6  
+bond374 covale 3 BGLC    17 O6   3 BGLC    17 HO6 
+bond375 covale 3 BGLC    18 C1   3 BGLC    18 H1  
+bond376 covale 3 BGLC    18 C1   3 BGLC    18 O5  
+bond377 covale 3 BGLC    18 C1   3 BGLC    18 C2  
+bond378 covale 3 BGLC    18 C5   3 BGLC    18 H5  
+bond379 covale 3 BGLC    18 C5   3 BGLC    18 O5  
+bond380 covale 3 BGLC    18 C5   3 BGLC    18 C4  
+bond381 covale 3 BGLC    18 C5   3 BGLC    18 C6  
+bond382 covale 3 BGLC    18 C2   3 BGLC    18 H2  
+bond383 covale 3 BGLC    18 C2   3 BGLC    18 O2  
+bond384 covale 3 BGLC    18 C2   3 BGLC    18 C3  
+bond385 covale 3 BGLC    18 O2   3 BGLC    18 HO2 
+bond386 covale 3 BGLC    18 C3   3 BGLC    18 H3  
+bond387 covale 3 BGLC    18 C3   3 BGLC    18 O3  
+bond388 covale 3 BGLC    18 C3   3 BGLC    18 C4  
+bond389 covale 3 BGLC    18 O3   3 BGLC    18 HO3 
+bond390 covale 3 BGLC    18 C4   3 BGLC    18 H4  
+bond391 covale 3 BGLC    18 C4   3 BGLC    18 O4  
+bond392 covale 3 BGLC    18 O4   3 BGLC    13 C1  
+bond393 covale 3 BGLC    18 C6   3 BGLC    18 H61 
+bond394 covale 3 BGLC    18 C6   3 BGLC    18 H62 
+bond395 covale 3 BGLC    18 C6   3 BGLC    18 O6  
+bond396 covale 3 BGLC    18 O6   3 BGLC    18 HO6 
+bond397 covale 4 BGLC    19 C1   4 BGLC    19 H1  
+bond398 covale 4 BGLC    19 C1   4 BGLC    19 O5  
+bond399 covale 4 BGLC    19 C1   4 BGLC    19 C2  
+bond400 covale 4 BGLC    19 C5   4 BGLC    19 H5  
+bond401 covale 4 BGLC    19 C5   4 BGLC    19 O5  
+bond402 covale 4 BGLC    19 C5   4 BGLC    19 C4  
+bond403 covale 4 BGLC    19 C5   4 BGLC    19 C6  
+bond404 covale 4 BGLC    19 C2   4 BGLC    19 H2  
+bond405 covale 4 BGLC    19 C2   4 BGLC    19 O2  
+bond406 covale 4 BGLC    19 C2   4 BGLC    19 C3  
+bond407 covale 4 BGLC    19 O2   4 BGLC    19 HO2 
+bond408 covale 4 BGLC    19 C3   4 BGLC    19 H3  
+bond409 covale 4 BGLC    19 C3   4 BGLC    19 O3  
+bond410 covale 4 BGLC    19 C3   4 BGLC    19 C4  
+bond411 covale 4 BGLC    19 O3   4 BGLC    19 HO3 
+bond412 covale 4 BGLC    19 C4   4 BGLC    19 H4  
+bond413 covale 4 BGLC    19 C4   4 BGLC    19 O4  
+bond414 covale 4 BGLC    19 O4   4 BGLC    20 C1  
+bond415 covale 4 BGLC    19 C6   4 BGLC    19 H61 
+bond416 covale 4 BGLC    19 C6   4 BGLC    19 H62 
+bond417 covale 4 BGLC    19 C6   4 BGLC    19 O6  
+bond418 covale 4 BGLC    19 O6   4 BGLC    19 HO6 
+bond419 covale 4 BGLC    20 C1   4 BGLC    20 H1  
+bond420 covale 4 BGLC    20 C1   4 BGLC    20 O5  
+bond421 covale 4 BGLC    20 C1   4 BGLC    20 C2  
+bond422 covale 4 BGLC    20 C5   4 BGLC    20 H5  
+bond423 covale 4 BGLC    20 C5   4 BGLC    20 O5  
+bond424 covale 4 BGLC    20 C5   4 BGLC    20 C4  
+bond425 covale 4 BGLC    20 C5   4 BGLC    20 C6  
+bond426 covale 4 BGLC    20 C2   4 BGLC    20 H2  
+bond427 covale 4 BGLC    20 C2   4 BGLC    20 O2  
+bond428 covale 4 BGLC    20 C2   4 BGLC    20 C3  
+bond429 covale 4 BGLC    20 O2   4 BGLC    20 HO2 
+bond430 covale 4 BGLC    20 C3   4 BGLC    20 H3  
+bond431 covale 4 BGLC    20 C3   4 BGLC    20 O3  
+bond432 covale 4 BGLC    20 C3   4 BGLC    20 C4  
+bond433 covale 4 BGLC    20 O3   4 BGLC    20 HO3 
+bond434 covale 4 BGLC    20 C4   4 BGLC    20 H4  
+bond435 covale 4 BGLC    20 C4   4 BGLC    20 O4  
+bond436 covale 4 BGLC    20 O4   4 BGLC    21 C1  
+bond437 covale 4 BGLC    20 C6   4 BGLC    20 H61 
+bond438 covale 4 BGLC    20 C6   4 BGLC    20 H62 
+bond439 covale 4 BGLC    20 C6   4 BGLC    20 O6  
+bond440 covale 4 BGLC    20 O6   4 BGLC    20 HO6 
+bond441 covale 4 BGLC    21 C1   4 BGLC    21 H1  
+bond442 covale 4 BGLC    21 C1   4 BGLC    21 O5  
+bond443 covale 4 BGLC    21 C1   4 BGLC    21 C2  
+bond444 covale 4 BGLC    21 C5   4 BGLC    21 H5  
+bond445 covale 4 BGLC    21 C5   4 BGLC    21 O5  
+bond446 covale 4 BGLC    21 C5   4 BGLC    21 C4  
+bond447 covale 4 BGLC    21 C5   4 BGLC    21 C6  
+bond448 covale 4 BGLC    21 C2   4 BGLC    21 H2  
+bond449 covale 4 BGLC    21 C2   4 BGLC    21 O2  
+bond450 covale 4 BGLC    21 C2   4 BGLC    21 C3  
+bond451 covale 4 BGLC    21 O2   4 BGLC    21 HO2 
+bond452 covale 4 BGLC    21 C3   4 BGLC    21 H3  
+bond453 covale 4 BGLC    21 C3   4 BGLC    21 O3  
+bond454 covale 4 BGLC    21 C3   4 BGLC    21 C4  
+bond455 covale 4 BGLC    21 O3   4 BGLC    21 HO3 
+bond456 covale 4 BGLC    21 C4   4 BGLC    21 H4  
+bond457 covale 4 BGLC    21 C4   4 BGLC    21 O4  
+bond458 covale 4 BGLC    21 O4   4 BGLC    22 C1  
+bond459 covale 4 BGLC    21 C6   4 BGLC    21 H61 
+bond460 covale 4 BGLC    21 C6   4 BGLC    21 H62 
+bond461 covale 4 BGLC    21 C6   4 BGLC    21 O6  
+bond462 covale 4 BGLC    21 O6   4 BGLC    21 HO6 
+bond463 covale 4 BGLC    22 C1   4 BGLC    22 H1  
+bond464 covale 4 BGLC    22 C1   4 BGLC    22 O5  
+bond465 covale 4 BGLC    22 C1   4 BGLC    22 C2  
+bond466 covale 4 BGLC    22 C5   4 BGLC    22 H5  
+bond467 covale 4 BGLC    22 C5   4 BGLC    22 O5  
+bond468 covale 4 BGLC    22 C5   4 BGLC    22 C4  
+bond469 covale 4 BGLC    22 C5   4 BGLC    22 C6  
+bond470 covale 4 BGLC    22 C2   4 BGLC    22 H2  
+bond471 covale 4 BGLC    22 C2   4 BGLC    22 O2  
+bond472 covale 4 BGLC    22 C2   4 BGLC    22 C3  
+bond473 covale 4 BGLC    22 O2   4 BGLC    22 HO2 
+bond474 covale 4 BGLC    22 C3   4 BGLC    22 H3  
+bond475 covale 4 BGLC    22 C3   4 BGLC    22 O3  
+bond476 covale 4 BGLC    22 C3   4 BGLC    22 C4  
+bond477 covale 4 BGLC    22 O3   4 BGLC    22 HO3 
+bond478 covale 4 BGLC    22 C4   4 BGLC    22 H4  
+bond479 covale 4 BGLC    22 C4   4 BGLC    22 O4  
+bond480 covale 4 BGLC    22 O4   4 BGLC    23 C1  
+bond481 covale 4 BGLC    22 C6   4 BGLC    22 H61 
+bond482 covale 4 BGLC    22 C6   4 BGLC    22 H62 
+bond483 covale 4 BGLC    22 C6   4 BGLC    22 O6  
+bond484 covale 4 BGLC    22 O6   4 BGLC    22 HO6 
+bond485 covale 4 BGLC    23 C1   4 BGLC    23 H1  
+bond486 covale 4 BGLC    23 C1   4 BGLC    23 O5  
+bond487 covale 4 BGLC    23 C1   4 BGLC    23 C2  
+bond488 covale 4 BGLC    23 C5   4 BGLC    23 H5  
+bond489 covale 4 BGLC    23 C5   4 BGLC    23 O5  
+bond490 covale 4 BGLC    23 C5   4 BGLC    23 C4  
+bond491 covale 4 BGLC    23 C5   4 BGLC    23 C6  
+bond492 covale 4 BGLC    23 C2   4 BGLC    23 H2  
+bond493 covale 4 BGLC    23 C2   4 BGLC    23 O2  
+bond494 covale 4 BGLC    23 C2   4 BGLC    23 C3  
+bond495 covale 4 BGLC    23 O2   4 BGLC    23 HO2 
+bond496 covale 4 BGLC    23 C3   4 BGLC    23 H3  
+bond497 covale 4 BGLC    23 C3   4 BGLC    23 O3  
+bond498 covale 4 BGLC    23 C3   4 BGLC    23 C4  
+bond499 covale 4 BGLC    23 O3   4 BGLC    23 HO3 
+bond500 covale 4 BGLC    23 C4   4 BGLC    23 H4  
+bond501 covale 4 BGLC    23 C4   4 BGLC    23 O4  
+bond502 covale 4 BGLC    23 O4   4 BGLC    24 C1  
+bond503 covale 4 BGLC    23 C6   4 BGLC    23 H61 
+bond504 covale 4 BGLC    23 C6   4 BGLC    23 H62 
+bond505 covale 4 BGLC    23 C6   4 BGLC    23 O6  
+bond506 covale 4 BGLC    23 O6   4 BGLC    23 HO6 
+bond507 covale 4 BGLC    24 C1   4 BGLC    24 H1  
+bond508 covale 4 BGLC    24 C1   4 BGLC    24 O5  
+bond509 covale 4 BGLC    24 C1   4 BGLC    24 C2  
+bond510 covale 4 BGLC    24 C5   4 BGLC    24 H5  
+bond511 covale 4 BGLC    24 C5   4 BGLC    24 O5  
+bond512 covale 4 BGLC    24 C5   4 BGLC    24 C4  
+bond513 covale 4 BGLC    24 C5   4 BGLC    24 C6  
+bond514 covale 4 BGLC    24 C2   4 BGLC    24 H2  
+bond515 covale 4 BGLC    24 C2   4 BGLC    24 O2  
+bond516 covale 4 BGLC    24 C2   4 BGLC    24 C3  
+bond517 covale 4 BGLC    24 O2   4 BGLC    24 HO2 
+bond518 covale 4 BGLC    24 C3   4 BGLC    24 H3  
+bond519 covale 4 BGLC    24 C3   4 BGLC    24 O3  
+bond520 covale 4 BGLC    24 C3   4 BGLC    24 C4  
+bond521 covale 4 BGLC    24 O3   4 BGLC    24 HO3 
+bond522 covale 4 BGLC    24 C4   4 BGLC    24 H4  
+bond523 covale 4 BGLC    24 C4   4 BGLC    24 O4  
+bond524 covale 4 BGLC    24 O4   4 BGLC    19 C1  
+bond525 covale 4 BGLC    24 C6   4 BGLC    24 H61 
+bond526 covale 4 BGLC    24 C6   4 BGLC    24 H62 
+bond527 covale 4 BGLC    24 C6   4 BGLC    24 O6  
+bond528 covale 4 BGLC    24 O6   4 BGLC    24 HO6 
+bond529 covale 5 BGLC    25 C1   5 BGLC    25 H1  
+bond530 covale 5 BGLC    25 C1   5 BGLC    25 O5  
+bond531 covale 5 BGLC    25 C1   5 BGLC    25 C2  
+bond532 covale 5 BGLC    25 C5   5 BGLC    25 H5  
+bond533 covale 5 BGLC    25 C5   5 BGLC    25 O5  
+bond534 covale 5 BGLC    25 C5   5 BGLC    25 C4  
+bond535 covale 5 BGLC    25 C5   5 BGLC    25 C6  
+bond536 covale 5 BGLC    25 C2   5 BGLC    25 H2  
+bond537 covale 5 BGLC    25 C2   5 BGLC    25 O2  
+bond538 covale 5 BGLC    25 C2   5 BGLC    25 C3  
+bond539 covale 5 BGLC    25 O2   5 BGLC    25 HO2 
+bond540 covale 5 BGLC    25 C3   5 BGLC    25 H3  
+bond541 covale 5 BGLC    25 C3   5 BGLC    25 O3  
+bond542 covale 5 BGLC    25 C3   5 BGLC    25 C4  
+bond543 covale 5 BGLC    25 O3   5 BGLC    25 HO3 
+bond544 covale 5 BGLC    25 C4   5 BGLC    25 H4  
+bond545 covale 5 BGLC    25 C4   5 BGLC    25 O4  
+bond546 covale 5 BGLC    25 O4   5 BGLC    26 C1  
+bond547 covale 5 BGLC    25 C6   5 BGLC    25 H61 
+bond548 covale 5 BGLC    25 C6   5 BGLC    25 H62 
+bond549 covale 5 BGLC    25 C6   5 BGLC    25 O6  
+bond550 covale 5 BGLC    25 O6   5 BGLC    25 HO6 
+bond551 covale 5 BGLC    26 C1   5 BGLC    26 H1  
+bond552 covale 5 BGLC    26 C1   5 BGLC    26 O5  
+bond553 covale 5 BGLC    26 C1   5 BGLC    26 C2  
+bond554 covale 5 BGLC    26 C5   5 BGLC    26 H5  
+bond555 covale 5 BGLC    26 C5   5 BGLC    26 O5  
+bond556 covale 5 BGLC    26 C5   5 BGLC    26 C4  
+bond557 covale 5 BGLC    26 C5   5 BGLC    26 C6  
+bond558 covale 5 BGLC    26 C2   5 BGLC    26 H2  
+bond559 covale 5 BGLC    26 C2   5 BGLC    26 O2  
+bond560 covale 5 BGLC    26 C2   5 BGLC    26 C3  
+bond561 covale 5 BGLC    26 O2   5 BGLC    26 HO2 
+bond562 covale 5 BGLC    26 C3   5 BGLC    26 H3  
+bond563 covale 5 BGLC    26 C3   5 BGLC    26 O3  
+bond564 covale 5 BGLC    26 C3   5 BGLC    26 C4  
+bond565 covale 5 BGLC    26 O3   5 BGLC    26 HO3 
+bond566 covale 5 BGLC    26 C4   5 BGLC    26 H4  
+bond567 covale 5 BGLC    26 C4   5 BGLC    26 O4  
+bond568 covale 5 BGLC    26 O4   5 BGLC    27 C1  
+bond569 covale 5 BGLC    26 C6   5 BGLC    26 H61 
+bond570 covale 5 BGLC    26 C6   5 BGLC    26 H62 
+bond571 covale 5 BGLC    26 C6   5 BGLC    26 O6  
+bond572 covale 5 BGLC    26 O6   5 BGLC    26 HO6 
+bond573 covale 5 BGLC    27 C1   5 BGLC    27 H1  
+bond574 covale 5 BGLC    27 C1   5 BGLC    27 O5  
+bond575 covale 5 BGLC    27 C1   5 BGLC    27 C2  
+bond576 covale 5 BGLC    27 C5   5 BGLC    27 H5  
+bond577 covale 5 BGLC    27 C5   5 BGLC    27 O5  
+bond578 covale 5 BGLC    27 C5   5 BGLC    27 C4  
+bond579 covale 5 BGLC    27 C5   5 BGLC    27 C6  
+bond580 covale 5 BGLC    27 C2   5 BGLC    27 H2  
+bond581 covale 5 BGLC    27 C2   5 BGLC    27 O2  
+bond582 covale 5 BGLC    27 C2   5 BGLC    27 C3  
+bond583 covale 5 BGLC    27 O2   5 BGLC    27 HO2 
+bond584 covale 5 BGLC    27 C3   5 BGLC    27 H3  
+bond585 covale 5 BGLC    27 C3   5 BGLC    27 O3  
+bond586 covale 5 BGLC    27 C3   5 BGLC    27 C4  
+bond587 covale 5 BGLC    27 O3   5 BGLC    27 HO3 
+bond588 covale 5 BGLC    27 C4   5 BGLC    27 H4  
+bond589 covale 5 BGLC    27 C4   5 BGLC    27 O4  
+bond590 covale 5 BGLC    27 O4   5 BGLC    28 C1  
+bond591 covale 5 BGLC    27 C6   5 BGLC    27 H61 
+bond592 covale 5 BGLC    27 C6   5 BGLC    27 H62 
+bond593 covale 5 BGLC    27 C6   5 BGLC    27 O6  
+bond594 covale 5 BGLC    27 O6   5 BGLC    27 HO6 
+bond595 covale 5 BGLC    28 C1   5 BGLC    28 H1  
+bond596 covale 5 BGLC    28 C1   5 BGLC    28 O5  
+bond597 covale 5 BGLC    28 C1   5 BGLC    28 C2  
+bond598 covale 5 BGLC    28 C5   5 BGLC    28 H5  
+bond599 covale 5 BGLC    28 C5   5 BGLC    28 O5  
+bond600 covale 5 BGLC    28 C5   5 BGLC    28 C4  
+bond601 covale 5 BGLC    28 C5   5 BGLC    28 C6  
+bond602 covale 5 BGLC    28 C2   5 BGLC    28 H2  
+bond603 covale 5 BGLC    28 C2   5 BGLC    28 O2  
+bond604 covale 5 BGLC    28 C2   5 BGLC    28 C3  
+bond605 covale 5 BGLC    28 O2   5 BGLC    28 HO2 
+bond606 covale 5 BGLC    28 C3   5 BGLC    28 H3  
+bond607 covale 5 BGLC    28 C3   5 BGLC    28 O3  
+bond608 covale 5 BGLC    28 C3   5 BGLC    28 C4  
+bond609 covale 5 BGLC    28 O3   5 BGLC    28 HO3 
+bond610 covale 5 BGLC    28 C4   5 BGLC    28 H4  
+bond611 covale 5 BGLC    28 C4   5 BGLC    28 O4  
+bond612 covale 5 BGLC    28 O4   5 BGLC    29 C1  
+bond613 covale 5 BGLC    28 C6   5 BGLC    28 H61 
+bond614 covale 5 BGLC    28 C6   5 BGLC    28 H62 
+bond615 covale 5 BGLC    28 C6   5 BGLC    28 O6  
+bond616 covale 5 BGLC    28 O6   5 BGLC    28 HO6 
+bond617 covale 5 BGLC    29 C1   5 BGLC    29 H1  
+bond618 covale 5 BGLC    29 C1   5 BGLC    29 O5  
+bond619 covale 5 BGLC    29 C1   5 BGLC    29 C2  
+bond620 covale 5 BGLC    29 C5   5 BGLC    29 H5  
+bond621 covale 5 BGLC    29 C5   5 BGLC    29 O5  
+bond622 covale 5 BGLC    29 C5   5 BGLC    29 C4  
+bond623 covale 5 BGLC    29 C5   5 BGLC    29 C6  
+bond624 covale 5 BGLC    29 C2   5 BGLC    29 H2  
+bond625 covale 5 BGLC    29 C2   5 BGLC    29 O2  
+bond626 covale 5 BGLC    29 C2   5 BGLC    29 C3  
+bond627 covale 5 BGLC    29 O2   5 BGLC    29 HO2 
+bond628 covale 5 BGLC    29 C3   5 BGLC    29 H3  
+bond629 covale 5 BGLC    29 C3   5 BGLC    29 O3  
+bond630 covale 5 BGLC    29 C3   5 BGLC    29 C4  
+bond631 covale 5 BGLC    29 O3   5 BGLC    29 HO3 
+bond632 covale 5 BGLC    29 C4   5 BGLC    29 H4  
+bond633 covale 5 BGLC    29 C4   5 BGLC    29 O4  
+bond634 covale 5 BGLC    29 O4   5 BGLC    30 C1  
+bond635 covale 5 BGLC    29 C6   5 BGLC    29 H61 
+bond636 covale 5 BGLC    29 C6   5 BGLC    29 H62 
+bond637 covale 5 BGLC    29 C6   5 BGLC    29 O6  
+bond638 covale 5 BGLC    29 O6   5 BGLC    29 HO6 
+bond639 covale 5 BGLC    30 C1   5 BGLC    30 H1  
+bond640 covale 5 BGLC    30 C1   5 BGLC    30 O5  
+bond641 covale 5 BGLC    30 C1   5 BGLC    30 C2  
+bond642 covale 5 BGLC    30 C5   5 BGLC    30 H5  
+bond643 covale 5 BGLC    30 C5   5 BGLC    30 O5  
+bond644 covale 5 BGLC    30 C5   5 BGLC    30 C4  
+bond645 covale 5 BGLC    30 C5   5 BGLC    30 C6  
+bond646 covale 5 BGLC    30 C2   5 BGLC    30 H2  
+bond647 covale 5 BGLC    30 C2   5 BGLC    30 O2  
+bond648 covale 5 BGLC    30 C2   5 BGLC    30 C3  
+bond649 covale 5 BGLC    30 O2   5 BGLC    30 HO2 
+bond650 covale 5 BGLC    30 C3   5 BGLC    30 H3  
+bond651 covale 5 BGLC    30 C3   5 BGLC    30 O3  
+bond652 covale 5 BGLC    30 C3   5 BGLC    30 C4  
+bond653 covale 5 BGLC    30 O3   5 BGLC    30 HO3 
+bond654 covale 5 BGLC    30 C4   5 BGLC    30 H4  
+bond655 covale 5 BGLC    30 C4   5 BGLC    30 O4  
+bond656 covale 5 BGLC    30 O4   5 BGLC    25 C1  
+bond657 covale 5 BGLC    30 C6   5 BGLC    30 H61 
+bond658 covale 5 BGLC    30 C6   5 BGLC    30 H62 
+bond659 covale 5 BGLC    30 C6   5 BGLC    30 O6  
+bond660 covale 5 BGLC    30 O6   5 BGLC    30 HO6 
+bond661 covale 6 BGLC    31 C1   6 BGLC    31 H1  
+bond662 covale 6 BGLC    31 C1   6 BGLC    31 O5  
+bond663 covale 6 BGLC    31 C1   6 BGLC    31 C2  
+bond664 covale 6 BGLC    31 C5   6 BGLC    31 H5  
+bond665 covale 6 BGLC    31 C5   6 BGLC    31 O5  
+bond666 covale 6 BGLC    31 C5   6 BGLC    31 C4  
+bond667 covale 6 BGLC    31 C5   6 BGLC    31 C6  
+bond668 covale 6 BGLC    31 C2   6 BGLC    31 H2  
+bond669 covale 6 BGLC    31 C2   6 BGLC    31 O2  
+bond670 covale 6 BGLC    31 C2   6 BGLC    31 C3  
+bond671 covale 6 BGLC    31 O2   6 BGLC    31 HO2 
+bond672 covale 6 BGLC    31 C3   6 BGLC    31 H3  
+bond673 covale 6 BGLC    31 C3   6 BGLC    31 O3  
+bond674 covale 6 BGLC    31 C3   6 BGLC    31 C4  
+bond675 covale 6 BGLC    31 O3   6 BGLC    31 HO3 
+bond676 covale 6 BGLC    31 C4   6 BGLC    31 H4  
+bond677 covale 6 BGLC    31 C4   6 BGLC    31 O4  
+bond678 covale 6 BGLC    31 O4   6 BGLC    32 C1  
+bond679 covale 6 BGLC    31 C6   6 BGLC    31 H61 
+bond680 covale 6 BGLC    31 C6   6 BGLC    31 H62 
+bond681 covale 6 BGLC    31 C6   6 BGLC    31 O6  
+bond682 covale 6 BGLC    31 O6   6 BGLC    31 HO6 
+bond683 covale 6 BGLC    32 C1   6 BGLC    32 H1  
+bond684 covale 6 BGLC    32 C1   6 BGLC    32 O5  
+bond685 covale 6 BGLC    32 C1   6 BGLC    32 C2  
+bond686 covale 6 BGLC    32 C5   6 BGLC    32 H5  
+bond687 covale 6 BGLC    32 C5   6 BGLC    32 O5  
+bond688 covale 6 BGLC    32 C5   6 BGLC    32 C4  
+bond689 covale 6 BGLC    32 C5   6 BGLC    32 C6  
+bond690 covale 6 BGLC    32 C2   6 BGLC    32 H2  
+bond691 covale 6 BGLC    32 C2   6 BGLC    32 O2  
+bond692 covale 6 BGLC    32 C2   6 BGLC    32 C3  
+bond693 covale 6 BGLC    32 O2   6 BGLC    32 HO2 
+bond694 covale 6 BGLC    32 C3   6 BGLC    32 H3  
+bond695 covale 6 BGLC    32 C3   6 BGLC    32 O3  
+bond696 covale 6 BGLC    32 C3   6 BGLC    32 C4  
+bond697 covale 6 BGLC    32 O3   6 BGLC    32 HO3 
+bond698 covale 6 BGLC    32 C4   6 BGLC    32 H4  
+bond699 covale 6 BGLC    32 C4   6 BGLC    32 O4  
+bond700 covale 6 BGLC    32 O4   6 BGLC    33 C1  
+bond701 covale 6 BGLC    32 C6   6 BGLC    32 H61 
+bond702 covale 6 BGLC    32 C6   6 BGLC    32 H62 
+bond703 covale 6 BGLC    32 C6   6 BGLC    32 O6  
+bond704 covale 6 BGLC    32 O6   6 BGLC    32 HO6 
+bond705 covale 6 BGLC    33 C1   6 BGLC    33 H1  
+bond706 covale 6 BGLC    33 C1   6 BGLC    33 O5  
+bond707 covale 6 BGLC    33 C1   6 BGLC    33 C2  
+bond708 covale 6 BGLC    33 C5   6 BGLC    33 H5  
+bond709 covale 6 BGLC    33 C5   6 BGLC    33 O5  
+bond710 covale 6 BGLC    33 C5   6 BGLC    33 C4  
+bond711 covale 6 BGLC    33 C5   6 BGLC    33 C6  
+bond712 covale 6 BGLC    33 C2   6 BGLC    33 H2  
+bond713 covale 6 BGLC    33 C2   6 BGLC    33 O2  
+bond714 covale 6 BGLC    33 C2   6 BGLC    33 C3  
+bond715 covale 6 BGLC    33 O2   6 BGLC    33 HO2 
+bond716 covale 6 BGLC    33 C3   6 BGLC    33 H3  
+bond717 covale 6 BGLC    33 C3   6 BGLC    33 O3  
+bond718 covale 6 BGLC    33 C3   6 BGLC    33 C4  
+bond719 covale 6 BGLC    33 O3   6 BGLC    33 HO3 
+bond720 covale 6 BGLC    33 C4   6 BGLC    33 H4  
+bond721 covale 6 BGLC    33 C4   6 BGLC    33 O4  
+bond722 covale 6 BGLC    33 O4   6 BGLC    34 C1  
+bond723 covale 6 BGLC    33 C6   6 BGLC    33 H61 
+bond724 covale 6 BGLC    33 C6   6 BGLC    33 H62 
+bond725 covale 6 BGLC    33 C6   6 BGLC    33 O6  
+bond726 covale 6 BGLC    33 O6   6 BGLC    33 HO6 
+bond727 covale 6 BGLC    34 C1   6 BGLC    34 H1  
+bond728 covale 6 BGLC    34 C1   6 BGLC    34 O5  
+bond729 covale 6 BGLC    34 C1   6 BGLC    34 C2  
+bond730 covale 6 BGLC    34 C5   6 BGLC    34 H5  
+bond731 covale 6 BGLC    34 C5   6 BGLC    34 O5  
+bond732 covale 6 BGLC    34 C5   6 BGLC    34 C4  
+bond733 covale 6 BGLC    34 C5   6 BGLC    34 C6  
+bond734 covale 6 BGLC    34 C2   6 BGLC    34 H2  
+bond735 covale 6 BGLC    34 C2   6 BGLC    34 O2  
+bond736 covale 6 BGLC    34 C2   6 BGLC    34 C3  
+bond737 covale 6 BGLC    34 O2   6 BGLC    34 HO2 
+bond738 covale 6 BGLC    34 C3   6 BGLC    34 H3  
+bond739 covale 6 BGLC    34 C3   6 BGLC    34 O3  
+bond740 covale 6 BGLC    34 C3   6 BGLC    34 C4  
+bond741 covale 6 BGLC    34 O3   6 BGLC    34 HO3 
+bond742 covale 6 BGLC    34 C4   6 BGLC    34 H4  
+bond743 covale 6 BGLC    34 C4   6 BGLC    34 O4  
+bond744 covale 6 BGLC    34 O4   6 BGLC    35 C1  
+bond745 covale 6 BGLC    34 C6   6 BGLC    34 H61 
+bond746 covale 6 BGLC    34 C6   6 BGLC    34 H62 
+bond747 covale 6 BGLC    34 C6   6 BGLC    34 O6  
+bond748 covale 6 BGLC    34 O6   6 BGLC    34 HO6 
+bond749 covale 6 BGLC    35 C1   6 BGLC    35 H1  
+bond750 covale 6 BGLC    35 C1   6 BGLC    35 O5  
+bond751 covale 6 BGLC    35 C1   6 BGLC    35 C2  
+bond752 covale 6 BGLC    35 C5   6 BGLC    35 H5  
+bond753 covale 6 BGLC    35 C5   6 BGLC    35 O5  
+bond754 covale 6 BGLC    35 C5   6 BGLC    35 C4  
+bond755 covale 6 BGLC    35 C5   6 BGLC    35 C6  
+bond756 covale 6 BGLC    35 C2   6 BGLC    35 H2  
+bond757 covale 6 BGLC    35 C2   6 BGLC    35 O2  
+bond758 covale 6 BGLC    35 C2   6 BGLC    35 C3  
+bond759 covale 6 BGLC    35 O2   6 BGLC    35 HO2 
+bond760 covale 6 BGLC    35 C3   6 BGLC    35 H3  
+bond761 covale 6 BGLC    35 C3   6 BGLC    35 O3  
+bond762 covale 6 BGLC    35 C3   6 BGLC    35 C4  
+bond763 covale 6 BGLC    35 O3   6 BGLC    35 HO3 
+bond764 covale 6 BGLC    35 C4   6 BGLC    35 H4  
+bond765 covale 6 BGLC    35 C4   6 BGLC    35 O4  
+bond766 covale 6 BGLC    35 O4   6 BGLC    36 C1  
+bond767 covale 6 BGLC    35 C6   6 BGLC    35 H61 
+bond768 covale 6 BGLC    35 C6   6 BGLC    35 H62 
+bond769 covale 6 BGLC    35 C6   6 BGLC    35 O6  
+bond770 covale 6 BGLC    35 O6   6 BGLC    35 HO6 
+bond771 covale 6 BGLC    36 C1   6 BGLC    36 H1  
+bond772 covale 6 BGLC    36 C1   6 BGLC    36 O5  
+bond773 covale 6 BGLC    36 C1   6 BGLC    36 C2  
+bond774 covale 6 BGLC    36 C5   6 BGLC    36 H5  
+bond775 covale 6 BGLC    36 C5   6 BGLC    36 O5  
+bond776 covale 6 BGLC    36 C5   6 BGLC    36 C4  
+bond777 covale 6 BGLC    36 C5   6 BGLC    36 C6  
+bond778 covale 6 BGLC    36 C2   6 BGLC    36 H2  
+bond779 covale 6 BGLC    36 C2   6 BGLC    36 O2  
+bond780 covale 6 BGLC    36 C2   6 BGLC    36 C3  
+bond781 covale 6 BGLC    36 O2   6 BGLC    36 HO2 
+bond782 covale 6 BGLC    36 C3   6 BGLC    36 H3  
+bond783 covale 6 BGLC    36 C3   6 BGLC    36 O3  
+bond784 covale 6 BGLC    36 C3   6 BGLC    36 C4  
+bond785 covale 6 BGLC    36 O3   6 BGLC    36 HO3 
+bond786 covale 6 BGLC    36 C4   6 BGLC    36 H4  
+bond787 covale 6 BGLC    36 C4   6 BGLC    36 O4  
+bond788 covale 6 BGLC    36 O4   6 BGLC    31 C1  
+bond789 covale 6 BGLC    36 C6   6 BGLC    36 H61 
+bond790 covale 6 BGLC    36 C6   6 BGLC    36 H62 
+bond791 covale 6 BGLC    36 C6   6 BGLC    36 O6  
+bond792 covale 6 BGLC    36 O6   6 BGLC    36 HO6 
+bond793 covale 7 BGLC    37 C1   7 BGLC    37 H1  
+bond794 covale 7 BGLC    37 C1   7 BGLC    37 O5  
+bond795 covale 7 BGLC    37 C1   7 BGLC    37 C2  
+bond796 covale 7 BGLC    37 C5   7 BGLC    37 H5  
+bond797 covale 7 BGLC    37 C5   7 BGLC    37 O5  
+bond798 covale 7 BGLC    37 C5   7 BGLC    37 C4  
+bond799 covale 7 BGLC    37 C5   7 BGLC    37 C6  
+bond800 covale 7 BGLC    37 C2   7 BGLC    37 H2  
+bond801 covale 7 BGLC    37 C2   7 BGLC    37 O2  
+bond802 covale 7 BGLC    37 C2   7 BGLC    37 C3  
+bond803 covale 7 BGLC    37 O2   7 BGLC    37 HO2 
+bond804 covale 7 BGLC    37 C3   7 BGLC    37 H3  
+bond805 covale 7 BGLC    37 C3   7 BGLC    37 O3  
+bond806 covale 7 BGLC    37 C3   7 BGLC    37 C4  
+bond807 covale 7 BGLC    37 O3   7 BGLC    37 HO3 
+bond808 covale 7 BGLC    37 C4   7 BGLC    37 H4  
+bond809 covale 7 BGLC    37 C4   7 BGLC    37 O4  
+bond810 covale 7 BGLC    37 O4   7 BGLC    38 C1  
+bond811 covale 7 BGLC    37 C6   7 BGLC    37 H61 
+bond812 covale 7 BGLC    37 C6   7 BGLC    37 H62 
+bond813 covale 7 BGLC    37 C6   7 BGLC    37 O6  
+bond814 covale 7 BGLC    37 O6   7 BGLC    37 HO6 
+bond815 covale 7 BGLC    38 C1   7 BGLC    38 H1  
+bond816 covale 7 BGLC    38 C1   7 BGLC    38 O5  
+bond817 covale 7 BGLC    38 C1   7 BGLC    38 C2  
+bond818 covale 7 BGLC    38 C5   7 BGLC    38 H5  
+bond819 covale 7 BGLC    38 C5   7 BGLC    38 O5  
+bond820 covale 7 BGLC    38 C5   7 BGLC    38 C4  
+bond821 covale 7 BGLC    38 C5   7 BGLC    38 C6  
+bond822 covale 7 BGLC    38 C2   7 BGLC    38 H2  
+bond823 covale 7 BGLC    38 C2   7 BGLC    38 O2  
+bond824 covale 7 BGLC    38 C2   7 BGLC    38 C3  
+bond825 covale 7 BGLC    38 O2   7 BGLC    38 HO2 
+bond826 covale 7 BGLC    38 C3   7 BGLC    38 H3  
+bond827 covale 7 BGLC    38 C3   7 BGLC    38 O3  
+bond828 covale 7 BGLC    38 C3   7 BGLC    38 C4  
+bond829 covale 7 BGLC    38 O3   7 BGLC    38 HO3 
+bond830 covale 7 BGLC    38 C4   7 BGLC    38 H4  
+bond831 covale 7 BGLC    38 C4   7 BGLC    38 O4  
+bond832 covale 7 BGLC    38 O4   7 BGLC    39 C1  
+bond833 covale 7 BGLC    38 C6   7 BGLC    38 H61 
+bond834 covale 7 BGLC    38 C6   7 BGLC    38 H62 
+bond835 covale 7 BGLC    38 C6   7 BGLC    38 O6  
+bond836 covale 7 BGLC    38 O6   7 BGLC    38 HO6 
+bond837 covale 7 BGLC    39 C1   7 BGLC    39 H1  
+bond838 covale 7 BGLC    39 C1   7 BGLC    39 O5  
+bond839 covale 7 BGLC    39 C1   7 BGLC    39 C2  
+bond840 covale 7 BGLC    39 C5   7 BGLC    39 H5  
+bond841 covale 7 BGLC    39 C5   7 BGLC    39 O5  
+bond842 covale 7 BGLC    39 C5   7 BGLC    39 C4  
+bond843 covale 7 BGLC    39 C5   7 BGLC    39 C6  
+bond844 covale 7 BGLC    39 C2   7 BGLC    39 H2  
+bond845 covale 7 BGLC    39 C2   7 BGLC    39 O2  
+bond846 covale 7 BGLC    39 C2   7 BGLC    39 C3  
+bond847 covale 7 BGLC    39 O2   7 BGLC    39 HO2 
+bond848 covale 7 BGLC    39 C3   7 BGLC    39 H3  
+bond849 covale 7 BGLC    39 C3   7 BGLC    39 O3  
+bond850 covale 7 BGLC    39 C3   7 BGLC    39 C4  
+bond851 covale 7 BGLC    39 O3   7 BGLC    39 HO3 
+bond852 covale 7 BGLC    39 C4   7 BGLC    39 H4  
+bond853 covale 7 BGLC    39 C4   7 BGLC    39 O4  
+bond854 covale 7 BGLC    39 O4   7 BGLC    40 C1  
+bond855 covale 7 BGLC    39 C6   7 BGLC    39 H61 
+bond856 covale 7 BGLC    39 C6   7 BGLC    39 H62 
+bond857 covale 7 BGLC    39 C6   7 BGLC    39 O6  
+bond858 covale 7 BGLC    39 O6   7 BGLC    39 HO6 
+bond859 covale 7 BGLC    40 C1   7 BGLC    40 H1  
+bond860 covale 7 BGLC    40 C1   7 BGLC    40 O5  
+bond861 covale 7 BGLC    40 C1   7 BGLC    40 C2  
+bond862 covale 7 BGLC    40 C5   7 BGLC    40 H5  
+bond863 covale 7 BGLC    40 C5   7 BGLC    40 O5  
+bond864 covale 7 BGLC    40 C5   7 BGLC    40 C4  
+bond865 covale 7 BGLC    40 C5   7 BGLC    40 C6  
+bond866 covale 7 BGLC    40 C2   7 BGLC    40 H2  
+bond867 covale 7 BGLC    40 C2   7 BGLC    40 O2  
+bond868 covale 7 BGLC    40 C2   7 BGLC    40 C3  
+bond869 covale 7 BGLC    40 O2   7 BGLC    40 HO2 
+bond870 covale 7 BGLC    40 C3   7 BGLC    40 H3  
+bond871 covale 7 BGLC    40 C3   7 BGLC    40 O3  
+bond872 covale 7 BGLC    40 C3   7 BGLC    40 C4  
+bond873 covale 7 BGLC    40 O3   7 BGLC    40 HO3 
+bond874 covale 7 BGLC    40 C4   7 BGLC    40 H4  
+bond875 covale 7 BGLC    40 C4   7 BGLC    40 O4  
+bond876 covale 7 BGLC    40 O4   7 BGLC    41 C1  
+bond877 covale 7 BGLC    40 C6   7 BGLC    40 H61 
+bond878 covale 7 BGLC    40 C6   7 BGLC    40 H62 
+bond879 covale 7 BGLC    40 C6   7 BGLC    40 O6  
+bond880 covale 7 BGLC    40 O6   7 BGLC    40 HO6 
+bond881 covale 7 BGLC    41 C1   7 BGLC    41 H1  
+bond882 covale 7 BGLC    41 C1   7 BGLC    41 O5  
+bond883 covale 7 BGLC    41 C1   7 BGLC    41 C2  
+bond884 covale 7 BGLC    41 C5   7 BGLC    41 H5  
+bond885 covale 7 BGLC    41 C5   7 BGLC    41 O5  
+bond886 covale 7 BGLC    41 C5   7 BGLC    41 C4  
+bond887 covale 7 BGLC    41 C5   7 BGLC    41 C6  
+bond888 covale 7 BGLC    41 C2   7 BGLC    41 H2  
+bond889 covale 7 BGLC    41 C2   7 BGLC    41 O2  
+bond890 covale 7 BGLC    41 C2   7 BGLC    41 C3  
+bond891 covale 7 BGLC    41 O2   7 BGLC    41 HO2 
+bond892 covale 7 BGLC    41 C3   7 BGLC    41 H3  
+bond893 covale 7 BGLC    41 C3   7 BGLC    41 O3  
+bond894 covale 7 BGLC    41 C3   7 BGLC    41 C4  
+bond895 covale 7 BGLC    41 O3   7 BGLC    41 HO3 
+bond896 covale 7 BGLC    41 C4   7 BGLC    41 H4  
+bond897 covale 7 BGLC    41 C4   7 BGLC    41 O4  
+bond898 covale 7 BGLC    41 O4   7 BGLC    42 C1  
+bond899 covale 7 BGLC    41 C6   7 BGLC    41 H61 
+bond900 covale 7 BGLC    41 C6   7 BGLC    41 H62 
+bond901 covale 7 BGLC    41 C6   7 BGLC    41 O6  
+bond902 covale 7 BGLC    41 O6   7 BGLC    41 HO6 
+bond903 covale 7 BGLC    42 C1   7 BGLC    42 H1  
+bond904 covale 7 BGLC    42 C1   7 BGLC    42 O5  
+bond905 covale 7 BGLC    42 C1   7 BGLC    42 C2  
+bond906 covale 7 BGLC    42 C5   7 BGLC    42 H5  
+bond907 covale 7 BGLC    42 C5   7 BGLC    42 O5  
+bond908 covale 7 BGLC    42 C5   7 BGLC    42 C4  
+bond909 covale 7 BGLC    42 C5   7 BGLC    42 C6  
+bond910 covale 7 BGLC    42 C2   7 BGLC    42 H2  
+bond911 covale 7 BGLC    42 C2   7 BGLC    42 O2  
+bond912 covale 7 BGLC    42 C2   7 BGLC    42 C3  
+bond913 covale 7 BGLC    42 O2   7 BGLC    42 HO2 
+bond914 covale 7 BGLC    42 C3   7 BGLC    42 H3  
+bond915 covale 7 BGLC    42 C3   7 BGLC    42 O3  
+bond916 covale 7 BGLC    42 C3   7 BGLC    42 C4  
+bond917 covale 7 BGLC    42 O3   7 BGLC    42 HO3 
+bond918 covale 7 BGLC    42 C4   7 BGLC    42 H4  
+bond919 covale 7 BGLC    42 C4   7 BGLC    42 O4  
+bond920 covale 7 BGLC    42 O4   7 BGLC    37 C1  
+bond921 covale 7 BGLC    42 C6   7 BGLC    42 H61 
+bond922 covale 7 BGLC    42 C6   7 BGLC    42 H62 
+bond923 covale 7 BGLC    42 C6   7 BGLC    42 O6  
+bond924 covale 7 BGLC    42 O6   7 BGLC    42 HO6 
+bond925 covale 8 BGLC    43 C1   8 BGLC    43 H1  
+bond926 covale 8 BGLC    43 C1   8 BGLC    43 O5  
+bond927 covale 8 BGLC    43 C1   8 BGLC    43 C2  
+bond928 covale 8 BGLC    43 C5   8 BGLC    43 H5  
+bond929 covale 8 BGLC    43 C5   8 BGLC    43 O5  
+bond930 covale 8 BGLC    43 C5   8 BGLC    43 C4  
+bond931 covale 8 BGLC    43 C5   8 BGLC    43 C6  
+bond932 covale 8 BGLC    43 C2   8 BGLC    43 H2  
+bond933 covale 8 BGLC    43 C2   8 BGLC    43 O2  
+bond934 covale 8 BGLC    43 C2   8 BGLC    43 C3  
+bond935 covale 8 BGLC    43 O2   8 BGLC    43 HO2 
+bond936 covale 8 BGLC    43 C3   8 BGLC    43 H3  
+bond937 covale 8 BGLC    43 C3   8 BGLC    43 O3  
+bond938 covale 8 BGLC    43 C3   8 BGLC    43 C4  
+bond939 covale 8 BGLC    43 O3   8 BGLC    43 HO3 
+bond940 covale 8 BGLC    43 C4   8 BGLC    43 H4  
+bond941 covale 8 BGLC    43 C4   8 BGLC    43 O4  
+bond942 covale 8 BGLC    43 O4   8 BGLC    44 C1  
+bond943 covale 8 BGLC    43 C6   8 BGLC    43 H61 
+bond944 covale 8 BGLC    43 C6   8 BGLC    43 H62 
+bond945 covale 8 BGLC    43 C6   8 BGLC    43 O6  
+bond946 covale 8 BGLC    43 O6   8 BGLC    43 HO6 
+bond947 covale 8 BGLC    44 C1   8 BGLC    44 H1  
+bond948 covale 8 BGLC    44 C1   8 BGLC    44 O5  
+bond949 covale 8 BGLC    44 C1   8 BGLC    44 C2  
+bond950 covale 8 BGLC    44 C5   8 BGLC    44 H5  
+bond951 covale 8 BGLC    44 C5   8 BGLC    44 O5  
+bond952 covale 8 BGLC    44 C5   8 BGLC    44 C4  
+bond953 covale 8 BGLC    44 C5   8 BGLC    44 C6  
+bond954 covale 8 BGLC    44 C2   8 BGLC    44 H2  
+bond955 covale 8 BGLC    44 C2   8 BGLC    44 O2  
+bond956 covale 8 BGLC    44 C2   8 BGLC    44 C3  
+bond957 covale 8 BGLC    44 O2   8 BGLC    44 HO2 
+bond958 covale 8 BGLC    44 C3   8 BGLC    44 H3  
+bond959 covale 8 BGLC    44 C3   8 BGLC    44 O3  
+bond960 covale 8 BGLC    44 C3   8 BGLC    44 C4  
+bond961 covale 8 BGLC    44 O3   8 BGLC    44 HO3 
+bond962 covale 8 BGLC    44 C4   8 BGLC    44 H4  
+bond963 covale 8 BGLC    44 C4   8 BGLC    44 O4  
+bond964 covale 8 BGLC    44 O4   8 BGLC    45 C1  
+bond965 covale 8 BGLC    44 C6   8 BGLC    44 H61 
+bond966 covale 8 BGLC    44 C6   8 BGLC    44 H62 
+bond967 covale 8 BGLC    44 C6   8 BGLC    44 O6  
+bond968 covale 8 BGLC    44 O6   8 BGLC    44 HO6 
+bond969 covale 8 BGLC    45 C1   8 BGLC    45 H1  
+bond970 covale 8 BGLC    45 C1   8 BGLC    45 O5  
+bond971 covale 8 BGLC    45 C1   8 BGLC    45 C2  
+bond972 covale 8 BGLC    45 C5   8 BGLC    45 H5  
+bond973 covale 8 BGLC    45 C5   8 BGLC    45 O5  
+bond974 covale 8 BGLC    45 C5   8 BGLC    45 C4  
+bond975 covale 8 BGLC    45 C5   8 BGLC    45 C6  
+bond976 covale 8 BGLC    45 C2   8 BGLC    45 H2  
+bond977 covale 8 BGLC    45 C2   8 BGLC    45 O2  
+bond978 covale 8 BGLC    45 C2   8 BGLC    45 C3  
+bond979 covale 8 BGLC    45 O2   8 BGLC    45 HO2 
+bond980 covale 8 BGLC    45 C3   8 BGLC    45 H3  
+bond981 covale 8 BGLC    45 C3   8 BGLC    45 O3  
+bond982 covale 8 BGLC    45 C3   8 BGLC    45 C4  
+bond983 covale 8 BGLC    45 O3   8 BGLC    45 HO3 
+bond984 covale 8 BGLC    45 C4   8 BGLC    45 H4  
+bond985 covale 8 BGLC    45 C4   8 BGLC    45 O4  
+bond986 covale 8 BGLC    45 O4   8 BGLC    46 C1  
+bond987 covale 8 BGLC    45 C6   8 BGLC    45 H61 
+bond988 covale 8 BGLC    45 C6   8 BGLC    45 H62 
+bond989 covale 8 BGLC    45 C6   8 BGLC    45 O6  
+bond990 covale 8 BGLC    45 O6   8 BGLC    45 HO6 
+bond991 covale 8 BGLC    46 C1   8 BGLC    46 H1  
+bond992 covale 8 BGLC    46 C1   8 BGLC    46 O5  
+bond993 covale 8 BGLC    46 C1   8 BGLC    46 C2  
+bond994 covale 8 BGLC    46 C5   8 BGLC    46 H5  
+bond995 covale 8 BGLC    46 C5   8 BGLC    46 O5  
+bond996 covale 8 BGLC    46 C5   8 BGLC    46 C4  
+bond997 covale 8 BGLC    46 C5   8 BGLC    46 C6  
+bond998 covale 8 BGLC    46 C2   8 BGLC    46 H2  
+bond999 covale 8 BGLC    46 C2   8 BGLC    46 O2  
+bond1000 covale 8 BGLC    46 C2   8 BGLC    46 C3  
+bond1001 covale 8 BGLC    46 O2   8 BGLC    46 HO2 
+bond1002 covale 8 BGLC    46 C3   8 BGLC    46 H3  
+bond1003 covale 8 BGLC    46 C3   8 BGLC    46 O3  
+bond1004 covale 8 BGLC    46 C3   8 BGLC    46 C4  
+bond1005 covale 8 BGLC    46 O3   8 BGLC    46 HO3 
+bond1006 covale 8 BGLC    46 C4   8 BGLC    46 H4  
+bond1007 covale 8 BGLC    46 C4   8 BGLC    46 O4  
+bond1008 covale 8 BGLC    46 O4   8 BGLC    47 C1  
+bond1009 covale 8 BGLC    46 C6   8 BGLC    46 H61 
+bond1010 covale 8 BGLC    46 C6   8 BGLC    46 H62 
+bond1011 covale 8 BGLC    46 C6   8 BGLC    46 O6  
+bond1012 covale 8 BGLC    46 O6   8 BGLC    46 HO6 
+bond1013 covale 8 BGLC    47 C1   8 BGLC    47 H1  
+bond1014 covale 8 BGLC    47 C1   8 BGLC    47 O5  
+bond1015 covale 8 BGLC    47 C1   8 BGLC    47 C2  
+bond1016 covale 8 BGLC    47 C5   8 BGLC    47 H5  
+bond1017 covale 8 BGLC    47 C5   8 BGLC    47 O5  
+bond1018 covale 8 BGLC    47 C5   8 BGLC    47 C4  
+bond1019 covale 8 BGLC    47 C5   8 BGLC    47 C6  
+bond1020 covale 8 BGLC    47 C2   8 BGLC    47 H2  
+bond1021 covale 8 BGLC    47 C2   8 BGLC    47 O2  
+bond1022 covale 8 BGLC    47 C2   8 BGLC    47 C3  
+bond1023 covale 8 BGLC    47 O2   8 BGLC    47 HO2 
+bond1024 covale 8 BGLC    47 C3   8 BGLC    47 H3  
+bond1025 covale 8 BGLC    47 C3   8 BGLC    47 O3  
+bond1026 covale 8 BGLC    47 C3   8 BGLC    47 C4  
+bond1027 covale 8 BGLC    47 O3   8 BGLC    47 HO3 
+bond1028 covale 8 BGLC    47 C4   8 BGLC    47 H4  
+bond1029 covale 8 BGLC    47 C4   8 BGLC    47 O4  
+bond1030 covale 8 BGLC    47 O4   8 BGLC    48 C1  
+bond1031 covale 8 BGLC    47 C6   8 BGLC    47 H61 
+bond1032 covale 8 BGLC    47 C6   8 BGLC    47 H62 
+bond1033 covale 8 BGLC    47 C6   8 BGLC    47 O6  
+bond1034 covale 8 BGLC    47 O6   8 BGLC    47 HO6 
+bond1035 covale 8 BGLC    48 C1   8 BGLC    48 H1  
+bond1036 covale 8 BGLC    48 C1   8 BGLC    48 O5  
+bond1037 covale 8 BGLC    48 C1   8 BGLC    48 C2  
+bond1038 covale 8 BGLC    48 C5   8 BGLC    48 H5  
+bond1039 covale 8 BGLC    48 C5   8 BGLC    48 O5  
+bond1040 covale 8 BGLC    48 C5   8 BGLC    48 C4  
+bond1041 covale 8 BGLC    48 C5   8 BGLC    48 C6  
+bond1042 covale 8 BGLC    48 C2   8 BGLC    48 H2  
+bond1043 covale 8 BGLC    48 C2   8 BGLC    48 O2  
+bond1044 covale 8 BGLC    48 C2   8 BGLC    48 C3  
+bond1045 covale 8 BGLC    48 O2   8 BGLC    48 HO2 
+bond1046 covale 8 BGLC    48 C3   8 BGLC    48 H3  
+bond1047 covale 8 BGLC    48 C3   8 BGLC    48 O3  
+bond1048 covale 8 BGLC    48 C3   8 BGLC    48 C4  
+bond1049 covale 8 BGLC    48 O3   8 BGLC    48 HO3 
+bond1050 covale 8 BGLC    48 C4   8 BGLC    48 H4  
+bond1051 covale 8 BGLC    48 C4   8 BGLC    48 O4  
+bond1052 covale 8 BGLC    48 O4   8 BGLC    43 C1  
+bond1053 covale 8 BGLC    48 C6   8 BGLC    48 H61 
+bond1054 covale 8 BGLC    48 C6   8 BGLC    48 H62 
+bond1055 covale 8 BGLC    48 C6   8 BGLC    48 O6  
+bond1056 covale 8 BGLC    48 O6   8 BGLC    48 HO6 
+#
+loop_
+_atom_site.group_PDB
+_atom_site.id
+_atom_site.type_symbol
+_atom_site.label_atom_id
+_atom_site.label_alt_id
+_atom_site.label_comp_id
+_atom_site.label_asym_id
+_atom_site.label_entity_id
+_atom_site.label_seq_id
+_atom_site.pdbx_PDB_ins_code
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+_atom_site.occupancy
+_atom_site.B_iso_or_equiv
+_atom_site.Cartn_x_esd
+_atom_site.Cartn_y_esd
+_atom_site.Cartn_z_esd
+_atom_site.occupancy_esd
+_atom_site.B_iso_or_equiv_esd
+_atom_site.pdbx_formal_charge
+_atom_site.auth_seq_id
+_atom_site.auth_comp_id
+_atom_site.auth_asym_id
+_atom_site.auth_atom_id
+_atom_site.pdbx_PDB_model_num
+HETATM      1 C   C1   . BGLC 1 ?     1 .     3.1300    29.0800    18.0500  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   C1     1
+HETATM      2 H   H1   . BGLC 1 ?     1 .     2.5700    28.9100    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   H1     1
+HETATM      3 C   C5   . BGLC 1 ?     1 .     4.3100    30.8100    16.9200  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   C5     1
+HETATM      4 H   H5   . BGLC 1 ?     1 .     3.7500    30.6600    16.1300  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   H5     1
+HETATM      5 O   O5   . BGLC 1 ?     1 .     4.4000    29.5800    17.6700  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   O5     1
+HETATM      6 C   C2   . BGLC 1 ?     1 .     2.4700    30.0600    19.0200  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   C2     1
+HETATM      7 H   H2   . BGLC 1 ?     1 .     2.9700    30.1000    19.8600  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   H2     1
+HETATM      8 O   O2   . BGLC 1 ?     1 .     1.1600    29.5300    19.2500  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   O2     1
+HETATM      9 H   HO2  . BGLC 1 ?     1 .     1.2700    28.5700    19.4100  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1  HO2     1
+HETATM     10 C   C3   . BGLC 1 ?     1 .     2.3900    31.4500    18.4200  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   C3     1
+HETATM     11 H   H3   . BGLC 1 ?     1 .     1.6900    31.4400    17.7200  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   H3     1
+HETATM     12 O   O3   . BGLC 1 ?     1 .     1.9900    32.3900    19.4300  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   O3     1
+HETATM     13 H   HO3  . BGLC 1 ?     1 .     1.7000    33.1800    18.9300  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1  HO3     1
+HETATM     14 C   C4   . BGLC 1 ?     1 .     3.7000    31.8600    17.7800  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   C4     1
+HETATM     15 H   H4   . BGLC 1 ?     1 .     4.3300    32.0500    18.5100  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   H4     1
+HETATM     16 O   O4   . BGLC 1 ?     1 .     3.5600    33.0800    17.0300  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   O4     1
+HETATM     17 C   C6   . BGLC 1 ?     1 .     5.7300    31.1200    16.4600  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   C6     1
+HETATM     18 H   H61  . BGLC 1 ?     1 .     6.2700    31.3700    17.2200  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1  H61     1
+HETATM     19 H   H62  . BGLC 1 ?     1 .     6.1200    30.3200    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1  H62     1
+HETATM     20 O   O6   . BGLC 1 ?     1 .     5.7100    32.1700    15.5000  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1   O6     1
+HETATM     21 H   HO6  . BGLC 1 ?     1 .     6.6200    32.4900    15.3600  0.0  0.0  ?  ?  ?  ?  ?  .      1 BGLC 1  HO6     1
+HETATM     22 C   C1   . BGLC 1 ?     2 .     3.8100     3.1300    17.7500  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   C1     1
+HETATM     23 H   H1   . BGLC 1 ?     2 .     4.3700     2.9600    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   H1     1
+HETATM     24 C   C5   . BGLC 1 ?     2 .     2.6200     4.8600    18.8900  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   C5     1
+HETATM     25 H   H5   . BGLC 1 ?     2 .     3.1900     4.7100    19.6700  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   H5     1
+HETATM     26 O   O5   . BGLC 1 ?     2 .     2.5300     3.6300    18.1300  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   O5     1
+HETATM     27 C   C2   . BGLC 1 ?     2 .     4.4700     4.1100    16.7900  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   C2     1
+HETATM     28 H   H2   . BGLC 1 ?     2 .     3.9700     4.1500    15.9400  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   H2     1
+HETATM     29 O   O2   . BGLC 1 ?     2 .     5.7800     3.5800    16.5600  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   O2     1
+HETATM     30 H   HO2  . BGLC 1 ?     2 .     5.6700     2.6200    16.4000  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1  HO2     1
+HETATM     31 C   C3   . BGLC 1 ?     2 .     4.5500     5.5000    17.3900  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   C3     1
+HETATM     32 H   H3   . BGLC 1 ?     2 .     5.2400     5.4900    18.0900  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   H3     1
+HETATM     33 O   O3   . BGLC 1 ?     2 .     4.9400     6.4400    16.3700  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   O3     1
+HETATM     34 H   HO3  . BGLC 1 ?     2 .     5.2400     7.2300    16.8800  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1  HO3     1
+HETATM     35 C   C4   . BGLC 1 ?     2 .     3.2400     5.9100    18.0200  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   C4     1
+HETATM     36 H   H4   . BGLC 1 ?     2 .     2.6100     6.1000    17.3000  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   H4     1
+HETATM     37 O   O4   . BGLC 1 ?     2 .     3.3800     7.1300    18.7800  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   O4     1
+HETATM     38 C   C6   . BGLC 1 ?     2 .     1.2100     5.1700    19.3500  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   C6     1
+HETATM     39 H   H61  . BGLC 1 ?     2 .     0.6700     5.4200    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1  H61     1
+HETATM     40 H   H62  . BGLC 1 ?     2 .     0.8200     4.3700    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1  H62     1
+HETATM     41 O   O6   . BGLC 1 ?     2 .     1.2300     6.2200    20.3000  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1   O6     1
+HETATM     42 H   HO6  . BGLC 1 ?     2 .     0.3100     6.5400    20.4400  0.0  0.0  ?  ?  ?  ?  ?  .      2 BGLC 1  HO6     1
+HETATM     43 C   C1   . BGLC 1 ?     3 .     3.1300     8.3200    18.0500  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   C1     1
+HETATM     44 H   H1   . BGLC 1 ?     3 .     2.5700     8.1500    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   H1     1
+HETATM     45 C   C5   . BGLC 1 ?     3 .     4.3100    10.0500    16.9200  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   C5     1
+HETATM     46 H   H5   . BGLC 1 ?     3 .     3.7500     9.9000    16.1300  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   H5     1
+HETATM     47 O   O5   . BGLC 1 ?     3 .     4.4000     8.8200    17.6700  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   O5     1
+HETATM     48 C   C2   . BGLC 1 ?     3 .     2.4700     9.3000    19.0200  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   C2     1
+HETATM     49 H   H2   . BGLC 1 ?     3 .     2.9700     9.3400    19.8600  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   H2     1
+HETATM     50 O   O2   . BGLC 1 ?     3 .     1.1600     8.7700    19.2500  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   O2     1
+HETATM     51 H   HO2  . BGLC 1 ?     3 .     1.2700     7.8100    19.4100  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1  HO2     1
+HETATM     52 C   C3   . BGLC 1 ?     3 .     2.3900    10.6900    18.4200  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   C3     1
+HETATM     53 H   H3   . BGLC 1 ?     3 .     1.6900    10.6800    17.7200  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   H3     1
+HETATM     54 O   O3   . BGLC 1 ?     3 .     1.9900    11.6300    19.4300  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   O3     1
+HETATM     55 H   HO3  . BGLC 1 ?     3 .     1.7000    12.4200    18.9300  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1  HO3     1
+HETATM     56 C   C4   . BGLC 1 ?     3 .     3.7000    11.1000    17.7800  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   C4     1
+HETATM     57 H   H4   . BGLC 1 ?     3 .     4.3300    11.2900    18.5100  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   H4     1
+HETATM     58 O   O4   . BGLC 1 ?     3 .     3.5600    12.3200    17.0300  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   O4     1
+HETATM     59 C   C6   . BGLC 1 ?     3 .     5.7300    10.3600    16.4600  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   C6     1
+HETATM     60 H   H61  . BGLC 1 ?     3 .     6.2700    10.6100    17.2200  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1  H61     1
+HETATM     61 H   H62  . BGLC 1 ?     3 .     6.1200     9.5600    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1  H62     1
+HETATM     62 O   O6   . BGLC 1 ?     3 .     5.7100    11.4100    15.5000  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1   O6     1
+HETATM     63 H   HO6  . BGLC 1 ?     3 .     6.6200    11.7300    15.3600  0.0  0.0  ?  ?  ?  ?  ?  .      3 BGLC 1  HO6     1
+HETATM     64 C   C1   . BGLC 1 ?     4 .     3.8100    13.5100    17.7500  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   C1     1
+HETATM     65 H   H1   . BGLC 1 ?     4 .     4.3700    13.3400    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   H1     1
+HETATM     66 C   C5   . BGLC 1 ?     4 .     2.6200    15.2400    18.8900  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   C5     1
+HETATM     67 H   H5   . BGLC 1 ?     4 .     3.1900    15.0900    19.6700  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   H5     1
+HETATM     68 O   O5   . BGLC 1 ?     4 .     2.5300    14.0100    18.1300  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   O5     1
+HETATM     69 C   C2   . BGLC 1 ?     4 .     4.4700    14.4900    16.7900  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   C2     1
+HETATM     70 H   H2   . BGLC 1 ?     4 .     3.9700    14.5300    15.9400  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   H2     1
+HETATM     71 O   O2   . BGLC 1 ?     4 .     5.7800    13.9600    16.5600  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   O2     1
+HETATM     72 H   HO2  . BGLC 1 ?     4 .     5.6700    13.0000    16.4000  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1  HO2     1
+HETATM     73 C   C3   . BGLC 1 ?     4 .     4.5500    15.8800    17.3900  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   C3     1
+HETATM     74 H   H3   . BGLC 1 ?     4 .     5.2400    15.8700    18.0900  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   H3     1
+HETATM     75 O   O3   . BGLC 1 ?     4 .     4.9400    16.8200    16.3700  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   O3     1
+HETATM     76 H   HO3  . BGLC 1 ?     4 .     5.2400    17.6100    16.8800  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1  HO3     1
+HETATM     77 C   C4   . BGLC 1 ?     4 .     3.2400    16.2900    18.0200  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   C4     1
+HETATM     78 H   H4   . BGLC 1 ?     4 .     2.6100    16.4800    17.3000  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   H4     1
+HETATM     79 O   O4   . BGLC 1 ?     4 .     3.3800    17.5100    18.7800  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   O4     1
+HETATM     80 C   C6   . BGLC 1 ?     4 .     1.2100    15.5500    19.3500  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   C6     1
+HETATM     81 H   H61  . BGLC 1 ?     4 .     0.6700    15.8000    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1  H61     1
+HETATM     82 H   H62  . BGLC 1 ?     4 .     0.8200    14.7500    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1  H62     1
+HETATM     83 O   O6   . BGLC 1 ?     4 .     1.2300    16.6000    20.3000  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1   O6     1
+HETATM     84 H   HO6  . BGLC 1 ?     4 .     0.3100    16.9200    20.4400  0.0  0.0  ?  ?  ?  ?  ?  .      4 BGLC 1  HO6     1
+HETATM     85 C   C1   . BGLC 1 ?     5 .     3.1300    18.7000    18.0500  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   C1     1
+HETATM     86 H   H1   . BGLC 1 ?     5 .     2.5700    18.5300    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   H1     1
+HETATM     87 C   C5   . BGLC 1 ?     5 .     4.3100    20.4300    16.9200  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   C5     1
+HETATM     88 H   H5   . BGLC 1 ?     5 .     3.7500    20.2800    16.1300  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   H5     1
+HETATM     89 O   O5   . BGLC 1 ?     5 .     4.4000    19.2000    17.6700  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   O5     1
+HETATM     90 C   C2   . BGLC 1 ?     5 .     2.4700    19.6800    19.0200  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   C2     1
+HETATM     91 H   H2   . BGLC 1 ?     5 .     2.9700    19.7200    19.8600  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   H2     1
+HETATM     92 O   O2   . BGLC 1 ?     5 .     1.1600    19.1500    19.2500  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   O2     1
+HETATM     93 H   HO2  . BGLC 1 ?     5 .     1.2700    18.1900    19.4100  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1  HO2     1
+HETATM     94 C   C3   . BGLC 1 ?     5 .     2.3900    21.0700    18.4200  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   C3     1
+HETATM     95 H   H3   . BGLC 1 ?     5 .     1.6900    21.0600    17.7200  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   H3     1
+HETATM     96 O   O3   . BGLC 1 ?     5 .     1.9900    22.0100    19.4300  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   O3     1
+HETATM     97 H   HO3  . BGLC 1 ?     5 .     1.7000    22.8000    18.9300  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1  HO3     1
+HETATM     98 C   C4   . BGLC 1 ?     5 .     3.7000    21.4800    17.7800  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   C4     1
+HETATM     99 H   H4   . BGLC 1 ?     5 .     4.3300    21.6700    18.5100  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   H4     1
+HETATM    100 O   O4   . BGLC 1 ?     5 .     3.5600    22.7000    17.0300  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   O4     1
+HETATM    101 C   C6   . BGLC 1 ?     5 .     5.7300    20.7400    16.4600  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   C6     1
+HETATM    102 H   H61  . BGLC 1 ?     5 .     6.2700    20.9900    17.2200  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1  H61     1
+HETATM    103 H   H62  . BGLC 1 ?     5 .     6.1200    19.9400    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1  H62     1
+HETATM    104 O   O6   . BGLC 1 ?     5 .     5.7100    21.7900    15.5000  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1   O6     1
+HETATM    105 H   HO6  . BGLC 1 ?     5 .     6.6200    22.1100    15.3600  0.0  0.0  ?  ?  ?  ?  ?  .      5 BGLC 1  HO6     1
+HETATM    106 C   C1   . BGLC 1 ?     6 .     3.8100    23.8900    17.7500  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   C1     1
+HETATM    107 H   H1   . BGLC 1 ?     6 .     4.3700    23.7200    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   H1     1
+HETATM    108 C   C5   . BGLC 1 ?     6 .     2.6200    25.6200    18.8900  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   C5     1
+HETATM    109 H   H5   . BGLC 1 ?     6 .     3.1900    25.4700    19.6700  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   H5     1
+HETATM    110 O   O5   . BGLC 1 ?     6 .     2.5300    24.3900    18.1300  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   O5     1
+HETATM    111 C   C2   . BGLC 1 ?     6 .     4.4700    24.8700    16.7900  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   C2     1
+HETATM    112 H   H2   . BGLC 1 ?     6 .     3.9700    24.9100    15.9400  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   H2     1
+HETATM    113 O   O2   . BGLC 1 ?     6 .     5.7800    24.3400    16.5600  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   O2     1
+HETATM    114 H   HO2  . BGLC 1 ?     6 .     5.6700    23.3800    16.4000  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1  HO2     1
+HETATM    115 C   C3   . BGLC 1 ?     6 .     4.5500    26.2600    17.3900  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   C3     1
+HETATM    116 H   H3   . BGLC 1 ?     6 .     5.2400    26.2500    18.0900  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   H3     1
+HETATM    117 O   O3   . BGLC 1 ?     6 .     4.9400    27.2000    16.3700  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   O3     1
+HETATM    118 H   HO3  . BGLC 1 ?     6 .     5.2400    27.9900    16.8800  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1  HO3     1
+HETATM    119 C   C4   . BGLC 1 ?     6 .     3.2400    26.6700    18.0200  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   C4     1
+HETATM    120 H   H4   . BGLC 1 ?     6 .     2.6100    26.8600    17.3000  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   H4     1
+HETATM    121 O   O4   . BGLC 1 ?     6 .     3.3800    27.8900    18.7800  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   O4     1
+HETATM    122 C   C6   . BGLC 1 ?     6 .     1.2100    25.9300    19.3500  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   C6     1
+HETATM    123 H   H61  . BGLC 1 ?     6 .     0.6700    26.1800    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1  H61     1
+HETATM    124 H   H62  . BGLC 1 ?     6 .     0.8200    25.1300    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1  H62     1
+HETATM    125 O   O6   . BGLC 1 ?     6 .     1.2300    26.9800    20.3000  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1   O6     1
+HETATM    126 H   HO6  . BGLC 1 ?     6 .     0.3100    27.3000    20.4400  0.0  0.0  ?  ?  ?  ?  ?  .      6 BGLC 1  HO6     1
+HETATM    127 C   C1   . BGLC 2 ?     7 .     8.9600    26.3700    17.9700  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   C1     1
+HETATM    128 H   H1   . BGLC 2 ?     7 .     8.3000    26.2100    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   H1     1
+HETATM    129 C   C5   . BGLC 2 ?     7 .    10.1800    28.0900    16.8500  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   C5     1
+HETATM    130 H   H5   . BGLC 2 ?     7 .     9.6300    28.1100    16.0400  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   H5     1
+HETATM    131 O   O5   . BGLC 2 ?     7 .    10.1900    26.7900    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   O5     1
+HETATM    132 C   C2   . BGLC 2 ?     7 .     8.4400    27.3600    19.0000  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   C2     1
+HETATM    133 H   H2   . BGLC 2 ?     7 .     9.0800    27.4000    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   H2     1
+HETATM    134 O   O2   . BGLC 2 ?     7 .     7.1900    26.9100    19.5300  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   O2     1
+HETATM    135 H   HO2  . BGLC 2 ?     7 .     7.2900    25.9500    19.7000  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2  HO2     1
+HETATM    136 C   C3   . BGLC 2 ?     7 .     8.3200    28.7300    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   C3     1
+HETATM    137 H   H3   . BGLC 2 ?     7 .     7.6800    28.7100    17.6500  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   H3     1
+HETATM    138 O   O3   . BGLC 2 ?     7 .     7.8500    29.6100    19.4000  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   O3     1
+HETATM    139 H   HO3  . BGLC 2 ?     7 .     7.9600    30.5300    19.0500  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2  HO3     1
+HETATM    140 C   C4   . BGLC 2 ?     7 .     9.7000    29.1400    17.8600  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   C4     1
+HETATM    141 H   H4   . BGLC 2 ?     7 .    10.3400    29.2300    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   H4     1
+HETATM    142 O   O4   . BGLC 2 ?     7 .     9.6100    30.3700    17.1100  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   O4     1
+HETATM    143 C   C6   . BGLC 2 ?     7 .    11.6700    28.3600    16.4800  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   C6     1
+HETATM    144 H   H61  . BGLC 2 ?     7 .    12.1500    28.6500    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2  H61     1
+HETATM    145 H   H62  . BGLC 2 ?     7 .    12.0800    27.5400    16.1600  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2  H62     1
+HETATM    146 O   O6   . BGLC 2 ?     7 .    11.7800    29.3500    15.4800  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2   O6     1
+HETATM    147 H   HO6  . BGLC 2 ?     7 .    12.6200    29.1900    15.0000  0.0  0.0  ?  ?  ?  ?  ?  .      7 BGLC 2  HO6     1
+HETATM    148 C   C1   . BGLC 2 ?     8 .     9.9000     0.4200    17.8400  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   C1     1
+HETATM    149 H   H1   . BGLC 2 ?     8 .    10.5700     0.2600    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   H1     1
+HETATM    150 C   C5   . BGLC 2 ?     8 .     8.6800     2.1400    18.9600  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   C5     1
+HETATM    151 H   H5   . BGLC 2 ?     8 .     9.2400     2.1600    19.7600  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   H5     1
+HETATM    152 O   O5   . BGLC 2 ?     8 .     8.6800     0.8400    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   O5     1
+HETATM    153 C   C2   . BGLC 2 ?     8 .    10.4300     1.4100    16.8000  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   C2     1
+HETATM    154 H   H2   . BGLC 2 ?     8 .     9.7800     1.4500    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   H2     1
+HETATM    155 O   O2   . BGLC 2 ?     8 .    11.6800     0.9600    16.2800  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   O2     1
+HETATM    156 H   HO2  . BGLC 2 ?     8 .    11.5800     0.0000    16.1100  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2  HO2     1
+HETATM    157 C   C3   . BGLC 2 ?     8 .    10.5400     2.7800    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   C3     1
+HETATM    158 H   H3   . BGLC 2 ?     8 .    11.1900     2.7600    18.1500  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   H3     1
+HETATM    159 O   O3   . BGLC 2 ?     8 .    11.0200     3.6600    16.4100  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   O3     1
+HETATM    160 H   HO3  . BGLC 2 ?     8 .    10.9100     4.5800    16.7500  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2  HO3     1
+HETATM    161 C   C4   . BGLC 2 ?     8 .     9.1700     3.1900    17.9500  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   C4     1
+HETATM    162 H   H4   . BGLC 2 ?     8 .     8.5300     3.2800    17.2100  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   H4     1
+HETATM    163 O   O4   . BGLC 2 ?     8 .     9.2500     4.4200    18.6900  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   O4     1
+HETATM    164 C   C6   . BGLC 2 ?     8 .     7.1900     2.4100    19.3200  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   C6     1
+HETATM    165 H   H61  . BGLC 2 ?     8 .     6.7100     2.7000    18.5300  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2  H61     1
+HETATM    166 H   H62  . BGLC 2 ?     8 .     6.7800     1.5900    19.6400  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2  H62     1
+HETATM    167 O   O6   . BGLC 2 ?     8 .     7.0900     3.4000    20.3300  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2   O6     1
+HETATM    168 H   HO6  . BGLC 2 ?     8 .     6.2400     3.2400    20.8100  0.0  0.0  ?  ?  ?  ?  ?  .      8 BGLC 2  HO6     1
+HETATM    169 C   C1   . BGLC 2 ?     9 .     8.9600     5.6100    17.9700  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   C1     1
+HETATM    170 H   H1   . BGLC 2 ?     9 .     8.3000     5.4500    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   H1     1
+HETATM    171 C   C5   . BGLC 2 ?     9 .    10.1800     7.3300    16.8500  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   C5     1
+HETATM    172 H   H5   . BGLC 2 ?     9 .     9.6300     7.3500    16.0400  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   H5     1
+HETATM    173 O   O5   . BGLC 2 ?     9 .    10.1900     6.0300    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   O5     1
+HETATM    174 C   C2   . BGLC 2 ?     9 .     8.4400     6.6000    19.0000  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   C2     1
+HETATM    175 H   H2   . BGLC 2 ?     9 .     9.0800     6.6400    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   H2     1
+HETATM    176 O   O2   . BGLC 2 ?     9 .     7.1900     6.1500    19.5300  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   O2     1
+HETATM    177 H   HO2  . BGLC 2 ?     9 .     7.2900     5.1900    19.7000  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2  HO2     1
+HETATM    178 C   C3   . BGLC 2 ?     9 .     8.3200     7.9700    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   C3     1
+HETATM    179 H   H3   . BGLC 2 ?     9 .     7.6800     7.9500    17.6500  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   H3     1
+HETATM    180 O   O3   . BGLC 2 ?     9 .     7.8500     8.8500    19.4000  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   O3     1
+HETATM    181 H   HO3  . BGLC 2 ?     9 .     7.9600     9.7700    19.0500  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2  HO3     1
+HETATM    182 C   C4   . BGLC 2 ?     9 .     9.7000     8.3800    17.8600  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   C4     1
+HETATM    183 H   H4   . BGLC 2 ?     9 .    10.3400     8.4700    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   H4     1
+HETATM    184 O   O4   . BGLC 2 ?     9 .     9.6100     9.6100    17.1100  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   O4     1
+HETATM    185 C   C6   . BGLC 2 ?     9 .    11.6700     7.6000    16.4800  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   C6     1
+HETATM    186 H   H61  . BGLC 2 ?     9 .    12.1500     7.8900    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2  H61     1
+HETATM    187 H   H62  . BGLC 2 ?     9 .    12.0800     6.7800    16.1600  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2  H62     1
+HETATM    188 O   O6   . BGLC 2 ?     9 .    11.7800     8.5900    15.4800  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2   O6     1
+HETATM    189 H   HO6  . BGLC 2 ?     9 .    12.6200     8.4300    15.0000  0.0  0.0  ?  ?  ?  ?  ?  .      9 BGLC 2  HO6     1
+HETATM    190 C   C1   . BGLC 2 ?    10 .     9.9000    10.8000    17.8400  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   C1     1
+HETATM    191 H   H1   . BGLC 2 ?    10 .    10.5700    10.6400    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   H1     1
+HETATM    192 C   C5   . BGLC 2 ?    10 .     8.6800    12.5200    18.9600  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   C5     1
+HETATM    193 H   H5   . BGLC 2 ?    10 .     9.2400    12.5400    19.7600  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   H5     1
+HETATM    194 O   O5   . BGLC 2 ?    10 .     8.6800    11.2200    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   O5     1
+HETATM    195 C   C2   . BGLC 2 ?    10 .    10.4300    11.7900    16.8000  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   C2     1
+HETATM    196 H   H2   . BGLC 2 ?    10 .     9.7800    11.8300    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   H2     1
+HETATM    197 O   O2   . BGLC 2 ?    10 .    11.6800    11.3400    16.2800  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   O2     1
+HETATM    198 H   HO2  . BGLC 2 ?    10 .    11.5800    10.3800    16.1100  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2  HO2     1
+HETATM    199 C   C3   . BGLC 2 ?    10 .    10.5400    13.1600    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   C3     1
+HETATM    200 H   H3   . BGLC 2 ?    10 .    11.1900    13.1400    18.1500  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   H3     1
+HETATM    201 O   O3   . BGLC 2 ?    10 .    11.0200    14.0400    16.4100  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   O3     1
+HETATM    202 H   HO3  . BGLC 2 ?    10 .    10.9100    14.9600    16.7500  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2  HO3     1
+HETATM    203 C   C4   . BGLC 2 ?    10 .     9.1700    13.5700    17.9500  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   C4     1
+HETATM    204 H   H4   . BGLC 2 ?    10 .     8.5300    13.6600    17.2100  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   H4     1
+HETATM    205 O   O4   . BGLC 2 ?    10 .     9.2500    14.8000    18.6900  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   O4     1
+HETATM    206 C   C6   . BGLC 2 ?    10 .     7.1900    12.7900    19.3200  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   C6     1
+HETATM    207 H   H61  . BGLC 2 ?    10 .     6.7100    13.0800    18.5300  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2  H61     1
+HETATM    208 H   H62  . BGLC 2 ?    10 .     6.7800    11.9700    19.6400  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2  H62     1
+HETATM    209 O   O6   . BGLC 2 ?    10 .     7.0900    13.7800    20.3300  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2   O6     1
+HETATM    210 H   HO6  . BGLC 2 ?    10 .     6.2400    13.6200    20.8100  0.0  0.0  ?  ?  ?  ?  ?  .     10 BGLC 2  HO6     1
+HETATM    211 C   C1   . BGLC 2 ?    11 .     8.9600    15.9900    17.9700  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   C1     1
+HETATM    212 H   H1   . BGLC 2 ?    11 .     8.3000    15.8300    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   H1     1
+HETATM    213 C   C5   . BGLC 2 ?    11 .    10.1800    17.7100    16.8500  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   C5     1
+HETATM    214 H   H5   . BGLC 2 ?    11 .     9.6300    17.7300    16.0400  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   H5     1
+HETATM    215 O   O5   . BGLC 2 ?    11 .    10.1900    16.4100    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   O5     1
+HETATM    216 C   C2   . BGLC 2 ?    11 .     8.4400    16.9800    19.0000  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   C2     1
+HETATM    217 H   H2   . BGLC 2 ?    11 .     9.0800    17.0200    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   H2     1
+HETATM    218 O   O2   . BGLC 2 ?    11 .     7.1900    16.5300    19.5300  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   O2     1
+HETATM    219 H   HO2  . BGLC 2 ?    11 .     7.2900    15.5700    19.7000  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2  HO2     1
+HETATM    220 C   C3   . BGLC 2 ?    11 .     8.3200    18.3500    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   C3     1
+HETATM    221 H   H3   . BGLC 2 ?    11 .     7.6800    18.3300    17.6500  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   H3     1
+HETATM    222 O   O3   . BGLC 2 ?    11 .     7.8500    19.2300    19.4000  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   O3     1
+HETATM    223 H   HO3  . BGLC 2 ?    11 .     7.9600    20.1500    19.0500  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2  HO3     1
+HETATM    224 C   C4   . BGLC 2 ?    11 .     9.7000    18.7600    17.8600  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   C4     1
+HETATM    225 H   H4   . BGLC 2 ?    11 .    10.3400    18.8500    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   H4     1
+HETATM    226 O   O4   . BGLC 2 ?    11 .     9.6100    19.9900    17.1100  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   O4     1
+HETATM    227 C   C6   . BGLC 2 ?    11 .    11.6700    17.9800    16.4800  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   C6     1
+HETATM    228 H   H61  . BGLC 2 ?    11 .    12.1500    18.2700    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2  H61     1
+HETATM    229 H   H62  . BGLC 2 ?    11 .    12.0800    17.1600    16.1600  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2  H62     1
+HETATM    230 O   O6   . BGLC 2 ?    11 .    11.7800    18.9700    15.4800  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2   O6     1
+HETATM    231 H   HO6  . BGLC 2 ?    11 .    12.6200    18.8100    15.0000  0.0  0.0  ?  ?  ?  ?  ?  .     11 BGLC 2  HO6     1
+HETATM    232 C   C1   . BGLC 2 ?    12 .     9.9000    21.1800    17.8400  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   C1     1
+HETATM    233 H   H1   . BGLC 2 ?    12 .    10.5700    21.0200    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   H1     1
+HETATM    234 C   C5   . BGLC 2 ?    12 .     8.6800    22.9000    18.9600  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   C5     1
+HETATM    235 H   H5   . BGLC 2 ?    12 .     9.2400    22.9200    19.7600  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   H5     1
+HETATM    236 O   O5   . BGLC 2 ?    12 .     8.6800    21.6000    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   O5     1
+HETATM    237 C   C2   . BGLC 2 ?    12 .    10.4300    22.1700    16.8000  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   C2     1
+HETATM    238 H   H2   . BGLC 2 ?    12 .     9.7800    22.2100    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   H2     1
+HETATM    239 O   O2   . BGLC 2 ?    12 .    11.6800    21.7200    16.2800  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   O2     1
+HETATM    240 H   HO2  . BGLC 2 ?    12 .    11.5800    20.7600    16.1100  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2  HO2     1
+HETATM    241 C   C3   . BGLC 2 ?    12 .    10.5400    23.5400    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   C3     1
+HETATM    242 H   H3   . BGLC 2 ?    12 .    11.1900    23.5200    18.1500  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   H3     1
+HETATM    243 O   O3   . BGLC 2 ?    12 .    11.0200    24.4200    16.4100  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   O3     1
+HETATM    244 H   HO3  . BGLC 2 ?    12 .    10.9100    25.3400    16.7500  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2  HO3     1
+HETATM    245 C   C4   . BGLC 2 ?    12 .     9.1700    23.9500    17.9500  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   C4     1
+HETATM    246 H   H4   . BGLC 2 ?    12 .     8.5300    24.0400    17.2100  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   H4     1
+HETATM    247 O   O4   . BGLC 2 ?    12 .     9.2500    25.1800    18.6900  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   O4     1
+HETATM    248 C   C6   . BGLC 2 ?    12 .     7.1900    23.1700    19.3200  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   C6     1
+HETATM    249 H   H61  . BGLC 2 ?    12 .     6.7100    23.4600    18.5300  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2  H61     1
+HETATM    250 H   H62  . BGLC 2 ?    12 .     6.7800    22.3500    19.6400  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2  H62     1
+HETATM    251 O   O6   . BGLC 2 ?    12 .     7.0900    24.1600    20.3300  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2   O6     1
+HETATM    252 H   HO6  . BGLC 2 ?    12 .     6.2400    24.0000    20.8100  0.0  0.0  ?  ?  ?  ?  ?  .     12 BGLC 2  HO6     1
+HETATM    253 C   C1   . BGLC 3 ?    13 .    15.0600    29.0800    18.0500  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   C1     1
+HETATM    254 H   H1   . BGLC 3 ?    13 .    14.4900    28.9100    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   H1     1
+HETATM    255 C   C5   . BGLC 3 ?    13 .    16.2400    30.8100    16.9200  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   C5     1
+HETATM    256 H   H5   . BGLC 3 ?    13 .    15.6800    30.6600    16.1300  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   H5     1
+HETATM    257 O   O5   . BGLC 3 ?    13 .    16.3300    29.5800    17.6700  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   O5     1
+HETATM    258 C   C2   . BGLC 3 ?    13 .    14.4000    30.0600    19.0200  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   C2     1
+HETATM    259 H   H2   . BGLC 3 ?    13 .    14.9000    30.1000    19.8600  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   H2     1
+HETATM    260 O   O2   . BGLC 3 ?    13 .    13.0900    29.5300    19.2500  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   O2     1
+HETATM    261 H   HO2  . BGLC 3 ?    13 .    13.2000    28.5700    19.4100  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3  HO2     1
+HETATM    262 C   C3   . BGLC 3 ?    13 .    14.3100    31.4500    18.4200  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   C3     1
+HETATM    263 H   H3   . BGLC 3 ?    13 .    13.6200    31.4400    17.7200  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   H3     1
+HETATM    264 O   O3   . BGLC 3 ?    13 .    13.9200    32.3900    19.4300  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   O3     1
+HETATM    265 H   HO3  . BGLC 3 ?    13 .    13.6300    33.1800    18.9300  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3  HO3     1
+HETATM    266 C   C4   . BGLC 3 ?    13 .    15.6200    31.8600    17.7800  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   C4     1
+HETATM    267 H   H4   . BGLC 3 ?    13 .    16.2600    32.0500    18.5100  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   H4     1
+HETATM    268 O   O4   . BGLC 3 ?    13 .    15.4900    33.0800    17.0300  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   O4     1
+HETATM    269 C   C6   . BGLC 3 ?    13 .    17.6600    31.1200    16.4600  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   C6     1
+HETATM    270 H   H61  . BGLC 3 ?    13 .    18.2000    31.3700    17.2200  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3  H61     1
+HETATM    271 H   H62  . BGLC 3 ?    13 .    18.0500    30.3200    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3  H62     1
+HETATM    272 O   O6   . BGLC 3 ?    13 .    17.6400    32.1700    15.5000  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3   O6     1
+HETATM    273 H   HO6  . BGLC 3 ?    13 .    18.5500    32.4900    15.3600  0.0  0.0  ?  ?  ?  ?  ?  .     13 BGLC 3  HO6     1
+HETATM    274 C   C1   . BGLC 3 ?    14 .    15.7400     3.1300    17.7500  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   C1     1
+HETATM    275 H   H1   . BGLC 3 ?    14 .    16.3000     2.9600    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   H1     1
+HETATM    276 C   C5   . BGLC 3 ?    14 .    14.5500     4.8600    18.8900  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   C5     1
+HETATM    277 H   H5   . BGLC 3 ?    14 .    15.1200     4.7100    19.6700  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   H5     1
+HETATM    278 O   O5   . BGLC 3 ?    14 .    14.4600     3.6300    18.1300  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   O5     1
+HETATM    279 C   C2   . BGLC 3 ?    14 .    16.4000     4.1100    16.7900  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   C2     1
+HETATM    280 H   H2   . BGLC 3 ?    14 .    15.9000     4.1500    15.9400  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   H2     1
+HETATM    281 O   O2   . BGLC 3 ?    14 .    17.7000     3.5800    16.5600  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   O2     1
+HETATM    282 H   HO2  . BGLC 3 ?    14 .    17.6000     2.6200    16.4000  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3  HO2     1
+HETATM    283 C   C3   . BGLC 3 ?    14 .    16.4800     5.5000    17.3900  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   C3     1
+HETATM    284 H   H3   . BGLC 3 ?    14 .    17.1700     5.4900    18.0900  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   H3     1
+HETATM    285 O   O3   . BGLC 3 ?    14 .    16.8700     6.4400    16.3700  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   O3     1
+HETATM    286 H   HO3  . BGLC 3 ?    14 .    17.1700     7.2300    16.8800  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3  HO3     1
+HETATM    287 C   C4   . BGLC 3 ?    14 .    15.1700     5.9100    18.0200  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   C4     1
+HETATM    288 H   H4   . BGLC 3 ?    14 .    14.5400     6.1000    17.3000  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   H4     1
+HETATM    289 O   O4   . BGLC 3 ?    14 .    15.3100     7.1300    18.7800  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   O4     1
+HETATM    290 C   C6   . BGLC 3 ?    14 .    13.1400     5.1700    19.3500  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   C6     1
+HETATM    291 H   H61  . BGLC 3 ?    14 .    12.6000     5.4200    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3  H61     1
+HETATM    292 H   H62  . BGLC 3 ?    14 .    12.7500     4.3700    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3  H62     1
+HETATM    293 O   O6   . BGLC 3 ?    14 .    13.1500     6.2200    20.3000  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3   O6     1
+HETATM    294 H   HO6  . BGLC 3 ?    14 .    12.2400     6.5400    20.4400  0.0  0.0  ?  ?  ?  ?  ?  .     14 BGLC 3  HO6     1
+HETATM    295 C   C1   . BGLC 3 ?    15 .    15.0600     8.3200    18.0500  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   C1     1
+HETATM    296 H   H1   . BGLC 3 ?    15 .    14.4900     8.1500    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   H1     1
+HETATM    297 C   C5   . BGLC 3 ?    15 .    16.2400    10.0500    16.9200  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   C5     1
+HETATM    298 H   H5   . BGLC 3 ?    15 .    15.6800     9.9000    16.1300  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   H5     1
+HETATM    299 O   O5   . BGLC 3 ?    15 .    16.3300     8.8200    17.6700  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   O5     1
+HETATM    300 C   C2   . BGLC 3 ?    15 .    14.4000     9.3000    19.0200  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   C2     1
+HETATM    301 H   H2   . BGLC 3 ?    15 .    14.9000     9.3400    19.8600  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   H2     1
+HETATM    302 O   O2   . BGLC 3 ?    15 .    13.0900     8.7700    19.2500  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   O2     1
+HETATM    303 H   HO2  . BGLC 3 ?    15 .    13.2000     7.8100    19.4100  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3  HO2     1
+HETATM    304 C   C3   . BGLC 3 ?    15 .    14.3100    10.6900    18.4200  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   C3     1
+HETATM    305 H   H3   . BGLC 3 ?    15 .    13.6200    10.6800    17.7200  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   H3     1
+HETATM    306 O   O3   . BGLC 3 ?    15 .    13.9200    11.6300    19.4300  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   O3     1
+HETATM    307 H   HO3  . BGLC 3 ?    15 .    13.6300    12.4200    18.9300  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3  HO3     1
+HETATM    308 C   C4   . BGLC 3 ?    15 .    15.6200    11.1000    17.7800  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   C4     1
+HETATM    309 H   H4   . BGLC 3 ?    15 .    16.2600    11.2900    18.5100  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   H4     1
+HETATM    310 O   O4   . BGLC 3 ?    15 .    15.4900    12.3200    17.0300  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   O4     1
+HETATM    311 C   C6   . BGLC 3 ?    15 .    17.6600    10.3600    16.4600  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   C6     1
+HETATM    312 H   H61  . BGLC 3 ?    15 .    18.2000    10.6100    17.2200  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3  H61     1
+HETATM    313 H   H62  . BGLC 3 ?    15 .    18.0500     9.5600    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3  H62     1
+HETATM    314 O   O6   . BGLC 3 ?    15 .    17.6400    11.4100    15.5000  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3   O6     1
+HETATM    315 H   HO6  . BGLC 3 ?    15 .    18.5500    11.7300    15.3600  0.0  0.0  ?  ?  ?  ?  ?  .     15 BGLC 3  HO6     1
+HETATM    316 C   C1   . BGLC 3 ?    16 .    15.7400    13.5100    17.7500  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   C1     1
+HETATM    317 H   H1   . BGLC 3 ?    16 .    16.3000    13.3400    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   H1     1
+HETATM    318 C   C5   . BGLC 3 ?    16 .    14.5500    15.2400    18.8900  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   C5     1
+HETATM    319 H   H5   . BGLC 3 ?    16 .    15.1200    15.0900    19.6700  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   H5     1
+HETATM    320 O   O5   . BGLC 3 ?    16 .    14.4600    14.0100    18.1300  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   O5     1
+HETATM    321 C   C2   . BGLC 3 ?    16 .    16.4000    14.4900    16.7900  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   C2     1
+HETATM    322 H   H2   . BGLC 3 ?    16 .    15.9000    14.5300    15.9400  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   H2     1
+HETATM    323 O   O2   . BGLC 3 ?    16 .    17.7000    13.9600    16.5600  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   O2     1
+HETATM    324 H   HO2  . BGLC 3 ?    16 .    17.6000    13.0000    16.4000  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3  HO2     1
+HETATM    325 C   C3   . BGLC 3 ?    16 .    16.4800    15.8800    17.3900  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   C3     1
+HETATM    326 H   H3   . BGLC 3 ?    16 .    17.1700    15.8700    18.0900  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   H3     1
+HETATM    327 O   O3   . BGLC 3 ?    16 .    16.8700    16.8200    16.3700  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   O3     1
+HETATM    328 H   HO3  . BGLC 3 ?    16 .    17.1700    17.6100    16.8800  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3  HO3     1
+HETATM    329 C   C4   . BGLC 3 ?    16 .    15.1700    16.2900    18.0200  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   C4     1
+HETATM    330 H   H4   . BGLC 3 ?    16 .    14.5400    16.4800    17.3000  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   H4     1
+HETATM    331 O   O4   . BGLC 3 ?    16 .    15.3100    17.5100    18.7800  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   O4     1
+HETATM    332 C   C6   . BGLC 3 ?    16 .    13.1400    15.5500    19.3500  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   C6     1
+HETATM    333 H   H61  . BGLC 3 ?    16 .    12.6000    15.8000    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3  H61     1
+HETATM    334 H   H62  . BGLC 3 ?    16 .    12.7500    14.7500    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3  H62     1
+HETATM    335 O   O6   . BGLC 3 ?    16 .    13.1500    16.6000    20.3000  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3   O6     1
+HETATM    336 H   HO6  . BGLC 3 ?    16 .    12.2400    16.9200    20.4400  0.0  0.0  ?  ?  ?  ?  ?  .     16 BGLC 3  HO6     1
+HETATM    337 C   C1   . BGLC 3 ?    17 .    15.0600    18.7000    18.0500  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   C1     1
+HETATM    338 H   H1   . BGLC 3 ?    17 .    14.4900    18.5300    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   H1     1
+HETATM    339 C   C5   . BGLC 3 ?    17 .    16.2400    20.4300    16.9200  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   C5     1
+HETATM    340 H   H5   . BGLC 3 ?    17 .    15.6800    20.2800    16.1300  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   H5     1
+HETATM    341 O   O5   . BGLC 3 ?    17 .    16.3300    19.2000    17.6700  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   O5     1
+HETATM    342 C   C2   . BGLC 3 ?    17 .    14.4000    19.6800    19.0200  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   C2     1
+HETATM    343 H   H2   . BGLC 3 ?    17 .    14.9000    19.7200    19.8600  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   H2     1
+HETATM    344 O   O2   . BGLC 3 ?    17 .    13.0900    19.1500    19.2500  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   O2     1
+HETATM    345 H   HO2  . BGLC 3 ?    17 .    13.2000    18.1900    19.4100  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3  HO2     1
+HETATM    346 C   C3   . BGLC 3 ?    17 .    14.3100    21.0700    18.4200  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   C3     1
+HETATM    347 H   H3   . BGLC 3 ?    17 .    13.6200    21.0600    17.7200  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   H3     1
+HETATM    348 O   O3   . BGLC 3 ?    17 .    13.9200    22.0100    19.4300  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   O3     1
+HETATM    349 H   HO3  . BGLC 3 ?    17 .    13.6300    22.8000    18.9300  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3  HO3     1
+HETATM    350 C   C4   . BGLC 3 ?    17 .    15.6200    21.4800    17.7800  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   C4     1
+HETATM    351 H   H4   . BGLC 3 ?    17 .    16.2600    21.6700    18.5100  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   H4     1
+HETATM    352 O   O4   . BGLC 3 ?    17 .    15.4900    22.7000    17.0300  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   O4     1
+HETATM    353 C   C6   . BGLC 3 ?    17 .    17.6600    20.7400    16.4600  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   C6     1
+HETATM    354 H   H61  . BGLC 3 ?    17 .    18.2000    20.9900    17.2200  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3  H61     1
+HETATM    355 H   H62  . BGLC 3 ?    17 .    18.0500    19.9400    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3  H62     1
+HETATM    356 O   O6   . BGLC 3 ?    17 .    17.6400    21.7900    15.5000  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3   O6     1
+HETATM    357 H   HO6  . BGLC 3 ?    17 .    18.5500    22.1100    15.3600  0.0  0.0  ?  ?  ?  ?  ?  .     17 BGLC 3  HO6     1
+HETATM    358 C   C1   . BGLC 3 ?    18 .    15.7400    23.8900    17.7500  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   C1     1
+HETATM    359 H   H1   . BGLC 3 ?    18 .    16.3000    23.7200    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   H1     1
+HETATM    360 C   C5   . BGLC 3 ?    18 .    14.5500    25.6200    18.8900  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   C5     1
+HETATM    361 H   H5   . BGLC 3 ?    18 .    15.1200    25.4700    19.6700  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   H5     1
+HETATM    362 O   O5   . BGLC 3 ?    18 .    14.4600    24.3900    18.1300  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   O5     1
+HETATM    363 C   C2   . BGLC 3 ?    18 .    16.4000    24.8700    16.7900  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   C2     1
+HETATM    364 H   H2   . BGLC 3 ?    18 .    15.9000    24.9100    15.9400  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   H2     1
+HETATM    365 O   O2   . BGLC 3 ?    18 .    17.7000    24.3400    16.5600  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   O2     1
+HETATM    366 H   HO2  . BGLC 3 ?    18 .    17.6000    23.3800    16.4000  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3  HO2     1
+HETATM    367 C   C3   . BGLC 3 ?    18 .    16.4800    26.2600    17.3900  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   C3     1
+HETATM    368 H   H3   . BGLC 3 ?    18 .    17.1700    26.2500    18.0900  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   H3     1
+HETATM    369 O   O3   . BGLC 3 ?    18 .    16.8700    27.2000    16.3700  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   O3     1
+HETATM    370 H   HO3  . BGLC 3 ?    18 .    17.1700    27.9900    16.8800  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3  HO3     1
+HETATM    371 C   C4   . BGLC 3 ?    18 .    15.1700    26.6700    18.0200  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   C4     1
+HETATM    372 H   H4   . BGLC 3 ?    18 .    14.5400    26.8600    17.3000  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   H4     1
+HETATM    373 O   O4   . BGLC 3 ?    18 .    15.3100    27.8900    18.7800  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   O4     1
+HETATM    374 C   C6   . BGLC 3 ?    18 .    13.1400    25.9300    19.3500  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   C6     1
+HETATM    375 H   H61  . BGLC 3 ?    18 .    12.6000    26.1800    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3  H61     1
+HETATM    376 H   H62  . BGLC 3 ?    18 .    12.7500    25.1300    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3  H62     1
+HETATM    377 O   O6   . BGLC 3 ?    18 .    13.1500    26.9800    20.3000  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3   O6     1
+HETATM    378 H   HO6  . BGLC 3 ?    18 .    12.2400    27.3000    20.4400  0.0  0.0  ?  ?  ?  ?  ?  .     18 BGLC 3  HO6     1
+HETATM    379 C   C1   . BGLC 4 ?    19 .    20.8900    26.3700    17.9700  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   C1     1
+HETATM    380 H   H1   . BGLC 4 ?    19 .    20.2300    26.2100    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   H1     1
+HETATM    381 C   C5   . BGLC 4 ?    19 .    22.1100    28.0900    16.8500  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   C5     1
+HETATM    382 H   H5   . BGLC 4 ?    19 .    21.5600    28.1100    16.0400  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   H5     1
+HETATM    383 O   O5   . BGLC 4 ?    19 .    22.1200    26.7900    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   O5     1
+HETATM    384 C   C2   . BGLC 4 ?    19 .    20.3700    27.3600    19.0000  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   C2     1
+HETATM    385 H   H2   . BGLC 4 ?    19 .    21.0100    27.4000    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   H2     1
+HETATM    386 O   O2   . BGLC 4 ?    19 .    19.1200    26.9100    19.5300  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   O2     1
+HETATM    387 H   HO2  . BGLC 4 ?    19 .    19.2100    25.9500    19.7000  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4  HO2     1
+HETATM    388 C   C3   . BGLC 4 ?    19 .    20.2500    28.7300    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   C3     1
+HETATM    389 H   H3   . BGLC 4 ?    19 .    19.6100    28.7100    17.6500  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   H3     1
+HETATM    390 O   O3   . BGLC 4 ?    19 .    19.7700    29.6100    19.4000  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   O3     1
+HETATM    391 H   HO3  . BGLC 4 ?    19 .    19.8900    30.5300    19.0500  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4  HO3     1
+HETATM    392 C   C4   . BGLC 4 ?    19 .    21.6300    29.1400    17.8600  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   C4     1
+HETATM    393 H   H4   . BGLC 4 ?    19 .    22.2700    29.2300    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   H4     1
+HETATM    394 O   O4   . BGLC 4 ?    19 .    21.5400    30.3700    17.1100  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   O4     1
+HETATM    395 C   C6   . BGLC 4 ?    19 .    23.6000    28.3600    16.4800  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   C6     1
+HETATM    396 H   H61  . BGLC 4 ?    19 .    24.0800    28.6500    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4  H61     1
+HETATM    397 H   H62  . BGLC 4 ?    19 .    24.0100    27.5400    16.1600  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4  H62     1
+HETATM    398 O   O6   . BGLC 4 ?    19 .    23.7100    29.3500    15.4800  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4   O6     1
+HETATM    399 H   HO6  . BGLC 4 ?    19 .    24.5500    29.1900    15.0000  0.0  0.0  ?  ?  ?  ?  ?  .     19 BGLC 4  HO6     1
+HETATM    400 C   C1   . BGLC 4 ?    20 .    21.8300     0.4200    17.8400  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   C1     1
+HETATM    401 H   H1   . BGLC 4 ?    20 .    22.5000     0.2600    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   H1     1
+HETATM    402 C   C5   . BGLC 4 ?    20 .    20.6100     2.1400    18.9600  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   C5     1
+HETATM    403 H   H5   . BGLC 4 ?    20 .    21.1700     2.1600    19.7600  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   H5     1
+HETATM    404 O   O5   . BGLC 4 ?    20 .    20.6100     0.8400    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   O5     1
+HETATM    405 C   C2   . BGLC 4 ?    20 .    22.3600     1.4100    16.8000  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   C2     1
+HETATM    406 H   H2   . BGLC 4 ?    20 .    21.7100     1.4500    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   H2     1
+HETATM    407 O   O2   . BGLC 4 ?    20 .    23.6100     0.9600    16.2800  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   O2     1
+HETATM    408 H   HO2  . BGLC 4 ?    20 .    23.5100     0.0000    16.1100  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4  HO2     1
+HETATM    409 C   C3   . BGLC 4 ?    20 .    22.4700     2.7800    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   C3     1
+HETATM    410 H   H3   . BGLC 4 ?    20 .    23.1200     2.7600    18.1500  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   H3     1
+HETATM    411 O   O3   . BGLC 4 ?    20 .    22.9500     3.6600    16.4100  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   O3     1
+HETATM    412 H   HO3  . BGLC 4 ?    20 .    22.8400     4.5800    16.7500  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4  HO3     1
+HETATM    413 C   C4   . BGLC 4 ?    20 .    21.1000     3.1900    17.9500  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   C4     1
+HETATM    414 H   H4   . BGLC 4 ?    20 .    20.4600     3.2800    17.2100  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   H4     1
+HETATM    415 O   O4   . BGLC 4 ?    20 .    21.1800     4.4200    18.6900  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   O4     1
+HETATM    416 C   C6   . BGLC 4 ?    20 .    19.1200     2.4100    19.3200  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   C6     1
+HETATM    417 H   H61  . BGLC 4 ?    20 .    18.6400     2.7000    18.5300  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4  H61     1
+HETATM    418 H   H62  . BGLC 4 ?    20 .    18.7100     1.5900    19.6400  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4  H62     1
+HETATM    419 O   O6   . BGLC 4 ?    20 .    19.0200     3.4000    20.3300  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4   O6     1
+HETATM    420 H   HO6  . BGLC 4 ?    20 .    18.1700     3.2400    20.8100  0.0  0.0  ?  ?  ?  ?  ?  .     20 BGLC 4  HO6     1
+HETATM    421 C   C1   . BGLC 4 ?    21 .    20.8900     5.6100    17.9700  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   C1     1
+HETATM    422 H   H1   . BGLC 4 ?    21 .    20.2300     5.4500    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   H1     1
+HETATM    423 C   C5   . BGLC 4 ?    21 .    22.1100     7.3300    16.8500  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   C5     1
+HETATM    424 H   H5   . BGLC 4 ?    21 .    21.5600     7.3500    16.0400  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   H5     1
+HETATM    425 O   O5   . BGLC 4 ?    21 .    22.1200     6.0300    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   O5     1
+HETATM    426 C   C2   . BGLC 4 ?    21 .    20.3700     6.6000    19.0000  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   C2     1
+HETATM    427 H   H2   . BGLC 4 ?    21 .    21.0100     6.6400    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   H2     1
+HETATM    428 O   O2   . BGLC 4 ?    21 .    19.1200     6.1500    19.5300  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   O2     1
+HETATM    429 H   HO2  . BGLC 4 ?    21 .    19.2100     5.1900    19.7000  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4  HO2     1
+HETATM    430 C   C3   . BGLC 4 ?    21 .    20.2500     7.9700    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   C3     1
+HETATM    431 H   H3   . BGLC 4 ?    21 .    19.6100     7.9500    17.6500  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   H3     1
+HETATM    432 O   O3   . BGLC 4 ?    21 .    19.7700     8.8500    19.4000  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   O3     1
+HETATM    433 H   HO3  . BGLC 4 ?    21 .    19.8900     9.7700    19.0500  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4  HO3     1
+HETATM    434 C   C4   . BGLC 4 ?    21 .    21.6300     8.3800    17.8600  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   C4     1
+HETATM    435 H   H4   . BGLC 4 ?    21 .    22.2700     8.4700    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   H4     1
+HETATM    436 O   O4   . BGLC 4 ?    21 .    21.5400     9.6100    17.1100  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   O4     1
+HETATM    437 C   C6   . BGLC 4 ?    21 .    23.6000     7.6000    16.4800  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   C6     1
+HETATM    438 H   H61  . BGLC 4 ?    21 .    24.0800     7.8900    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4  H61     1
+HETATM    439 H   H62  . BGLC 4 ?    21 .    24.0100     6.7800    16.1600  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4  H62     1
+HETATM    440 O   O6   . BGLC 4 ?    21 .    23.7100     8.5900    15.4800  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4   O6     1
+HETATM    441 H   HO6  . BGLC 4 ?    21 .    24.5500     8.4300    15.0000  0.0  0.0  ?  ?  ?  ?  ?  .     21 BGLC 4  HO6     1
+HETATM    442 C   C1   . BGLC 4 ?    22 .    21.8300    10.8000    17.8400  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   C1     1
+HETATM    443 H   H1   . BGLC 4 ?    22 .    22.5000    10.6400    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   H1     1
+HETATM    444 C   C5   . BGLC 4 ?    22 .    20.6100    12.5200    18.9600  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   C5     1
+HETATM    445 H   H5   . BGLC 4 ?    22 .    21.1700    12.5400    19.7600  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   H5     1
+HETATM    446 O   O5   . BGLC 4 ?    22 .    20.6100    11.2200    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   O5     1
+HETATM    447 C   C2   . BGLC 4 ?    22 .    22.3600    11.7900    16.8000  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   C2     1
+HETATM    448 H   H2   . BGLC 4 ?    22 .    21.7100    11.8300    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   H2     1
+HETATM    449 O   O2   . BGLC 4 ?    22 .    23.6100    11.3400    16.2800  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   O2     1
+HETATM    450 H   HO2  . BGLC 4 ?    22 .    23.5100    10.3800    16.1100  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4  HO2     1
+HETATM    451 C   C3   . BGLC 4 ?    22 .    22.4700    13.1600    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   C3     1
+HETATM    452 H   H3   . BGLC 4 ?    22 .    23.1200    13.1400    18.1500  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   H3     1
+HETATM    453 O   O3   . BGLC 4 ?    22 .    22.9500    14.0400    16.4100  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   O3     1
+HETATM    454 H   HO3  . BGLC 4 ?    22 .    22.8400    14.9600    16.7500  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4  HO3     1
+HETATM    455 C   C4   . BGLC 4 ?    22 .    21.1000    13.5700    17.9500  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   C4     1
+HETATM    456 H   H4   . BGLC 4 ?    22 .    20.4600    13.6600    17.2100  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   H4     1
+HETATM    457 O   O4   . BGLC 4 ?    22 .    21.1800    14.8000    18.6900  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   O4     1
+HETATM    458 C   C6   . BGLC 4 ?    22 .    19.1200    12.7900    19.3200  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   C6     1
+HETATM    459 H   H61  . BGLC 4 ?    22 .    18.6400    13.0800    18.5300  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4  H61     1
+HETATM    460 H   H62  . BGLC 4 ?    22 .    18.7100    11.9700    19.6400  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4  H62     1
+HETATM    461 O   O6   . BGLC 4 ?    22 .    19.0200    13.7800    20.3300  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4   O6     1
+HETATM    462 H   HO6  . BGLC 4 ?    22 .    18.1700    13.6200    20.8100  0.0  0.0  ?  ?  ?  ?  ?  .     22 BGLC 4  HO6     1
+HETATM    463 C   C1   . BGLC 4 ?    23 .    20.8900    15.9900    17.9700  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   C1     1
+HETATM    464 H   H1   . BGLC 4 ?    23 .    20.2300    15.8300    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   H1     1
+HETATM    465 C   C5   . BGLC 4 ?    23 .    22.1100    17.7100    16.8500  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   C5     1
+HETATM    466 H   H5   . BGLC 4 ?    23 .    21.5600    17.7300    16.0400  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   H5     1
+HETATM    467 O   O5   . BGLC 4 ?    23 .    22.1200    16.4100    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   O5     1
+HETATM    468 C   C2   . BGLC 4 ?    23 .    20.3700    16.9800    19.0000  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   C2     1
+HETATM    469 H   H2   . BGLC 4 ?    23 .    21.0100    17.0200    19.7400  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   H2     1
+HETATM    470 O   O2   . BGLC 4 ?    23 .    19.1200    16.5300    19.5300  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   O2     1
+HETATM    471 H   HO2  . BGLC 4 ?    23 .    19.2100    15.5700    19.7000  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4  HO2     1
+HETATM    472 C   C3   . BGLC 4 ?    23 .    20.2500    18.3500    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   C3     1
+HETATM    473 H   H3   . BGLC 4 ?    23 .    19.6100    18.3300    17.6500  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   H3     1
+HETATM    474 O   O3   . BGLC 4 ?    23 .    19.7700    19.2300    19.4000  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   O3     1
+HETATM    475 H   HO3  . BGLC 4 ?    23 .    19.8900    20.1500    19.0500  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4  HO3     1
+HETATM    476 C   C4   . BGLC 4 ?    23 .    21.6300    18.7600    17.8600  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   C4     1
+HETATM    477 H   H4   . BGLC 4 ?    23 .    22.2700    18.8500    18.5900  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   H4     1
+HETATM    478 O   O4   . BGLC 4 ?    23 .    21.5400    19.9900    17.1100  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   O4     1
+HETATM    479 C   C6   . BGLC 4 ?    23 .    23.6000    17.9800    16.4800  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   C6     1
+HETATM    480 H   H61  . BGLC 4 ?    23 .    24.0800    18.2700    17.2700  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4  H61     1
+HETATM    481 H   H62  . BGLC 4 ?    23 .    24.0100    17.1600    16.1600  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4  H62     1
+HETATM    482 O   O6   . BGLC 4 ?    23 .    23.7100    18.9700    15.4800  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4   O6     1
+HETATM    483 H   HO6  . BGLC 4 ?    23 .    24.5500    18.8100    15.0000  0.0  0.0  ?  ?  ?  ?  ?  .     23 BGLC 4  HO6     1
+HETATM    484 C   C1   . BGLC 4 ?    24 .    21.8300    21.1800    17.8400  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   C1     1
+HETATM    485 H   H1   . BGLC 4 ?    24 .    22.5000    21.0200    18.5400  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   H1     1
+HETATM    486 C   C5   . BGLC 4 ?    24 .    20.6100    22.9000    18.9600  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   C5     1
+HETATM    487 H   H5   . BGLC 4 ?    24 .    21.1700    22.9200    19.7600  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   H5     1
+HETATM    488 O   O5   . BGLC 4 ?    24 .    20.6100    21.6000    18.3900  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   O5     1
+HETATM    489 C   C2   . BGLC 4 ?    24 .    22.3600    22.1700    16.8000  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   C2     1
+HETATM    490 H   H2   . BGLC 4 ?    24 .    21.7100    22.2100    16.0600  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   H2     1
+HETATM    491 O   O2   . BGLC 4 ?    24 .    23.6100    21.7200    16.2800  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   O2     1
+HETATM    492 H   HO2  . BGLC 4 ?    24 .    23.5100    20.7600    16.1100  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4  HO2     1
+HETATM    493 C   C3   . BGLC 4 ?    24 .    22.4700    23.5400    17.4100  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   C3     1
+HETATM    494 H   H3   . BGLC 4 ?    24 .    23.1200    23.5200    18.1500  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   H3     1
+HETATM    495 O   O3   . BGLC 4 ?    24 .    22.9500    24.4200    16.4100  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   O3     1
+HETATM    496 H   HO3  . BGLC 4 ?    24 .    22.8400    25.3400    16.7500  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4  HO3     1
+HETATM    497 C   C4   . BGLC 4 ?    24 .    21.1000    23.9500    17.9500  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   C4     1
+HETATM    498 H   H4   . BGLC 4 ?    24 .    20.4600    24.0400    17.2100  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   H4     1
+HETATM    499 O   O4   . BGLC 4 ?    24 .    21.1800    25.1800    18.6900  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   O4     1
+HETATM    500 C   C6   . BGLC 4 ?    24 .    19.1200    23.1700    19.3200  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   C6     1
+HETATM    501 H   H61  . BGLC 4 ?    24 .    18.6400    23.4600    18.5300  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4  H61     1
+HETATM    502 H   H62  . BGLC 4 ?    24 .    18.7100    22.3500    19.6400  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4  H62     1
+HETATM    503 O   O6   . BGLC 4 ?    24 .    19.0200    24.1600    20.3300  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4   O6     1
+HETATM    504 H   HO6  . BGLC 4 ?    24 .    18.1700    24.0000    20.8100  0.0  0.0  ?  ?  ?  ?  ?  .     24 BGLC 4  HO6     1
+HETATM    505 C   C1   . BGLC 5 ?    25 .     2.7200    26.3700    23.2800  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   C1     1
+HETATM    506 H   H1   . BGLC 5 ?    25 .     2.0500    26.2100    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   H1     1
+HETATM    507 C   C5   . BGLC 5 ?    25 .     3.9400    28.0900    22.1600  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   C5     1
+HETATM    508 H   H5   . BGLC 5 ?    25 .     3.3800    28.1100    21.3600  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   H5     1
+HETATM    509 O   O5   . BGLC 5 ?    25 .     3.9400    26.7900    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   O5     1
+HETATM    510 C   C2   . BGLC 5 ?    25 .     2.1900    27.3600    24.3200  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   C2     1
+HETATM    511 H   H2   . BGLC 5 ?    25 .     2.8400    27.4000    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   H2     1
+HETATM    512 O   O2   . BGLC 5 ?    25 .     0.9400    26.9100    24.8500  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   O2     1
+HETATM    513 H   HO2  . BGLC 5 ?    25 .     1.0400    25.9500    25.0100  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5  HO2     1
+HETATM    514 C   C3   . BGLC 5 ?    25 .     2.0800    28.7300    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   C3     1
+HETATM    515 H   H3   . BGLC 5 ?    25 .     1.4300    28.7100    22.9700  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   H3     1
+HETATM    516 O   O3   . BGLC 5 ?    25 .     1.6000    29.6100    24.7100  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   O3     1
+HETATM    517 H   HO3  . BGLC 5 ?    25 .     1.7100    30.5300    24.3700  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5  HO3     1
+HETATM    518 C   C4   . BGLC 5 ?    25 .     3.4500    29.1400    23.1800  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   C4     1
+HETATM    519 H   H4   . BGLC 5 ?    25 .     4.0900    29.2300    23.9100  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   H4     1
+HETATM    520 O   O4   . BGLC 5 ?    25 .     3.3700    30.3700    22.4300  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   O4     1
+HETATM    521 C   C6   . BGLC 5 ?    25 .     5.4300    28.3600    21.8000  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   C6     1
+HETATM    522 H   H61  . BGLC 5 ?    25 .     5.9100    28.6500    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5  H61     1
+HETATM    523 H   H62  . BGLC 5 ?    25 .     5.8400    27.5400    21.4800  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5  H62     1
+HETATM    524 O   O6   . BGLC 5 ?    25 .     5.5400    29.3500    20.7900  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5   O6     1
+HETATM    525 H   HO6  . BGLC 5 ?    25 .     6.3800    29.1900    20.3200  0.0  0.0  ?  ?  ?  ?  ?  .     25 BGLC 5  HO6     1
+HETATM    526 C   C1   . BGLC 5 ?    26 .     3.6600     0.4200    23.1600  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   C1     1
+HETATM    527 H   H1   . BGLC 5 ?    26 .     4.3300     0.2600    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   H1     1
+HETATM    528 C   C5   . BGLC 5 ?    26 .     2.4400     2.1400    24.2700  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   C5     1
+HETATM    529 H   H5   . BGLC 5 ?    26 .     3.0000     2.1600    25.0800  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   H5     1
+HETATM    530 O   O5   . BGLC 5 ?    26 .     2.4400     0.8400    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   O5     1
+HETATM    531 C   C2   . BGLC 5 ?    26 .     4.1800     1.4100    22.1200  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   C2     1
+HETATM    532 H   H2   . BGLC 5 ?    26 .     3.5400     1.4500    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   H2     1
+HETATM    533 O   O2   . BGLC 5 ?    26 .     5.4300     0.9600    21.5900  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   O2     1
+HETATM    534 H   HO2  . BGLC 5 ?    26 .     5.3400     0.0000    21.4300  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5  HO2     1
+HETATM    535 C   C3   . BGLC 5 ?    26 .     4.3000     2.7800    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   C3     1
+HETATM    536 H   H3   . BGLC 5 ?    26 .     4.9400     2.7600    23.4700  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   H3     1
+HETATM    537 O   O3   . BGLC 5 ?    26 .     4.7800     3.6600    21.7300  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   O3     1
+HETATM    538 H   HO3  . BGLC 5 ?    26 .     4.6600     4.5800    22.0700  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5  HO3     1
+HETATM    539 C   C4   . BGLC 5 ?    26 .     2.9200     3.1900    23.2600  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   C4     1
+HETATM    540 H   H4   . BGLC 5 ?    26 .     2.2800     3.2800    22.5300  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   H4     1
+HETATM    541 O   O4   . BGLC 5 ?    26 .     3.0100     4.4200    24.0100  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   O4     1
+HETATM    542 C   C6   . BGLC 5 ?    26 .     0.9500     2.4100    24.6400  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   C6     1
+HETATM    543 H   H61  . BGLC 5 ?    26 .     0.4700     2.7000    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5  H61     1
+HETATM    544 H   H62  . BGLC 5 ?    26 .     0.5400     1.5900    24.9600  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5  H62     1
+HETATM    545 O   O6   . BGLC 5 ?    26 .     0.8400     3.4000    25.6400  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5   O6     1
+HETATM    546 H   HO6  . BGLC 5 ?    26 .     0.0000     3.2400    26.1200  0.0  0.0  ?  ?  ?  ?  ?  .     26 BGLC 5  HO6     1
+HETATM    547 C   C1   . BGLC 5 ?    27 .     2.7200     5.6100    23.2800  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   C1     1
+HETATM    548 H   H1   . BGLC 5 ?    27 .     2.0500     5.4500    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   H1     1
+HETATM    549 C   C5   . BGLC 5 ?    27 .     3.9400     7.3300    22.1600  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   C5     1
+HETATM    550 H   H5   . BGLC 5 ?    27 .     3.3800     7.3500    21.3600  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   H5     1
+HETATM    551 O   O5   . BGLC 5 ?    27 .     3.9400     6.0300    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   O5     1
+HETATM    552 C   C2   . BGLC 5 ?    27 .     2.1900     6.6000    24.3200  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   C2     1
+HETATM    553 H   H2   . BGLC 5 ?    27 .     2.8400     6.6400    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   H2     1
+HETATM    554 O   O2   . BGLC 5 ?    27 .     0.9400     6.1500    24.8500  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   O2     1
+HETATM    555 H   HO2  . BGLC 5 ?    27 .     1.0400     5.1900    25.0100  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5  HO2     1
+HETATM    556 C   C3   . BGLC 5 ?    27 .     2.0800     7.9700    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   C3     1
+HETATM    557 H   H3   . BGLC 5 ?    27 .     1.4300     7.9500    22.9700  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   H3     1
+HETATM    558 O   O3   . BGLC 5 ?    27 .     1.6000     8.8500    24.7100  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   O3     1
+HETATM    559 H   HO3  . BGLC 5 ?    27 .     1.7100     9.7700    24.3700  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5  HO3     1
+HETATM    560 C   C4   . BGLC 5 ?    27 .     3.4500     8.3800    23.1800  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   C4     1
+HETATM    561 H   H4   . BGLC 5 ?    27 .     4.0900     8.4700    23.9100  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   H4     1
+HETATM    562 O   O4   . BGLC 5 ?    27 .     3.3700     9.6100    22.4300  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   O4     1
+HETATM    563 C   C6   . BGLC 5 ?    27 .     5.4300     7.6000    21.8000  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   C6     1
+HETATM    564 H   H61  . BGLC 5 ?    27 .     5.9100     7.8900    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5  H61     1
+HETATM    565 H   H62  . BGLC 5 ?    27 .     5.8400     6.7800    21.4800  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5  H62     1
+HETATM    566 O   O6   . BGLC 5 ?    27 .     5.5400     8.5900    20.7900  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5   O6     1
+HETATM    567 H   HO6  . BGLC 5 ?    27 .     6.3800     8.4300    20.3200  0.0  0.0  ?  ?  ?  ?  ?  .     27 BGLC 5  HO6     1
+HETATM    568 C   C1   . BGLC 5 ?    28 .     3.6600    10.8000    23.1600  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   C1     1
+HETATM    569 H   H1   . BGLC 5 ?    28 .     4.3300    10.6400    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   H1     1
+HETATM    570 C   C5   . BGLC 5 ?    28 .     2.4400    12.5200    24.2700  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   C5     1
+HETATM    571 H   H5   . BGLC 5 ?    28 .     3.0000    12.5400    25.0800  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   H5     1
+HETATM    572 O   O5   . BGLC 5 ?    28 .     2.4400    11.2200    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   O5     1
+HETATM    573 C   C2   . BGLC 5 ?    28 .     4.1800    11.7900    22.1200  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   C2     1
+HETATM    574 H   H2   . BGLC 5 ?    28 .     3.5400    11.8300    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   H2     1
+HETATM    575 O   O2   . BGLC 5 ?    28 .     5.4300    11.3400    21.5900  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   O2     1
+HETATM    576 H   HO2  . BGLC 5 ?    28 .     5.3400    10.3800    21.4300  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5  HO2     1
+HETATM    577 C   C3   . BGLC 5 ?    28 .     4.3000    13.1600    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   C3     1
+HETATM    578 H   H3   . BGLC 5 ?    28 .     4.9400    13.1400    23.4700  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   H3     1
+HETATM    579 O   O3   . BGLC 5 ?    28 .     4.7800    14.0400    21.7300  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   O3     1
+HETATM    580 H   HO3  . BGLC 5 ?    28 .     4.6600    14.9600    22.0700  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5  HO3     1
+HETATM    581 C   C4   . BGLC 5 ?    28 .     2.9200    13.5700    23.2600  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   C4     1
+HETATM    582 H   H4   . BGLC 5 ?    28 .     2.2800    13.6600    22.5300  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   H4     1
+HETATM    583 O   O4   . BGLC 5 ?    28 .     3.0100    14.8000    24.0100  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   O4     1
+HETATM    584 C   C6   . BGLC 5 ?    28 .     0.9500    12.7900    24.6400  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   C6     1
+HETATM    585 H   H61  . BGLC 5 ?    28 .     0.4700    13.0800    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5  H61     1
+HETATM    586 H   H62  . BGLC 5 ?    28 .     0.5400    11.9700    24.9600  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5  H62     1
+HETATM    587 O   O6   . BGLC 5 ?    28 .     0.8400    13.7800    25.6400  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5   O6     1
+HETATM    588 H   HO6  . BGLC 5 ?    28 .     0.0000    13.6200    26.1200  0.0  0.0  ?  ?  ?  ?  ?  .     28 BGLC 5  HO6     1
+HETATM    589 C   C1   . BGLC 5 ?    29 .     2.7200    15.9900    23.2800  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   C1     1
+HETATM    590 H   H1   . BGLC 5 ?    29 .     2.0500    15.8300    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   H1     1
+HETATM    591 C   C5   . BGLC 5 ?    29 .     3.9400    17.7100    22.1600  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   C5     1
+HETATM    592 H   H5   . BGLC 5 ?    29 .     3.3800    17.7300    21.3600  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   H5     1
+HETATM    593 O   O5   . BGLC 5 ?    29 .     3.9400    16.4100    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   O5     1
+HETATM    594 C   C2   . BGLC 5 ?    29 .     2.1900    16.9800    24.3200  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   C2     1
+HETATM    595 H   H2   . BGLC 5 ?    29 .     2.8400    17.0200    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   H2     1
+HETATM    596 O   O2   . BGLC 5 ?    29 .     0.9400    16.5300    24.8500  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   O2     1
+HETATM    597 H   HO2  . BGLC 5 ?    29 .     1.0400    15.5700    25.0100  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5  HO2     1
+HETATM    598 C   C3   . BGLC 5 ?    29 .     2.0800    18.3500    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   C3     1
+HETATM    599 H   H3   . BGLC 5 ?    29 .     1.4300    18.3300    22.9700  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   H3     1
+HETATM    600 O   O3   . BGLC 5 ?    29 .     1.6000    19.2300    24.7100  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   O3     1
+HETATM    601 H   HO3  . BGLC 5 ?    29 .     1.7100    20.1500    24.3700  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5  HO3     1
+HETATM    602 C   C4   . BGLC 5 ?    29 .     3.4500    18.7600    23.1800  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   C4     1
+HETATM    603 H   H4   . BGLC 5 ?    29 .     4.0900    18.8500    23.9100  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   H4     1
+HETATM    604 O   O4   . BGLC 5 ?    29 .     3.3700    19.9900    22.4300  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   O4     1
+HETATM    605 C   C6   . BGLC 5 ?    29 .     5.4300    17.9800    21.8000  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   C6     1
+HETATM    606 H   H61  . BGLC 5 ?    29 .     5.9100    18.2700    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5  H61     1
+HETATM    607 H   H62  . BGLC 5 ?    29 .     5.8400    17.1600    21.4800  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5  H62     1
+HETATM    608 O   O6   . BGLC 5 ?    29 .     5.5400    18.9700    20.7900  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5   O6     1
+HETATM    609 H   HO6  . BGLC 5 ?    29 .     6.3800    18.8100    20.3200  0.0  0.0  ?  ?  ?  ?  ?  .     29 BGLC 5  HO6     1
+HETATM    610 C   C1   . BGLC 5 ?    30 .     3.6600    21.1800    23.1600  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   C1     1
+HETATM    611 H   H1   . BGLC 5 ?    30 .     4.3300    21.0200    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   H1     1
+HETATM    612 C   C5   . BGLC 5 ?    30 .     2.4400    22.9000    24.2700  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   C5     1
+HETATM    613 H   H5   . BGLC 5 ?    30 .     3.0000    22.9200    25.0800  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   H5     1
+HETATM    614 O   O5   . BGLC 5 ?    30 .     2.4400    21.6000    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   O5     1
+HETATM    615 C   C2   . BGLC 5 ?    30 .     4.1800    22.1700    22.1200  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   C2     1
+HETATM    616 H   H2   . BGLC 5 ?    30 .     3.5400    22.2100    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   H2     1
+HETATM    617 O   O2   . BGLC 5 ?    30 .     5.4300    21.7200    21.5900  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   O2     1
+HETATM    618 H   HO2  . BGLC 5 ?    30 .     5.3400    20.7600    21.4300  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5  HO2     1
+HETATM    619 C   C3   . BGLC 5 ?    30 .     4.3000    23.5400    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   C3     1
+HETATM    620 H   H3   . BGLC 5 ?    30 .     4.9400    23.5200    23.4700  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   H3     1
+HETATM    621 O   O3   . BGLC 5 ?    30 .     4.7800    24.4200    21.7300  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   O3     1
+HETATM    622 H   HO3  . BGLC 5 ?    30 .     4.6600    25.3400    22.0700  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5  HO3     1
+HETATM    623 C   C4   . BGLC 5 ?    30 .     2.9200    23.9500    23.2600  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   C4     1
+HETATM    624 H   H4   . BGLC 5 ?    30 .     2.2800    24.0400    22.5300  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   H4     1
+HETATM    625 O   O4   . BGLC 5 ?    30 .     3.0100    25.1800    24.0100  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   O4     1
+HETATM    626 C   C6   . BGLC 5 ?    30 .     0.9500    23.1700    24.6400  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   C6     1
+HETATM    627 H   H61  . BGLC 5 ?    30 .     0.4700    23.4600    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5  H61     1
+HETATM    628 H   H62  . BGLC 5 ?    30 .     0.5400    22.3500    24.9600  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5  H62     1
+HETATM    629 O   O6   . BGLC 5 ?    30 .     0.8400    24.1600    25.6400  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5   O6     1
+HETATM    630 H   HO6  . BGLC 5 ?    30 .     0.0000    24.0000    26.1200  0.0  0.0  ?  ?  ?  ?  ?  .     30 BGLC 5  HO6     1
+HETATM    631 C   C1   . BGLC 6 ?    31 .     8.8100    29.0800    23.3700  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   C1     1
+HETATM    632 H   H1   . BGLC 6 ?    31 .     8.2500    28.9100    22.5800  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   H1     1
+HETATM    633 C   C5   . BGLC 6 ?    31 .    10.0000    30.8100    22.2400  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   C5     1
+HETATM    634 H   H5   . BGLC 6 ?    31 .     9.4300    30.6600    21.4500  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   H5     1
+HETATM    635 O   O5   . BGLC 6 ?    31 .    10.0900    29.5800    22.9900  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   O5     1
+HETATM    636 C   C2   . BGLC 6 ?    31 .     8.1500    30.0600    24.3400  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   C2     1
+HETATM    637 H   H2   . BGLC 6 ?    31 .     8.6500    30.1000    25.1800  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   H2     1
+HETATM    638 O   O2   . BGLC 6 ?    31 .     6.8500    29.5300    24.5600  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   O2     1
+HETATM    639 H   HO2  . BGLC 6 ?    31 .     6.9500    28.5700    24.7200  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6  HO2     1
+HETATM    640 C   C3   . BGLC 6 ?    31 .     8.0700    31.4500    23.7400  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   C3     1
+HETATM    641 H   H3   . BGLC 6 ?    31 .     7.3800    31.4400    23.0400  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   H3     1
+HETATM    642 O   O3   . BGLC 6 ?    31 .     7.6800    32.3900    24.7500  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   O3     1
+HETATM    643 H   HO3  . BGLC 6 ?    31 .     7.3800    33.1800    24.2400  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6  HO3     1
+HETATM    644 C   C4   . BGLC 6 ?    31 .     9.3800    31.8600    23.1000  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   C4     1
+HETATM    645 H   H4   . BGLC 6 ?    31 .    10.0100    32.0500    23.8300  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   H4     1
+HETATM    646 O   O4   . BGLC 6 ?    31 .     9.2400    33.0800    22.3400  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   O4     1
+HETATM    647 C   C6   . BGLC 6 ?    31 .    11.4100    31.1200    21.7700  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   C6     1
+HETATM    648 H   H61  . BGLC 6 ?    31 .    11.9500    31.3700    22.5400  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6  H61     1
+HETATM    649 H   H62  . BGLC 6 ?    31 .    11.8000    30.3200    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6  H62     1
+HETATM    650 O   O6   . BGLC 6 ?    31 .    11.4000    32.1700    20.8200  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6   O6     1
+HETATM    651 H   HO6  . BGLC 6 ?    31 .    12.3100    32.4900    20.6800  0.0  0.0  ?  ?  ?  ?  ?  .     31 BGLC 6  HO6     1
+HETATM    652 C   C1   . BGLC 6 ?    32 .     9.5000     3.1300    23.0700  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   C1     1
+HETATM    653 H   H1   . BGLC 6 ?    32 .    10.0600     2.9600    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   H1     1
+HETATM    654 C   C5   . BGLC 6 ?    32 .     8.3100     4.8600    24.2000  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   C5     1
+HETATM    655 H   H5   . BGLC 6 ?    32 .     8.8700     4.7100    24.9900  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   H5     1
+HETATM    656 O   O5   . BGLC 6 ?    32 .     8.2200     3.6300    23.4500  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   O5     1
+HETATM    657 C   C2   . BGLC 6 ?    32 .    10.1500     4.1100    22.1000  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   C2     1
+HETATM    658 H   H2   . BGLC 6 ?    32 .     9.6600     4.1500    21.2600  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   H2     1
+HETATM    659 O   O2   . BGLC 6 ?    32 .    11.4600     3.5800    21.8700  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   O2     1
+HETATM    660 H   HO2  . BGLC 6 ?    32 .    11.3600     2.6200    21.7200  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6  HO2     1
+HETATM    661 C   C3   . BGLC 6 ?    32 .    10.2400     5.5000    22.7000  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   C3     1
+HETATM    662 H   H3   . BGLC 6 ?    32 .    10.9300     5.4900    23.4000  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   H3     1
+HETATM    663 O   O3   . BGLC 6 ?    32 .    10.6300     6.4400    21.6900  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   O3     1
+HETATM    664 H   HO3  . BGLC 6 ?    32 .    10.9200     7.2300    22.2000  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6  HO3     1
+HETATM    665 C   C4   . BGLC 6 ?    32 .     8.9300     5.9100    23.3400  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   C4     1
+HETATM    666 H   H4   . BGLC 6 ?    32 .     8.3000     6.1000    22.6100  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   H4     1
+HETATM    667 O   O4   . BGLC 6 ?    32 .     9.0700     7.1300    24.1000  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   O4     1
+HETATM    668 C   C6   . BGLC 6 ?    32 .     6.8900     5.1700    24.6700  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   C6     1
+HETATM    669 H   H61  . BGLC 6 ?    32 .     6.3600     5.4200    23.9000  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6  H61     1
+HETATM    670 H   H62  . BGLC 6 ?    32 .     6.5000     4.3700    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6  H62     1
+HETATM    671 O   O6   . BGLC 6 ?    32 .     6.9100     6.2200    25.6200  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6   O6     1
+HETATM    672 H   HO6  . BGLC 6 ?    32 .     6.0000     6.5400    25.7600  0.0  0.0  ?  ?  ?  ?  ?  .     32 BGLC 6  HO6     1
+HETATM    673 C   C1   . BGLC 6 ?    33 .     8.8100     8.3200    23.3700  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   C1     1
+HETATM    674 H   H1   . BGLC 6 ?    33 .     8.2500     8.1500    22.5800  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   H1     1
+HETATM    675 C   C5   . BGLC 6 ?    33 .    10.0000    10.0500    22.2400  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   C5     1
+HETATM    676 H   H5   . BGLC 6 ?    33 .     9.4300     9.9000    21.4500  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   H5     1
+HETATM    677 O   O5   . BGLC 6 ?    33 .    10.0900     8.8200    22.9900  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   O5     1
+HETATM    678 C   C2   . BGLC 6 ?    33 .     8.1500     9.3000    24.3400  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   C2     1
+HETATM    679 H   H2   . BGLC 6 ?    33 .     8.6500     9.3400    25.1800  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   H2     1
+HETATM    680 O   O2   . BGLC 6 ?    33 .     6.8500     8.7700    24.5600  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   O2     1
+HETATM    681 H   HO2  . BGLC 6 ?    33 .     6.9500     7.8100    24.7200  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6  HO2     1
+HETATM    682 C   C3   . BGLC 6 ?    33 .     8.0700    10.6900    23.7400  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   C3     1
+HETATM    683 H   H3   . BGLC 6 ?    33 .     7.3800    10.6800    23.0400  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   H3     1
+HETATM    684 O   O3   . BGLC 6 ?    33 .     7.6800    11.6300    24.7500  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   O3     1
+HETATM    685 H   HO3  . BGLC 6 ?    33 .     7.3800    12.4200    24.2400  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6  HO3     1
+HETATM    686 C   C4   . BGLC 6 ?    33 .     9.3800    11.1000    23.1000  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   C4     1
+HETATM    687 H   H4   . BGLC 6 ?    33 .    10.0100    11.2900    23.8300  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   H4     1
+HETATM    688 O   O4   . BGLC 6 ?    33 .     9.2400    12.3200    22.3400  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   O4     1
+HETATM    689 C   C6   . BGLC 6 ?    33 .    11.4100    10.3600    21.7700  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   C6     1
+HETATM    690 H   H61  . BGLC 6 ?    33 .    11.9500    10.6100    22.5400  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6  H61     1
+HETATM    691 H   H62  . BGLC 6 ?    33 .    11.8000     9.5600    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6  H62     1
+HETATM    692 O   O6   . BGLC 6 ?    33 .    11.4000    11.4100    20.8200  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6   O6     1
+HETATM    693 H   HO6  . BGLC 6 ?    33 .    12.3100    11.7300    20.6800  0.0  0.0  ?  ?  ?  ?  ?  .     33 BGLC 6  HO6     1
+HETATM    694 C   C1   . BGLC 6 ?    34 .     9.5000    13.5100    23.0700  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   C1     1
+HETATM    695 H   H1   . BGLC 6 ?    34 .    10.0600    13.3400    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   H1     1
+HETATM    696 C   C5   . BGLC 6 ?    34 .     8.3100    15.2400    24.2000  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   C5     1
+HETATM    697 H   H5   . BGLC 6 ?    34 .     8.8700    15.0900    24.9900  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   H5     1
+HETATM    698 O   O5   . BGLC 6 ?    34 .     8.2200    14.0100    23.4500  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   O5     1
+HETATM    699 C   C2   . BGLC 6 ?    34 .    10.1500    14.4900    22.1000  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   C2     1
+HETATM    700 H   H2   . BGLC 6 ?    34 .     9.6600    14.5300    21.2600  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   H2     1
+HETATM    701 O   O2   . BGLC 6 ?    34 .    11.4600    13.9600    21.8700  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   O2     1
+HETATM    702 H   HO2  . BGLC 6 ?    34 .    11.3600    13.0000    21.7200  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6  HO2     1
+HETATM    703 C   C3   . BGLC 6 ?    34 .    10.2400    15.8800    22.7000  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   C3     1
+HETATM    704 H   H3   . BGLC 6 ?    34 .    10.9300    15.8700    23.4000  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   H3     1
+HETATM    705 O   O3   . BGLC 6 ?    34 .    10.6300    16.8200    21.6900  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   O3     1
+HETATM    706 H   HO3  . BGLC 6 ?    34 .    10.9200    17.6100    22.2000  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6  HO3     1
+HETATM    707 C   C4   . BGLC 6 ?    34 .     8.9300    16.2900    23.3400  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   C4     1
+HETATM    708 H   H4   . BGLC 6 ?    34 .     8.3000    16.4800    22.6100  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   H4     1
+HETATM    709 O   O4   . BGLC 6 ?    34 .     9.0700    17.5100    24.1000  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   O4     1
+HETATM    710 C   C6   . BGLC 6 ?    34 .     6.8900    15.5500    24.6700  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   C6     1
+HETATM    711 H   H61  . BGLC 6 ?    34 .     6.3600    15.8000    23.9000  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6  H61     1
+HETATM    712 H   H62  . BGLC 6 ?    34 .     6.5000    14.7500    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6  H62     1
+HETATM    713 O   O6   . BGLC 6 ?    34 .     6.9100    16.6000    25.6200  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6   O6     1
+HETATM    714 H   HO6  . BGLC 6 ?    34 .     6.0000    16.9200    25.7600  0.0  0.0  ?  ?  ?  ?  ?  .     34 BGLC 6  HO6     1
+HETATM    715 C   C1   . BGLC 6 ?    35 .     8.8100    18.7000    23.3700  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   C1     1
+HETATM    716 H   H1   . BGLC 6 ?    35 .     8.2500    18.5300    22.5800  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   H1     1
+HETATM    717 C   C5   . BGLC 6 ?    35 .    10.0000    20.4300    22.2400  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   C5     1
+HETATM    718 H   H5   . BGLC 6 ?    35 .     9.4300    20.2800    21.4500  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   H5     1
+HETATM    719 O   O5   . BGLC 6 ?    35 .    10.0900    19.2000    22.9900  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   O5     1
+HETATM    720 C   C2   . BGLC 6 ?    35 .     8.1500    19.6800    24.3400  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   C2     1
+HETATM    721 H   H2   . BGLC 6 ?    35 .     8.6500    19.7200    25.1800  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   H2     1
+HETATM    722 O   O2   . BGLC 6 ?    35 .     6.8500    19.1500    24.5600  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   O2     1
+HETATM    723 H   HO2  . BGLC 6 ?    35 .     6.9500    18.1900    24.7200  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6  HO2     1
+HETATM    724 C   C3   . BGLC 6 ?    35 .     8.0700    21.0700    23.7400  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   C3     1
+HETATM    725 H   H3   . BGLC 6 ?    35 .     7.3800    21.0600    23.0400  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   H3     1
+HETATM    726 O   O3   . BGLC 6 ?    35 .     7.6800    22.0100    24.7500  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   O3     1
+HETATM    727 H   HO3  . BGLC 6 ?    35 .     7.3800    22.8000    24.2400  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6  HO3     1
+HETATM    728 C   C4   . BGLC 6 ?    35 .     9.3800    21.4800    23.1000  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   C4     1
+HETATM    729 H   H4   . BGLC 6 ?    35 .    10.0100    21.6700    23.8300  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   H4     1
+HETATM    730 O   O4   . BGLC 6 ?    35 .     9.2400    22.7000    22.3400  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   O4     1
+HETATM    731 C   C6   . BGLC 6 ?    35 .    11.4100    20.7400    21.7700  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   C6     1
+HETATM    732 H   H61  . BGLC 6 ?    35 .    11.9500    20.9900    22.5400  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6  H61     1
+HETATM    733 H   H62  . BGLC 6 ?    35 .    11.8000    19.9400    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6  H62     1
+HETATM    734 O   O6   . BGLC 6 ?    35 .    11.4000    21.7900    20.8200  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6   O6     1
+HETATM    735 H   HO6  . BGLC 6 ?    35 .    12.3100    22.1100    20.6800  0.0  0.0  ?  ?  ?  ?  ?  .     35 BGLC 6  HO6     1
+HETATM    736 C   C1   . BGLC 6 ?    36 .     9.5000    23.8900    23.0700  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   C1     1
+HETATM    737 H   H1   . BGLC 6 ?    36 .    10.0600    23.7200    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   H1     1
+HETATM    738 C   C5   . BGLC 6 ?    36 .     8.3100    25.6200    24.2000  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   C5     1
+HETATM    739 H   H5   . BGLC 6 ?    36 .     8.8700    25.4700    24.9900  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   H5     1
+HETATM    740 O   O5   . BGLC 6 ?    36 .     8.2200    24.3900    23.4500  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   O5     1
+HETATM    741 C   C2   . BGLC 6 ?    36 .    10.1500    24.8700    22.1000  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   C2     1
+HETATM    742 H   H2   . BGLC 6 ?    36 .     9.6600    24.9100    21.2600  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   H2     1
+HETATM    743 O   O2   . BGLC 6 ?    36 .    11.4600    24.3400    21.8700  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   O2     1
+HETATM    744 H   HO2  . BGLC 6 ?    36 .    11.3600    23.3800    21.7200  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6  HO2     1
+HETATM    745 C   C3   . BGLC 6 ?    36 .    10.2400    26.2600    22.7000  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   C3     1
+HETATM    746 H   H3   . BGLC 6 ?    36 .    10.9300    26.2500    23.4000  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   H3     1
+HETATM    747 O   O3   . BGLC 6 ?    36 .    10.6300    27.2000    21.6900  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   O3     1
+HETATM    748 H   HO3  . BGLC 6 ?    36 .    10.9200    27.9900    22.2000  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6  HO3     1
+HETATM    749 C   C4   . BGLC 6 ?    36 .     8.9300    26.6700    23.3400  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   C4     1
+HETATM    750 H   H4   . BGLC 6 ?    36 .     8.3000    26.8600    22.6100  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   H4     1
+HETATM    751 O   O4   . BGLC 6 ?    36 .     9.0700    27.8900    24.1000  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   O4     1
+HETATM    752 C   C6   . BGLC 6 ?    36 .     6.8900    25.9300    24.6700  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   C6     1
+HETATM    753 H   H61  . BGLC 6 ?    36 .     6.3600    26.1800    23.9000  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6  H61     1
+HETATM    754 H   H62  . BGLC 6 ?    36 .     6.5000    25.1300    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6  H62     1
+HETATM    755 O   O6   . BGLC 6 ?    36 .     6.9100    26.9800    25.6200  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6   O6     1
+HETATM    756 H   HO6  . BGLC 6 ?    36 .     6.0000    27.3000    25.7600  0.0  0.0  ?  ?  ?  ?  ?  .     36 BGLC 6  HO6     1
+HETATM    757 C   C1   . BGLC 7 ?    37 .    14.6500    26.3700    23.2800  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   C1     1
+HETATM    758 H   H1   . BGLC 7 ?    37 .    13.9800    26.2100    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   H1     1
+HETATM    759 C   C5   . BGLC 7 ?    37 .    15.8700    28.0900    22.1600  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   C5     1
+HETATM    760 H   H5   . BGLC 7 ?    37 .    15.3100    28.1100    21.3600  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   H5     1
+HETATM    761 O   O5   . BGLC 7 ?    37 .    15.8700    26.7900    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   O5     1
+HETATM    762 C   C2   . BGLC 7 ?    37 .    14.1200    27.3600    24.3200  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   C2     1
+HETATM    763 H   H2   . BGLC 7 ?    37 .    14.7700    27.4000    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   H2     1
+HETATM    764 O   O2   . BGLC 7 ?    37 .    12.8700    26.9100    24.8500  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   O2     1
+HETATM    765 H   HO2  . BGLC 7 ?    37 .    12.9700    25.9500    25.0100  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7  HO2     1
+HETATM    766 C   C3   . BGLC 7 ?    37 .    14.0100    28.7300    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   C3     1
+HETATM    767 H   H3   . BGLC 7 ?    37 .    13.3600    28.7100    22.9700  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   H3     1
+HETATM    768 O   O3   . BGLC 7 ?    37 .    13.5300    29.6100    24.7100  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   O3     1
+HETATM    769 H   HO3  . BGLC 7 ?    37 .    13.6400    30.5300    24.3700  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7  HO3     1
+HETATM    770 C   C4   . BGLC 7 ?    37 .    15.3800    29.1400    23.1800  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   C4     1
+HETATM    771 H   H4   . BGLC 7 ?    37 .    16.0200    29.2300    23.9100  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   H4     1
+HETATM    772 O   O4   . BGLC 7 ?    37 .    15.3000    30.3700    22.4300  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   O4     1
+HETATM    773 C   C6   . BGLC 7 ?    37 .    17.3600    28.3600    21.8000  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   C6     1
+HETATM    774 H   H61  . BGLC 7 ?    37 .    17.8400    28.6500    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7  H61     1
+HETATM    775 H   H62  . BGLC 7 ?    37 .    17.7700    27.5400    21.4800  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7  H62     1
+HETATM    776 O   O6   . BGLC 7 ?    37 .    17.4600    29.3500    20.7900  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7   O6     1
+HETATM    777 H   HO6  . BGLC 7 ?    37 .    18.3100    29.1900    20.3200  0.0  0.0  ?  ?  ?  ?  ?  .     37 BGLC 7  HO6     1
+HETATM    778 C   C1   . BGLC 7 ?    38 .    15.5900     0.4200    23.1600  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   C1     1
+HETATM    779 H   H1   . BGLC 7 ?    38 .    16.2500     0.2600    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   H1     1
+HETATM    780 C   C5   . BGLC 7 ?    38 .    14.3700     2.1400    24.2700  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   C5     1
+HETATM    781 H   H5   . BGLC 7 ?    38 .    14.9200     2.1600    25.0800  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   H5     1
+HETATM    782 O   O5   . BGLC 7 ?    38 .    14.3600     0.8400    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   O5     1
+HETATM    783 C   C2   . BGLC 7 ?    38 .    16.1100     1.4100    22.1200  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   C2     1
+HETATM    784 H   H2   . BGLC 7 ?    38 .    15.4700     1.4500    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   H2     1
+HETATM    785 O   O2   . BGLC 7 ?    38 .    17.3600     0.9600    21.5900  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   O2     1
+HETATM    786 H   HO2  . BGLC 7 ?    38 .    17.2700     0.0000    21.4300  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7  HO2     1
+HETATM    787 C   C3   . BGLC 7 ?    38 .    16.2300     2.7800    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   C3     1
+HETATM    788 H   H3   . BGLC 7 ?    38 .    16.8700     2.7600    23.4700  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   H3     1
+HETATM    789 O   O3   . BGLC 7 ?    38 .    16.7100     3.6600    21.7300  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   O3     1
+HETATM    790 H   HO3  . BGLC 7 ?    38 .    16.5900     4.5800    22.0700  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7  HO3     1
+HETATM    791 C   C4   . BGLC 7 ?    38 .    14.8500     3.1900    23.2600  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   C4     1
+HETATM    792 H   H4   . BGLC 7 ?    38 .    14.2100     3.2800    22.5300  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   H4     1
+HETATM    793 O   O4   . BGLC 7 ?    38 .    14.9400     4.4200    24.0100  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   O4     1
+HETATM    794 C   C6   . BGLC 7 ?    38 .    12.8800     2.4100    24.6400  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   C6     1
+HETATM    795 H   H61  . BGLC 7 ?    38 .    12.4000     2.7000    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7  H61     1
+HETATM    796 H   H62  . BGLC 7 ?    38 .    12.4700     1.5900    24.9600  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7  H62     1
+HETATM    797 O   O6   . BGLC 7 ?    38 .    12.7700     3.4000    25.6400  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7   O6     1
+HETATM    798 H   HO6  . BGLC 7 ?    38 .    11.9300     3.2400    26.1200  0.0  0.0  ?  ?  ?  ?  ?  .     38 BGLC 7  HO6     1
+HETATM    799 C   C1   . BGLC 7 ?    39 .    14.6500     5.6100    23.2800  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   C1     1
+HETATM    800 H   H1   . BGLC 7 ?    39 .    13.9800     5.4500    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   H1     1
+HETATM    801 C   C5   . BGLC 7 ?    39 .    15.8700     7.3300    22.1600  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   C5     1
+HETATM    802 H   H5   . BGLC 7 ?    39 .    15.3100     7.3500    21.3600  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   H5     1
+HETATM    803 O   O5   . BGLC 7 ?    39 .    15.8700     6.0300    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   O5     1
+HETATM    804 C   C2   . BGLC 7 ?    39 .    14.1200     6.6000    24.3200  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   C2     1
+HETATM    805 H   H2   . BGLC 7 ?    39 .    14.7700     6.6400    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   H2     1
+HETATM    806 O   O2   . BGLC 7 ?    39 .    12.8700     6.1500    24.8500  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   O2     1
+HETATM    807 H   HO2  . BGLC 7 ?    39 .    12.9700     5.1900    25.0100  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7  HO2     1
+HETATM    808 C   C3   . BGLC 7 ?    39 .    14.0100     7.9700    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   C3     1
+HETATM    809 H   H3   . BGLC 7 ?    39 .    13.3600     7.9500    22.9700  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   H3     1
+HETATM    810 O   O3   . BGLC 7 ?    39 .    13.5300     8.8500    24.7100  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   O3     1
+HETATM    811 H   HO3  . BGLC 7 ?    39 .    13.6400     9.7700    24.3700  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7  HO3     1
+HETATM    812 C   C4   . BGLC 7 ?    39 .    15.3800     8.3800    23.1800  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   C4     1
+HETATM    813 H   H4   . BGLC 7 ?    39 .    16.0200     8.4700    23.9100  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   H4     1
+HETATM    814 O   O4   . BGLC 7 ?    39 .    15.3000     9.6100    22.4300  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   O4     1
+HETATM    815 C   C6   . BGLC 7 ?    39 .    17.3600     7.6000    21.8000  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   C6     1
+HETATM    816 H   H61  . BGLC 7 ?    39 .    17.8400     7.8900    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7  H61     1
+HETATM    817 H   H62  . BGLC 7 ?    39 .    17.7700     6.7800    21.4800  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7  H62     1
+HETATM    818 O   O6   . BGLC 7 ?    39 .    17.4600     8.5900    20.7900  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7   O6     1
+HETATM    819 H   HO6  . BGLC 7 ?    39 .    18.3100     8.4300    20.3200  0.0  0.0  ?  ?  ?  ?  ?  .     39 BGLC 7  HO6     1
+HETATM    820 C   C1   . BGLC 7 ?    40 .    15.5900    10.8000    23.1600  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   C1     1
+HETATM    821 H   H1   . BGLC 7 ?    40 .    16.2500    10.6400    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   H1     1
+HETATM    822 C   C5   . BGLC 7 ?    40 .    14.3700    12.5200    24.2700  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   C5     1
+HETATM    823 H   H5   . BGLC 7 ?    40 .    14.9200    12.5400    25.0800  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   H5     1
+HETATM    824 O   O5   . BGLC 7 ?    40 .    14.3600    11.2200    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   O5     1
+HETATM    825 C   C2   . BGLC 7 ?    40 .    16.1100    11.7900    22.1200  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   C2     1
+HETATM    826 H   H2   . BGLC 7 ?    40 .    15.4700    11.8300    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   H2     1
+HETATM    827 O   O2   . BGLC 7 ?    40 .    17.3600    11.3400    21.5900  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   O2     1
+HETATM    828 H   HO2  . BGLC 7 ?    40 .    17.2700    10.3800    21.4300  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7  HO2     1
+HETATM    829 C   C3   . BGLC 7 ?    40 .    16.2300    13.1600    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   C3     1
+HETATM    830 H   H3   . BGLC 7 ?    40 .    16.8700    13.1400    23.4700  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   H3     1
+HETATM    831 O   O3   . BGLC 7 ?    40 .    16.7100    14.0400    21.7300  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   O3     1
+HETATM    832 H   HO3  . BGLC 7 ?    40 .    16.5900    14.9600    22.0700  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7  HO3     1
+HETATM    833 C   C4   . BGLC 7 ?    40 .    14.8500    13.5700    23.2600  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   C4     1
+HETATM    834 H   H4   . BGLC 7 ?    40 .    14.2100    13.6600    22.5300  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   H4     1
+HETATM    835 O   O4   . BGLC 7 ?    40 .    14.9400    14.8000    24.0100  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   O4     1
+HETATM    836 C   C6   . BGLC 7 ?    40 .    12.8800    12.7900    24.6400  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   C6     1
+HETATM    837 H   H61  . BGLC 7 ?    40 .    12.4000    13.0800    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7  H61     1
+HETATM    838 H   H62  . BGLC 7 ?    40 .    12.4700    11.9700    24.9600  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7  H62     1
+HETATM    839 O   O6   . BGLC 7 ?    40 .    12.7700    13.7800    25.6400  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7   O6     1
+HETATM    840 H   HO6  . BGLC 7 ?    40 .    11.9300    13.6200    26.1200  0.0  0.0  ?  ?  ?  ?  ?  .     40 BGLC 7  HO6     1
+HETATM    841 C   C1   . BGLC 7 ?    41 .    14.6500    15.9900    23.2800  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   C1     1
+HETATM    842 H   H1   . BGLC 7 ?    41 .    13.9800    15.8300    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   H1     1
+HETATM    843 C   C5   . BGLC 7 ?    41 .    15.8700    17.7100    22.1600  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   C5     1
+HETATM    844 H   H5   . BGLC 7 ?    41 .    15.3100    17.7300    21.3600  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   H5     1
+HETATM    845 O   O5   . BGLC 7 ?    41 .    15.8700    16.4100    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   O5     1
+HETATM    846 C   C2   . BGLC 7 ?    41 .    14.1200    16.9800    24.3200  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   C2     1
+HETATM    847 H   H2   . BGLC 7 ?    41 .    14.7700    17.0200    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   H2     1
+HETATM    848 O   O2   . BGLC 7 ?    41 .    12.8700    16.5300    24.8500  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   O2     1
+HETATM    849 H   HO2  . BGLC 7 ?    41 .    12.9700    15.5700    25.0100  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7  HO2     1
+HETATM    850 C   C3   . BGLC 7 ?    41 .    14.0100    18.3500    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   C3     1
+HETATM    851 H   H3   . BGLC 7 ?    41 .    13.3600    18.3300    22.9700  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   H3     1
+HETATM    852 O   O3   . BGLC 7 ?    41 .    13.5300    19.2300    24.7100  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   O3     1
+HETATM    853 H   HO3  . BGLC 7 ?    41 .    13.6400    20.1500    24.3700  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7  HO3     1
+HETATM    854 C   C4   . BGLC 7 ?    41 .    15.3800    18.7600    23.1800  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   C4     1
+HETATM    855 H   H4   . BGLC 7 ?    41 .    16.0200    18.8500    23.9100  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   H4     1
+HETATM    856 O   O4   . BGLC 7 ?    41 .    15.3000    19.9900    22.4300  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   O4     1
+HETATM    857 C   C6   . BGLC 7 ?    41 .    17.3600    17.9800    21.8000  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   C6     1
+HETATM    858 H   H61  . BGLC 7 ?    41 .    17.8400    18.2700    22.5900  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7  H61     1
+HETATM    859 H   H62  . BGLC 7 ?    41 .    17.7700    17.1600    21.4800  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7  H62     1
+HETATM    860 O   O6   . BGLC 7 ?    41 .    17.4600    18.9700    20.7900  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7   O6     1
+HETATM    861 H   HO6  . BGLC 7 ?    41 .    18.3100    18.8100    20.3200  0.0  0.0  ?  ?  ?  ?  ?  .     41 BGLC 7  HO6     1
+HETATM    862 C   C1   . BGLC 7 ?    42 .    15.5900    21.1800    23.1600  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   C1     1
+HETATM    863 H   H1   . BGLC 7 ?    42 .    16.2500    21.0200    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   H1     1
+HETATM    864 C   C5   . BGLC 7 ?    42 .    14.3700    22.9000    24.2700  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   C5     1
+HETATM    865 H   H5   . BGLC 7 ?    42 .    14.9200    22.9200    25.0800  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   H5     1
+HETATM    866 O   O5   . BGLC 7 ?    42 .    14.3600    21.6000    23.7100  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   O5     1
+HETATM    867 C   C2   . BGLC 7 ?    42 .    16.1100    22.1700    22.1200  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   C2     1
+HETATM    868 H   H2   . BGLC 7 ?    42 .    15.4700    22.2100    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   H2     1
+HETATM    869 O   O2   . BGLC 7 ?    42 .    17.3600    21.7200    21.5900  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   O2     1
+HETATM    870 H   HO2  . BGLC 7 ?    42 .    17.2700    20.7600    21.4300  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7  HO2     1
+HETATM    871 C   C3   . BGLC 7 ?    42 .    16.2300    23.5400    22.7300  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   C3     1
+HETATM    872 H   H3   . BGLC 7 ?    42 .    16.8700    23.5200    23.4700  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   H3     1
+HETATM    873 O   O3   . BGLC 7 ?    42 .    16.7100    24.4200    21.7300  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   O3     1
+HETATM    874 H   HO3  . BGLC 7 ?    42 .    16.5900    25.3400    22.0700  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7  HO3     1
+HETATM    875 C   C4   . BGLC 7 ?    42 .    14.8500    23.9500    23.2600  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   C4     1
+HETATM    876 H   H4   . BGLC 7 ?    42 .    14.2100    24.0400    22.5300  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   H4     1
+HETATM    877 O   O4   . BGLC 7 ?    42 .    14.9400    25.1800    24.0100  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   O4     1
+HETATM    878 C   C6   . BGLC 7 ?    42 .    12.8800    23.1700    24.6400  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   C6     1
+HETATM    879 H   H61  . BGLC 7 ?    42 .    12.4000    23.4600    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7  H61     1
+HETATM    880 H   H62  . BGLC 7 ?    42 .    12.4700    22.3500    24.9600  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7  H62     1
+HETATM    881 O   O6   . BGLC 7 ?    42 .    12.7700    24.1600    25.6400  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7   O6     1
+HETATM    882 H   HO6  . BGLC 7 ?    42 .    11.9300    24.0000    26.1200  0.0  0.0  ?  ?  ?  ?  ?  .     42 BGLC 7  HO6     1
+HETATM    883 C   C1   . BGLC 8 ?    43 .    20.7400    29.0800    23.3700  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   C1     1
+HETATM    884 H   H1   . BGLC 8 ?    43 .    20.1800    28.9100    22.5800  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   H1     1
+HETATM    885 C   C5   . BGLC 8 ?    43 .    21.9300    30.8100    22.2400  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   C5     1
+HETATM    886 H   H5   . BGLC 8 ?    43 .    21.3600    30.6600    21.4500  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   H5     1
+HETATM    887 O   O5   . BGLC 8 ?    43 .    22.0200    29.5800    22.9900  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   O5     1
+HETATM    888 C   C2   . BGLC 8 ?    43 .    20.0800    30.0600    24.3400  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   C2     1
+HETATM    889 H   H2   . BGLC 8 ?    43 .    20.5800    30.1000    25.1800  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   H2     1
+HETATM    890 O   O2   . BGLC 8 ?    43 .    18.7800    29.5300    24.5600  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   O2     1
+HETATM    891 H   HO2  . BGLC 8 ?    43 .    18.8800    28.5700    24.7200  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8  HO2     1
+HETATM    892 C   C3   . BGLC 8 ?    43 .    20.0000    31.4500    23.7400  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   C3     1
+HETATM    893 H   H3   . BGLC 8 ?    43 .    19.3100    31.4400    23.0400  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   H3     1
+HETATM    894 O   O3   . BGLC 8 ?    43 .    19.6100    32.3900    24.7500  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   O3     1
+HETATM    895 H   HO3  . BGLC 8 ?    43 .    19.3100    33.1800    24.2400  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8  HO3     1
+HETATM    896 C   C4   . BGLC 8 ?    43 .    21.3100    31.8600    23.1000  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   C4     1
+HETATM    897 H   H4   . BGLC 8 ?    43 .    21.9400    32.0500    23.8300  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   H4     1
+HETATM    898 O   O4   . BGLC 8 ?    43 .    21.1700    33.0800    22.3400  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   O4     1
+HETATM    899 C   C6   . BGLC 8 ?    43 .    23.3400    31.1200    21.7700  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   C6     1
+HETATM    900 H   H61  . BGLC 8 ?    43 .    23.8800    31.3700    22.5400  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8  H61     1
+HETATM    901 H   H62  . BGLC 8 ?    43 .    23.7300    30.3200    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8  H62     1
+HETATM    902 O   O6   . BGLC 8 ?    43 .    23.3300    32.1700    20.8200  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8   O6     1
+HETATM    903 H   HO6  . BGLC 8 ?    43 .    24.2400    32.4900    20.6800  0.0  0.0  ?  ?  ?  ?  ?  .     43 BGLC 8  HO6     1
+HETATM    904 C   C1   . BGLC 8 ?    44 .    21.4200     3.1300    23.0700  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   C1     1
+HETATM    905 H   H1   . BGLC 8 ?    44 .    21.9900     2.9600    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   H1     1
+HETATM    906 C   C5   . BGLC 8 ?    44 .    20.2400     4.8600    24.2000  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   C5     1
+HETATM    907 H   H5   . BGLC 8 ?    44 .    20.8000     4.7100    24.9900  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   H5     1
+HETATM    908 O   O5   . BGLC 8 ?    44 .    20.1500     3.6300    23.4500  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   O5     1
+HETATM    909 C   C2   . BGLC 8 ?    44 .    22.0800     4.1100    22.1000  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   C2     1
+HETATM    910 H   H2   . BGLC 8 ?    44 .    21.5800     4.1500    21.2600  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   H2     1
+HETATM    911 O   O2   . BGLC 8 ?    44 .    23.3900     3.5800    21.8700  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   O2     1
+HETATM    912 H   HO2  . BGLC 8 ?    44 .    23.2800     2.6200    21.7200  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8  HO2     1
+HETATM    913 C   C3   . BGLC 8 ?    44 .    22.1700     5.5000    22.7000  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   C3     1
+HETATM    914 H   H3   . BGLC 8 ?    44 .    22.8600     5.4900    23.4000  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   H3     1
+HETATM    915 O   O3   . BGLC 8 ?    44 .    22.5600     6.4400    21.6900  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   O3     1
+HETATM    916 H   HO3  . BGLC 8 ?    44 .    22.8500     7.2300    22.2000  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8  HO3     1
+HETATM    917 C   C4   . BGLC 8 ?    44 .    20.8600     5.9100    23.3400  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   C4     1
+HETATM    918 H   H4   . BGLC 8 ?    44 .    20.2200     6.1000    22.6100  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   H4     1
+HETATM    919 O   O4   . BGLC 8 ?    44 .    20.9900     7.1300    24.1000  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   O4     1
+HETATM    920 C   C6   . BGLC 8 ?    44 .    18.8200     5.1700    24.6700  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   C6     1
+HETATM    921 H   H61  . BGLC 8 ?    44 .    18.2800     5.4200    23.9000  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8  H61     1
+HETATM    922 H   H62  . BGLC 8 ?    44 .    18.4300     4.3700    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8  H62     1
+HETATM    923 O   O6   . BGLC 8 ?    44 .    18.8400     6.2200    25.6200  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8   O6     1
+HETATM    924 H   HO6  . BGLC 8 ?    44 .    17.9300     6.5400    25.7600  0.0  0.0  ?  ?  ?  ?  ?  .     44 BGLC 8  HO6     1
+HETATM    925 C   C1   . BGLC 8 ?    45 .    20.7400     8.3200    23.3700  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   C1     1
+HETATM    926 H   H1   . BGLC 8 ?    45 .    20.1800     8.1500    22.5800  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   H1     1
+HETATM    927 C   C5   . BGLC 8 ?    45 .    21.9300    10.0500    22.2400  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   C5     1
+HETATM    928 H   H5   . BGLC 8 ?    45 .    21.3600     9.9000    21.4500  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   H5     1
+HETATM    929 O   O5   . BGLC 8 ?    45 .    22.0200     8.8200    22.9900  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   O5     1
+HETATM    930 C   C2   . BGLC 8 ?    45 .    20.0800     9.3000    24.3400  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   C2     1
+HETATM    931 H   H2   . BGLC 8 ?    45 .    20.5800     9.3400    25.1800  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   H2     1
+HETATM    932 O   O2   . BGLC 8 ?    45 .    18.7800     8.7700    24.5600  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   O2     1
+HETATM    933 H   HO2  . BGLC 8 ?    45 .    18.8800     7.8100    24.7200  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8  HO2     1
+HETATM    934 C   C3   . BGLC 8 ?    45 .    20.0000    10.6900    23.7400  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   C3     1
+HETATM    935 H   H3   . BGLC 8 ?    45 .    19.3100    10.6800    23.0400  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   H3     1
+HETATM    936 O   O3   . BGLC 8 ?    45 .    19.6100    11.6300    24.7500  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   O3     1
+HETATM    937 H   HO3  . BGLC 8 ?    45 .    19.3100    12.4200    24.2400  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8  HO3     1
+HETATM    938 C   C4   . BGLC 8 ?    45 .    21.3100    11.1000    23.1000  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   C4     1
+HETATM    939 H   H4   . BGLC 8 ?    45 .    21.9400    11.2900    23.8300  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   H4     1
+HETATM    940 O   O4   . BGLC 8 ?    45 .    21.1700    12.3200    22.3400  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   O4     1
+HETATM    941 C   C6   . BGLC 8 ?    45 .    23.3400    10.3600    21.7700  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   C6     1
+HETATM    942 H   H61  . BGLC 8 ?    45 .    23.8800    10.6100    22.5400  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8  H61     1
+HETATM    943 H   H62  . BGLC 8 ?    45 .    23.7300     9.5600    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8  H62     1
+HETATM    944 O   O6   . BGLC 8 ?    45 .    23.3300    11.4100    20.8200  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8   O6     1
+HETATM    945 H   HO6  . BGLC 8 ?    45 .    24.2400    11.7300    20.6800  0.0  0.0  ?  ?  ?  ?  ?  .     45 BGLC 8  HO6     1
+HETATM    946 C   C1   . BGLC 8 ?    46 .    21.4200    13.5100    23.0700  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   C1     1
+HETATM    947 H   H1   . BGLC 8 ?    46 .    21.9900    13.3400    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   H1     1
+HETATM    948 C   C5   . BGLC 8 ?    46 .    20.2400    15.2400    24.2000  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   C5     1
+HETATM    949 H   H5   . BGLC 8 ?    46 .    20.8000    15.0900    24.9900  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   H5     1
+HETATM    950 O   O5   . BGLC 8 ?    46 .    20.1500    14.0100    23.4500  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   O5     1
+HETATM    951 C   C2   . BGLC 8 ?    46 .    22.0800    14.4900    22.1000  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   C2     1
+HETATM    952 H   H2   . BGLC 8 ?    46 .    21.5800    14.5300    21.2600  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   H2     1
+HETATM    953 O   O2   . BGLC 8 ?    46 .    23.3900    13.9600    21.8700  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   O2     1
+HETATM    954 H   HO2  . BGLC 8 ?    46 .    23.2800    13.0000    21.7200  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8  HO2     1
+HETATM    955 C   C3   . BGLC 8 ?    46 .    22.1700    15.8800    22.7000  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   C3     1
+HETATM    956 H   H3   . BGLC 8 ?    46 .    22.8600    15.8700    23.4000  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   H3     1
+HETATM    957 O   O3   . BGLC 8 ?    46 .    22.5600    16.8200    21.6900  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   O3     1
+HETATM    958 H   HO3  . BGLC 8 ?    46 .    22.8500    17.6100    22.2000  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8  HO3     1
+HETATM    959 C   C4   . BGLC 8 ?    46 .    20.8600    16.2900    23.3400  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   C4     1
+HETATM    960 H   H4   . BGLC 8 ?    46 .    20.2200    16.4800    22.6100  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   H4     1
+HETATM    961 O   O4   . BGLC 8 ?    46 .    20.9900    17.5100    24.1000  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   O4     1
+HETATM    962 C   C6   . BGLC 8 ?    46 .    18.8200    15.5500    24.6700  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   C6     1
+HETATM    963 H   H61  . BGLC 8 ?    46 .    18.2800    15.8000    23.9000  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8  H61     1
+HETATM    964 H   H62  . BGLC 8 ?    46 .    18.4300    14.7500    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8  H62     1
+HETATM    965 O   O6   . BGLC 8 ?    46 .    18.8400    16.6000    25.6200  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8   O6     1
+HETATM    966 H   HO6  . BGLC 8 ?    46 .    17.9300    16.9200    25.7600  0.0  0.0  ?  ?  ?  ?  ?  .     46 BGLC 8  HO6     1
+HETATM    967 C   C1   . BGLC 8 ?    47 .    20.7400    18.7000    23.3700  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   C1     1
+HETATM    968 H   H1   . BGLC 8 ?    47 .    20.1800    18.5300    22.5800  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   H1     1
+HETATM    969 C   C5   . BGLC 8 ?    47 .    21.9300    20.4300    22.2400  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   C5     1
+HETATM    970 H   H5   . BGLC 8 ?    47 .    21.3600    20.2800    21.4500  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   H5     1
+HETATM    971 O   O5   . BGLC 8 ?    47 .    22.0200    19.2000    22.9900  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   O5     1
+HETATM    972 C   C2   . BGLC 8 ?    47 .    20.0800    19.6800    24.3400  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   C2     1
+HETATM    973 H   H2   . BGLC 8 ?    47 .    20.5800    19.7200    25.1800  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   H2     1
+HETATM    974 O   O2   . BGLC 8 ?    47 .    18.7800    19.1500    24.5600  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   O2     1
+HETATM    975 H   HO2  . BGLC 8 ?    47 .    18.8800    18.1900    24.7200  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8  HO2     1
+HETATM    976 C   C3   . BGLC 8 ?    47 .    20.0000    21.0700    23.7400  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   C3     1
+HETATM    977 H   H3   . BGLC 8 ?    47 .    19.3100    21.0600    23.0400  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   H3     1
+HETATM    978 O   O3   . BGLC 8 ?    47 .    19.6100    22.0100    24.7500  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   O3     1
+HETATM    979 H   HO3  . BGLC 8 ?    47 .    19.3100    22.8000    24.2400  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8  HO3     1
+HETATM    980 C   C4   . BGLC 8 ?    47 .    21.3100    21.4800    23.1000  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   C4     1
+HETATM    981 H   H4   . BGLC 8 ?    47 .    21.9400    21.6700    23.8300  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   H4     1
+HETATM    982 O   O4   . BGLC 8 ?    47 .    21.1700    22.7000    22.3400  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   O4     1
+HETATM    983 C   C6   . BGLC 8 ?    47 .    23.3400    20.7400    21.7700  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   C6     1
+HETATM    984 H   H61  . BGLC 8 ?    47 .    23.8800    20.9900    22.5400  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8  H61     1
+HETATM    985 H   H62  . BGLC 8 ?    47 .    23.7300    19.9400    21.3800  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8  H62     1
+HETATM    986 O   O6   . BGLC 8 ?    47 .    23.3300    21.7900    20.8200  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8   O6     1
+HETATM    987 H   HO6  . BGLC 8 ?    47 .    24.2400    22.1100    20.6800  0.0  0.0  ?  ?  ?  ?  ?  .     47 BGLC 8  HO6     1
+HETATM    988 C   C1   . BGLC 8 ?    48 .    21.4200    23.8900    23.0700  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   C1     1
+HETATM    989 H   H1   . BGLC 8 ?    48 .    21.9900    23.7200    23.8500  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   H1     1
+HETATM    990 C   C5   . BGLC 8 ?    48 .    20.2400    25.6200    24.2000  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   C5     1
+HETATM    991 H   H5   . BGLC 8 ?    48 .    20.8000    25.4700    24.9900  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   H5     1
+HETATM    992 O   O5   . BGLC 8 ?    48 .    20.1500    24.3900    23.4500  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   O5     1
+HETATM    993 C   C2   . BGLC 8 ?    48 .    22.0800    24.8700    22.1000  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   C2     1
+HETATM    994 H   H2   . BGLC 8 ?    48 .    21.5800    24.9100    21.2600  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   H2     1
+HETATM    995 O   O2   . BGLC 8 ?    48 .    23.3900    24.3400    21.8700  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   O2     1
+HETATM    996 H   HO2  . BGLC 8 ?    48 .    23.2800    23.3800    21.7200  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8  HO2     1
+HETATM    997 C   C3   . BGLC 8 ?    48 .    22.1700    26.2600    22.7000  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   C3     1
+HETATM    998 H   H3   . BGLC 8 ?    48 .    22.8600    26.2500    23.4000  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   H3     1
+HETATM    999 O   O3   . BGLC 8 ?    48 .    22.5600    27.2000    21.6900  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   O3     1
+HETATM   1000 H   HO3  . BGLC 8 ?    48 .    22.8500    27.9900    22.2000  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8  HO3     1
+HETATM   1001 C   C4   . BGLC 8 ?    48 .    20.8600    26.6700    23.3400  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   C4     1
+HETATM   1002 H   H4   . BGLC 8 ?    48 .    20.2200    26.8600    22.6100  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   H4     1
+HETATM   1003 O   O4   . BGLC 8 ?    48 .    20.9900    27.8900    24.1000  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   O4     1
+HETATM   1004 C   C6   . BGLC 8 ?    48 .    18.8200    25.9300    24.6700  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   C6     1
+HETATM   1005 H   H61  . BGLC 8 ?    48 .    18.2800    26.1800    23.9000  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8  H61     1
+HETATM   1006 H   H62  . BGLC 8 ?    48 .    18.4300    25.1300    25.0600  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8  H62     1
+HETATM   1007 O   O6   . BGLC 8 ?    48 .    18.8400    26.9800    25.6200  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8   O6     1
+HETATM   1008 H   HO6  . BGLC 8 ?    48 .    17.9300    27.3000    25.7600  0.0  0.0  ?  ?  ?  ?  ?  .     48 BGLC 8  HO6     1
