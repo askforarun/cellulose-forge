@@ -44,7 +44,7 @@ GROMACS:      gmx mdrun, version 2024.2-Homebrew
 Executable:   /opt/homebrew/bin/../Cellar/gromacs/2024.2/bin/gmx
 Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2024.2
 Working dir:  <local-path>
-Process ID:   3731
+Process ID:   7810
 Command line:
   gmx mdrun -s single_point.tpr -deffnm single_point -ntmpi 1 -ntomp 1
 
@@ -147,7 +147,7 @@ Input Parameters:
    comm-mode                      = Linear
    nstcomm                        = 100
    bd-fric                        = 0
-   ld-seed                        = -146856449
+   ld-seed                        = -1723882797
    emtol                          = 10
    emstep                         = 0.01
    niter                          = 20
@@ -381,7 +381,7 @@ We have the following groups for center of mass motion removal:
   0:  rest
 Initial temperature: 0 K
 
-Started mdrun on rank 0 Wed Nov 11 18:16:50 2026
+Started mdrun on rank 0 Wed Nov 11 19:52:44 2026
 
            Step           Time
               0        0.00000
@@ -467,12 +467,12 @@ On 1 MPI rank
                         Ranks Threads  Count      (s)         total sum    %
 --------------------------------------------------------------------------------
  Domain decomp.            1    1          1       0.001          0.000   6.6
- Neighbor search           1    1          1       0.002          0.000  13.5
- Force                     1    1          1       0.010          0.000  71.1
+ Neighbor search           1    1          1       0.002          0.000  13.2
+ Force                     1    1          1       0.011          0.000  71.2
  PME mesh                  1    1          1       0.001          0.000   4.2
  NB X/F buffer ops.        1    1          1       0.000          0.000   0.0
  Update                    1    1          1       0.000          0.000   0.0
- Rest                                              0.001          0.000   4.6
+ Rest                                              0.001          0.000   4.8
 --------------------------------------------------------------------------------
  Total                                             0.015          0.000 100.0
 --------------------------------------------------------------------------------
@@ -480,17 +480,17 @@ On 1 MPI rank
 --------------------------------------------------------------------------------
  PME spread                1    1          1       0.000          0.000   0.9
  PME gather                1    1          1       0.000          0.000   0.6
- PME 3D-FFT                1    1          2       0.000          0.000   1.7
+ PME 3D-FFT                1    1          2       0.000          0.000   1.8
  PME solve Elec            1    1          1       0.000          0.000   0.9
 --------------------------------------------------------------------------------
 
 NOTE: 7 % of the run time was spent in domain decomposition,
-      14 % of the run time was spent in pair search,
+      13 % of the run time was spent in pair search,
       you might want to increase nstlist (this has no effect on accuracy)
 
                Core t (s)   Wall t (s)        (%)
-       Time:        0.015        0.015       99.5
+       Time:        0.015        0.015       99.6
                  (ns/day)    (hour/ns)
-Performance:        5.853        4.101
-Finished mdrun on rank 0 Wed Nov 11 18:16:50 2026
+Performance:        5.846        4.105
+Finished mdrun on rank 0 Wed Nov 11 19:52:44 2026
 

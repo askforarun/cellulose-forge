@@ -3,7 +3,7 @@ atom_style full
 boundary p p p
 bond_style harmonic
 angle_style harmonic
-dihedral_style fourier
+dihedral_style charmm
 pair_style lj/cut/coul/long 10.0
 pair_modify mix arithmetic tail no
 special_bonds lj/coul 0.0 0.0 1.0

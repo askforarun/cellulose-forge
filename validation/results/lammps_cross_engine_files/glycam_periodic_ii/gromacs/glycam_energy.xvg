@@ -1,4 +1,4 @@
-# This file was created Wed Nov 11 18:25:04 2026
+# This file was created Wed Nov 11 19:52:29 2026
 # Created by:
 #                 :-) GROMACS - gmx energy, 2024.2-Homebrew (-:
 # 
@@ -9,7 +9,7 @@
 #   gmx energy -f glycam_single_point.edr -o glycam_energy.xvg
 # gmx energy is part of G R O M A C S:
 #
-# GRowing Old MAkes el Chrono Sweat
+# Giant Rising Ordinary Mutants for A Clerical Setup
 #
 @    title "GROMACS Energies"
 @    xaxis  label "Time (ps)"

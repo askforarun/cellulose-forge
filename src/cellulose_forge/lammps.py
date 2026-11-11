@@ -197,14 +197,16 @@ for a, b, c, d, periodicity, phase, k in raw_dihedrals:
         int(periodicity),
         phase.value_in_unit(unit.degree),
     ]
-    if charmm:
-        phase_degrees = params[2]
-        if abs(phase_degrees-round(phase_degrees)) > 1e-8:
-            raise SystemExit(
-                f"CHARMM torsion phase {phase_degrees} degrees is not an integer "
-                "and cannot be represented by dihedral_style charmmfsw"
-            )
-        params.append(weight)
+    phase_degrees = params[2]
+    if abs(phase_degrees-round(phase_degrees)) > 1e-8:
+        raise SystemExit(
+            f"torsion phase {phase_degrees} degrees is not an integer "
+            "and cannot be represented by the LAMMPS CHARMM dihedral styles"
+        )
+    # Both CHARMM styles use K, n, d, weight coefficients.  GLYCAM's 1-4
+    # interactions are supplied by special_bonds, so a zero dihedral weight
+    # avoids double-counting while requiring only standard LAMMPS packages.
+    params.append(weight)
     parameters = tuple(params)
     dihedrals.append((
         type_id(dihedral_types, parameters), int(a)+1, int(b)+1, int(c)+1, int(d)+1
@@ -292,13 +294,10 @@ for params, index in sorted(angle_types.items(), key=lambda item: item[1]):
     lines.append(f"{index} " + " ".join(f"{value:.12g}" for value in params))
 lines += ["", "Dihedral Coeffs", ""]
 for params, index in sorted(dihedral_types.items(), key=lambda item: item[1]):
-    if charmm:
-        lines.append(
-            f"{index} {params[0]:.12g} {int(params[1])} "
-            f"{int(params[2])} {params[3]:.1f}"
-        )
-    else:
-        lines.append(f"{index} 1 {params[0]:.12g} {int(params[1])} {params[2]:.12g}")
+    lines.append(
+        f"{index} {params[0]:.12g} {int(params[1])} "
+        f"{int(params[2])} {params[3]:.1f}"
+    )
 lines += ["", "Atoms # full", ""]
 for index, ((charge, _, _), atom_type, molecule, xyz, image) in enumerate(zip(
     particles, atom_type_ids, request["molecule_ids"], positions, images
@@ -377,7 +376,7 @@ def write_lammps_system(  # noqa: PLR0913
         special_bonds = "charmm"
     else:
         angle_style = "harmonic"
-        dihedral_style = "fourier"
+        dihedral_style = "charmm"
         pair_style = "lj/cut/coul/long 10.0"
         special_bonds = "lj/coul 0.0 0.0 1.0"
     tail_correction = "yes" if dispersion_correction and force_field.lower() == "glycam" else "no"

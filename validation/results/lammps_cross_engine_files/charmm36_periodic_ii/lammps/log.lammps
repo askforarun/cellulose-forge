@@ -37,7 +37,7 @@ Finding 1-2 1-3 1-4 neighbors ...
     18 = max # of 1-4 neighbors
     21 = max # of special neighbors
   special bonds CPU = 0.001 seconds
-  read_data CPU = 0.048 seconds
+  read_data CPU = 0.046 seconds
 kspace_style pppm 1.0e-5
 thermo 100
 thermo_style custom step temp pe ebond eangle edihed evdwl ecoul elong
@@ -73,9 +73,9 @@ For more information see https://docs.lammps.org/err0027 (src/domain.cpp:1052)
 Per MPI rank memory allocation (min/avg/max) = 19.14 | 19.14 | 19.14 Mbytes
    Step          Temp          PotEng         E_bond        E_angle        E_dihed         E_vdwl         E_coul         E_long    
          0   0              11165.079      2982.1251      781.97088      2226.7487      112.48727      12195.493     -7133.7461    
-Loop time of 5.42e-07 on 1 procs for 0 steps with 1512 atoms
+Loop time of 5.83e-07 on 1 procs for 0 steps with 1512 atoms
 
-184.5% CPU use with 1 MPI tasks x no OpenMP threads
+0.0% CPU use with 1 MPI tasks x no OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
@@ -87,7 +87,7 @@ Neigh   | 0          | 0          | 0          |   0.0 |  0.00
 Comm    | 0          | 0          | 0          |   0.0 |  0.00
 Output  | 0          | 0          | 0          |   0.0 |  0.00
 Modify  | 0          | 0          | 0          |   0.0 |  0.00
-Other   |            | 5.42e-07   |            |       |100.00
+Other   |            | 5.83e-07   |            |       |100.00
 
 Nlocal:           1512 ave        1512 max        1512 min
 Histogram: 1 0 0 0 0 0 0 0 0 0
