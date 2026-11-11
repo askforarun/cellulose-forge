@@ -23,7 +23,13 @@ All notable changes to CelluloseForge are documented in this file.
   polymer, the CHARMM36 residue, and the validation scope. The topology matches
   a psfgen reference built from `top_all36_carb.rtf`, and alpha and beta bulk
   and slab systems pass GROMACS preprocessing, minimization, and a 1 ps NVT
-  smoke test. OpenMM and LAMMPS chitin output are rejected until validated.
+  smoke test.
+- OpenMM and LAMMPS output for CHARMM36 chitin. The LAMMPS converter now
+  writes GROMACS function-2 impropers as `improper_style harmonic` with
+  K = k/2, and carries CHARMM 1-4 pairs whose dihedral has zero force constant
+  on a zero-force-constant dihedral. Energies match GROMACS term by term for
+  alpha and beta, finite and periodic slabs
+  (`validation/validate_chitin_charmm36_engines.py`).
 - A regression test that records hashes of fourteen coordinate-only cellulose
   builds, so cellulose output cannot change unnoticed.
 

@@ -420,11 +420,6 @@ def _load_definition(
             "chitin supports --force-field none or charmm36; "
             "GLYCAM/Amber chitin topologies are not implemented"
         )
-    if args.force_field == "charmm36" and set(args.md_engines) != {"gromacs"}:
-        parser.error(
-            "chitin CHARMM36 is validated for --md-engine gromacs only; "
-            "OpenMM and LAMMPS chitin output are not yet supported"
-        )
     if args.force_field == "charmm36" and args.charmm_template is not None:
         parser.error("--charmm-template is not supported for chitin")
     name = _CHITIN_ALLOMORPHS[args.allomorph]
@@ -797,11 +792,12 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         report.update(_polymer_report_fields(args, definition))
         report["charmm36_residue"] = residue
         report["validation_scope"] = {
-            "engines": ["gromacs"],
+            "engines": ["gromacs", "openmm", "lammps"],
             "reference": "validation/chitin_charmm36_reference_dp6.json (psfgen, DP6)",
             "gromacs": "validation/chitin_charmm36_gromacs.json "
             "(alpha/beta bulk, periodic and finite (1 0 0) slabs)",
-            "not_validated": ["openmm", "lammps"],
+            "cross_engine": "validation/chitin_charmm36_engines.json "
+            "(alpha/beta periodic and finite (1 0 0) slabs, term-by-term vs GROMACS)",
         }
     if openmm_metadata is not None:
         report["openmm_validation"] = openmm_metadata

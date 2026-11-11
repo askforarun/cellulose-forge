@@ -1,7 +1,8 @@
 # 0002: CHARMM36 parameterization of chitin (audit)
 
-- Status: implemented; GROMACS output enabled after the reference comparison
-  and GROMACS validation passed. OpenMM and LAMMPS remain gated.
+- Status: implemented. GROMACS, OpenMM, and LAMMPS output enabled after the
+  reference comparison, GROMACS validation, and term-by-term cross-engine
+  energy comparison passed.
 - Branch: `feature/chitin-charmm36`
 - Force field: CHARMM36 February 2026 GROMACS release
   (`charmm36-feb2026_cgenff-5.0.ff`), as already pinned for cellulose.

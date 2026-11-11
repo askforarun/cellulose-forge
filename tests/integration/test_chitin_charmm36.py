@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -30,19 +32,6 @@ def _slab_arguments(allomorph: str, boundary: str, output: Path, *extra: str) ->
         "--degree-polymerization", "6", "--chain-boundary", boundary, "--vacuum", "30",
         *padding, "--force-field", "charmm36", *extra, "--output", str(output),
     ]  # fmt: skip
-
-
-@pytest.mark.parametrize(
-    ("engine", "message"),
-    [("openmm", "gromacs only"), ("lammps", "gromacs only")],
-)
-def test_cli_rejects_unvalidated_chitin_charmm36_engines(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], engine: str, message: str
-) -> None:
-    arguments = _slab_arguments("beta", "periodic", tmp_path / "out", "--md-engine", engine)
-    with pytest.raises(SystemExit, match="2"):
-        main(arguments)
-    assert message in capsys.readouterr().err
 
 
 def test_cli_rejects_chitin_charmm_template(
@@ -81,7 +70,7 @@ def test_cli_builds_chitin_charmm36_gromacs_slab(
     assert report["residue_name"] == "NAG"
     assert report["charmm36_residue"] == "BGLCNA"
     assert report["topology_source"] == f"native BGLCNA residue with {boundary} 14bb linkage"
-    assert report["validation_scope"]["engines"] == ["gromacs"]
+    assert report["validation_scope"]["engines"] == ["gromacs", "openmm", "lammps"]
     assert report["md_engines"] == ["gromacs"]
     assert abs(report["generated_chain_charge"]) < 1e-6
 
@@ -151,3 +140,44 @@ def test_cli_restrained_chitin_uses_posres_chitin(tmp_path: Path) -> None:
         [gmx, "dump", "-s", "posres.tpr"], cwd=output, capture_output=True, text=True, check=False
     )
     assert "POSRES" in dump.stdout
+
+
+def _openmm_python() -> str:
+    for candidate in (os.environ.get("CELLULOSE_FORGE_OPENMM_PYTHON"), sys.executable):
+        if (
+            candidate
+            and subprocess.run(
+                [candidate, "-c", "import openmm"], check=False, capture_output=True
+            ).returncode
+            == 0
+        ):
+            return candidate
+    pytest.skip("no Python interpreter with OpenMM")
+
+
+@pytest.mark.parametrize(("allomorph", "boundary"), [("alpha", "periodic"), ("beta", "finite")])
+def test_cli_builds_chitin_charmm36_openmm_and_lammps(
+    tmp_path: Path, allomorph: str, boundary: str
+) -> None:
+    force_field = _force_field()
+    python = _openmm_python()
+    output = tmp_path / f"{allomorph}_{boundary}"
+    arguments = _slab_arguments(
+        allomorph, boundary, output,
+        "--charmm-force-field-directory", str(force_field),
+        "--md-engine", "gromacs", "--md-engine", "openmm", "--md-engine", "lammps",
+        "--openmm-python", python,
+    )  # fmt: skip
+    assert main(arguments) == 0
+    report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
+    assert report["md_engines"] == ["gromacs", "openmm", "lammps"]
+    chains = report["chain_count"]
+    impropers = 2 * 6 * chains
+    assert report["lammps_validation"]["improper_count"] == impropers
+    assert "HarmonicTorsionForce" in report["openmm_validation"]["initial_energies_kj_mol"]
+    data = (output / "system.data").read_text(encoding="utf-8")
+    assert f"{impropers} impropers" in data
+    assert "\nImproper Coeffs\n" in data
+    lammps_input = (output / "in.cellulose").read_text(encoding="utf-8")
+    assert "improper_style harmonic" in lammps_input
+    assert (output / "system.xml").is_file()

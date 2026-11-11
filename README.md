@@ -111,10 +111,11 @@ lattice repeat across the periodic box, and no interchain clashes. Reference
 faces for force-field validation have not yet been selected from the
 literature.
 
-#### CHARMM36 for GROMACS
+#### CHARMM36 (GROMACS, OpenMM, LAMMPS)
 
 `--force-field charmm36` builds chitin with the CHARMM36 `BGLCNA` residue,
-linked by the `14bb` patch, for GROMACS only:
+linked by the `14bb` patch, for GROMACS and, with `--md-engine openmm` or
+`--md-engine lammps`, for OpenMM and LAMMPS:
 
 ```bash
 cellulose-forge build --polymer chitin --allomorph beta --shape slab \
@@ -137,8 +138,20 @@ the GROMACS validation workflows: alpha and beta periodic bulk, periodic
 (1 0 0) slabs, and finite (1 0 0) slabs pass `gmx grompp`, minimization, and a
 1 ps NVT smoke test (`validation/validate_chitin_charmm36_gromacs.py`).
 Position restraints for chitin use the `POSRES_CHITIN` define. psfgen was used only to
-build that reference; CelluloseForge does not need it. OpenMM and LAMMPS
-output, GLYCAM/Amber, and fibrils are not yet available for chitin.
+build that reference; CelluloseForge does not need it.
+
+OpenMM and LAMMPS energies were compared with GROMACS term by term for alpha
+and beta, finite and periodic (1 0 0) slabs
+(`validation/validate_chitin_charmm36_engines.py`): bonds, angles,
+Urey-Bradley, proper dihedrals, the acetyl impropers, 1-4 Lennard-Jones, 1-4
+electrostatics, and total nonbonded energy. Bonded terms agree within
+0.03 kJ/mol and nonbonded totals within 0.7 kJ/mol. LAMMPS impropers use
+`improper_style harmonic` with K = k/2 (GROMACS E = k xi^2 / 2). The LAMMPS
+comparison removes three documented conventions: the CHARMM Coulomb constant
+(332.0716 vs 332.0637), the constant 1-4 LJ offsets of
+`dihedral_style charmmfsw`, and the constant shift between CHARMM vfswitch and
+GROMACS force-switch; forces are unaffected by these. GLYCAM/Amber and
+fibrils are not yet available for chitin.
 
 ## Table of contents
 
