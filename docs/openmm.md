@@ -79,6 +79,13 @@ tolerances. Build-time energies are evaluated with a tighter tolerance
 (1 × 10^-5, GROMACS's default `ewald-rtol`) so that they can be compared with
 other engines.
 
+For CHARMM36, this current OpenMM representation does not reproduce the
+official CHARMM 10--12 angstrom force-switch protocol: OpenMM's built-in
+switch acts on the potential rather than implementing the CHARMM force switch.
+The reported OpenMM--GROMACS comparison therefore uses matching plain-cutoff
+settings in both engines. Use the generated GROMACS output, or the experimental
+LAMMPS CHARMM output, when the official force-switch protocol is required.
+
 ## Running the system
 
 ```bash

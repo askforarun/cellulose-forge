@@ -1,0 +1,97 @@
+{
+  "allomorph": "II",
+  "cellulose_forge_version": "1.1.2",
+  "chain_boundary": "periodic",
+  "chain_count": 12,
+  "charmm36_release": "charmm36-feb2026_cgenff-5.0.ff",
+  "chirality_validation": {
+    "configuration": "D-cellulose",
+    "expected_signed_volume_sign": "negative",
+    "minimum_absolute_signed_volume_angstrom3": 1.5793565801126541,
+    "residue_count": 72,
+    "status": "passed",
+    "stereocentre": "C1",
+    "substituent_order": [
+      "O5",
+      "C2",
+      "H1"
+    ]
+  },
+  "crystallographic_atom_count": 1296,
+  "degree_polymerization": 6,
+  "force_field": "CHARMM36",
+  "force_field_atom_count": 1512,
+  "generated_chain_charge": -8.326672684688674e-16,
+  "generated_force_field_coordinates": {
+    "atoms": [
+      "HO2",
+      "HO3",
+      "HO6"
+    ],
+    "method": "I-beta reference O-H geometry aligned on C1/C3/C5",
+    "scope": "each anhydroglucose residue"
+  },
+  "geometry_annotations": [
+    "shape=slab face=(1,1,0) layers=2",
+    "chains_per_layer=6 total_chains=12",
+    "degree_polymerization=6",
+    "chain_boundary=periodic",
+    "d_hkl=4.453200 angstrom",
+    "vacuum=30.000000 angstrom",
+    "padding_z=0.000000 angstrom total longitudinal padding",
+    "lateral_repeat=7.310792 angstrom",
+    "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+    "chain numbering starts at requested low-z face; within each layer low-x to high-x",
+    "construction=whole_chain_reciprocal_lattice_cut",
+    "size_mode=exact_counts"
+  ],
+  "interaction_counts_per_chain": {
+    "angles": 246,
+    "bonds": 132,
+    "dihedrals": 396,
+    "pairs": 378
+  },
+  "lammps_validation": {
+    "angle_count": 2952,
+    "atom_count": 1512,
+    "atom_type_count": 7,
+    "bond_count": 1584,
+    "data": "system.data",
+    "dihedral_count": 6840,
+    "dispersion_correction": false,
+    "input": "in.cellulose",
+    "input_scope": "single-point run 0 validation; not a dynamics protocol",
+    "special_bonds": "charmm",
+    "urey_bradley_count": 1152,
+    "weighted_one_four_count": 4536
+  },
+  "md_engines": [
+    "gromacs",
+    "lammps"
+  ],
+  "outputs": {
+    "coordinates": "structure.pdb",
+    "gromacs_coordinates": "structure.gro",
+    "gromacs_force_field": "charmm36.ff",
+    "gromacs_molecule_topology": "cellulose_charmm36.itp",
+    "gromacs_topology": "system.top",
+    "lammps_data": "system.data",
+    "lammps_input": "in.cellulose"
+  },
+  "periodic_glycosidic_bond_validation": {
+    "mapped_geometry": {
+      "bond_count": 72,
+      "maximum_distance_angstrom": 1.394086163297945
+    },
+    "written_topology": {
+      "bond_count": 72,
+      "maximum_distance_angstrom": 1.394086163297945,
+      "molecule_count": 12,
+      "molecule_type_count": 1
+    }
+  },
+  "reference_force_field": "charmm36-feb2026_cgenff-5.0.ff",
+  "shape": "slab",
+  "status": "supported",
+  "topology_source": "native BGLC residue with periodic 14bb linkage"
+}

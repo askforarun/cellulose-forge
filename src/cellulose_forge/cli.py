@@ -53,6 +53,7 @@ from cellulose_forge.glycam_mapping import (
     map_crystal_to_periodic_glycam,
 )
 from cellulose_forge.gromacs import write_glycam_gromacs_system
+from cellulose_forge.lammps import LammpsSystemFiles, write_lammps_system
 from cellulose_forge.openmm import (
     OpenMMSystemFiles,
     heavy_atom_restraints,
@@ -135,10 +136,7 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument(
         "--fibril-profile",
         type=_parse_fibril_profile,
-        help=(
-            "custom I-beta row counts from low to high Cartesian z, "
-            "for example 2,3,4,4,3,2"
-        ),
+        help=("custom I-beta row counts from low to high Cartesian z, for example 2,3,4,4,3,2"),
     )
     build.add_argument(
         "--chain-boundary",
@@ -195,7 +193,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     build.add_argument(
         "--md-engine",
-        choices=["gromacs", "amber", "openmm"],
+        choices=["gromacs", "amber", "openmm", "lammps"],
         action="append",
         help=(
             "target MD engine; repeat for multiple outputs (default: gromacs for "
@@ -270,6 +268,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Python interpreter to check for an importable OpenMM",
     )
+    doctor.add_argument(
+        "--lammps-executable",
+        default="lmp",
+        help="LAMMPS executable to check for experimental LAMMPS output",
+    )
     doctor.add_argument("--json", action="store_true", help="emit machine-readable JSON")
 
     forcefield = subparsers.add_parser(
@@ -307,9 +310,10 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
             tleap_executable=args.tleap_executable,
             parmed_python=str(args.parmed_python) if args.parmed_python else None,
             openmm_python=str(args.openmm_python) if args.openmm_python else None,
+            lammps_executable=args.lammps_executable,
         )
         print(render_json(checks) if args.json else render_text(checks))
-        optional_engines = {"gmx", "openmm", "charmm36"}
+        optional_engines = {"gmx", "openmm", "charmm36", "lammps"}
         return 0 if all(check.ok for check in checks if check.name not in optional_engines) else 1
     if args.command == "build":
         _resolve_md_engines(args, build_parser())
@@ -324,9 +328,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
                 stacklevel=1,
             )
         args.padding_longitudinal = (
-            args.padding_z
-            if args.padding_longitudinal is None
-            else args.padding_longitudinal
+            args.padding_z if args.padding_longitudinal is None else args.padding_longitudinal
         )
         allomorph_key = {
             "I-alpha": "i_alpha",
@@ -340,9 +342,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
         ):
             build_parser().error("--padding-x and --padding-y are valid only with --shape fibril")
         if args.shape not in {"slab", "fibril"} and args.padding_longitudinal is not None:
-            build_parser().error(
-                "--padding-longitudinal is valid only with --shape slab or fibril"
-            )
+            build_parser().error("--padding-longitudinal is valid only with --shape slab or fibril")
         _validate_longitudinal_padding(args, build_parser())
         if args.shape == "unit-cell":
             if args.cells is not None:
@@ -381,9 +381,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
     return 0
 
 
-def _resolve_md_engines(
-    args: argparse.Namespace, parser: argparse.ArgumentParser
-) -> None:
+def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
     """Resolve the engine selector and its deprecated topology-format alias."""
     if args.md_engine is not None and args.topology_format is not None:
         parser.error("--md-engine and deprecated --topology-format are mutually exclusive")
@@ -408,8 +406,12 @@ def _resolve_md_engines(
 
     if args.force_field == "none" and engines:
         parser.error("--md-engine requires --force-field glycam or charmm36")
-    if args.force_field == "charmm36" and not set(engines) <= {"gromacs", "openmm"}:
-        parser.error("CHARMM36 supports --md-engine gromacs and openmm")
+    if args.force_field == "charmm36" and not set(engines) <= {
+        "gromacs",
+        "openmm",
+        "lammps",
+    }:
+        parser.error("CHARMM36 supports --md-engine gromacs, openmm, and lammps")
     if args.force_field == "glycam" and not engines:
         parser.error("GLYCAM builds require at least one --md-engine")
     args.md_engines = engines
@@ -453,10 +455,7 @@ def _validate_longitudinal_padding(
     if args.shape not in {"slab", "fibril"} or args.chain_boundary != "finite":
         return
     padding = 0.0 if args.padding_longitudinal is None else args.padding_longitudinal
-    if (
-        args.force_field != "none"
-        and padding < _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM
-    ):
+    if args.force_field != "none" and padding < _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM:
         parser.error(
             "finite force-field chains require at least 3 angstrom longitudinal "
             "padding; use --padding-longitudinal 12 or greater"
@@ -508,9 +507,35 @@ def _write_openmm_output(  # noqa: PLR0913
             restraints=(
                 None
                 if restraints is None
-                else heavy_atom_restraints(
-                    mapped, restraints.chain_ids, restraints.force_constants
-                )
+                else heavy_atom_restraints(mapped, restraints.chain_ids, restraints.force_constants)
+            ),
+            python_executable=args.openmm_python,
+        )
+    except (FileNotFoundError, RuntimeError, ValueError) as error:
+        parser.error(str(error))
+
+
+def _write_lammps_output(  # noqa: PLR0913
+    args: argparse.Namespace,
+    mapped: GlycamMappedSystem,
+    restraints: ChainRestraints | None,
+    *,
+    gromacs_topology: Path,
+    gromacs_coordinates: Path,
+    parser: argparse.ArgumentParser,
+) -> tuple[LammpsSystemFiles, dict[str, object]]:
+    """Write an exact LAMMPS system through the validated force graph."""
+    if restraints is not None:
+        parser.error("LAMMPS position-restraint output is not implemented yet")
+    try:
+        return write_lammps_system(
+            mapped,
+            gromacs_topology,
+            gromacs_coordinates,
+            args.output,
+            force_field=args.force_field,
+            dispersion_correction=(
+                args.force_field == "glycam" and args.shape in {"bulk", "crystal", "unit-cell"}
             ),
             python_executable=args.openmm_python,
         )
@@ -522,6 +547,7 @@ def _engine_outputs(
     coordinate_path: Path,
     engine_files: dict[str, str],
     openmm_files: OpenMMSystemFiles | None,
+    lammps_files: LammpsSystemFiles | None = None,
 ) -> dict[str, str]:
     """Collect the written file names for the build report."""
     outputs = {"coordinates": coordinate_path.name, **engine_files}
@@ -532,6 +558,13 @@ def _engine_outputs(
                 "openmm_state": openmm_files.state.name,
                 "openmm_topology": openmm_files.topology.name,
                 "openmm_runner": openmm_files.runner.name,
+            }
+        )
+    if lammps_files is not None:
+        outputs.update(
+            {
+                "lammps_data": lammps_files.data.name,
+                "lammps_input": lammps_files.input.name,
             }
         )
     return outputs
@@ -601,6 +634,8 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
     write_gromacs = "gromacs" in args.md_engines
     openmm_files: OpenMMSystemFiles | None = None
     openmm_metadata: dict[str, object] | None = None
+    lammps_files: LammpsSystemFiles | None = None
+    lammps_metadata: dict[str, object] | None = None
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_charmm36_") as temporary:
         gromacs_directory = args.output if write_gromacs else Path(temporary)
         gro_path, itp_path, topology_path, force_field_path = write_charmm36_system(
@@ -617,6 +652,15 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             )
         if "openmm" in args.md_engines:
             openmm_files, openmm_metadata = _write_openmm_output(
+                args,
+                mapped,
+                restraints,
+                gromacs_topology=topology_path,
+                gromacs_coordinates=gro_path,
+                parser=parser,
+            )
+        if "lammps" in args.md_engines:
+            lammps_files, lammps_metadata = _write_lammps_output(
                 args,
                 mapped,
                 restraints,
@@ -656,16 +700,17 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             if write_gromacs
             else {},
             openmm_files,
+            lammps_files,
         ),
         "geometry_annotations": list(crystal.annotations),
         "chirality_validation": validate_cellulose_chirality(crystal),
     }
     if openmm_metadata is not None:
         report["openmm_validation"] = openmm_metadata
+    if lammps_metadata is not None:
+        report["lammps_validation"] = lammps_metadata
     if periodic_image_contact is not None:
-        report["closest_longitudinal_periodic_image_contact"] = (
-            periodic_image_contact.as_dict()
-        )
+        report["closest_longitudinal_periodic_image_contact"] = periodic_image_contact.as_dict()
     if periodic_bond_validation is not None:
         report["periodic_glycosidic_bond_validation"] = {
             "mapped_geometry": periodic_bond_validation,
@@ -720,6 +765,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
     write_gromacs = "gromacs" in args.md_engines
     write_amber = "amber" in args.md_engines
     write_openmm = "openmm" in args.md_engines
+    write_lammps = "lammps" in args.md_engines
     if write_amber and chain_boundary == "periodic":
         parser.error(
             "native Amber output currently supports finite chains only; Amber does not "
@@ -734,6 +780,8 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
     amber_metadata: dict[str, object] | None = None
     openmm_files: OpenMMSystemFiles | None = None
     openmm_metadata: dict[str, object] | None = None
+    lammps_files: LammpsSystemFiles | None = None
+    lammps_metadata: dict[str, object] | None = None
 
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_glycam_") as temporary:
         files, reference_metadata = generate_glycam_gromacs_reference(
@@ -766,10 +814,8 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             mapped, chain_mapping = group_mapped_chains(mapped, restraints.chain_ids)
         output_directory.mkdir(parents=True, exist_ok=True)
         coordinate_path = write_coordinates(crystal, output_directory / "structure.pdb")
-        if write_gromacs or write_openmm:
-            gromacs_directory = (
-                output_directory if write_gromacs else Path(temporary) / "gromacs"
-            )
+        if write_gromacs or write_openmm or write_lammps:
+            gromacs_directory = output_directory if write_gromacs else Path(temporary) / "gromacs"
             written_gro, written_topology = write_glycam_gromacs_system(
                 mapped,
                 files.gromacs_topology,
@@ -788,15 +834,22 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                     gromacs_coordinates=written_gro,
                     parser=parser,
                 )
-        if write_amber:
-            amber_topology_path, amber_coordinate_path, amber_metadata = (
-                write_glycam_amber_system(
+            if write_lammps:
+                lammps_files, lammps_metadata = _write_lammps_output(
+                    args,
                     mapped,
-                    files.prmtop,
-                    files.inpcrd,
-                    output_directory,
-                    python_executable=args.parmed_python,
+                    restraints,
+                    gromacs_topology=written_topology,
+                    gromacs_coordinates=written_gro,
+                    parser=parser,
                 )
+        if write_amber:
+            amber_topology_path, amber_coordinate_path, amber_metadata = write_glycam_amber_system(
+                mapped,
+                files.prmtop,
+                files.inpcrd,
+                output_directory,
+                python_executable=args.parmed_python,
             )
         if chain_boundary == "periodic" and topology_path is not None:
             written_periodic_bond_validation = _validate_written_periodic_topology(
@@ -818,7 +871,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                 "amber_coordinates": amber_coordinate_path.name,
             }
         )
-    outputs = _engine_outputs(coordinate_path, engine_files, openmm_files)
+    outputs = _engine_outputs(coordinate_path, engine_files, openmm_files, lammps_files)
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
@@ -840,10 +893,10 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
         report["amber_validation"] = amber_metadata
     if openmm_metadata is not None:
         report["openmm_validation"] = openmm_metadata
+    if lammps_metadata is not None:
+        report["lammps_validation"] = lammps_metadata
     if periodic_image_contact is not None:
-        report["closest_longitudinal_periodic_image_contact"] = (
-            periodic_image_contact.as_dict()
-        )
+        report["closest_longitudinal_periodic_image_contact"] = periodic_image_contact.as_dict()
     if periodic_bond_validation is not None:
         report["periodic_glycosidic_bond_validation"] = {
             "mapped_geometry": periodic_bond_validation,
@@ -945,9 +998,7 @@ def _build_fibril(
     if args.chain_boundary is None:
         parser.error("--chain-boundary finite|periodic is required for fibrils")
     if args.chain_boundary == "periodic" and args.padding_longitudinal not in {None, 0}:
-        parser.error(
-            "--padding-longitudinal must be zero with --chain-boundary periodic"
-        )
+        parser.error("--padding-longitudinal must be zero with --chain-boundary periodic")
     if args.fibril_model == "36-chain":
         return build_36_chain_fibril(
             definition,
@@ -960,9 +1011,7 @@ def _build_fibril(
         )
     model_name = args.fibril_model or "custom"
     row_counts = (
-        I_BETA_FIBRIL_PROFILES[model_name]
-        if args.fibril_model is not None
-        else args.fibril_profile
+        I_BETA_FIBRIL_PROFILES[model_name] if args.fibril_model is not None else args.fibril_profile
     )
     assert row_counts is not None
     try:
@@ -994,12 +1043,8 @@ def _build_slab(
     if args.chain_boundary is None:
         parser.error("--chain-boundary finite|periodic is required for slabs")
     if args.chain_boundary == "periodic" and args.padding_longitudinal not in {None, 0}:
-        parser.error(
-            "--padding-longitudinal must be zero with --chain-boundary periodic"
-        )
-    padding_z = (
-        0.0 if args.padding_longitudinal is None else args.padding_longitudinal
-    )
+        parser.error("--padding-longitudinal must be zero with --chain-boundary periodic")
+    padding_z = 0.0 if args.padding_longitudinal is None else args.padding_longitudinal
     axis_options = (
         ("--chains-per-layer", args.chains_per_layer, "--slab-width", args.slab_width),
         ("--layers", args.layers, "--slab-thickness", args.slab_thickness),

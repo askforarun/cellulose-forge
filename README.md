@@ -17,8 +17,10 @@ generation does not require VMD or `psfgen` at runtime.
 > with finite or covalently periodic chains, validated against GROMACS energies
 > for all four allomorphs; **native Amber output** for finite GLYCAM chains;
 > I-beta **18- and 24-chain fibril presets**; and **custom I-beta fibril
-> profiles**. These will be part of the next release; until then, install from
-> `main` to use them. **CHARMM/PSF output** and **odd-DP chains** remain
+> profiles**; and experimental **LAMMPS output** for finite and periodic
+> GLYCAM06j-1 or CHARMM36 systems. These will be part of the next release;
+> until then, install from `main` to use them. **CHARMM/PSF output** and
+> **odd-DP chains** remain
 > planned. Feedback and contributions are welcome.
 
 > **Release status:** CelluloseForge 1.1.2 is the current stable release. Its
@@ -68,6 +70,7 @@ Simulation engines by force field and chain boundary:
 | GROMACS | Finite and periodic | Finite and periodic | Released (1.1.2) |
 | OpenMM | Finite and periodic | Finite and periodic | On `main`; energies match GROMACS for all four allomorphs |
 | Amber | Finite only | Not available | On `main` |
+| LAMMPS | Finite and periodic | Finite and periodic | Experimental on `feature/lammps`; I-beta energy equivalence validated |
 
 Native Amber output cannot represent covalently periodic chains because Amber
 does not minimum-image bonded terms across the box boundary; use GROMACS or
@@ -592,7 +595,7 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--padding-longitudinal` | angstrom | Total chain-axis padding; periodic chains require zero |
 | `--padding-z` | angstrom | Deprecated alias for `--padding-longitudinal` |
 | `--force-field` | `none`, `glycam`, `charmm36` | Coordinate-only construction or molecular-mechanics parameter set |
-| `--md-engine` | `gromacs`, `amber`, `openmm` | Target engine; repeat for multiple outputs |
+| `--md-engine` | `gromacs`, `amber`, `openmm`, `lammps` | Target engine; repeat for multiple outputs |
 | `--topology-format` | `gromacs`, `amber`, `both` | Deprecated compatibility alias for GLYCAM builds |
 | `--tleap-executable` | executable path | `tleap` used for GLYCAM builds |
 | `--parmed-python` | Python path | Interpreter containing ParmEd |
@@ -733,6 +736,15 @@ OpenMM is installed under a different interpreter. Barostats in OpenMM move
 molecules rigidly, so periodic chains are run with the chain axis fixed; use
 GROMACS for fully anisotropic NPT of periodic crystals. See
 [`docs/openmm.md`](docs/openmm.md).
+
+### Experimental LAMMPS mode
+
+The experimental implementation on `main` writes finite or covalently periodic
+GLYCAM06j-1 and CHARMM36 systems as `system.data` and `in.cellulose` with
+`--md-engine lammps`. Generation uses OpenMM as a topology parser but does not
+require GROMACS. The generated input performs a `run 0` energy check rather
+than a production simulation. Position restraints are not yet implemented. See
+[`docs/lammps.md`](docs/lammps.md).
 
 Existing scripts using `--topology-format gromacs|amber|both` remain valid but
 emit a deprecation warning. New workflows should use `--md-engine`.

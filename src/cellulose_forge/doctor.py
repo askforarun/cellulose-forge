@@ -97,10 +97,7 @@ def _check_parmed(python_executable: str | None) -> DiagnosticCheck:
             required_for="--force-field glycam builds",
             ok=False,
             detail=f"could not run interpreter {interpreter}: {error}",
-            fix=(
-                "pass an existing Python interpreter containing ParmEd with "
-                "--parmed-python"
-            ),
+            fix=("pass an existing Python interpreter containing ParmEd with --parmed-python"),
         )
     except subprocess.TimeoutExpired:
         return DiagnosticCheck(
@@ -142,6 +139,24 @@ def _check_gromacs() -> DiagnosticCheck:
     return DiagnosticCheck(
         name="gmx",
         required_for="preprocessing and simulating generated GLYCAM systems",
+        ok=True,
+        detail=f"found at {resolved}",
+    )
+
+
+def _check_lammps(executable: str) -> DiagnosticCheck:
+    resolved = shutil.which(executable)
+    if resolved is None:
+        return DiagnosticCheck(
+            name="lammps",
+            required_for="running --md-engine lammps output",
+            ok=False,
+            detail=f"'{executable}' was not found on PATH",
+            fix="install LAMMPS with the KSPACE and MOLECULE packages",
+        )
+    return DiagnosticCheck(
+        name="lammps",
+        required_for="running --md-engine lammps output",
         ok=True,
         detail=f"found at {resolved}",
     )
@@ -218,6 +233,10 @@ def _readiness(checks: tuple[DiagnosticCheck, ...]) -> dict[str, bool]:
         "charmm36_gromacs_simulation_ready": charmm36_ready and all_ok("gmx"),
         "glycam_openmm_ready": glycam_ready and all_ok("openmm"),
         "charmm36_openmm_ready": charmm36_ready and all_ok("openmm"),
+        "glycam_lammps_files_ready": glycam_ready and all_ok("openmm"),
+        "charmm36_lammps_files_ready": charmm36_ready and all_ok("openmm"),
+        "glycam_lammps_simulation_ready": glycam_ready and all_ok("openmm", "lammps"),
+        "charmm36_lammps_simulation_ready": charmm36_ready and all_ok("openmm", "lammps"),
     }
 
 
@@ -226,6 +245,7 @@ def run_diagnostics(
     tleap_executable: str = "tleap",
     parmed_python: str | None = None,
     openmm_python: str | None = None,
+    lammps_executable: str = "lmp",
 ) -> tuple[DiagnosticCheck, ...]:
     """Run every environment check and return the results in report order."""
     return (
@@ -237,6 +257,7 @@ def run_diagnostics(
         _check_charmm36(),
         _check_gromacs(),
         _check_openmm(openmm_python),
+        _check_lammps(lammps_executable),
     )
 
 
@@ -261,6 +282,10 @@ def render_text(checks: tuple[DiagnosticCheck, ...]) -> str:
             f"{ready['charmm36_gromacs_simulation_ready']}",
             f"GLYCAM/OpenMM builds ready: {ready['glycam_openmm_ready']}",
             f"CHARMM36/OpenMM builds ready: {ready['charmm36_openmm_ready']}",
+            f"GLYCAM/LAMMPS-file builds ready: {ready['glycam_lammps_files_ready']}",
+            f"CHARMM36/LAMMPS-file builds ready: {ready['charmm36_lammps_files_ready']}",
+            f"GLYCAM/LAMMPS simulation ready: {ready['glycam_lammps_simulation_ready']}",
+            f"CHARMM36/LAMMPS simulation ready: {ready['charmm36_lammps_simulation_ready']}",
         )
     )
     return "\n".join(lines)

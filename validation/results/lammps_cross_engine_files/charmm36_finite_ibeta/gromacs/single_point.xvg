@@ -1,0 +1,33 @@
+# This file was created Wed Nov 11 18:16:42 2026
+# Created by:
+#                 :-) GROMACS - gmx energy, 2024.2-Homebrew (-:
+# 
+# Executable:   /opt/homebrew/bin/../Cellar/gromacs/2024.2/bin/gmx
+# Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2024.2
+# Working dir:  <local-path>
+# Command line:
+#   gmx energy -f single_point.edr -o single_point.xvg
+# gmx energy is part of G R O M A C S:
+#
+# Gromacs Runs On Most of All Computer Systems
+#
+@    title "GROMACS Energies"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "(kJ/mol)"
+@TYPE xy
+@ view 0.15, 0.15, 0.75, 0.85
+@ legend on
+@ legend box on
+@ legend loctype view
+@ legend 0.78, 0.8
+@ legend length 2
+@ s0 legend "Bond"
+@ s1 legend "U-B"
+@ s2 legend "Proper Dih."
+@ s3 legend "LJ-14"
+@ s4 legend "Coulomb-14"
+@ s5 legend "LJ (SR)"
+@ s6 legend "Coulomb (SR)"
+@ s7 legend "Coul. recip."
+@ s8 legend "Potential"
+    0.000000  13182.668945  2466.900635  10060.204102  1720.843994  43417.164062  -2016.830566  -24455.591797  231.474152  44606.832031

@@ -101,3 +101,33 @@ jobs:
         run: |
           uv run pytest tests/integration/test_openmm_workflows.py \
             -m "openmm and gromacs and scientific_integration" -q
+
+  lammps-cross-engine-integration:
+    # Compare generated LAMMPS systems with independent OpenMM and GROMACS
+    # single-point energies. The Ubuntu package must provide KSPACE and
+    # MOLECULE, which are exercised directly by these tests.
+    runs-on: ubuntu-24.04
+    env:
+      CELLULOSE_FORGE_DATA_DIR: ${{ github.workspace }}/.cellulose-forge-data
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: sudo apt-get update && sudo apt-get install -y gromacs lammps
+      - run: uv sync --extra dev --extra openmm
+      - name: Download pinned CHARMM36 archive
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --connect-timeout 20 --max-time 120 \
+            --output charmm36-feb2026_cgenff-5.0.ff.tgz \
+            "http://mackerell.umaryland.edu/download.php?filename=CHARMM_ff_params_files/charmm36-feb2026_cgenff-5.0.ff.tgz"
+      - name: Install checksum-verified CHARMM36 archive
+        run: |
+          uv run cellulose-forge forcefield install charmm36 \
+            --archive charmm36-feb2026_cgenff-5.0.ff.tgz
+      - name: Compare LAMMPS with OpenMM and GROMACS energies
+        run: |
+          uv run pytest tests/integration/test_lammps_workflows.py \
+            -m "lammps and openmm and scientific_integration" -q

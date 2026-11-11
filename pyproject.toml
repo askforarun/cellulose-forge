@@ -65,6 +65,7 @@ testpaths = ["tests"]
 markers = [
   "gromacs: requires a working GROMACS executable",
   "openmm: requires a Python interpreter that can import OpenMM",
+  "lammps: requires a working LAMMPS executable",
   "scientific_integration: exercises an external simulation workflow",
 ]
 
@@ -82,6 +83,7 @@ target-version = "py311"
 extend-exclude = [
   "legacy",
   "tmp",
+  "validation/results",
 ]
 
 [tool.ruff.lint]
