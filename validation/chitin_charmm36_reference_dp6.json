@@ -5,6 +5,7 @@
   "reference_topology": "top_all36_carb.rtf: RESI BGLCNA, PRES 14bb",
   "charmm_archive": "toppar_c36_feb26.tgz",
   "charmm_archive_sha256": "7d4d21ebdb216a48f600fadee862dc77d369a10d5753150635f35e09c3209e08",
+  "scope": "molecular graph, atom names, types, charges, masses, and function types; numerical bonded parameters are checked later by gmx grompp and energies",
   "gromacs_force_field": "charmm36-feb2026_cgenff-5.0.ff",
   "exclusions": "nrexcl=3 from the bond graph; equal bond sets imply equal exclusions",
   "results": [

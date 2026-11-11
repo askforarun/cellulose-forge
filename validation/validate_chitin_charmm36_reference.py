@@ -1,5 +1,8 @@
 """Compare CelluloseForge's finite chitin CHARMM36 topology with a psfgen reference.
 
+This checks the interaction graph and function types, not numerical bonded
+parameters; those are verified when gmx grompp resolves the generated ITP.
+
 The reference PSF is built outside CelluloseForge from the canonical CHARMM
 ``top_all36_carb.rtf`` (``RESI BGLCNA`` and ``PRES 14bb``) with VMD psfgen:
 
@@ -27,6 +30,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -106,6 +110,12 @@ def main() -> int:
     parser.add_argument("--degree-polymerization", type=int, default=6)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    if args.archive.is_file():
+        archive_sha256 = hashlib.sha256(args.archive.read_bytes()).hexdigest()
+    elif args.archive_sha256 and re.fullmatch(r"[0-9a-f]{64}", args.archive_sha256.lower()):
+        archive_sha256 = args.archive_sha256.lower()
+    else:
+        parser.error("archive not found; pass --archive-sha256 as 64 hexadecimal digits")
 
     psf = _read_psf(args.psf)
     ref_atoms = {
@@ -198,10 +208,10 @@ def main() -> int:
         ),
         "reference_topology": "top_all36_carb.rtf: RESI BGLCNA, PRES 14bb",
         "charmm_archive": args.archive.name,
-        "charmm_archive_sha256": (
-            hashlib.sha256(args.archive.read_bytes()).hexdigest()
-            if args.archive.is_file()
-            else args.archive_sha256
+        "charmm_archive_sha256": archive_sha256,
+        "scope": (
+            "molecular graph, atom names, types, charges, masses, and function types; "
+            "numerical bonded parameters are checked later by gmx grompp and energies"
         ),
         "gromacs_force_field": args.force_field_directory.name,
         "exclusions": "nrexcl=3 from the bond graph; equal bond sets imply equal exclusions",
