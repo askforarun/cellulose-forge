@@ -364,6 +364,122 @@ def test_cli_writes_literature_i_beta_36_chain_fibril(tmp_path: Path) -> None:
     assert any("padding_y=32.000000" in line for line in lines)
 
 
+@pytest.mark.parametrize(
+    ("model", "chain_count"),
+    [("18-chain", 18), ("24-chain", 24)],
+)
+def test_cli_writes_named_i_beta_fibril_profiles(
+    tmp_path: Path,
+    model: str,
+    chain_count: int,
+) -> None:
+    output = tmp_path / f"i_beta_{model}.pdb"
+
+    result = main(
+        [
+            "build",
+            "--allomorph",
+            "I-beta",
+            "--shape",
+            "fibril",
+            "--fibril-model",
+            model,
+            "--degree-polymerization",
+            "4",
+            "--chain-boundary",
+            "periodic",
+            "--vacuum",
+            "20",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    lines = output.read_text(encoding="utf-8").splitlines()
+    assert len([line for line in lines if line.startswith("HETATM")]) == (
+        chain_count * 4 * 21
+    )
+    assert any(f"fibril_model={model}" in line for line in lines)
+
+
+def test_cli_writes_custom_i_beta_fibril_profile(tmp_path: Path) -> None:
+    output = tmp_path / "i_beta_custom_fibril.pdb"
+
+    result = main(
+        [
+            "build",
+            "--allomorph",
+            "I-beta",
+            "--shape",
+            "fibril",
+            "--fibril-profile",
+            "1,2,3,2,1",
+            "--degree-polymerization",
+            "4",
+            "--chain-boundary",
+            "periodic",
+            "--vacuum",
+            "20",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    lines = output.read_text(encoding="utf-8").splitlines()
+    assert len([line for line in lines if line.startswith("HETATM")]) == 9 * 4 * 21
+    assert any("fibril_profile_bottom_to_top=1,2,3,2,1" in line for line in lines)
+
+
+def test_cli_rejects_named_and_custom_fibril_profiles_together(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="2"):
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "fibril",
+                "--fibril-model",
+                "18-chain",
+                "--fibril-profile",
+                "2,3,4,4,3,2",
+                "--degree-polymerization",
+                "4",
+                "--chain-boundary",
+                "periodic",
+                "--output",
+                str(tmp_path / "invalid.pdb"),
+            ]
+        )
+
+
+def test_cli_rejects_native_amber_for_periodic_chains(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="2"):
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "fibril",
+                "--fibril-model",
+                "18-chain",
+                "--degree-polymerization",
+                "4",
+                "--chain-boundary",
+                "periodic",
+                "--force-field",
+                "glycam",
+                "--topology-format",
+                "amber",
+                "--output",
+                str(tmp_path / "unsafe_periodic_amber"),
+            ]
+        )
+
+
 def test_cli_writes_finite_fibril_with_longitudinal_padding(tmp_path: Path) -> None:
     output = tmp_path / "i_beta_finite_padded_fibril.pdb"
 

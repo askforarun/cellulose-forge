@@ -13,6 +13,7 @@ from cellulose_forge.geometry import (
     build_36_chain_fibril,
     build_bulk_crystal,
     build_chain_parallel_slab,
+    build_i_beta_profile_fibril,
     build_slab_by_dimensions,
     build_slab_with_sizing,
     build_unit_cell,
@@ -144,6 +145,73 @@ def test_36_chain_fibril_is_deterministic() -> None:
     assert first.atom_labels == second.atom_labels
     assert first.chain_numbers == second.chain_numbers
     assert_allclose(first.cartesian_coordinates, second.cartesian_coordinates)
+
+
+@pytest.mark.parametrize(
+    ("model_name", "profile", "chain_count"),
+    [
+        ("18-chain", (2, 3, 4, 4, 3, 2), 18),
+        ("24-chain", (3, 4, 5, 5, 4, 3), 24),
+    ],
+)
+def test_i_beta_named_fibril_profiles(
+    model_name: str,
+    profile: tuple[int, ...],
+    chain_count: int,
+) -> None:
+    fibril = build_i_beta_profile_fibril(
+        load_allomorph("i_beta"),
+        row_counts=profile,
+        degree_polymerization=4,
+        vacuum=12.0,
+        chain_boundary="periodic",
+        model_name=model_name,
+    )
+
+    assert fibril.atom_count == chain_count * 4 * 21
+    assert set(fibril.chain_numbers) == set(range(1, chain_count + 1))
+    assert Counter(fibril.layer_numbers) == {
+        layer: count * 4 * 21 for layer, count in enumerate(profile, start=1)
+    }
+    assert any(f"fibril_model={model_name}" in value for value in fibril.annotations)
+    assert any(
+        "fibril_profile_bottom_to_top=" + ",".join(map(str, profile)) in value
+        for value in fibril.annotations
+    )
+
+
+def test_custom_i_beta_fibril_profile_is_deterministic() -> None:
+    options = {
+        "row_counts": (1, 2, 3, 2, 1),
+        "degree_polymerization": 4,
+        "vacuum": 10.0,
+    }
+    first = build_i_beta_profile_fibril(load_allomorph("i_beta"), **options)
+    second = build_i_beta_profile_fibril(load_allomorph("i_beta"), **options)
+
+    assert first.chain_numbers == second.chain_numbers
+    assert first.layer_numbers == second.layer_numbers
+    assert_allclose(first.cartesian_coordinates, second.cartesian_coordinates)
+
+
+def test_custom_fibril_profile_rejects_other_allomorphs() -> None:
+    with pytest.raises(ValueError, match="currently support cellulose I-beta only"):
+        build_i_beta_profile_fibril(
+            load_allomorph("i_alpha"),
+            row_counts=(2, 3, 4, 4, 3, 2),
+            degree_polymerization=4,
+            vacuum=10.0,
+        )
+
+
+def test_custom_fibril_profile_rejects_rows_outside_envelope() -> None:
+    with pytest.raises(ValueError, match=r"does not fit.*lattice envelope"):
+        build_i_beta_profile_fibril(
+            load_allomorph("i_beta"),
+            row_counts=(5, 5, 5, 5, 5, 5),
+            degree_polymerization=4,
+            vacuum=10.0,
+        )
 
 
 def test_36_chain_fibril_supports_independent_finite_box_padding() -> None:

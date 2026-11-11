@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from cellulose_forge import __version__
+from cellulose_forge.amber import write_glycam_amber_system
 from cellulose_forge.charmm36 import (
     FiniteCharmm36Topology,
     PeriodicCharmm36Topology,
@@ -36,9 +37,11 @@ from cellulose_forge.forcefields import (
     install_charmm36,
 )
 from cellulose_forge.geometry import (
+    I_BETA_FIBRIL_PROFILES,
     BulkCrystal,
     build_36_chain_fibril,
     build_bulk_crystal,
+    build_i_beta_profile_fibril,
     build_slab_with_sizing,
     build_unit_cell,
     validate_cellulose_chirality,
@@ -58,6 +61,21 @@ from cellulose_forge.restraints import (
 
 _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 3.0
 _RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 12.0
+
+
+def _parse_fibril_profile(value: str) -> tuple[int, ...]:
+    """Parse a comma-separated, bottom-to-top fibril row profile."""
+    try:
+        rows = tuple(int(item.strip()) for item in value.split(","))
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "fibril profiles must be comma-separated positive integers"
+        ) from error
+    if not rows or any(row < 1 for row in rows):
+        raise argparse.ArgumentTypeError(
+            "fibril profiles must be comma-separated positive integers"
+        )
+    return rows
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -106,8 +124,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     build.add_argument(
         "--fibril-model",
-        choices=["36-chain"],
-        help="named literature-defined fibril cross-section",
+        choices=["18-chain", "24-chain", "36-chain"],
+        help="named fibril cross-section",
+    )
+    build.add_argument(
+        "--fibril-profile",
+        type=_parse_fibril_profile,
+        help=(
+            "custom I-beta row counts from low to high Cartesian z, "
+            "for example 2,3,4,4,3,2"
+        ),
     )
     build.add_argument(
         "--chain-boundary",
@@ -156,6 +182,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["none", "glycam", "charmm36"],
         default="none",
         help="write coordinates only or a simulation-ready GROMACS system",
+    )
+    build.add_argument(
+        "--topology-format",
+        choices=["gromacs", "amber", "both"],
+        default="gromacs",
+        help="simulation topology format for GLYCAM builds (default: gromacs)",
     )
     build.add_argument(
         "--charmm-template",
@@ -286,6 +318,10 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
                 "--padding-longitudinal is valid only with --shape slab or fibril"
             )
         _validate_longitudinal_padding(args, build_parser())
+        if args.force_field != "glycam" and args.topology_format != "gromacs":
+            build_parser().error(
+                "--topology-format amber|both currently requires --force-field glycam"
+            )
         if args.shape == "unit-cell":
             if args.cells is not None:
                 build_parser().error("--cells is not valid with --shape unit-cell")
@@ -552,6 +588,20 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
     assert chain_boundary is not None
     degree_polymerization = _crystal_degree_polymerization(crystal)
     output_directory = args.output
+    write_gromacs = args.topology_format in {"gromacs", "both"}
+    write_amber = args.topology_format in {"amber", "both"}
+    if write_amber and chain_boundary == "periodic":
+        parser.error(
+            "native Amber output currently supports finite chains only; Amber does not "
+            "minimum-image bonded terms across the periodic chain boundary. Use "
+            "--chain-boundary finite with longitudinal padding, or use GROMACS output "
+            "for covalently periodic chains"
+        )
+    gro_path: Path | None = None
+    topology_path: Path | None = None
+    amber_topology_path: Path | None = None
+    amber_coordinate_path: Path | None = None
+    amber_metadata: dict[str, object] | None = None
 
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_glycam_") as temporary:
         files, reference_metadata = generate_glycam_gromacs_reference(
@@ -584,18 +634,44 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             mapped, chain_mapping = group_mapped_chains(mapped, restraints.chain_ids)
         output_directory.mkdir(parents=True, exist_ok=True)
         coordinate_path = write_coordinates(crystal, output_directory / "structure.pdb")
-        gro_path, topology_path = write_glycam_gromacs_system(
-            mapped,
-            files.gromacs_topology,
-            output_directory,
-            restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
-            restraint_force=restraints.force_constants if restraints else None,
-        )
-        if chain_boundary == "periodic":
+        if write_gromacs:
+            gro_path, topology_path = write_glycam_gromacs_system(
+                mapped,
+                files.gromacs_topology,
+                output_directory,
+                restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
+                restraint_force=restraints.force_constants if restraints else None,
+            )
+        if write_amber:
+            amber_topology_path, amber_coordinate_path, amber_metadata = (
+                write_glycam_amber_system(
+                    mapped,
+                    files.prmtop,
+                    files.inpcrd,
+                    output_directory,
+                    python_executable=args.parmed_python,
+                )
+            )
+        if chain_boundary == "periodic" and topology_path is not None:
             written_periodic_bond_validation = _validate_written_periodic_topology(
                 mapped, topology_path, topology_path, parser
             )
 
+    outputs = {"coordinates": coordinate_path.name}
+    if gro_path is not None and topology_path is not None:
+        outputs.update(
+            {
+                "gromacs_coordinates": gro_path.name,
+                "gromacs_topology": topology_path.name,
+            }
+        )
+    if amber_topology_path is not None and amber_coordinate_path is not None:
+        outputs.update(
+            {
+                "amber_topology": amber_topology_path.name,
+                "amber_coordinates": amber_coordinate_path.name,
+            }
+        )
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
@@ -607,15 +683,14 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
         "chain_count": mapped.chain_count,
         "crystallographic_atom_count": crystal.atom_count,
         "force_field_atom_count": mapped.atom_count,
-        "outputs": {
-            "coordinates": coordinate_path.name,
-            "gromacs_coordinates": gro_path.name,
-            "gromacs_topology": topology_path.name,
-        },
+        "topology_format": args.topology_format,
+        "outputs": outputs,
         "geometry_annotations": list(crystal.annotations),
         "chirality_validation": validate_cellulose_chirality(crystal),
         "reference_generation": reference_metadata,
     }
+    if amber_metadata is not None:
+        report["amber_validation"] = amber_metadata
     if periodic_image_contact is not None:
         report["closest_longitudinal_periodic_image_contact"] = (
             periodic_image_contact.as_dict()
@@ -712,8 +787,10 @@ def _build_fibril(
         )
     ):
         parser.error("slab sizing options are not valid with --shape fibril")
-    if args.fibril_model is None:
-        parser.error("--fibril-model 36-chain is required for fibrils")
+    if args.fibril_model is not None and args.fibril_profile is not None:
+        parser.error("--fibril-model and --fibril-profile are mutually exclusive")
+    if args.fibril_model is None and args.fibril_profile is None:
+        parser.error("--fibril-model or --fibril-profile is required for fibrils")
     if args.degree_polymerization is None:
         parser.error("--degree-polymerization N is required for fibrils")
     if args.chain_boundary is None:
@@ -722,15 +799,37 @@ def _build_fibril(
         parser.error(
             "--padding-longitudinal must be zero with --chain-boundary periodic"
         )
-    return build_36_chain_fibril(
-        definition,
-        degree_polymerization=args.degree_polymerization,
-        vacuum=args.vacuum,
-        padding_x=args.padding_x,
-        padding_y=args.padding_y,
-        padding_z=args.padding_longitudinal,
-        chain_boundary=args.chain_boundary,
+    if args.fibril_model == "36-chain":
+        return build_36_chain_fibril(
+            definition,
+            degree_polymerization=args.degree_polymerization,
+            vacuum=args.vacuum,
+            padding_x=args.padding_x,
+            padding_y=args.padding_y,
+            padding_z=args.padding_longitudinal,
+            chain_boundary=args.chain_boundary,
+        )
+    model_name = args.fibril_model or "custom"
+    row_counts = (
+        I_BETA_FIBRIL_PROFILES[model_name]
+        if args.fibril_model is not None
+        else args.fibril_profile
     )
+    assert row_counts is not None
+    try:
+        return build_i_beta_profile_fibril(
+            definition,
+            row_counts=row_counts,
+            model_name=model_name,
+            degree_polymerization=args.degree_polymerization,
+            vacuum=args.vacuum,
+            padding_x=args.padding_x,
+            padding_y=args.padding_y,
+            padding_z=args.padding_longitudinal,
+            chain_boundary=args.chain_boundary,
+        )
+    except ValueError as error:
+        parser.error(str(error))
 
 
 def _build_slab(

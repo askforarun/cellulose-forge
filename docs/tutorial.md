@@ -359,7 +359,7 @@ requires `h=0`. For I-beta, II, and III-I the chain axis is `c`, so it requires
 ends from their periodic images. Periodic slabs reject nonzero chain-end
 padding. The historical `--padding-z` spelling remains a deprecated alias.
 
-## 8. Build a 36-chain elementary fibril
+## 8. Build elementary fibrils
 
 ```bash
 cellulose-forge build \
@@ -376,6 +376,35 @@ The model uses the published discrete 36-chain selection. It is not generated
 by cutting an ideal regular hexagon. Presets are available for I-alpha, I-beta,
 and II. A III-I 36-chain model is intentionally rejected because the reference
 builder did not define that preset.
+
+For I-beta, named 18- and 24-chain profiles are also available:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape fibril \
+  --fibril-model 24-chain \
+  --degree-polymerization 12 --chain-boundary periodic \
+  --vacuum 30 \
+  --output cellulose_forge_tutorial/ibeta_24chain_dp12.pdb
+```
+
+The 18-chain model uses the bottom-to-top row profile `2,3,4,4,3,2`; the
+24-chain model uses `3,4,5,5,4,3`. Custom I-beta profiles can be requested with
+`--fibril-profile`, provided every row fits inside the validated 36-chain
+lattice envelope:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape fibril \
+  --fibril-profile 1,2,3,2,1 \
+  --degree-polymerization 12 --chain-boundary periodic \
+  --vacuum 30 \
+  --output cellulose_forge_tutorial/ibeta_custom_dp12.pdb
+```
+
+Custom profiles are geometric constructions. They should be reported with the
+exact row list and should not be called literature-defined unless the selected
+arrangement has an explicit source.
 
 `--vacuum 30` adds 30 Å of total padding along both transverse box directions,
 with 15 Å on each opposing side. Use `--padding-x` for Cartesian `x` and
@@ -497,6 +526,30 @@ python -m json.tool \
 The report records the force-field release, degree of polymerization, boundary
 condition, chain and atom counts, external executable provenance, charge check,
 one-four scaling, and generated filenames.
+
+### Native Amber output
+
+Use `--topology-format amber` for a complete Amber `prmtop`/`inpcrd`, or
+`--topology-format both` to retain the GROMACS files as well:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape fibril --fibril-model 18-chain \
+  --degree-polymerization 12 --chain-boundary finite --vacuum 30 \
+  --padding-longitudinal 20 \
+  --force-field glycam --topology-format both \
+  --output cellulose_forge_tutorial/ibeta_18chain_glycam
+```
+
+The native Amber files describe the complete fibril, not the temporary
+one-chain reference used during parameter assignment. CelluloseForge reloads
+the written files with ParmEd and records their atom count, residue count,
+total charge, and periodic box in `build_report.json`.
+
+Native Amber output is restricted to finite chains. Amber does not apply
+minimum-image treatment to bonded interactions that cross the chain-direction
+periodic boundary, so CelluloseForge refuses unsafe covalently periodic Amber
+files. Use GROMACS output for periodic chains.
 
 If `tleap` or ParmEd is installed outside the active environment:
 

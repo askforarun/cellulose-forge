@@ -234,6 +234,11 @@ _FIBRIL_LAYER_SIZES = {
     "II": (7, 11, 11, 7),
 }
 
+I_BETA_FIBRIL_PROFILES: dict[str, tuple[int, ...]] = {
+    "18-chain": (2, 3, 4, 4, 3, 2),
+    "24-chain": (3, 4, 5, 5, 4, 3),
+}
+
 
 @dataclass(frozen=True)
 class BulkCrystal:
@@ -560,6 +565,8 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
         vectors,
         chain_axis=allomorph.chain_axis,
     )
+
+
     unit_chain_order = tuple(dict.fromkeys(unit_cell.chain_numbers))
     templates = {
         chain_number: (
@@ -709,6 +716,173 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
             "fibril chains numbered from low Cartesian x to high Cartesian x within each layer",
             "legacy_fragment_ids=" + ",".join(str(value) for value in fragment_ids),
             "source=Gomes_and_Skaf_2012_Cellulose-Builder doi:10.1002/jcc.22959",
+        ),
+    )
+
+
+def build_i_beta_profile_fibril(  # noqa: PLR0913, PLR0915
+    allomorph: AllomorphDefinition,
+    *,
+    row_counts: tuple[int, ...],
+    degree_polymerization: int,
+    vacuum: float,
+    padding_x: float | None = None,
+    padding_y: float | None = None,
+    padding_z: float | None = None,
+    chain_boundary: str = "finite",
+    model_name: str = "custom",
+) -> BulkCrystal:
+    """Build an I-beta fibril by selecting centred rows from the 36-chain lattice.
+
+    Rows are supplied from low to high Cartesian z, matching CelluloseForge's
+    layer-numbering convention.  The current profile builder deliberately uses
+    the validated I-beta 36-chain lattice as its envelope; extending the same
+    syntax to another allomorph requires an independently defined lattice-site
+    mapping rather than reusing I-beta row semantics.
+    """
+    if allomorph.name != "I-beta":
+        msg = "custom and 18-/24-chain fibril profiles currently support cellulose I-beta only"
+        raise ValueError(msg)
+    if not row_counts or any(
+        not isinstance(value, int) or isinstance(value, bool) or value < 1
+        for value in row_counts
+    ):
+        msg = "fibril row counts must be a nonempty sequence of positive integers"
+        raise ValueError(msg)
+    source_profile = _FIBRIL_LAYER_SIZES["I-beta"]
+    if len(row_counts) > len(source_profile):
+        msg = f"I-beta fibril profiles may contain at most {len(source_profile)} rows"
+        raise ValueError(msg)
+    if sum(row_counts) > len(_PDB_CHAIN_IDENTIFIERS):
+        msg = f"fibril profiles may contain at most {len(_PDB_CHAIN_IDENTIFIERS)} chains"
+        raise ValueError(msg)
+
+    source_start = (len(source_profile) - len(row_counts)) // 2
+    source_layers = tuple(
+        range(source_start + 1, source_start + len(row_counts) + 1)
+    )
+    available_counts = tuple(source_profile[layer - 1] for layer in source_layers)
+    oversized = [
+        (index + 1, requested, available)
+        for index, (requested, available) in enumerate(
+            zip(row_counts, available_counts, strict=True)
+        )
+        if requested > available
+    ]
+    if oversized:
+        details = ", ".join(
+            f"row {row}: requested {requested}, maximum {available}"
+            for row, requested, available in oversized
+        )
+        msg = f"profile does not fit the validated I-beta lattice envelope ({details})"
+        raise ValueError(msg)
+
+    full = build_36_chain_fibril(
+        allomorph,
+        degree_polymerization=degree_polymerization,
+        vacuum=vacuum,
+        padding_x=padding_x,
+        padding_y=padding_y,
+        padding_z=padding_z,
+        chain_boundary=chain_boundary,
+    )
+    coordinates = np.asarray(full.cartesian_coordinates)
+    chain_numbers = np.asarray(full.chain_numbers)
+    layer_numbers = np.asarray(full.layer_numbers)
+
+    selected_chains: list[int] = []
+    for profile_row, (source_layer, requested) in enumerate(
+        zip(source_layers, row_counts, strict=True)
+    ):
+        layer_chains = sorted(
+            set(chain_numbers[layer_numbers == source_layer]),
+            key=lambda chain: float(coordinates[chain_numbers == chain, 0].mean()),
+        )
+        excess = len(layer_chains) - requested
+        selection_start = excess // 2
+        if excess % 2 and profile_row % 2:
+            selection_start += 1
+        selected_chains.extend(
+            layer_chains[selection_start : selection_start + requested]
+        )
+
+    selected_mask = np.isin(chain_numbers, selected_chains)
+    selected_coordinates = coordinates[selected_mask].copy()
+    selected_old_chains = chain_numbers[selected_mask]
+    selected_old_layers = layer_numbers[selected_mask]
+
+    transverse_padding_x = vacuum if padding_x is None else padding_x
+    transverse_padding_z = vacuum if padding_y is None else padding_y
+    selected_coordinates[:, 0] -= (
+        float(np.min(selected_coordinates[:, 0])) - transverse_padding_x / 2.0
+    )
+    selected_coordinates[:, 2] -= (
+        float(np.min(selected_coordinates[:, 2])) - transverse_padding_z / 2.0
+    )
+    basis = np.asarray(full.basis_vectors).copy()
+    basis[0, 0] = float(np.ptp(selected_coordinates[:, 0])) + transverse_padding_x
+    basis[2, 2] = float(np.ptp(selected_coordinates[:, 2])) + transverse_padding_z
+
+    chain_mapping: dict[int, int] = {}
+    layer_mapping: dict[int, int] = {
+        source_layer: layer for layer, source_layer in enumerate(source_layers, start=1)
+    }
+    next_chain = 1
+    for source_layer in source_layers:
+        layer_selected = [
+            chain
+            for chain in selected_chains
+            if int(selected_old_layers[selected_old_chains == chain][0]) == source_layer
+        ]
+        layer_selected.sort(
+            key=lambda chain: float(
+                selected_coordinates[selected_old_chains == chain, 0].mean()
+            )
+        )
+        for old_chain in layer_selected:
+            chain_mapping[old_chain] = next_chain
+            next_chain += 1
+
+    new_chains = tuple(chain_mapping[int(chain)] for chain in selected_old_chains)
+    new_layers = tuple(layer_mapping[int(layer)] for layer in selected_old_layers)
+    model_source = {
+        "18-chain": (
+            "Cellulose_Modeler_v0.8.0 profile=2,3,4,4,3,2; "
+            "Kubicki_et_al_2018 doi:10.1038/s41598-018-32211-w"
+        ),
+        "24-chain": (
+            "profile=3,4,5,5,4,3; Yang_and_Kubicki_2020 "
+            "doi:10.1007/s10570-020-02970-9"
+        ),
+    }.get(model_name, "user_defined_I-beta_profile")
+    selected_labels = tuple(
+        label for label, keep in zip(full.atom_labels, selected_mask, strict=True) if keep
+    )
+    selected_residues = tuple(
+        residue
+        for residue, keep in zip(full.residue_numbers, selected_mask, strict=True)
+        if keep
+    )
+    return BulkCrystal(
+        allomorph=full.allomorph,
+        space_group=full.space_group,
+        atom_labels=selected_labels,
+        cartesian_coordinates=selected_coordinates,
+        basis_vectors=basis,
+        replication=full.replication,
+        chain_ids=tuple(_PDB_CHAIN_IDENTIFIERS[chain - 1] for chain in new_chains),
+        residue_numbers=selected_residues,
+        chain_numbers=new_chains,
+        layer_numbers=new_layers,
+        annotations=(
+            f"shape=fibril fibril_model={model_name} total_chains={sum(row_counts)}",
+            "fibril_profile_bottom_to_top=" + ",".join(str(value) for value in row_counts),
+            f"degree_polymerization={degree_polymerization}",
+            f"chain_boundary={chain_boundary}",
+            "chains aligned with Cartesian -y",
+            "fibril restraint layers numbered from low Cartesian z to high Cartesian z",
+            "fibril chains numbered from low Cartesian x to high Cartesian x within each layer",
+            f"source={model_source}",
         ),
     )
 

@@ -2,6 +2,28 @@
 
 All notable changes to CelluloseForge are documented in this file.
 
+## Unreleased
+
+### Added
+
+- Added I-beta 18-chain (`2,3,4,4,3,2`) and 24-chain
+  (`3,4,5,5,4,3`) fibril presets.
+- Added `--fibril-profile` for deterministic custom I-beta row profiles within
+  the validated 36-chain lattice envelope.
+- Added `--topology-format amber|both` for complete multi-chain, finite-chain
+  GLYCAM Amber `prmtop`/`inpcrd` output, with a ParmEd reload check recorded in
+  the build report. The existing GROMACS output remains the default. Periodic
+  Amber output is refused because Amber does not minimum-image a covalent bond
+  crossing the chain-direction box boundary.
+
+### Validation
+
+- The 18-chain finite and 24-chain periodic I-beta presets pass GROMACS 2024.2
+  preprocessing with both GLYCAM06j-1 and CHARMM36.
+- A finite 18-chain DP6 dual-format GLYCAM build passes GROMACS preprocessing
+  and completes an AmberTools23 `sander` smoke minimization with finite bonded
+  energies.
+
 ## 1.1.2 - 2026-11-07
 
 ### Added

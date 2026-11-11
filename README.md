@@ -328,7 +328,7 @@ cellulose-forge build \
   --output ibeta_110_hybrid.pdb
 ```
 
-### Literature-defined 36-chain fibril
+### Fibril cross-sections
 
 ```bash
 cellulose-forge build \
@@ -343,6 +343,33 @@ cellulose-forge build \
 
 The preset is an explicit published chain arrangement, not an ideal regular
 hexagon. Cellulose III-I has no supported 36-chain reference preset.
+
+The development branch also provides I-beta 18- and 24-chain profiles:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape fibril \
+  --fibril-model 18-chain \
+  --degree-polymerization 12 --chain-boundary periodic \
+  --vacuum 30 --output ibeta_18chain_dp12.pdb
+```
+
+The 18-chain profile is `2,3,4,4,3,2`; the 24-chain profile is
+`3,4,5,5,4,3`. Rows are listed from low to high Cartesian `z`. A custom
+profile within the validated I-beta 36-chain lattice envelope can be supplied
+directly:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape fibril \
+  --fibril-profile 1,2,3,2,1 \
+  --degree-polymerization 12 --chain-boundary periodic \
+  --vacuum 30 --output ibeta_custom_dp12.pdb
+```
+
+The 18-/24-chain and custom-profile paths currently support I-beta only. A
+custom row list is a geometric request and is not described as a
+literature-defined fibril unless its exact arrangement has a cited source.
 
 For independent transverse box control, use `--padding-x` for Cartesian `x`
 and `--padding-y` for the second transverse direction, Cartesian `z`. Both
@@ -540,7 +567,8 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--slab-width` | angstrom | Minimum transverse width |
 | `--slab-thickness` | angstrom | Minimum thickness normal to the surface |
 | `--slab-length` | angstrom | Minimum chain-direction length |
-| `--fibril-model` | `36-chain` | Literature-defined fibril preset |
+| `--fibril-model` | `18-chain`, `24-chain`, `36-chain` | Named fibril preset; 18/24 currently require I-beta |
+| `--fibril-profile` | comma-separated positive integers | Custom I-beta row counts from low to high Cartesian z |
 | `--chain-boundary` | `finite`, `periodic` | Terminal groups or a covalent bond across the chain boundary |
 | `--vacuum` | angstrom | Total transverse vacuum padding |
 | `--padding-x` | angstrom | Total fibril x padding; overrides `--vacuum` for x |
@@ -548,6 +576,7 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--padding-longitudinal` | angstrom | Total chain-axis padding; periodic chains require zero |
 | `--padding-z` | angstrom | Deprecated alias for `--padding-longitudinal` |
 | `--force-field` | `none`, `glycam`, `charmm36` | Coordinate-only, GLYCAM, or CHARMM36 GROMACS output |
+| `--topology-format` | `gromacs`, `amber`, `both` | Topology output for GLYCAM builds; default `gromacs` |
 | `--tleap-executable` | executable path | `tleap` used for GLYCAM builds |
 | `--parmed-python` | Python path | Interpreter containing ParmEd |
 | `--charmm-template` | ITP path | Optional periodic reference topology for regression studies |
@@ -638,6 +667,28 @@ ibeta_fibril/
 ├── system.top          # standalone GROMACS topology
 └── build_report.json   # inputs, provenance, counts, and generated files
 ```
+
+Native Amber files can be requested instead of, or alongside, GROMACS files:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape fibril --fibril-model 18-chain \
+  --degree-polymerization 12 --chain-boundary finite --vacuum 30 \
+  --padding-longitudinal 20 \
+  --force-field glycam --topology-format both \
+  --output ibeta_18chain_glycam
+```
+
+With `--topology-format both`, the directory additionally contains
+`structure.prmtop` and `structure.inpcrd`. These files describe the complete
+multi-chain system and use the same mapped coordinates, periodic box, GLYCAM
+charges, and bonded topology as the GROMACS output. The build report records a
+ParmEd reload check of atom count, residue count, total charge, and box.
+Native Amber output currently supports finite chains only. Covalently periodic
+chains remain available through GROMACS because Amber does not minimum-image a
+bonded interaction crossing the chain-direction box boundary.
+See [`docs/amber.md`](docs/amber.md) for the format semantics and engine-level
+validation boundary.
 
 ## Large systems
 
