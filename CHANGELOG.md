@@ -6,15 +6,18 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Added
 
+- Added repeatable `--md-engine gromacs|amber` selection and recorded the
+  resolved engines in each build report. `--topology-format` remains as a
+  deprecated compatibility alias; `openmm` is reserved for future support.
 - Added I-beta 18-chain (`2,3,4,4,3,2`) and 24-chain
   (`3,4,5,5,4,3`) fibril presets.
 - Added `--fibril-profile` for deterministic custom I-beta row profiles within
   the validated 36-chain lattice envelope.
-- Added `--topology-format amber|both` for complete multi-chain, finite-chain
-  GLYCAM Amber `prmtop`/`inpcrd` output, with a ParmEd reload check recorded in
-  the build report. The existing GROMACS output remains the default. Periodic
-  Amber output is refused because Amber does not minimum-image a covalent bond
-  crossing the chain-direction box boundary.
+- Added complete multi-chain, finite-chain GLYCAM Amber `prmtop`/`inpcrd`
+  output, with a ParmEd reload check recorded in the build report. The existing
+  GROMACS output remains the default. Periodic Amber output is refused because
+  Amber does not minimum-image a covalent bond crossing the chain-direction box
+  boundary.
 
 ### Validation
 

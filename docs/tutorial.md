@@ -529,15 +529,15 @@ one-four scaling, and generated filenames.
 
 ### Native Amber output
 
-Use `--topology-format amber` for a complete Amber `prmtop`/`inpcrd`, or
-`--topology-format both` to retain the GROMACS files as well:
+Use `--md-engine amber` for a complete Amber `prmtop`/`inpcrd`. Repeat
+`--md-engine` to retain the GROMACS files as well:
 
 ```bash
 cellulose-forge build \
   --allomorph I-beta --shape fibril --fibril-model 18-chain \
   --degree-polymerization 12 --chain-boundary finite --vacuum 30 \
   --padding-longitudinal 20 \
-  --force-field glycam --topology-format both \
+  --force-field glycam --md-engine gromacs --md-engine amber \
   --output cellulose_forge_tutorial/ibeta_18chain_glycam
 ```
 
@@ -550,6 +550,10 @@ Native Amber output is restricted to finite chains. Amber does not apply
 minimum-image treatment to bonded interactions that cross the chain-direction
 periodic boundary, so CelluloseForge refuses unsafe covalently periodic Amber
 files. Use GROMACS output for periodic chains.
+
+The deprecated `--topology-format gromacs|amber|both` spelling remains
+available for existing scripts. The selected engines are recorded in
+`build_report.json` under `md_engines`.
 
 If `tleap` or ParmEd is installed outside the active environment:
 

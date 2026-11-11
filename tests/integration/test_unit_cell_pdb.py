@@ -62,6 +62,7 @@ def test_cli_writes_annotated_i_beta_unit_cell(tmp_path: Path) -> None:
         (tmp_path / "i_beta_unit_cell.build_report.json").read_text(encoding="utf-8")
     )
     assert report["force_field"] == "none"
+    assert report["md_engines"] == []
     assert report["degree_polymerization"] == 2
     assert report["chain_count"] == 2
     assert report["outputs"]["coordinates"] == output.name
@@ -472,10 +473,71 @@ def test_cli_rejects_native_amber_for_periodic_chains(tmp_path: Path) -> None:
                 "periodic",
                 "--force-field",
                 "glycam",
-                "--topology-format",
+                "--md-engine",
                 "amber",
                 "--output",
                 str(tmp_path / "unsafe_periodic_amber"),
+            ]
+        )
+
+
+def test_cli_rejects_md_engine_without_force_field(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="2"):
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "unit-cell",
+                "--md-engine",
+                "gromacs",
+                "--output",
+                str(tmp_path / "invalid.pdb"),
+            ]
+        )
+
+
+def test_cli_rejects_unimplemented_openmm_engine(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="2"):
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "unit-cell",
+                "--chain-boundary",
+                "periodic",
+                "--force-field",
+                "glycam",
+                "--md-engine",
+                "openmm",
+                "--output",
+                str(tmp_path / "invalid"),
+            ]
+        )
+
+
+def test_cli_rejects_md_engine_and_legacy_topology_format(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="2"):
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "unit-cell",
+                "--chain-boundary",
+                "periodic",
+                "--force-field",
+                "glycam",
+                "--md-engine",
+                "gromacs",
+                "--topology-format",
+                "gromacs",
+                "--output",
+                str(tmp_path / "invalid"),
             ]
         )
 
@@ -571,6 +633,7 @@ def test_cli_writes_periodic_glycam_fibril_system(
     assert "CELLULOSE_CHAIN  36" in topology
     report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
     assert report["force_field"] == "GLYCAM"
+    assert report["md_engines"] == ["gromacs"]
     assert report["chain_boundary"] == "periodic"
     assert report["degree_polymerization"] == 12
     assert report["chain_count"] == 36

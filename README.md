@@ -575,8 +575,9 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--padding-y` | angstrom | Total fibril padding in its second transverse direction (Cartesian z); overrides `--vacuum` |
 | `--padding-longitudinal` | angstrom | Total chain-axis padding; periodic chains require zero |
 | `--padding-z` | angstrom | Deprecated alias for `--padding-longitudinal` |
-| `--force-field` | `none`, `glycam`, `charmm36` | Coordinate-only, GLYCAM, or CHARMM36 GROMACS output |
-| `--topology-format` | `gromacs`, `amber`, `both` | Topology output for GLYCAM builds; default `gromacs` |
+| `--force-field` | `none`, `glycam`, `charmm36` | Coordinate-only construction or molecular-mechanics parameter set |
+| `--md-engine` | `gromacs`, `amber`, `openmm` | Target engine; repeat for multiple outputs. OpenMM is reserved but not yet implemented |
+| `--topology-format` | `gromacs`, `amber`, `both` | Deprecated compatibility alias for GLYCAM builds |
 | `--tleap-executable` | executable path | `tleap` used for GLYCAM builds |
 | `--parmed-python` | Python path | Interpreter containing ParmEd |
 | `--charmm-template` | ITP path | Optional periodic reference topology for regression studies |
@@ -675,11 +676,11 @@ cellulose-forge build \
   --allomorph I-beta --shape fibril --fibril-model 18-chain \
   --degree-polymerization 12 --chain-boundary finite --vacuum 30 \
   --padding-longitudinal 20 \
-  --force-field glycam --topology-format both \
+  --force-field glycam --md-engine gromacs --md-engine amber \
   --output ibeta_18chain_glycam
 ```
 
-With `--topology-format both`, the directory additionally contains
+With both engine selectors, the directory contains
 `structure.prmtop` and `structure.inpcrd`. These files describe the complete
 multi-chain system and use the same mapped coordinates, periodic box, GLYCAM
 charges, and bonded topology as the GROMACS output. The build report records a
@@ -689,6 +690,9 @@ chains remain available through GROMACS because Amber does not minimum-image a
 bonded interaction crossing the chain-direction box boundary.
 See [`docs/amber.md`](docs/amber.md) for the format semantics and engine-level
 validation boundary.
+
+Existing scripts using `--topology-format gromacs|amber|both` remain valid but
+emit a deprecation warning. New workflows should use `--md-engine`.
 
 ## Large systems
 

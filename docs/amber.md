@@ -8,7 +8,7 @@ cellulose-forge build \
   --allomorph I-beta --shape fibril --fibril-model 18-chain \
   --degree-polymerization 6 --chain-boundary finite \
   --vacuum 30 --padding-longitudinal 20 \
-  --force-field glycam --topology-format both \
+  --force-field glycam --md-engine gromacs --md-engine amber \
   --output ibeta_18chain_glycam
 ```
 
@@ -31,7 +31,7 @@ Use GROMACS output for covalently periodic chains.
 ## Development validation
 
 The implementation was checked with AmberTools23/ParmEd and GROMACS 2024.2.
-A finite I-beta 18-chain, DP6 fibril written with `--topology-format both`:
+A finite I-beta 18-chain, DP6 fibril written for both MD engines:
 
 - reloaded as a neutral 2,322-atom Amber system containing 108 AGUs and 18
   terminal `ROH` cap records (126 Amber topology residue records in total);

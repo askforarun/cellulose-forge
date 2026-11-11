@@ -186,8 +186,16 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument(
         "--topology-format",
         choices=["gromacs", "amber", "both"],
-        default="gromacs",
-        help="simulation topology format for GLYCAM builds (default: gromacs)",
+        help="deprecated alias for --md-engine on GLYCAM builds",
+    )
+    build.add_argument(
+        "--md-engine",
+        choices=["gromacs", "amber", "openmm"],
+        action="append",
+        help=(
+            "target MD engine; repeat for multiple outputs (default: gromacs for "
+            "force-field builds)"
+        ),
     )
     build.add_argument(
         "--charmm-template",
@@ -287,6 +295,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
         print(render_json(checks) if args.json else render_text(checks))
         return 0 if all(check.ok for check in checks if check.name != "gmx") else 1
     if args.command == "build":
+        _resolve_md_engines(args, build_parser())
         if args.padding_longitudinal is not None and args.padding_z is not None:
             build_parser().error(
                 "--padding-longitudinal and deprecated --padding-z are mutually exclusive"
@@ -318,10 +327,6 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
                 "--padding-longitudinal is valid only with --shape slab or fibril"
             )
         _validate_longitudinal_padding(args, build_parser())
-        if args.force_field != "glycam" and args.topology_format != "gromacs":
-            build_parser().error(
-                "--topology-format amber|both currently requires --force-field glycam"
-            )
         if args.shape == "unit-cell":
             if args.cells is not None:
                 build_parser().error("--cells is not valid with --shape unit-cell")
@@ -359,6 +364,42 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
     return 0
 
 
+def _resolve_md_engines(
+    args: argparse.Namespace, parser: argparse.ArgumentParser
+) -> None:
+    """Resolve the engine selector and its deprecated topology-format alias."""
+    if args.md_engine is not None and args.topology_format is not None:
+        parser.error("--md-engine and deprecated --topology-format are mutually exclusive")
+    if args.topology_format is not None:
+        warnings.warn(
+            "--topology-format is deprecated; use one or more --md-engine options",
+            FutureWarning,
+            stacklevel=1,
+        )
+        legacy_engines = {
+            "gromacs": ("gromacs",),
+            "amber": ("amber",),
+            "both": ("gromacs", "amber"),
+        }
+        engines = legacy_engines[args.topology_format]
+    elif args.md_engine is not None:
+        engines = tuple(dict.fromkeys(args.md_engine))
+    elif args.force_field == "none":
+        engines = ()
+    else:
+        engines = ("gromacs",)
+
+    if args.force_field == "none" and engines:
+        parser.error("--md-engine requires --force-field glycam or charmm36")
+    if "openmm" in engines:
+        parser.error("--md-engine openmm is reserved for a future release")
+    if args.force_field == "charmm36" and engines != ("gromacs",):
+        parser.error("CHARMM36 currently supports --md-engine gromacs only")
+    if args.force_field == "glycam" and not engines:
+        parser.error("GLYCAM builds require at least one --md-engine")
+    args.md_engines = engines
+
+
 def _write_coordinate_only_report(
     args: argparse.Namespace,
     crystal: BulkCrystal,
@@ -372,6 +413,7 @@ def _write_coordinate_only_report(
         "allomorph": crystal.allomorph,
         "shape": args.shape,
         "force_field": "none",
+        "md_engines": list(args.md_engines),
         "chain_boundary": args.chain_boundary,
         "degree_polymerization": _crystal_degree_polymerization(crystal),
         "chain_count": len(set(crystal.chain_numbers)),
@@ -508,6 +550,7 @@ def _write_charmm36_build(  # noqa: PLR0912
         "allomorph": crystal.allomorph,
         "shape": args.shape,
         "force_field": "CHARMM36",
+        "md_engines": list(args.md_engines),
         "status": "supported",
         "chain_boundary": args.chain_boundary,
         "degree_polymerization": topology.degree_polymerization,
@@ -588,8 +631,8 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
     assert chain_boundary is not None
     degree_polymerization = _crystal_degree_polymerization(crystal)
     output_directory = args.output
-    write_gromacs = args.topology_format in {"gromacs", "both"}
-    write_amber = args.topology_format in {"amber", "both"}
+    write_gromacs = "gromacs" in args.md_engines
+    write_amber = "amber" in args.md_engines
     if write_amber and chain_boundary == "periodic":
         parser.error(
             "native Amber output currently supports finite chains only; Amber does not "
@@ -683,7 +726,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
         "chain_count": mapped.chain_count,
         "crystallographic_atom_count": crystal.atom_count,
         "force_field_atom_count": mapped.atom_count,
-        "topology_format": args.topology_format,
+        "md_engines": list(args.md_engines),
         "outputs": outputs,
         "geometry_annotations": list(crystal.annotations),
         "chirality_validation": validate_cellulose_chirality(crystal),
