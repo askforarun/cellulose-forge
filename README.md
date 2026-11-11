@@ -2,22 +2,24 @@
 
 CelluloseForge is a crystallography-first Python tool for building atomistic
 cellulose structures. It generates periodic bulk crystals, chain-parallel
-surface slabs for four cellulose allomorphs, and literature-defined 36-chain fibrils. Supported systems can
-also be parameterized with GLYCAM06j-1 or CHARMM36 and written
-directly for GROMACS. CHARMM36 topology generation does not require VMD or
-`psfgen` at runtime.
+surface slabs for four cellulose allomorphs, and literature-defined fibrils. Supported systems can
+also be parameterized with GLYCAM06j-1 or CHARMM36 and written directly for
+GROMACS; the development version on `main` also writes serialized OpenMM
+systems and native Amber files for finite GLYCAM chains. CHARMM36 topology
+generation does not require VMD or `psfgen` at runtime.
 
 ![CelluloseForge overview showing supported cellulose structures and GROMACS force-field outputs](docs/assets/celluloseforge-overview.png)
 
 > [!IMPORTANT]
-> ## 🚧 Next-generation features are under active development
+> ## 🚧 New on `main`, not yet released
 >
-> Work is underway on **custom fibril cross-sections**, verified **18- and
-> 24-chain fibril presets**, and additional simulation outputs for **Amber**,
-> **OpenMM**, and **CHARMM/PSF** workflows. Odd-DP support is being considered
-> separately. These capabilities are not part of the stable interface yet and
-> will be released only after structural, topology, and cross-format
-> validation. Feedback and contributions are welcome.
+> The development version adds **OpenMM output** for GLYCAM06j-1 and CHARMM36
+> with finite or covalently periodic chains, validated against GROMACS energies
+> for all four allomorphs; **native Amber output** for finite GLYCAM chains;
+> I-beta **18- and 24-chain fibril presets**; and **custom I-beta fibril
+> profiles**. These will be part of the next release; until then, install from
+> `main` to use them. **CHARMM/PSF output** and **odd-DP chains** remain
+> planned. Feedback and contributions are welcome.
 
 > **Release status:** CelluloseForge 1.1.2 is the current stable release. Its
 > supported and validated boundaries below are intentionally narrower than the
@@ -33,7 +35,8 @@ directly for GROMACS. CHARMM36 topology generation does not require VMD or
 - Periodic bulk replication along the crystallographic `a`, `b`, and `c` axes.
 - Chain-parallel slabs for I-alpha, I-beta, II, and III-I selected with signed
   Miller indices.
-- Literature-defined 36-chain fibrils for I-alpha, I-beta, and II.
+- Literature-defined 36-chain fibrils for I-alpha, I-beta, and II; I-beta
+  18- and 24-chain presets and custom row profiles on `main`.
 - Finite or covalently periodic cellulose chains.
 - Deterministic chain and residue numbering.
 - PDB and PDBx/mmCIF coordinate output.
@@ -42,6 +45,9 @@ directly for GROMACS. CHARMM36 topology generation does not require VMD or
 - Direct finite- and periodic-chain CHARMM36 topology generation for GROMACS without VMD
   or `psfgen`.
 - GROMACS `.gro` and `.top` output plus a machine-readable build report.
+- On `main`: serialized OpenMM systems (`system.xml`, `state.xml`) for GLYCAM
+  and CHARMM36 with finite or covalently periodic chains, and native Amber
+  `prmtop`/`inpcrd` output for finite GLYCAM chains.
 - Machine-readable diagnostics and deterministic outputs suitable for workflow
   managers and external LLM-based software agents.
 
@@ -53,10 +59,20 @@ directly for GROMACS. CHARMM36 topology generation does not require VMD or
 | Periodic bulk | I-alpha, I-beta, II, III-I | GLYCAM and CHARMM36 GROMACS preprocessing, minimization, and NVT stability tested |
 | Slab | Chain-parallel faces for I-alpha, I-beta, II, and III-I | Finite and periodic GLYCAM/CHARMM36 matrices validated for I-alpha `(010)`, I-beta `(110)`, II `(110)`, and III-I `(110)` |
 | 36-chain fibril | I-alpha, I-beta, II | Geometry presets tested; periodic GLYCAM and finite/periodic CHARMM36 GROMACS workflows validated |
+| 18- and 24-chain fibril, custom profiles (`main`) | I-beta | 18-chain finite and 24-chain periodic presets pass GROMACS preprocessing with GLYCAM and CHARMM36 |
 
-The release supports finite and periodic GLYCAM and CHARMM36 output for GROMACS.
-It excludes functionalization, native CHARMM/PSF output, and arbitrary
-branched glycans. The CHARMM36 path generates GROMACS topology directly and
+Simulation engines by force field and chain boundary:
+
+| Engine | GLYCAM06j-1 | CHARMM36 | Status |
+|---|---|---|---|
+| GROMACS | Finite and periodic | Finite and periodic | Released (1.1.2) |
+| OpenMM | Finite and periodic | Finite and periodic | On `main`; energies match GROMACS for all four allomorphs |
+| Amber | Finite only | Not available | On `main` |
+
+Native Amber output cannot represent covalently periodic chains because Amber
+does not minimum-image bonded terms across the box boundary; use GROMACS or
+OpenMM for those. The software excludes functionalization, native CHARMM/PSF
+output, and arbitrary branched glycans. The CHARMM36 path generates GROMACS topology directly and
 does not require VMD or `psfgen` at runtime.
 
 ## Table of contents
