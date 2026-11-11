@@ -1,22 +1,25 @@
-"""Validate periodic alpha- and beta-chitin CHARMM36 bulk systems with GROMACS.
+"""Validate alpha- and beta-chitin CHARMM36 systems with GROMACS.
 
-For each allomorph this builds a covalently periodic bulk crystal, maps it to
-the native BGLCNA/14bb topology, and checks:
+Cases: covalently periodic bulk, covalently periodic (1 0 0) slabs, and finite
+(1 0 0) slabs with explicit termini and 12 angstrom longitudinal padding. Each
+system is mapped to the native BGLCNA/14bb topology and must satisfy:
 
-- every boundary-crossing and internal O4--C1 bond of every chain, using
-  minimum-image distances (expected 1.4--1.5 angstrom);
-- 27 atoms and zero charge per periodic residue;
+- every O4--C1 bond of every chain (including each boundary-crossing bond for
+  periodic chains) within range, using minimum-image distances, both in the
+  built coordinates and in the final NVT coordinates;
+- 27 atoms and zero charge per periodic residue; for finite chains, residues
+  of 29/-0.18 (reducing end), 27/0, and 28/+0.18 (non-reducing end);
 - two function-2 impropers per residue;
-- ``gmx grompp`` without warnings, and finite zero-step energies;
-- steepest-descent minimization to Fmax <= 1000 kJ/mol/nm and a 1 ps NVT smoke
-  test, with all O4--C1 bonds rechecked in the final NVT coordinates.
+- ``gmx grompp`` and ``mdrun`` output free of WARNING, LINCS, nan, and inf;
+- all expected energy terms finite; initial Bond term < 50 kJ/mol per atom;
+- steepest-descent Fmax <= 1000 kJ/mol/nm and a complete 1 ps NVT smoke test.
 
-It calls the library directly because the CLI still refuses chitin CHARMM36
-output until this validation passes.
+The 1 ps NVT is a smoke test, not equilibration. The library is called
+directly because the CLI refuses chitin CHARMM36 output until validation passes.
 
 Usage:
-    python validation/validate_chitin_charmm36_periodic.py --work-directory DIR \
-        [--minimum-box-nm 2.4] [--output chitin_charmm36_periodic.json]
+    python validation/validate_chitin_charmm36_gromacs.py --work-directory DIR \
+        [--output chitin_charmm36_gromacs.json]
 """
 
 from __future__ import annotations
@@ -33,16 +36,24 @@ from pathlib import Path
 import numpy as np
 
 from cellulose_forge.charmm36 import (
+    map_finite_charmm36,
     map_periodic_charmm36,
+    native_finite_charmm36_topology,
     native_periodic_charmm36_topology,
     write_charmm36_system,
 )
-from cellulose_forge.crystallography import load_allomorph
+from cellulose_forge.clashes import validate_finite_periodic_image_contact
+from cellulose_forge.crystallography import MillerIndex, load_allomorph
 from cellulose_forge.forcefields import discover_charmm36_directory
-from cellulose_forge.geometry import build_bulk_crystal
+from cellulose_forge.geometry import build_bulk_crystal, build_slab_with_sizing
 
 _ROOT = Path(__file__).resolve().parents[1]
 _ATOMS_PER_RESIDUE = 27
+_FINITE_END_RESIDUES = ((29, -0.18), (28, 0.18))
+_SLAB_DP = 6
+_SLAB_LAYERS = 3
+_SLAB_VACUUM = 20.0
+_FINITE_PADDING = 12.0
 _IMPROPERS_PER_RESIDUE = 2
 _CHARGE_TOLERANCE = 1e-6
 _BOND_RANGE = (1.35, 1.55)
@@ -80,7 +91,7 @@ rcoulomb            = 1.0
 vdwtype             = Cut-off
 rvdw                = 1.0
 pbc                 = xyz
-periodic-molecules  = yes
+periodic-molecules  = {periodic}
 nstenergy           = 1
 nstcalcenergy       = 1
 """
@@ -179,8 +190,10 @@ def _periodic_bonds(
     coordinates: np.ndarray | None = None,
     basis: np.ndarray | None = None,
     bond_range: tuple[float, float] = _BOND_RANGE,
-) -> dict[str, float | int | bool]:
-    """Check every O4--C1 bond (internal and boundary) with minimum images."""
+    *,
+    periodic: bool = True,
+) -> dict[str, float | int | bool | None]:
+    """Check every O4--C1 bond (internal and, if periodic, boundary) by minimum image."""
     basis = np.asarray(system.basis_vectors if basis is None else basis, dtype=float)
     inverse = np.linalg.inv(basis)
     coordinates = np.asarray(
@@ -203,7 +216,8 @@ def _periodic_bonds(
                 if owner == chain
             )
         )
-        for residue, following in zip(residues, residues[1:] + residues[:1], strict=True):
+        partners = residues[1:] + residues[:1] if periodic else residues[1:]
+        for residue, following in zip(residues, partners, strict=False):
             raw = (
                 coordinates[lookup[(chain, following, "C1")]]
                 - coordinates[lookup[(chain, residue, "O4")]]
@@ -215,7 +229,7 @@ def _periodic_bonds(
             if following == residues[0]:
                 crossing.append(distance)
     return {
-        "within_range": len(crossing) == len(chains)
+        "within_range": len(crossing) == (len(chains) if periodic else 0)
         and all(bond_range[0] <= d <= bond_range[1] for d in distances),
         "range_angstrom": list(bond_range),
         "chains": len(chains),
@@ -223,18 +237,43 @@ def _periodic_bonds(
         "boundary_crossing_bonds": len(crossing),
         "minimum_angstrom": round(min(distances), 4),
         "maximum_angstrom": round(max(distances), 4),
-        "boundary_minimum_angstrom": round(min(crossing), 4),
-        "boundary_maximum_angstrom": round(max(crossing), 4),
+        "boundary_minimum_angstrom": round(min(crossing), 4) if crossing else None,
+        "boundary_maximum_angstrom": round(max(crossing), 4) if crossing else None,
     }
 
 
-def _validate(allomorph: str, minimum_box_nm: float, work: Path, ff: Path) -> dict:
+def _build(allomorph: str, shape: str, boundary: str, minimum_box_nm: float):
     definition = load_allomorph(allomorph, polymer="chitin")
-    cell = definition.unit_cell
-    replication = tuple(
-        math.ceil(10.0 * minimum_box_nm / length) for length in (cell.a, cell.b, cell.c)
+    if shape == "bulk":
+        cell = definition.unit_cell
+        replication = tuple(
+            math.ceil(10.0 * minimum_box_nm / length) for length in (cell.a, cell.b, cell.c)
+        )
+        return build_bulk_crystal(definition, replication), {"replication": list(replication)}
+    crystal = build_slab_with_sizing(
+        definition,
+        MillerIndex(1, 0, 0),
+        layers=_SLAB_LAYERS,
+        width=10.0 * minimum_box_nm,
+        degree_polymerization=_SLAB_DP,
+        vacuum=_SLAB_VACUUM,
+        padding_z=_FINITE_PADDING if boundary == "finite" else 0.0,
+        chain_boundary=boundary,
     )
-    crystal = build_bulk_crystal(definition, replication)
+    return crystal, {
+        "face": [1, 0, 0],
+        "layers": _SLAB_LAYERS,
+        "chains": len(set(crystal.chain_numbers)),
+        "vacuum_angstrom": _SLAB_VACUUM,
+        "longitudinal_padding_angstrom": _FINITE_PADDING if boundary == "finite" else 0.0,
+    }
+
+
+def _validate(  # noqa: PLR0913, PLR0915, PLR0917
+    allomorph: str, shape: str, boundary: str, minimum_box_nm: float, work: Path, ff: Path
+) -> dict:
+    periodic = boundary == "periodic"
+    crystal, geometry = _build(allomorph, shape, boundary, minimum_box_nm)
     residues_per_chain = len(
         {
             residue
@@ -242,23 +281,40 @@ def _validate(allomorph: str, minimum_box_nm: float, work: Path, ff: Path) -> di
             if chain == crystal.chain_numbers[0]
         }
     )
-    topology = native_periodic_charmm36_topology(
-        ff, degree_polymerization=residues_per_chain, residue="BGLCNA"
-    )
-    system = map_periodic_charmm36(crystal, topology)
-    bonds = _periodic_bonds(system)
+    image_contact = None
+    if periodic:
+        topology = native_periodic_charmm36_topology(
+            ff, degree_polymerization=residues_per_chain, residue="BGLCNA"
+        )
+        system = map_periodic_charmm36(crystal, topology)
+    else:
+        topology = native_finite_charmm36_topology(
+            ff, degree_polymerization=residues_per_chain, residue="BGLCNA"
+        )
+        system = map_finite_charmm36(crystal, topology)
+        contact = validate_finite_periodic_image_contact(system)
+        image_contact = {
+            key: value for key, value in vars(contact).items() if not key.startswith("_")
+        }
+    bonds = _periodic_bonds(system, periodic=periodic)
 
     residue_atoms: dict[int, list] = defaultdict(list)
     for atom in topology.topology_atoms:
         residue_atoms[atom.residue_number].append(atom)
-    if not all(
-        len(atoms) == _ATOMS_PER_RESIDUE and abs(sum(a.charge for a in atoms)) < _CHARGE_TOLERANCE
-        for atoms in residue_atoms.values()
-    ):
-        msg = "periodic residues are not 27-atom neutral repeats"
+    summary = [
+        (len(atoms), round(sum(a.charge for a in atoms), 6))
+        for _, atoms in sorted(residue_atoms.items())
+    ]
+    # A periodic topology stores the repeat residues; a finite one stores every residue.
+    expected = [(_ATOMS_PER_RESIDUE, 0.0)] * (len(summary) if periodic else residues_per_chain)
+    if not periodic:
+        expected[0], expected[-1] = _FINITE_END_RESIDUES
+    if summary != expected or abs(sum(q for _, q in summary)) > _CHARGE_TOLERANCE:
+        msg = f"unexpected residue atom counts/charges: {summary}"
         raise ValueError(msg)
 
-    directory = work / f"{allomorph}_chitin"
+    name = f"{allomorph}_chitin_{shape}_{boundary}"
+    directory = work / name
     if directory.exists():
         shutil.rmtree(directory)
     write_charmm36_system(system, topology, ff, directory)
@@ -272,12 +328,15 @@ def _validate(allomorph: str, minimum_box_nm: float, work: Path, ff: Path) -> di
         msg = f"expected {2 * residues_per_chain} impropers per chain, found {impropers}"
         raise ValueError(msg)
 
-    (directory / "single_point.mdp").write_text(_SINGLE_POINT_MDP, encoding="utf-8")
+    (directory / "single_point.mdp").write_text(
+        _SINGLE_POINT_MDP.format(periodic="yes" if periodic else "no"), encoding="utf-8"
+    )
+    prefix = "periodic" if periodic else "finite"
     logs = [_grompp(directory, directory / "single_point.mdp", "single_point.tpr")]
     logs.append(_mdrun(directory, "single_point"))
     initial = _energies(directory, "single_point.edr")
 
-    logs.append(_grompp(directory, _ROOT / "validation/periodic_pme_minim.mdp", "minim.tpr"))
+    logs.append(_grompp(directory, _ROOT / f"validation/{prefix}_pme_minim.mdp", "minim.tpr"))
     minim_log = _mdrun(directory, "minim")
     logs.append(minim_log)
     minimized = _energies(directory, "minim.edr")
@@ -285,7 +344,17 @@ def _validate(allomorph: str, minimum_box_nm: float, work: Path, ff: Path) -> di
     fmax = float(fmax_match.group(1)) if fmax_match else math.nan
 
     logs.append(
-        _grompp(directory, _ROOT / "validation/periodic_pme_nvt_1ps.mdp", "nvt.tpr", "minim.gro")
+        _grompp(
+            directory,
+            _ROOT
+            / (
+                "validation/periodic_pme_nvt_1ps.mdp"
+                if periodic
+                else "validation/finite_pme_nvt.mdp"
+            ),
+            "nvt.tpr",
+            "minim.gro",
+        )
     )
     logs.append(_mdrun(directory, "nvt"))
     final = _energies(directory, "nvt.edr")
@@ -297,7 +366,7 @@ def _validate(allomorph: str, minimum_box_nm: float, work: Path, ff: Path) -> di
     final_time = float(last_frame[-1][1]) if last_frame else math.nan
     final_coordinates, final_box = _read_gro(directory / "nvt.gro")
     final_bonds = _periodic_bonds(
-        system, final_coordinates, final_box, bond_range=_DYNAMICS_BOND_RANGE
+        system, final_coordinates, final_box, bond_range=_DYNAMICS_BOND_RANGE, periodic=periodic
     )
 
     atom_count = len(system.atom_names)
@@ -324,12 +393,17 @@ def _validate(allomorph: str, minimum_box_nm: float, work: Path, ff: Path) -> di
         "final_nvt_bonds_within_range": bool(final_bonds["within_range"]),
     }
     return {
+        "case": name,
         "allomorph": f"chitin/{allomorph}",
-        "replication": list(replication),
+        "shape": shape,
+        "chain_boundary": boundary,
+        **geometry,
+        "residue_atoms_and_charges": sorted(set(summary)),
+        "finite_periodic_image_contact": image_contact,
         "atoms": atom_count,
         "residues_per_chain": residues_per_chain,
-        "periodic_bonds_initial": bonds,
-        "periodic_bonds_final_nvt": final_bonds,
+        "glycosidic_bonds_initial": bonds,
+        "glycosidic_bonds_final_nvt": final_bonds,
         "impropers_per_chain": impropers,
         "log_problems": problems,
         "initial_energy_kj_mol": initial,
@@ -363,11 +437,12 @@ def main() -> int:
     ff = discover_charmm36_directory()
     args.work_directory.mkdir(parents=True, exist_ok=True)
     results = [
-        _validate(allomorph, args.minimum_box_nm, args.work_directory, ff)
+        _validate(allomorph, shape, boundary, args.minimum_box_nm, args.work_directory, ff)
+        for shape, boundary in (("bulk", "periodic"), ("slab", "periodic"), ("slab", "finite"))
         for allomorph in ("alpha", "beta")
     ]
     report = {
-        "test": "periodic chitin CHARMM36 bulk (BGLCNA + 14bb) with GROMACS",
+        "test": "chitin CHARMM36 (BGLCNA + 14bb) bulk and slabs with GROMACS",
         "note": (
             "the 1 ps NVT is a smoke test, not equilibration or temperature validation; "
             "the Bond term is GROMACS's bond-stretch term only"
