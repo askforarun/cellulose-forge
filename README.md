@@ -9,6 +9,16 @@ directly for GROMACS. CHARMM36 topology generation does not require VMD or
 
 ![CelluloseForge overview showing supported cellulose structures and GROMACS force-field outputs](docs/assets/celluloseforge-overview.png)
 
+> [!IMPORTANT]
+> ## 🚧 Next-generation features are under active development
+>
+> Work is underway on **custom fibril cross-sections**, verified **18- and
+> 24-chain fibril presets**, and additional simulation outputs for **Amber**,
+> **OpenMM**, and **CHARMM/PSF** workflows. Odd-DP support is being considered
+> separately. These capabilities are not part of the stable interface yet and
+> will be released only after structural, topology, and cross-format
+> validation. Feedback and contributions are welcome.
+
 > **Release status:** CelluloseForge 1.1.2 is the current stable release. Its
 > supported and validated boundaries below are intentionally narrower than the
 > long-term project plan.
