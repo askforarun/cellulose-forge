@@ -25,9 +25,36 @@ angles are also present.
 CelluloseForge applies the CHARMM `14bb` patch in code (`charmm36.py`):
 delete O1, HO1, and HO4, and set C1 to CC3162/0.29 e, C4 to CC3161/0.09 e, and
 O4 to OC301/-0.36 e. The patch only touches C1, C4, O4, O1, HO1, and HO4, and
-these atoms have identical types and charges in `BGLC` and `BGLCNA`. The same
-patch therefore applies to chitin, and the patched GlcNAc repeat has 27 atoms
-and zero net charge, matching the 27-atom crystallographic residue.
+these atoms have identical types and charges in `BGLC` and `BGLCNA`, and the
+patched GlcNAc repeat has 27 atoms and zero net charge, matching the 27-atom
+crystallographic residue.
+
+This is necessary but not sufficient evidence. The GROMACS distribution does
+not contain the CHARMM patch definitions; the `14bb` values in CelluloseForge
+were transcribed and then confirmed for cellulose against an independent
+CHARMM-GUI topology (atom types, charges, and every bonded term of a DP15
+chain). Applying them to GlcNAc is therefore an assumption until the same
+check is made for chitin: generate a finite beta(1->4)-linked GlcNAc oligomer
+with CHARMM-GUI Glycan Reader (or from the CHARMM `top_all36_carb.rtf`
+`14bb` patch) and require exact agreement of atom types, charges, bonds,
+angles, proper and improper dihedrals, and 1-4 pairs, including both
+termini. Implementation may start, but chitin CHARMM36 output must not be
+enabled until this comparison passes.
+
+## Terminal chemistry
+
+Finite chains use the CHARMM free-sugar termini, as for cellulose: the
+reducing end keeps O1/HO1 (beta anomeric hydroxyl, C1 unpatched) and the
+non-reducing end keeps HO4 (C4/O4 unpatched). No other terminal patches are
+applied. The reducing-end anomer follows the crystal (beta).
+
+## Periodic linkage
+
+For covalently periodic chains every residue is patched on both sides: O4 of
+the last residue bonds C1 of the first across the chain-axis boundary, and
+angles, dihedrals, 1-4 pairs, and impropers are generated from that cyclic
+bond graph, exactly as for cellulose. Impropers are local to the acetyl group
+and never span the boundary.
 
 ## Atom-name mapping
 
