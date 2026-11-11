@@ -84,6 +84,8 @@ extend-exclude = [
   "legacy",
   "tmp",
   "validation/results",
+  # Generated engine outputs, committed verbatim as examples.
+  "examples/md_inputs",
 ]
 
 [tool.ruff.lint]
