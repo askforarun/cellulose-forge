@@ -1,0 +1,130 @@
+{
+  "test": "periodic chitin CHARMM36 bulk (BGLCNA + 14bb) with GROMACS",
+  "gromacs_force_field": "charmm36-feb2026_cgenff-5.0.ff",
+  "gromacs_version": "2024.2-Homebrew",
+  "results": [
+    {
+      "allomorph": "chitin/alpha",
+      "replication": [
+        6,
+        2,
+        3
+      ],
+      "atoms": 3888,
+      "residues_per_chain": 6,
+      "periodic_bonds": {
+        "chains": 24,
+        "bonds_checked": 144,
+        "boundary_crossing_bonds": 24,
+        "minimum_angstrom": 1.4286,
+        "maximum_angstrom": 1.4286,
+        "boundary_minimum_angstrom": 1.4286,
+        "boundary_maximum_angstrom": 1.4286
+      },
+      "impropers_per_chain": 12,
+      "grompp_warnings": false,
+      "initial_energy_kj_mol": {
+        "Bond": 56370.542969,
+        "U-B": 8852.306641,
+        "Proper-Dih.": 14599.68457,
+        "Improper-Dih.": 2.716026,
+        "LJ-14": 3468.017822,
+        "Coulomb-14": 45019.664062,
+        "LJ-(SR)": -9605.841797,
+        "Coulomb-(SR)": -46943.671875,
+        "Coul.-recip.": 951.182007,
+        "Potential": 72714.601562
+      },
+      "initial_bond_energy_per_atom_kj_mol": 14.4986,
+      "minimized_energy_kj_mol": {
+        "Bond": 1300.270508,
+        "U-B": 3002.232422,
+        "Proper-Dih.": 14662.938477,
+        "Improper-Dih.": 68.474983,
+        "LJ-14": 2407.858887,
+        "Coulomb-14": 44776.847656,
+        "LJ-(SR)": -10019.615234,
+        "Coulomb-(SR)": -48409.609375,
+        "Coul.-recip.": 928.029114,
+        "Potential": 8717.427734
+      },
+      "minimization_maximum_force": 842.90271,
+      "nvt_final_energy_kj_mol": {
+        "Bond": 2831.388428,
+        "U-B": 7604.169434,
+        "Proper-Dih.": 14029.884766,
+        "Improper-Dih.": 239.305405,
+        "LJ-14": 2423.294434,
+        "Coulomb-14": 44829.792969,
+        "LJ-(SR)": -8178.608398,
+        "Coulomb-(SR)": -54140.554688,
+        "Coul.-recip.": 371.673309,
+        "Potential": 10010.344727
+      },
+      "nvt_average_temperature_k": 285.434,
+      "passed": true
+    },
+    {
+      "allomorph": "chitin/beta",
+      "replication": [
+        5,
+        3,
+        3
+      ],
+      "atoms": 2430,
+      "residues_per_chain": 6,
+      "periodic_bonds": {
+        "chains": 15,
+        "bonds_checked": 90,
+        "boundary_crossing_bonds": 15,
+        "minimum_angstrom": 1.464,
+        "maximum_angstrom": 1.464,
+        "boundary_minimum_angstrom": 1.464,
+        "boundary_maximum_angstrom": 1.464
+      },
+      "impropers_per_chain": 12,
+      "grompp_warnings": false,
+      "initial_energy_kj_mol": {
+        "Bond": 39324.566406,
+        "U-B": 10784.357422,
+        "Proper-Dih.": 10474.200195,
+        "Improper-Dih.": 24.677187,
+        "LJ-14": 1848.782959,
+        "Coulomb-14": 28365.517578,
+        "LJ-(SR)": -4828.0625,
+        "Coulomb-(SR)": -33099.3125,
+        "Coul.-recip.": 132.060699,
+        "Potential": 53026.78125
+      },
+      "initial_bond_energy_per_atom_kj_mol": 16.1829,
+      "minimized_energy_kj_mol": {
+        "Bond": 823.525513,
+        "U-B": 1604.871948,
+        "Proper-Dih.": 9334.083984,
+        "Improper-Dih.": 90.525887,
+        "LJ-14": 1256.691528,
+        "Coulomb-14": 28296.990234,
+        "LJ-(SR)": -4703.921387,
+        "Coulomb-(SR)": -34841.519531,
+        "Coul.-recip.": 166.055328,
+        "Potential": 2027.301392
+      },
+      "minimization_maximum_force": 984.87189,
+      "nvt_final_energy_kj_mol": {
+        "Bond": 1777.067139,
+        "U-B": 4908.94873,
+        "Proper-Dih.": 8728.104492,
+        "Improper-Dih.": 182.257401,
+        "LJ-14": 1448.01355,
+        "Coulomb-14": 27929.699219,
+        "LJ-(SR)": -5168.979492,
+        "Coulomb-(SR)": -33701.675781,
+        "Coul.-recip.": 237.923996,
+        "Potential": 6341.357422
+      },
+      "nvt_average_temperature_k": 240.604,
+      "passed": true
+    }
+  ],
+  "passed": true
+}
