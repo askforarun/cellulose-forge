@@ -73,7 +73,8 @@ def write_pdb(crystal: BulkCrystal, path: str | Path) -> None:
         x, y, z = coords
         segment_id = _segment_id(chain_number)
         lines.append(
-            f"HETATM{serial:5d} {label:>4s} BGC {chain_id:1s}{residue_number:4d}    "
+            f"HETATM{serial:5d} {label:>4s} {crystal.residue_name:3s} "
+            f"{chain_id:1s}{residue_number:4d}    "
             f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00      "
             f"{segment_id:4s}{_element_from_label(label):>2s}"
         )

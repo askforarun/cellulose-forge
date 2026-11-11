@@ -43,7 +43,7 @@ ATOM_ORDER = (
 SOURCES = {
     "alpha": {
         "allomorph": "alpha",
-        "space_group": "P2_12_12_1",
+        "space_group": "P 21 21 21",
         "citation": (
             "Sikorski, P.; Hori, R.; Wada, M. Biomacromolecules 2009, 10, 1100-1105."
         ),

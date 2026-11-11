@@ -4,6 +4,18 @@ All notable changes to CelluloseForge are documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Coordinate-only alpha- and beta-chitin unit cells and periodic bulk crystals
+  with `--polymer chitin`. Definitions are converted from the refined structures
+  of Sikorski, Hori and Wada (2009) and Nishiyama, Noishiki and Wada (2011) by
+  `tools/convert_chitin_cif.py`; `--o6-conformation` selects the major or minor
+  alpha-chitin hydroxymethyl position. Chirality is checked at all five ring
+  carbons. Slabs, fibrils, and force-field output are not yet available for
+  chitin.
+- A regression test that records hashes of fourteen coordinate-only cellulose
+  builds, so cellulose output cannot change unnoticed.
+
 ### Changed
 
 - Emit GLYCAM torsions with the standard LAMMPS `charmm` dihedral style and

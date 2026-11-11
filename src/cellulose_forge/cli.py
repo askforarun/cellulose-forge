@@ -7,6 +7,7 @@ import json
 import tempfile
 import warnings
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 
 from cellulose_forge import __version__
@@ -45,6 +46,7 @@ from cellulose_forge.geometry import (
     build_slab_with_sizing,
     build_unit_cell,
     validate_cellulose_chirality,
+    validate_pyranose_chirality,
 )
 from cellulose_forge.glycam import GLYCAM_LEAPRC, generate_glycam_gromacs_reference
 from cellulose_forge.glycam_mapping import (
@@ -65,6 +67,14 @@ from cellulose_forge.restraints import (
     resolve_chain_restraints,
 )
 
+_CELLULOSE_ALLOMORPHS = {
+    "I-alpha": "i_alpha",
+    "I-beta": "i_beta",
+    "II": "ii",
+    "III-I": "iii_i",
+}
+_CHITIN_ALLOMORPHS = {"alpha": "alpha", "beta": "beta"}
+_CHITIN_SHAPES = {"unit-cell", "bulk", "crystal"}
 _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 3.0
 _RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 12.0
 
@@ -84,7 +94,7 @@ def _parse_fibril_profile(value: str) -> tuple[int, ...]:
     return rows
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     """Create the top-level command-line parser."""
     parser = argparse.ArgumentParser(
         prog="cellulose-forge",
@@ -96,11 +106,26 @@ def build_parser() -> argparse.ArgumentParser:
         version=f"%(prog)s {__version__}",
     )
     subparsers = parser.add_subparsers(dest="command")
-    build = subparsers.add_parser("build", help="build a cellulose structure")
+    build = subparsers.add_parser("build", help="build a cellulose or chitin structure")
+    build.add_argument(
+        "--polymer",
+        choices=["cellulose", "chitin"],
+        default="cellulose",
+        help="crystalline polysaccharide (default: cellulose)",
+    )
     build.add_argument(
         "--allomorph",
-        choices=["I-alpha", "I-beta", "II", "III-I"],
+        choices=[*_CELLULOSE_ALLOMORPHS, *_CHITIN_ALLOMORPHS],
         required=True,
+        help="cellulose: I-alpha, I-beta, II, III-I; chitin: alpha, beta",
+    )
+    build.add_argument(
+        "--o6-conformation",
+        choices=["major", "minor"],
+        help=(
+            "alpha-chitin hydroxymethyl conformation from the disordered refinement: "
+            "major (occupancy 0.61, default) or minor (0.39)"
+        ),
     )
     build.add_argument(
         "--shape",
@@ -295,7 +320,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
+def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
     """Run the command-line interface."""
     args = build_parser().parse_args(argv)
     if args.command == "forcefield":
@@ -330,13 +355,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
         args.padding_longitudinal = (
             args.padding_z if args.padding_longitudinal is None else args.padding_longitudinal
         )
-        allomorph_key = {
-            "I-alpha": "i_alpha",
-            "I-beta": "i_beta",
-            "II": "ii",
-            "III-I": "iii_i",
-        }[args.allomorph]
-        definition = load_allomorph(allomorph_key)
+        definition = _load_definition(args, build_parser())
         if args.shape != "fibril" and any(
             value is not None for value in (args.padding_x, args.padding_y)
         ):
@@ -356,6 +375,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
             crystal = _build_slab(args, definition, build_parser())
         else:
             crystal = _build_fibril(args, definition, build_parser())
+        if args.polymer == "chitin":
+            crystal = replace(crystal, residue_name="NAG")
         if args.force_field == "glycam":
             _write_glycam_build(args, crystal, build_parser())
         elif args.force_field == "charmm36":
@@ -379,6 +400,30 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
                     f"wrote mmCIF instead of PDB: {written_path}"
                 )
     return 0
+
+
+def _load_definition(
+    args: argparse.Namespace, parser: argparse.ArgumentParser
+) -> AllomorphDefinition:
+    """Resolve the polymer and allomorph options to a crystal definition."""
+    if args.polymer == "cellulose":
+        if args.allomorph not in _CELLULOSE_ALLOMORPHS:
+            parser.error(f"cellulose allomorphs are {', '.join(_CELLULOSE_ALLOMORPHS)}")
+        if args.o6_conformation is not None:
+            parser.error("--o6-conformation applies only to alpha-chitin")
+        return load_allomorph(_CELLULOSE_ALLOMORPHS[args.allomorph])
+    if args.allomorph not in _CHITIN_ALLOMORPHS:
+        parser.error(f"chitin allomorphs are {', '.join(_CHITIN_ALLOMORPHS)}")
+    if args.o6_conformation is not None and args.allomorph != "alpha":
+        parser.error("--o6-conformation applies only to alpha-chitin")
+    if args.shape not in _CHITIN_SHAPES:
+        parser.error("chitin currently supports --shape unit-cell and bulk only")
+    if args.force_field != "none":
+        parser.error("chitin currently supports coordinate-only output (--force-field none)")
+    name = _CHITIN_ALLOMORPHS[args.allomorph]
+    if args.o6_conformation == "minor":
+        name = "alpha_o6_minor"
+    return load_allomorph(name, polymer="chitin")
 
 
 def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
@@ -438,8 +483,16 @@ def _write_coordinate_only_report(
         "requested_output": str(requested_output),
         "outputs": {"coordinates": coordinate_path.name},
         "geometry_annotations": list(crystal.annotations),
-        "chirality_validation": validate_cellulose_chirality(crystal),
+        "chirality_validation": (
+            validate_cellulose_chirality(crystal)
+            if args.polymer == "cellulose"
+            else validate_pyranose_chirality(crystal, "N-acetyl-beta-D-glucosamine")
+        ),
     }
+    if args.polymer != "cellulose":
+        report["polymer"] = args.polymer
+        if args.o6_conformation is not None:
+            report["o6_conformation"] = args.o6_conformation
     report_path.write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

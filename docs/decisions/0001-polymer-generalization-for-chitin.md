@@ -1,6 +1,6 @@
 # 0001: Minimum generalization for chitin crystals
 
-- Status: proposed
+- Status: accepted; unit-cell and bulk construction implemented
 - Branch: `feature/chitin`
 - Scope: coordinate-only α- and β-chitin unit cells and periodic bulk crystals.
   Force-field output, slabs, fibrils, and amylopectin are out of scope here.

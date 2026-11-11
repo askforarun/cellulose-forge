@@ -109,6 +109,67 @@ def validate_cellulose_chirality(crystal: BulkCrystal) -> dict[str, object]:
     }
 
 
+# Signed-volume signs of the beta-D-pyranose ring stereocentres, using the same
+# convention as the cellulose C1 check. N-acetyl-beta-D-glucosamine shares the
+# configuration of beta-D-glucose at every ring carbon.
+_PYRANOSE_STEREOCENTRES: tuple[tuple[str, tuple[str, str, str], int], ...] = (
+    ("C1", ("O5", "C2", "H1"), -1),
+    ("C2", ("C1", "C3", "H2"), 1),
+    ("C3", ("C2", "C4", "H3"), -1),
+    ("C4", ("C3", "C5", "H4"), 1),
+    ("C5", ("C4", "O5", "H5"), -1),
+)
+
+
+def validate_pyranose_chirality(crystal: BulkCrystal, configuration: str) -> dict[str, object]:
+    """Validate all five ring stereocentres of every beta-D-pyranose residue."""
+    labels = np.asarray(crystal.atom_labels)
+    chains = np.asarray(crystal.chain_numbers)
+    residues = np.asarray(crystal.residue_numbers)
+    minimum: dict[str, float] = {}
+    residue_count = 0
+    for chain, residue in sorted(set(zip(chains, residues, strict=True))):
+        mask = (chains == chain) & (residues == residue)
+        lookup = dict(zip(labels[mask], crystal.cartesian_coordinates[mask], strict=True))
+        residue_count += 1
+        for centre, substituents, expected in _PYRANOSE_STEREOCENTRES:
+            required = {centre, *substituents}
+            if not required.issubset(lookup):
+                msg = (
+                    f"cannot validate {configuration} chirality for chain {chain}, "
+                    f"residue {residue}: missing "
+                    f"{', '.join(sorted(required - lookup.keys()))}"
+                )
+                raise ValueError(msg)
+            volume = float(
+                np.linalg.det(np.vstack([lookup[name] - lookup[centre] for name in substituents]))
+            )
+            if abs(volume) <= _CHIRALITY_VOLUME_TOLERANCE:
+                raise ValueError(f"{configuration} chirality: degenerate {centre} centre")
+            if np.sign(volume) != expected:
+                raise ValueError(
+                    f"{configuration} chirality: inverted {centre} in chain {chain}, "
+                    f"residue {residue}"
+                )
+            minimum[centre] = min(minimum.get(centre, abs(volume)), abs(volume))
+    if not residue_count:
+        raise ValueError(f"cannot validate {configuration} chirality: no residues found")
+    return {
+        "status": "passed",
+        "configuration": configuration,
+        "stereocentres": [centre for centre, _, _ in _PYRANOSE_STEREOCENTRES],
+        "substituent_orders": {
+            centre: list(substituents) for centre, substituents, _ in _PYRANOSE_STEREOCENTRES
+        },
+        "expected_signed_volume_signs": {
+            centre: "positive" if expected > 0 else "negative"
+            for centre, _, expected in _PYRANOSE_STEREOCENTRES
+        },
+        "residue_count": residue_count,
+        "minimum_absolute_signed_volume_angstrom3": minimum,
+    }
+
+
 _FIBRIL_FRAGMENT_IDS = {
     "I-alpha": (
         2,
@@ -255,6 +316,7 @@ class BulkCrystal:
     chain_numbers: tuple[int, ...] = ()
     layer_numbers: tuple[int, ...] = ()
     annotations: tuple[str, ...] = ()
+    residue_name: str = "BGC"
 
     def __post_init__(self) -> None:
         coordinates = np.asarray(self.cartesian_coordinates, dtype=np.float64)

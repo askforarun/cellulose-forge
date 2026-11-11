@@ -73,9 +73,9 @@ def write_mmcif(crystal: BulkCrystal, path: str | Path) -> None:
         x, y, z = coords
         asym_id = f"C{chain_number}"
         lines.append(
-            f"HETATM {atom_id} {_element_from_label(label)} {label} . BGC "
+            f"HETATM {atom_id} {_element_from_label(label)} {label} . {crystal.residue_name} "
             f"{asym_id} 1 {residue_number} ? {x:.6f} {y:.6f} {z:.6f} "
-            f"1.00 0.00 {residue_number} BGC {asym_id} {label} 1"
+            f"1.00 0.00 {residue_number} {crystal.residue_name} {asym_id} {label} 1"
         )
     lines.extend(("#", ""))
     Path(path).write_text("\n".join(lines), encoding="utf-8")
