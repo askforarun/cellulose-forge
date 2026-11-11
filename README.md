@@ -80,8 +80,8 @@ does not require VMD or `psfgen` at runtime.
 
 ### Chitin (development, coordinate-only)
 
-On `feature/chitin`, `--polymer chitin` builds alpha- and beta-chitin unit
-cells and periodic bulk crystals:
+`--polymer chitin` builds alpha- and beta-chitin unit cells, periodic bulk
+crystals, and chain-parallel slabs:
 
 ```bash
 cellulose-forge build --polymer chitin --allomorph alpha \
@@ -94,8 +94,22 @@ from Sikorski, Hori and Wada, *Biomacromolecules* 2009, 10, 1100-1105
 `--o6-conformation major|minor`. Anhydrous beta-chitin (P2<sub>1</sub>, setting P 1 1 2<sub>1</sub>, 293 K) is from
 Nishiyama, Noishiki and Wada, *Macromolecules* 2011, 44, 950-957
 (doi:10.1021/ma102240r). Residues are written as `NAG`, and every residue's
-C1-C5 configuration is checked against N-acetyl-beta-D-glucosamine. Slabs,
-fibrils, and force-field output for chitin are not yet available.
+C1-C5 configuration is checked against N-acetyl-beta-D-glucosamine.
+
+Chitin slabs use the same general reciprocal-lattice construction as cellulose,
+for any `(h k 0)` face and finite or periodic chains:
+
+```bash
+cellulose-forge build --polymer chitin --allomorph beta --shape slab \
+  --face 1 0 0 --layers 3 --chains-per-layer 4 --degree-polymerization 6 \
+  --chain-boundary periodic --vacuum 20 --output beta_chitin_100.pdb
+```
+
+Slab geometry is tested for beta (100), (010), and (110) and alpha (100), (010),
+and (110): chain directions, periodic O4-C1 bonds, flat layers, an exact
+lattice repeat across the periodic box, and no interchain clashes. Reference
+faces for force-field validation have not yet been selected from the
+literature. Fibrils and force-field output for chitin are not yet available.
 
 ## Table of contents
 

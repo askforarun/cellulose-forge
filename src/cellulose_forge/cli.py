@@ -73,7 +73,7 @@ _CELLULOSE_ALLOMORPHS = {
     "III-I": "iii_i",
 }
 _CHITIN_ALLOMORPHS = {"alpha": "alpha", "beta": "beta"}
-_CHITIN_SHAPES = {"unit-cell", "bulk", "crystal"}
+_CHITIN_SHAPES = {"unit-cell", "bulk", "crystal", "slab"}
 _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 3.0
 _RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 12.0
 
@@ -414,7 +414,7 @@ def _load_definition(
     if args.o6_conformation is not None and args.allomorph != "alpha":
         parser.error("--o6-conformation applies only to alpha-chitin")
     if args.shape not in _CHITIN_SHAPES:
-        parser.error("chitin currently supports --shape unit-cell and bulk only")
+        parser.error("chitin currently supports --shape unit-cell, bulk, and slab")
     if args.force_field != "none":
         parser.error("chitin currently supports coordinate-only output (--force-field none)")
     name = _CHITIN_ALLOMORPHS[args.allomorph]

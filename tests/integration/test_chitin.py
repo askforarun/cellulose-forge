@@ -10,10 +10,11 @@ import numpy as np
 import pytest
 
 from cellulose_forge.cli import main
-from cellulose_forge.crystallography import load_allomorph
+from cellulose_forge.crystallography import MillerIndex, load_allomorph
 from cellulose_forge.geometry import (
     BulkCrystal,
     build_bulk_crystal,
+    build_slab_with_sizing,
     build_unit_cell,
     validate_pyranose_chirality,
 )
@@ -94,12 +95,13 @@ def test_no_interchain_heavy_atom_clashes(name: str) -> None:
     coordinates = crystal.cartesian_coordinates[heavy]
     chains = np.asarray(crystal.chain_numbers)[heavy]
     basis = crystal.basis_vectors
-    closest = min(
-        np.linalg.norm(_minimum_image(coordinates[j] - coordinates[i], basis))
-        for i in range(len(heavy))
-        for j in range(i + 1, len(heavy))
-        if chains[i] != chains[j]
-    )
+    inverse = np.linalg.inv(basis)
+    closest = np.inf
+    for i in range(len(heavy)):
+        fractional = (coordinates - coordinates[i]) @ inverse
+        fractional -= np.round(fractional)
+        distances = np.linalg.norm(fractional @ basis, axis=1)[chains != chains[i]]
+        closest = min(closest, float(distances.min()))
     # The closest interchain contact is the N-H...O=C amide hydrogen bond.
     assert closest > 2.5
 
@@ -190,8 +192,9 @@ def test_cli_selects_minor_alpha_o6_conformation(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "arguments",
     [
-        ["--polymer", "chitin", "--allomorph", "beta", "--shape", "slab", "--face", "1",
-         "0", "0", "--layers", "1", "--chains-per-layer", "2", "--degree-polymerization", "4"],
+        ["--polymer", "chitin", "--allomorph", "beta", "--shape", "fibril",
+         "--fibril-model", "36-chain", "--degree-polymerization", "4",
+         "--chain-boundary", "periodic"],
         ["--polymer", "chitin", "--allomorph", "beta", "--shape", "bulk", "--cells", "1", "1",
          "1", "--force-field", "glycam", "--chain-boundary", "periodic"],
         ["--polymer", "chitin", "--allomorph", "I-beta", "--shape", "unit-cell"],
@@ -203,3 +206,116 @@ def test_cli_selects_minor_alpha_o6_conformation(tmp_path: Path) -> None:
 def test_cli_rejects_unsupported_chitin_requests(tmp_path: Path, arguments: list[str]) -> None:
     with pytest.raises(SystemExit, match="2"):
         main(["build", *arguments, "--output", str(tmp_path / "invalid")])
+
+
+def _slab(name: str, face: tuple[int, int, int], boundary: str = "periodic") -> BulkCrystal:
+    return build_slab_with_sizing(
+        load_allomorph(name, polymer="chitin"),
+        MillerIndex(*face),
+        layers=3,
+        chains_per_layer=4,
+        degree_polymerization=6,
+        width=None,
+        thickness=None,
+        length=None,
+        vacuum=20.0,
+        padding_z=0.0 if boundary == "periodic" else 12.0,
+        chain_boundary=boundary,
+    )
+
+
+def _in_plane_image(delta: np.ndarray, basis: np.ndarray) -> np.ndarray:
+    fractional = np.linalg.solve(basis.T, delta)
+    fractional[:2] -= np.round(fractional[:2])
+    return basis.T @ fractional
+
+
+@pytest.mark.parametrize(
+    ("name", "face", "directions"),
+    [
+        ("beta", (1, 0, 0), {-1}),
+        ("beta", (0, 1, 0), {-1}),
+        ("beta", (1, 1, 0), {-1}),
+        ("alpha", (1, 0, 0), {-1, 1}),
+        ("alpha", (0, 1, 0), {-1, 1}),
+        ("alpha", (1, 1, 0), {-1, 1}),
+    ],
+)
+def test_chain_parallel_slab_geometry(
+    name: str, face: tuple[int, int, int], directions: set[int]
+) -> None:
+    slab = _slab(name, face)
+    basis = slab.basis_vectors
+    residues = _residues(slab)
+    chains = sorted(set(slab.chain_numbers))
+
+    assert slab.residue_name == "NAG"
+    assert len(chains) == 12
+    observed = set()
+    for chain in chains:
+        numbers = sorted(residue for (other, residue) in residues if other == chain)
+        rise = residues[(chain, numbers[-1])]["C1"][1] - residues[(chain, numbers[0])]["C1"][1]
+        observed.add(int(np.sign(rise)))
+    assert observed == directions
+
+    for (chain, residue), atoms in residues.items():
+        partner = min(
+            np.linalg.norm(_in_plane_image(other["C1"] - atoms["O4"], basis))
+            for (other_chain, other_residue), other in residues.items()
+            if other_chain == chain and other_residue != residue
+        )
+        assert 1.35 < partner < 1.5
+
+    centres = {
+        chain: slab.cartesian_coordinates[np.asarray(slab.chain_numbers) == chain].mean(axis=0)
+        for chain in chains
+    }
+    layers = np.asarray(slab.layer_numbers)
+    numbers = np.asarray(slab.chain_numbers)
+    for layer in sorted(set(slab.layer_numbers)):
+        members = sorted(set(numbers[layers == layer]))
+        heights = [centres[chain][2] for chain in members]
+        assert np.ptp(heights) < 1e-6
+        positions = sorted(centres[chain][0] for chain in members)
+        inner = float(np.median(np.diff(positions)))
+        assert positions[0] + basis[0, 0] - positions[-1] == pytest.approx(inner)
+
+    heavy = [i for i, label in enumerate(slab.atom_labels) if not label.startswith("H")]
+    xyz = slab.cartesian_coordinates[heavy]
+    owner = numbers[heavy]
+    inverse = np.linalg.inv(basis)
+    closest = np.inf
+    for i in range(len(heavy)):
+        fractional = (xyz - xyz[i]) @ inverse
+        fractional[:, :2] -= np.round(fractional[:, :2])
+        distances = np.linalg.norm(fractional @ basis, axis=1)[owner != owner[i]]
+        closest = min(closest, float(distances.min()))
+    assert closest > 2.5
+    assert validate_pyranose_chirality(slab, "N-acetyl-beta-D-glucosamine")["status"] == "passed"
+
+
+def test_chitin_slab_is_deterministic_and_supports_finite_chains() -> None:
+    first = _slab("alpha", (1, 1, 0))
+    second = _slab("alpha", (1, 1, 0))
+
+    assert np.array_equal(first.cartesian_coordinates, second.cartesian_coordinates)
+    assert first.atom_labels == second.atom_labels
+    assert _slab("beta", (1, 0, 0), boundary="finite").atom_count == 1944
+
+
+def test_cli_writes_chitin_slab(tmp_path: Path) -> None:
+    output = tmp_path / "beta_100.pdb"
+
+    assert main(
+        [
+            "build", "--polymer", "chitin", "--allomorph", "beta", "--shape", "slab",
+            "--face", "1", "0", "0", "--layers", "3", "--chains-per-layer", "4",
+            "--degree-polymerization", "6", "--chain-boundary", "periodic",
+            "--vacuum", "20", "--output", str(output),
+        ]
+    ) == 0
+
+    report = json.loads(output.with_suffix(".build_report.json").read_text(encoding="utf-8"))
+    assert report["chain_count"] == 12
+    assert report["chirality_validation"]["status"] == "passed"
+    assert " NAG " in output.read_text(encoding="utf-8")

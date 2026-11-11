@@ -11,8 +11,11 @@ All notable changes to CelluloseForge are documented in this file.
   of Sikorski, Hori and Wada (2009) and Nishiyama, Noishiki and Wada (2011) by
   `tools/convert_chitin_cif.py`; `--o6-conformation` selects the major or minor
   alpha-chitin hydroxymethyl position. Chirality is checked at all five ring
-  carbons. Slabs, fibrils, and force-field output are not yet available for
-  chitin.
+  carbons. Fibrils and force-field output are not yet available for chitin.
+- Chain-parallel alpha- and beta-chitin slabs for any `(h k 0)` face with finite
+  or periodic chains, built by the general reciprocal-lattice slab path. Slab
+  constructors now carry the definition's residue name, so chitin slabs are
+  written as `NAG`.
 - A regression test that records hashes of fourteen coordinate-only cellulose
   builds, so cellulose output cannot change unnoticed.
 

@@ -781,6 +781,7 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
             "legacy_fragment_ids=" + ",".join(str(value) for value in fragment_ids),
             "source=Gomes_and_Skaf_2012_Cellulose-Builder doi:10.1002/jcc.22959",
         ),
+        residue_name=allomorph.residue_name,
     )
 
 
@@ -930,6 +931,7 @@ def build_i_beta_profile_fibril(  # noqa: PLR0913, PLR0915
     return BulkCrystal(
         allomorph=full.allomorph,
         space_group=full.space_group,
+        residue_name=full.residue_name,
         atom_labels=selected_labels,
         cartesian_coordinates=selected_coordinates,
         basis_vectors=basis,
@@ -1114,6 +1116,7 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             "orientation_transform=proper_rotation determinant=+1",
             "chain numbering starts at requested low-z face; within each layer low-x to high-x",
         ),
+        residue_name=allomorph.residue_name,
     )
 
 
@@ -1488,4 +1491,5 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             "construction=whole_chain_reciprocal_lattice_cut",
             *termination_annotations,
         ),
+        residue_name=allomorph.residue_name,
     )
