@@ -853,6 +853,7 @@ def test_cli_writes_periodic_restrained_openmm_system(
 
     assert result == 0
     assert calls["periodic_chains"] is True
+    assert calls["dispersion_correction"] is False
     restraints = calls["restraints"]
     assert isinstance(restraints, OpenMMPositionRestraints)
     assert restraints.force_constants_kj_mol_nm2 == (1000.0, 1000.0, 1000.0)

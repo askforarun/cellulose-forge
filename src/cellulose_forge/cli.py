@@ -309,7 +309,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
             openmm_python=str(args.openmm_python) if args.openmm_python else None,
         )
         print(render_json(checks) if args.json else render_text(checks))
-        optional_engines = {"gmx", "openmm"}
+        optional_engines = {"gmx", "openmm", "charmm36"}
         return 0 if all(check.ok for check in checks if check.name not in optional_engines) else 1
     if args.command == "build":
         _resolve_md_engines(args, build_parser())
@@ -504,6 +504,7 @@ def _write_openmm_output(  # noqa: PLR0913
             gromacs_coordinates,
             args.output,
             periodic_chains=args.chain_boundary == "periodic",
+            dispersion_correction=args.shape in {"bulk", "crystal", "unit-cell"},
             restraints=(
                 None
                 if restraints is None

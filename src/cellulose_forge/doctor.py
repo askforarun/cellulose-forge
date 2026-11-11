@@ -11,6 +11,8 @@ from importlib.metadata import PackageNotFoundError, version
 
 import numpy
 
+from cellulose_forge.forcefields import CHARMM36_RELEASE, discover_charmm36_directory
+
 
 @dataclass(frozen=True)
 class DiagnosticCheck:
@@ -179,6 +181,45 @@ def _check_openmm(python_executable: str | None) -> DiagnosticCheck:
     )
 
 
+def _check_charmm36() -> DiagnosticCheck:
+    try:
+        directory = discover_charmm36_directory()
+    except (FileNotFoundError, ValueError) as error:
+        return DiagnosticCheck(
+            name="charmm36",
+            required_for="--force-field charmm36 builds",
+            ok=False,
+            detail=str(error),
+            fix="cellulose-forge forcefield install charmm36",
+        )
+    return DiagnosticCheck(
+        name="charmm36",
+        required_for="--force-field charmm36 builds",
+        ok=True,
+        detail=f"{CHARMM36_RELEASE} at {directory}",
+    )
+
+
+def _readiness(checks: tuple[DiagnosticCheck, ...]) -> dict[str, bool]:
+    """Summarize which build routes the checked environment supports."""
+    ok = {check.name: check.ok for check in checks}
+
+    def all_ok(*names: str) -> bool:
+        return all(ok[name] for name in names if name in ok)
+
+    coordinate_ready = all_ok("python", "numpy", "cellulose-forge")
+    glycam_ready = coordinate_ready and all_ok("tleap", "parmed")
+    charmm36_ready = coordinate_ready and all_ok("charmm36")
+    return {
+        "coordinate_only_ready": coordinate_ready,
+        "glycam_gromacs_files_ready": glycam_ready,
+        "charmm36_gromacs_files_ready": charmm36_ready,
+        "gromacs_simulation_ready": glycam_ready and all_ok("gmx"),
+        "glycam_openmm_ready": glycam_ready and all_ok("openmm"),
+        "charmm36_openmm_ready": charmm36_ready and all_ok("openmm"),
+    }
+
+
 def run_diagnostics(
     *,
     tleap_executable: str = "tleap",
@@ -192,6 +233,7 @@ def run_diagnostics(
         _check_cellulose_forge_version(),
         _check_tleap(tleap_executable),
         _check_parmed(parmed_python),
+        _check_charmm36(),
         _check_gromacs(),
         _check_openmm(openmm_python),
     )
@@ -205,23 +247,16 @@ def render_text(checks: tuple[DiagnosticCheck, ...]) -> str:
         lines.append(f"[{status}] {check.name} ({check.required_for}): {check.detail}")
         if not check.ok and check.fix:
             lines.append(f"        fix: {check.fix}")
-    coordinate_ready = all(
-        check.ok for check in checks if check.name in {"python", "numpy", "cellulose-forge"}
-    )
-    glycam_ready = coordinate_ready and all(
-        check.ok for check in checks if check.name in {"tleap", "parmed"}
-    )
-    simulation_ready = glycam_ready and all(check.ok for check in checks if check.name == "gmx")
-    openmm_ready = glycam_ready and all(
-        check.ok for check in checks if check.name == "openmm"
-    )
+    ready = _readiness(checks)
     lines.extend(
         (
             "",
-            f"coordinate-only builds ready: {coordinate_ready}",
-            f"GLYCAM/GROMACS-file builds ready: {glycam_ready}",
-            f"GROMACS preprocessing/simulation ready: {simulation_ready}",
-            f"GLYCAM/OpenMM builds ready: {openmm_ready}",
+            f"coordinate-only builds ready: {ready['coordinate_only_ready']}",
+            f"GLYCAM/GROMACS-file builds ready: {ready['glycam_gromacs_files_ready']}",
+            f"CHARMM36/GROMACS-file builds ready: {ready['charmm36_gromacs_files_ready']}",
+            f"GROMACS preprocessing/simulation ready: {ready['gromacs_simulation_ready']}",
+            f"GLYCAM/OpenMM builds ready: {ready['glycam_openmm_ready']}",
+            f"CHARMM36/OpenMM builds ready: {ready['charmm36_openmm_ready']}",
         )
     )
     return "\n".join(lines)
@@ -229,16 +264,6 @@ def render_text(checks: tuple[DiagnosticCheck, ...]) -> str:
 
 def render_json(checks: tuple[DiagnosticCheck, ...]) -> str:
     """Render diagnostics as a single JSON object for programmatic consumption."""
-    coordinate_ready = all(
-        check.ok for check in checks if check.name in {"python", "numpy", "cellulose-forge"}
-    )
-    glycam_ready = coordinate_ready and all(
-        check.ok for check in checks if check.name in {"tleap", "parmed"}
-    )
-    simulation_ready = glycam_ready and all(check.ok for check in checks if check.name == "gmx")
-    openmm_ready = glycam_ready and all(
-        check.ok for check in checks if check.name == "openmm"
-    )
     payload = {
         "checks": [
             {
@@ -250,9 +275,6 @@ def render_json(checks: tuple[DiagnosticCheck, ...]) -> str:
             }
             for check in checks
         ],
-        "coordinate_only_ready": coordinate_ready,
-        "glycam_gromacs_files_ready": glycam_ready,
-        "gromacs_simulation_ready": simulation_ready,
-        "openmm_ready": openmm_ready,
+        **_readiness(checks),
     }
     return json.dumps(payload, indent=2, sort_keys=True)

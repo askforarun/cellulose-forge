@@ -97,6 +97,7 @@ def test_runner_embeds_axis_periodicity_and_restraint_parameter() -> None:
     assert "PERIODIC_CHAINS = True" in text
     assert "HAS_RESTRAINTS = True" in text
     assert POSITION_RESTRAINT_SCALE_PARAMETER in text
+    assert "add --no-restraints for pressure coupling" in text
     assert 'XmlSerializer.deserialize' in text
     assert "__" not in text.replace("__name__", "").replace("__main__", "").replace(
         "__doc__", ""
@@ -119,6 +120,7 @@ def test_write_openmm_system_sends_request_and_writes_runner(
         coordinates,
         tmp_path / "out",
         periodic_chains=True,
+        dispersion_correction=False,
         restraints=restraints,
         python_executable=sys.executable,
     )
@@ -127,6 +129,8 @@ def test_write_openmm_system_sends_request_and_writes_runner(
     assert isinstance(request, dict)
     assert request["periodic_chains"] is True
     assert request["expected_atom_count"] == 12
+    assert request["dispersion_correction"] is False
+    assert request["validation_ewald_error_tolerance"] < request["ewald_error_tolerance"]
     assert request["include_directory"] == str(tmp_path.resolve())
     assert request["position_restraints"] == {
         "atom_indices": [0, 2],
@@ -168,6 +172,7 @@ def test_write_openmm_system_rejects_invalid_systems(
             topology,
             tmp_path / "out",
             periodic_chains=True,
+            dispersion_correction=False,
             python_executable=sys.executable,
         )
 
@@ -189,6 +194,7 @@ def test_write_openmm_system_rejects_box_narrower_than_twice_cutoff(
             tmp_path / "structure.gro",
             tmp_path / "out",
             periodic_chains=True,
+            dispersion_correction=False,
             python_executable=sys.executable,
         )
 
@@ -212,5 +218,6 @@ def test_write_openmm_system_reports_builder_failure(
             topology,
             tmp_path / "out",
             periodic_chains=False,
+            dispersion_correction=False,
             python_executable=sys.executable,
         )

@@ -3,8 +3,15 @@
 For each case the script builds GROMACS and OpenMM outputs from the same mapped
 structure, compares OpenMM and GROMACS zero-step energies by interaction
 category, runs the generated OpenMM runner for a short NVT simulation, and,
-for covalently periodic slabs, a short NPT simulation with the chain axis held
-fixed. Bond lengths are rechecked against their equilibrium values afterwards.
+for covalently periodic I-beta slabs, a short NPT simulation with the chain
+axis held fixed. Bond lengths are rechecked against their equilibrium values
+afterwards.
+
+Bonded and 1-4 categories are force-field definitions and should agree to
+GROMACS output precision. The total nonbonded energy is compared with GROMACS
+run with matching settings (plain cutoffs without potential shifts, the same
+PME accuracy, and the same dispersion correction); it differs slightly because
+the engines choose different PME grids.
 """
 
 from __future__ import annotations
@@ -25,6 +32,7 @@ SLAB = [
     "--layers", "3", "--chains-per-layer", "4",
     "--degree-polymerization", "8", "--vacuum", "30",
 ]
+ALLOMORPH_SLAB_FACES = {"I-alpha": "0 1 0", "II": "1 1 0", "III-I": "1 1 0"}
 CASES: dict[str, dict[str, Any]] = {
     "glycam_finite_slab": {
         "force_field": "glycam", "chain_boundary": "finite",
@@ -45,14 +53,30 @@ CASES: dict[str, dict[str, Any]] = {
     "glycam_periodic_triclinic_bulk": {
         "force_field": "glycam", "chain_boundary": "periodic",
         "geometry": ["--shape", "bulk", "--cells", "3", "3", "2"],
+        "dispersion_correction": True,
     },
 }
+for _allomorph, _face in ALLOMORPH_SLAB_FACES.items():
+    for _force_field in ("glycam", "charmm36"):
+        CASES[f"{_force_field}_periodic_{_allomorph.lower().replace('-', '_')}_slab"] = {
+            "allomorph": _allomorph,
+            "force_field": _force_field,
+            "chain_boundary": "periodic",
+            "geometry": [
+                "--shape", "slab", "--face", *_face.split(),
+                "--layers", "3", "--chains-per-layer", "6",
+                "--degree-polymerization", "8", "--vacuum", "30",
+            ],
+        }
 GROMACS_TERMS = {
     "bonds_and_urey_bradley": ("Bond", "U-B"),
     "angles": ("Angle",),
     "torsions": ("Proper Dih.", "Improper Dih.", "Per. Imp. Dih.", "CMAP Dih."),
     "one_four": ("LJ-14", "Coulomb-14"),
 }
+GROMACS_NONBONDED = (
+    "LJ (SR)", "Coulomb (SR)", "Coul. recip.", "Disper. corr.", "LJ-14", "Coulomb-14",
+)
 OPENMM_TERMS = {
     "bonds_and_urey_bradley": ("HarmonicBondForce",),
     "angles": ("HarmonicAngleForce",),
@@ -97,11 +121,16 @@ def _run(command: list[str], cwd: Path, input_text: str | None = None) -> str:
     return completed.stdout
 
 
-def _gromacs_energies(gmx: str, directory: Path, *, periodic: bool) -> dict[str, float]:
+def _gromacs_energies(
+    gmx: str, directory: Path, *, periodic: bool, dispersion_correction: bool
+) -> dict[str, float]:
     mdp = directory / "single_point.mdp"
     mdp.write_text(
         "integrator = md\nnsteps = 0\nconstraints = none\ncutoff-scheme = Verlet\n"
-        "coulombtype = PME\nrcoulomb = 1.0\nrvdw = 1.0\npbc = xyz\nnstenergy = 1\n"
+        "coulombtype = PME\nrcoulomb = 1.0\nrvdw = 1.0\nvdw-modifier = None\n"
+        "coulomb-modifier = None\newald-rtol = 1e-5\n"
+        f"DispCorr = {'EnerPres' if dispersion_correction else 'no'}\n"
+        "pbc = xyz\nnstenergy = 1\n"
         + ("periodic-molecules = yes\n" if periodic else ""),
         encoding="utf-8",
     )
@@ -109,7 +138,9 @@ def _gromacs_energies(gmx: str, directory: Path, *, periodic: bool) -> dict[str,
           "-o", "single_point.tpr"], directory)
     _run([gmx, "mdrun", "-s", "single_point.tpr", "-deffnm", "single_point",
           "-ntmpi", "1", "-ntomp", "1"], directory)
-    names = [term for terms in GROMACS_TERMS.values() for term in terms]
+    names = list(dict.fromkeys(
+        [*(term for terms in GROMACS_TERMS.values() for term in terms), *GROMACS_NONBONDED]
+    ))
     stdout = _run(
         [gmx, "energy", "-f", "single_point.edr", "-o", "single_point.xvg"],
         directory,
@@ -141,9 +172,19 @@ def _compare(gromacs: dict[str, float], openmm: dict[str, float]) -> dict[str, A
     for row in rows.values():
         reference = abs(row["gromacs_kj_mol"]) or 1.0
         row["relative_difference"] = abs(row["openmm_kj_mol"] - row["gromacs_kj_mol"]) / reference
+    nonbonded_reference = sum(gromacs.get(name, 0.0) for name in GROMACS_NONBONDED)
+    nonbonded_openmm = openmm["NonbondedForce"]
     return {
-        "categories": rows,
-        "maximum_relative_difference": max(row["relative_difference"] for row in rows.values()),
+        "bonded_and_one_four_categories": rows,
+        "maximum_bonded_and_one_four_relative_difference": max(
+            row["relative_difference"] for row in rows.values()
+        ),
+        "total_nonbonded": {
+            "gromacs_kj_mol": nonbonded_reference,
+            "openmm_kj_mol": nonbonded_openmm,
+            "relative_difference": abs(nonbonded_openmm - nonbonded_reference)
+            / abs(nonbonded_reference),
+        },
     }
 
 
@@ -172,7 +213,7 @@ def _runner(args: argparse.Namespace, directory: Path, *extra: str) -> dict[str,
 def _validate_case(args: argparse.Namespace, name: str, case: dict[str, Any]) -> dict[str, Any]:
     directory = args.work_directory / name
     build_arguments = [
-        "--allomorph", "I-beta", *case["geometry"],
+        "--allomorph", case.get("allomorph", "I-beta"), *case["geometry"],
         "--chain-boundary", case["chain_boundary"],
         "--force-field", case["force_field"],
         "--md-engine", "gromacs", "--md-engine", "openmm",
@@ -190,15 +231,22 @@ def _validate_case(args: argparse.Namespace, name: str, case: dict[str, Any]) ->
     openmm = report["openmm_validation"]
     periodic = case["chain_boundary"] == "periodic"
     result: dict[str, Any] = {
+        "allomorph": case.get("allomorph", "I-beta"),
         "force_field": case["force_field"],
         "chain_boundary": case["chain_boundary"],
+        "dispersion_correction": openmm["dispersion_correction"],
         "build_arguments": build_arguments,
         "atom_count": openmm["particle_count"],
         "periodic_forces": openmm["periodic_forces"],
         "chain_axis": openmm["chain_axis"],
         "initial_maximum_bond_length_deviation_nm": openmm["maximum_bond_length_deviation_nm"],
         "energy_comparison": _compare(
-            _gromacs_energies(args.gmx, directory, periodic=periodic),
+            _gromacs_energies(
+                args.gmx,
+                directory,
+                periodic=periodic,
+                dispersion_correction=openmm["dispersion_correction"],
+            ),
             openmm["initial_energies_kj_mol"],
         ),
         "nvt": _runner(args, directory),
@@ -230,23 +278,33 @@ def main() -> int:
                                 "import json, openmm; print(json.dumps(openmm.__version__))"],
                                ROOT))
     gromacs_version = re.search(r"GROMACS version:\s+(\S+)", _run([args.gmx, "--version"], ROOT))
+    commit = _run(["git", "rev-parse", "HEAD"], ROOT).strip()
+    dirty = bool(_run(["git", "status", "--porcelain", "--untracked-files=no"], ROOT).strip())
     results = {name: _validate_case(args, name, case) for name, case in CASES.items()}
     summary = {
+        "cellulose_forge_commit": commit,
+        "cellulose_forge_working_tree_modified": dirty,
         "openmm_version": versions,
         "gromacs_version": gromacs_version.group(1) if gromacs_version else None,
         "platform": args.platform,
         "timestep_fs": 2.0,
         "temperature_k": 300.0,
         "cases": results,
-        "maximum_relative_energy_difference": max(
-            case["energy_comparison"]["maximum_relative_difference"]
+        "maximum_bonded_and_one_four_relative_difference": max(
+            case["energy_comparison"]["maximum_bonded_and_one_four_relative_difference"]
+            for case in results.values()
+        ),
+        "maximum_total_nonbonded_relative_difference": max(
+            case["energy_comparison"]["total_nonbonded"]["relative_difference"]
             for case in results.values()
         ),
     }
     args.output.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n",
                            encoding="utf-8")
     print(json.dumps({name: {
-        "max_rel_energy_diff": case["energy_comparison"]["maximum_relative_difference"],
+        "bonded_14_rel": case["energy_comparison"][
+            "maximum_bonded_and_one_four_relative_difference"],
+        "nonbonded_rel": case["energy_comparison"]["total_nonbonded"]["relative_difference"],
         "nvt_T": case["nvt"]["final_temperature_k"],
         "nvt_max_bond_dev_nm": case["nvt"]["maximum_bond_length_deviation_nm"],
         "npt_max_bond_dev_nm": case.get("npt_fixed_chain_axis", {}).get(

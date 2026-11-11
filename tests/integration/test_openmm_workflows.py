@@ -39,9 +39,18 @@ _OPENMM_BONDED_FORCES = (
     "CustomTorsionForce",
     "CMAPTorsionForce",
 )
-# Both engines evaluate the same GRO coordinates, so agreement is limited only
-# by single-precision GROMACS output.
+_GROMACS_NONBONDED_TERMS = (
+    "LJ (SR)",
+    "Coulomb (SR)",
+    "Coul. recip.",
+    "LJ-14",
+    "Coulomb-14",
+)
+# Both engines evaluate the same GRO coordinates, so bonded and 1-4 agreement is
+# limited only by single-precision GROMACS output.
 _RELATIVE_TOLERANCE = 2.0e-5
+# The total nonbonded energy also depends on each engine's choice of PME grid.
+_NONBONDED_RELATIVE_TOLERANCE = 5.0e-4
 
 
 def _openmm_python() -> str:
@@ -88,7 +97,9 @@ def _gromacs_energies(directory: Path, *, periodic: bool) -> dict[str, float]:
     mdp = directory / "single_point.mdp"
     mdp.write_text(
         "integrator = md\nnsteps = 0\nconstraints = none\ncutoff-scheme = Verlet\n"
-        "coulombtype = PME\nrcoulomb = 1.0\nrvdw = 1.0\npbc = xyz\nnstenergy = 1\n"
+        "coulombtype = PME\nrcoulomb = 1.0\nrvdw = 1.0\nvdw-modifier = None\n"
+        "coulomb-modifier = None\newald-rtol = 1e-5\nDispCorr = no\n"
+        "pbc = xyz\nnstenergy = 1\n"
         + ("periodic-molecules = yes\n" if periodic else ""),
         encoding="utf-8",
     )
@@ -102,7 +113,7 @@ def _gromacs_energies(directory: Path, *, periodic: bool) -> dict[str, float]:
             command, cwd=directory, check=False, capture_output=True, text=True
         )
         assert completed.returncode == 0, completed.stdout + completed.stderr
-    terms = (*_GROMACS_BONDED_TERMS, "LJ-14", "Coulomb-14")
+    terms = (*_GROMACS_BONDED_TERMS, *_GROMACS_NONBONDED_TERMS)
     energy = subprocess.run(
         [gmx, "energy", "-f", "single_point.edr", "-o", "single_point.xvg"],
         cwd=directory,
@@ -134,6 +145,11 @@ def _assert_openmm_matches_gromacs(output: Path, *, periodic: bool) -> None:
 
     assert openmm_bonded == pytest.approx(gromacs_bonded, rel=_RELATIVE_TOLERANCE)
     assert openmm_onefour == pytest.approx(gromacs_onefour, rel=_RELATIVE_TOLERANCE)
+    assert report["openmm_validation"]["dispersion_correction"] is False
+    assert openmm_energies["NonbondedForce"] == pytest.approx(
+        sum(gromacs[name] for name in _GROMACS_NONBONDED_TERMS),
+        rel=_NONBONDED_RELATIVE_TOLERANCE,
+    )
     assert report["openmm_validation"]["maximum_bond_length_deviation_nm"] < 0.05
     if periodic:
         assert "NonbondedForce exceptions" in report["openmm_validation"]["periodic_forces"]

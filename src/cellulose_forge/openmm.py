@@ -36,6 +36,10 @@ _AXIS_NAMES = ("x", "y", "z")
 _MAXIMUM_BONDED_ENERGY_PER_ATOM_KJ_MOL = 50.0
 # A box-length bond across a periodic boundary deviates by nanometres.
 _MAXIMUM_BOND_DEVIATION_NM = 0.05
+# OpenMM's default PME accuracy for simulation, and GROMACS's default ewald-rtol
+# for the energy evaluation used to compare engines.
+_SERIALIZED_EWALD_ERROR_TOLERANCE = 5.0e-4
+_VALIDATION_EWALD_ERROR_TOLERANCE = 1.0e-5
 
 
 @dataclass(frozen=True)
@@ -77,11 +81,12 @@ periodic = request["periodic_chains"]
 restraints = request["position_restraints"]
 
 
-def make_system(constraints):
+def make_system(constraints, ewald_error_tolerance):
     created = top.createSystem(
         nonbondedMethod=PME,
         nonbondedCutoff=request["nonbonded_cutoff_nm"] * unit.nanometer,
         constraints=constraints,
+        ewaldErrorTolerance=ewald_error_tolerance,
     )
     if created.getNumParticles() != request["expected_atom_count"]:
         raise SystemExit(
@@ -91,6 +96,7 @@ def make_system(constraints):
     enabled = []
     for force in created.getForces():
         if isinstance(force, openmm.NonbondedForce):
+            force.setUseDispersionCorrection(request["dispersion_correction"])
             if periodic:
                 force.setExceptionsUsePeriodicBoundaryConditions(True)
                 enabled.append("NonbondedForce exceptions")
@@ -114,8 +120,10 @@ def make_system(constraints):
 
 
 # Interaction energies are checked without constraints so that every bonded term,
-# including X-H bonds, is evaluated; the serialized system constrains X-H bonds.
-system, periodic_forces = make_system(None)
+# including X-H bonds, is evaluated, and with a tight PME tolerance so that the
+# nonbonded total can be compared with other engines. The serialized system
+# constrains X-H bonds and uses the production PME tolerance.
+system, periodic_forces = make_system(None, request["validation_ewald_error_tolerance"])
 names = []
 for group, force in enumerate(system.getForces()):
     force.setForceGroup(group)
@@ -177,7 +185,7 @@ for force in system.getForces():
             bond_count += 1
 
 initial = initial_state.getPotentialEnergy()
-constrained, _ = make_system(HBonds)
+constrained, _ = make_system(HBonds, request["ewald_error_tolerance"])
 constrained_context = openmm.Context(
     constrained, openmm.VerletIntegrator(0.001), platform
 )
@@ -203,6 +211,10 @@ print(json.dumps({
     "constraint_count": constrained.getNumConstraints(),
     "validation_constraints": "none",
     "serialized_constraints": "HBonds",
+    "nonbonded_cutoff_nm": request["nonbonded_cutoff_nm"],
+    "dispersion_correction": request["dispersion_correction"],
+    "validation_ewald_error_tolerance": request["validation_ewald_error_tolerance"],
+    "serialized_ewald_error_tolerance": request["ewald_error_tolerance"],
     "forces": names,
     "periodic_forces": periodic_forces,
     "initial_energies_kj_mol": energies,
@@ -275,6 +287,11 @@ def main() -> None:
         axes = args.pressure_axes or "".join(
             axis for axis in AXES if axis != CHAIN_AXIS
         )
+        if HAS_RESTRAINTS and not args.no_restraints:
+            parser.error(
+                "position restraints use fixed reference coordinates that a barostat "
+                "does not rescale; add --no-restraints for pressure coupling"
+            )
         if PERIODIC_CHAINS and CHAIN_AXIS in axes:
             parser.error(
                 "covalently periodic chains cross the box along the chain axis; "
@@ -467,13 +484,19 @@ def write_openmm_system(  # noqa: PLR0913
     output_directory: str | Path,
     *,
     periodic_chains: bool,
+    dispersion_correction: bool,
     restraints: OpenMMPositionRestraints | None = None,
     include_directory: str | Path | None = None,
     python_executable: str | Path | None = None,
     minimization_iterations: int = 10,
     nonbonded_cutoff_nm: float = 1.0,
 ) -> tuple[OpenMMSystemFiles, dict[str, object]]:
-    """Serialize a validated OpenMM system, state, topology, and runner."""
+    """Serialize a validated OpenMM system, state, topology, and runner.
+
+    ``dispersion_correction`` should be enabled only for homogeneous periodic
+    systems; slabs and fibrils contain vacuum, which the isotropic long-range
+    correction does not describe.
+    """
     _check_box_supports_cutoff(system, nonbonded_cutoff_nm)
     executable = _resolve_python(python_executable)
     topology_path = Path(gromacs_topology).resolve()
@@ -504,6 +527,9 @@ def write_openmm_system(  # noqa: PLR0913
             }
         ),
         "nonbonded_cutoff_nm": nonbonded_cutoff_nm,
+        "dispersion_correction": dispersion_correction,
+        "ewald_error_tolerance": _SERIALIZED_EWALD_ERROR_TOLERANCE,
+        "validation_ewald_error_tolerance": _VALIDATION_EWALD_ERROR_TOLERANCE,
         "minimization_iterations": minimization_iterations,
         "system_path": str(files.system.resolve()),
         "state_path": str(files.state.resolve()),
