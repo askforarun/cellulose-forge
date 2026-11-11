@@ -1,5 +1,6 @@
 {
   "test": "periodic chitin CHARMM36 bulk (BGLCNA + 14bb) with GROMACS",
+  "note": "the 1 ps NVT is a smoke test, not equilibration or temperature validation; the Bond term is GROMACS's bond-stretch term only",
   "gromacs_force_field": "charmm36-feb2026_cgenff-5.0.ff",
   "gromacs_version": "2024.2-Homebrew",
   "results": [
@@ -12,7 +13,12 @@
       ],
       "atoms": 3888,
       "residues_per_chain": 6,
-      "periodic_bonds": {
+      "periodic_bonds_initial": {
+        "within_range": true,
+        "range_angstrom": [
+          1.35,
+          1.55
+        ],
         "chains": 24,
         "bonds_checked": 144,
         "boundary_crossing_bonds": 24,
@@ -21,8 +27,22 @@
         "boundary_minimum_angstrom": 1.4286,
         "boundary_maximum_angstrom": 1.4286
       },
+      "periodic_bonds_final_nvt": {
+        "within_range": true,
+        "range_angstrom": [
+          1.25,
+          1.7
+        ],
+        "chains": 24,
+        "bonds_checked": 144,
+        "boundary_crossing_bonds": 24,
+        "minimum_angstrom": 1.3318,
+        "maximum_angstrom": 1.4589,
+        "boundary_minimum_angstrom": 1.3786,
+        "boundary_maximum_angstrom": 1.4451
+      },
       "impropers_per_chain": 12,
-      "grompp_warnings": false,
+      "log_problems": [],
       "initial_energy_kj_mol": {
         "Bond": 56370.542969,
         "U-B": 8852.306641,
@@ -40,7 +60,7 @@
         "Bond": 1300.270508,
         "U-B": 3002.232422,
         "Proper-Dih.": 14662.938477,
-        "Improper-Dih.": 68.474983,
+        "Improper-Dih.": 68.474968,
         "LJ-14": 2407.858887,
         "Coulomb-14": 44776.847656,
         "LJ-(SR)": -10019.615234,
@@ -48,20 +68,30 @@
         "Coul.-recip.": 928.029114,
         "Potential": 8717.427734
       },
-      "minimization_maximum_force": 842.90271,
+      "minimization_maximum_force_kj_mol_nm": 842.90271,
+      "nvt_final_frame_time_ps": 1.0,
       "nvt_final_energy_kj_mol": {
-        "Bond": 2831.388428,
-        "U-B": 7604.169434,
-        "Proper-Dih.": 14029.884766,
-        "Improper-Dih.": 239.305405,
-        "LJ-14": 2423.294434,
-        "Coulomb-14": 44829.792969,
-        "LJ-(SR)": -8178.608398,
-        "Coulomb-(SR)": -54140.554688,
-        "Coul.-recip.": 371.673309,
-        "Potential": 10010.344727
+        "Bond": 2987.540283,
+        "U-B": 7687.496094,
+        "Proper-Dih.": 13983.922852,
+        "Improper-Dih.": 209.740753,
+        "LJ-14": 2422.07251,
+        "Coulomb-14": 44973.808594,
+        "LJ-(SR)": -8195.735352,
+        "Coulomb-(SR)": -54143.933594,
+        "Coul.-recip.": 414.743408,
+        "Potential": 10339.65332
       },
-      "nvt_average_temperature_k": 285.434,
+      "nvt_smoke_test_mean_temperature_k": 287.586,
+      "checks": {
+        "initial_bonds_within_range": true,
+        "all_energy_terms_present_and_finite": true,
+        "initial_bond_term_per_atom_below_50": true,
+        "minimization_maximum_force_at_most_1000": true,
+        "no_warning_lincs_or_nonfinite_messages": true,
+        "nvt_final_frame_present": true,
+        "final_nvt_bonds_within_range": true
+      },
       "passed": true
     },
     {
@@ -73,7 +103,12 @@
       ],
       "atoms": 2430,
       "residues_per_chain": 6,
-      "periodic_bonds": {
+      "periodic_bonds_initial": {
+        "within_range": true,
+        "range_angstrom": [
+          1.35,
+          1.55
+        ],
         "chains": 15,
         "bonds_checked": 90,
         "boundary_crossing_bonds": 15,
@@ -82,8 +117,22 @@
         "boundary_minimum_angstrom": 1.464,
         "boundary_maximum_angstrom": 1.464
       },
+      "periodic_bonds_final_nvt": {
+        "within_range": true,
+        "range_angstrom": [
+          1.25,
+          1.7
+        ],
+        "chains": 15,
+        "bonds_checked": 90,
+        "boundary_crossing_bonds": 15,
+        "minimum_angstrom": 1.3503,
+        "maximum_angstrom": 1.4544,
+        "boundary_minimum_angstrom": 1.3825,
+        "boundary_maximum_angstrom": 1.4391
+      },
       "impropers_per_chain": 12,
-      "grompp_warnings": false,
+      "log_problems": [],
       "initial_energy_kj_mol": {
         "Bond": 39324.566406,
         "U-B": 10784.357422,
@@ -109,20 +158,30 @@
         "Coul.-recip.": 166.055328,
         "Potential": 2027.301392
       },
-      "minimization_maximum_force": 984.87189,
+      "minimization_maximum_force_kj_mol_nm": 984.87189,
+      "nvt_final_frame_time_ps": 1.0,
       "nvt_final_energy_kj_mol": {
-        "Bond": 1777.067139,
-        "U-B": 4908.94873,
-        "Proper-Dih.": 8728.104492,
-        "Improper-Dih.": 182.257401,
-        "LJ-14": 1448.01355,
-        "Coulomb-14": 27929.699219,
-        "LJ-(SR)": -5168.979492,
-        "Coulomb-(SR)": -33701.675781,
-        "Coul.-recip.": 237.923996,
-        "Potential": 6341.357422
+        "Bond": 1836.048462,
+        "U-B": 4916.780273,
+        "Proper-Dih.": 8647.233398,
+        "Improper-Dih.": 176.987152,
+        "LJ-14": 1439.179199,
+        "Coulomb-14": 27845.503906,
+        "LJ-(SR)": -5203.989258,
+        "Coulomb-(SR)": -33606.265625,
+        "Coul.-recip.": 233.871857,
+        "Potential": 6285.352539
       },
-      "nvt_average_temperature_k": 240.604,
+      "nvt_smoke_test_mean_temperature_k": 239.198,
+      "checks": {
+        "initial_bonds_within_range": true,
+        "all_energy_terms_present_and_finite": true,
+        "initial_bond_term_per_atom_below_50": true,
+        "minimization_maximum_force_at_most_1000": true,
+        "no_warning_lincs_or_nonfinite_messages": true,
+        "nvt_final_frame_present": true,
+        "final_nvt_bonds_within_range": true
+      },
       "passed": true
     }
   ],
