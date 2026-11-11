@@ -1,0 +1,759 @@
+{
+  "test": "chitin CHARMM36 term-by-term energies: GROMACS vs OpenMM and LAMMPS",
+  "tolerances": {
+    "bonded_relative": 2e-05,
+    "bonded_absolute_kj_mol": 0.05,
+    "nonbonded_and_potential_relative": 5e-05
+  },
+  "lammps_improper_conversion": "K_LAMMPS = k_GROMACS / 2, then kJ -> kcal",
+  "lammps_conventions_removed_before_comparison": {
+    "coulomb_constant": "LAMMPS CHARMM 332.0716 vs GROMACS 332.0637 kcal A/mol/e^2; LAMMPS electrostatics scaled by 0.99997625",
+    "charmmfsw_one_four_lj_offset": "constant per-pair energy offset of dihedral_style charmmfsw (10-12 angstrom), computed analytically and subtracted",
+    "short_range_lj_switch": "CHARMM vfswitch (LAMMPS lj/charmmfsw) and GROMACS force-switch differ by a constant potential shift; the difference is evaluated over every non-excluded pair and subtracted"
+  },
+  "angle_split": "GROMACS reports angle + Urey-Bradley as U-B; the split is evaluated from GROMACS's resolved parameters (gmx dump) and must sum to U-B",
+  "nonbonded_tolerance": "relative to the summed magnitude of GROMACS nonbonded components",
+  "results": [
+    {
+      "case": "alpha_chitin_slab_periodic",
+      "face": [
+        1,
+        0,
+        0
+      ],
+      "layers": 3,
+      "chains": 6,
+      "vacuum_angstrom": 20.0,
+      "longitudinal_padding_angstrom": 0.0,
+      "atoms": 972,
+      "impropers": 72,
+      "gromacs_plain_cutoff": {
+        "Bond": 14332.525391,
+        "U-B": 2254.721924,
+        "Proper-Dih.": 3648.786865,
+        "Improper-Dih.": 0.742833,
+        "LJ-14": 870.210632,
+        "Coulomb-14": 11249.524414,
+        "LJ-(SR)": -1414.504272,
+        "Coulomb-(SR)": -11293.131836,
+        "Coul.-recip.": 733.947388,
+        "Potential": 20382.822266
+      },
+      "gromacs_force_switch": {
+        "Bond": 14332.525391,
+        "U-B": 2254.721924,
+        "Proper-Dih.": 3648.786865,
+        "Improper-Dih.": 0.742833,
+        "LJ-14": 870.210632,
+        "Coulomb-14": 11249.524414,
+        "LJ-(SR)": -1377.706909,
+        "Coulomb-(SR)": -10979.728516,
+        "Coul.-recip.": 420.956604,
+        "Potential": 20420.033203
+      },
+      "gromacs_angle_split": {
+        "angle": 1255.5880897307422,
+        "urey_bradley": 999.136047966928
+      },
+      "openmm_vs_gromacs_plain_cutoff": {
+        "bond": {
+          "engine_kj_mol": 14332.5007,
+          "gromacs_kj_mol": 14332.5254,
+          "difference_kj_mol": -0.0247,
+          "match": true
+        },
+        "urey_bradley": {
+          "engine_kj_mol": 999.1369,
+          "gromacs_kj_mol": 999.136,
+          "difference_kj_mol": 0.0008,
+          "match": true
+        },
+        "nonbonded": {
+          "engine_kj_mol": 146.5635,
+          "gromacs_kj_mol": 146.0463,
+          "difference_kj_mol": 0.5172,
+          "match": true
+        },
+        "angle": {
+          "engine_kj_mol": 1255.5881,
+          "gromacs_kj_mol": 1255.5881,
+          "difference_kj_mol": 0.0,
+          "match": true
+        },
+        "proper_dihedral": {
+          "engine_kj_mol": 3648.7849,
+          "gromacs_kj_mol": 3648.7869,
+          "difference_kj_mol": -0.0019,
+          "match": true
+        },
+        "improper": {
+          "engine_kj_mol": 0.7429,
+          "gromacs_kj_mol": 0.7428,
+          "difference_kj_mol": 0.0001,
+          "match": true
+        },
+        "potential": {
+          "engine_kj_mol": 20383.317,
+          "gromacs_kj_mol": 20382.8223,
+          "difference_kj_mol": 0.4947,
+          "match": true
+        },
+        "lj_14": {
+          "engine_kj_mol": 870.2081,
+          "gromacs_kj_mol": 870.2106,
+          "difference_kj_mol": -0.0025,
+          "match": true
+        },
+        "coulomb_14": {
+          "engine_kj_mol": 11249.5348,
+          "gromacs_kj_mol": 11249.5244,
+          "difference_kj_mol": 0.0104,
+          "match": true
+        }
+      },
+      "lammps_vs_gromacs_force_switch": {
+        "bond": {
+          "engine_kj_mol": 14332.5008,
+          "gromacs_kj_mol": 14332.5254,
+          "difference_kj_mol": -0.0246,
+          "match": true
+        },
+        "angle": {
+          "engine_kj_mol": 1255.5881,
+          "gromacs_kj_mol": 1255.5881,
+          "difference_kj_mol": 0.0001,
+          "match": true
+        },
+        "urey_bradley": {
+          "engine_kj_mol": 999.1369,
+          "gromacs_kj_mol": 999.136,
+          "difference_kj_mol": 0.0008,
+          "match": true
+        },
+        "proper_dihedral": {
+          "engine_kj_mol": 3648.7849,
+          "gromacs_kj_mol": 3648.7869,
+          "difference_kj_mol": -0.0019,
+          "match": true
+        },
+        "improper": {
+          "engine_kj_mol": 0.7429,
+          "gromacs_kj_mol": 0.7428,
+          "difference_kj_mol": 0.0001,
+          "match": true
+        },
+        "lj_14": {
+          "engine_kj_mol": 870.2081,
+          "gromacs_kj_mol": 870.2106,
+          "difference_kj_mol": -0.0025,
+          "match": true
+        },
+        "coulomb_14": {
+          "engine_kj_mol": 11249.5348,
+          "gromacs_kj_mol": 11249.5244,
+          "difference_kj_mol": 0.0104,
+          "match": true
+        },
+        "nonbonded": {
+          "engine_kj_mol": 183.9424,
+          "gromacs_kj_mol": 183.2562,
+          "difference_kj_mol": 0.6862,
+          "match": true
+        },
+        "potential": {
+          "engine_kj_mol": 20420.6959,
+          "gromacs_kj_mol": 20420.0332,
+          "difference_kj_mol": 0.6627,
+          "match": true
+        }
+      },
+      "lammps_raw": {
+        "raw_lj_14": 870.8742,
+        "raw_coulomb_14": 11249.802,
+        "raw_potential": 20425.2274,
+        "charmmfsw_one_four_lj_offset": 0.666,
+        "charmmfsw_minus_gromacs_force_switch_lj": 3.849
+      },
+      "lammps_conversion": {
+        "atom_count": 972,
+        "bond_count": 1008,
+        "angle_count": 1872,
+        "dihedral_count": 3744,
+        "improper_count": 72,
+        "zero_force_constant_one_four_dihedrals": 360,
+        "atom_type_count": 12,
+        "special_bonds": "charmm",
+        "urey_bradley_count": 792,
+        "weighted_one_four_count": 2736,
+        "data": "system.data",
+        "input": "in.cellulose",
+        "dispersion_correction": false,
+        "input_scope": "single-point run 0 validation; not a dynamics protocol"
+      },
+      "checks": {
+        "gromacs_angle_split_reproduces_u_b": true,
+        "openmm_improper_count": true,
+        "lammps_improper_count": true,
+        "openmm_terms_match": true,
+        "lammps_terms_match": true
+      },
+      "passed": true
+    },
+    {
+      "case": "alpha_chitin_slab_finite",
+      "face": [
+        1,
+        0,
+        0
+      ],
+      "layers": 3,
+      "chains": 6,
+      "vacuum_angstrom": 20.0,
+      "longitudinal_padding_angstrom": 12.0,
+      "atoms": 990,
+      "impropers": 72,
+      "gromacs_plain_cutoff": {
+        "Bond": 16114.182617,
+        "U-B": 2458.056641,
+        "Proper-Dih.": 3648.322021,
+        "Improper-Dih.": 0.742884,
+        "LJ-14": 902.319824,
+        "Coulomb-14": 11976.930664,
+        "LJ-(SR)": -1180.348877,
+        "Coulomb-(SR)": -11973.605469,
+        "Coul.-recip.": 876.013062,
+        "Potential": 22822.615234
+      },
+      "gromacs_force_switch": {
+        "Bond": 16114.182617,
+        "U-B": 2458.056641,
+        "Proper-Dih.": 3648.322021,
+        "Improper-Dih.": 0.742884,
+        "LJ-14": 902.319824,
+        "Coulomb-14": 11976.930664,
+        "LJ-(SR)": -1148.77771,
+        "Coulomb-(SR)": -11627.398438,
+        "Coul.-recip.": 530.231323,
+        "Potential": 22854.609375
+      },
+      "gromacs_angle_split": {
+        "angle": 1458.9236349755595,
+        "urey_bradley": 999.1360479669273
+      },
+      "openmm_vs_gromacs_plain_cutoff": {
+        "bond": {
+          "engine_kj_mol": 16114.1771,
+          "gromacs_kj_mol": 16114.1826,
+          "difference_kj_mol": -0.0055,
+          "match": true
+        },
+        "urey_bradley": {
+          "engine_kj_mol": 999.1369,
+          "gromacs_kj_mol": 999.136,
+          "difference_kj_mol": 0.0008,
+          "match": true
+        },
+        "nonbonded": {
+          "engine_kj_mol": 601.8692,
+          "gromacs_kj_mol": 601.3092,
+          "difference_kj_mol": 0.56,
+          "match": true
+        },
+        "angle": {
+          "engine_kj_mol": 1458.9237,
+          "gromacs_kj_mol": 1458.9236,
+          "difference_kj_mol": 0.0001,
+          "match": true
+        },
+        "proper_dihedral": {
+          "engine_kj_mol": 3648.3205,
+          "gromacs_kj_mol": 3648.322,
+          "difference_kj_mol": -0.0016,
+          "match": true
+        },
+        "improper": {
+          "engine_kj_mol": 0.7429,
+          "gromacs_kj_mol": 0.7429,
+          "difference_kj_mol": 0.0,
+          "match": true
+        },
+        "potential": {
+          "engine_kj_mol": 22823.1702,
+          "gromacs_kj_mol": 22822.6152,
+          "difference_kj_mol": 0.555,
+          "match": true
+        },
+        "lj_14": {
+          "engine_kj_mol": 902.3187,
+          "gromacs_kj_mol": 902.3198,
+          "difference_kj_mol": -0.0011,
+          "match": true
+        },
+        "coulomb_14": {
+          "engine_kj_mol": 11976.9354,
+          "gromacs_kj_mol": 11976.9307,
+          "difference_kj_mol": 0.0047,
+          "match": true
+        }
+      },
+      "lammps_vs_gromacs_force_switch": {
+        "bond": {
+          "engine_kj_mol": 16114.1773,
+          "gromacs_kj_mol": 16114.1826,
+          "difference_kj_mol": -0.0053,
+          "match": true
+        },
+        "angle": {
+          "engine_kj_mol": 1458.9237,
+          "gromacs_kj_mol": 1458.9236,
+          "difference_kj_mol": 0.0001,
+          "match": true
+        },
+        "urey_bradley": {
+          "engine_kj_mol": 999.1369,
+          "gromacs_kj_mol": 999.136,
+          "difference_kj_mol": 0.0008,
+          "match": true
+        },
+        "proper_dihedral": {
+          "engine_kj_mol": 3648.3205,
+          "gromacs_kj_mol": 3648.322,
+          "difference_kj_mol": -0.0015,
+          "match": true
+        },
+        "improper": {
+          "engine_kj_mol": 0.7429,
+          "gromacs_kj_mol": 0.7429,
+          "difference_kj_mol": 0.0,
+          "match": true
+        },
+        "lj_14": {
+          "engine_kj_mol": 902.3187,
+          "gromacs_kj_mol": 902.3198,
+          "difference_kj_mol": -0.0011,
+          "match": true
+        },
+        "coulomb_14": {
+          "engine_kj_mol": 11976.9352,
+          "gromacs_kj_mol": 11976.9307,
+          "difference_kj_mol": 0.0046,
+          "match": true
+        },
+        "nonbonded": {
+          "engine_kj_mol": 633.8787,
+          "gromacs_kj_mol": 633.3057,
+          "difference_kj_mol": 0.5731,
+          "match": true
+        },
+        "potential": {
+          "engine_kj_mol": 22855.18,
+          "gromacs_kj_mol": 22854.6094,
+          "difference_kj_mol": 0.5706,
+          "match": true
+        }
+      },
+      "lammps_raw": {
+        "raw_lj_14": 902.9974,
+        "raw_coulomb_14": 11977.2197,
+        "raw_potential": 22859.1225,
+        "charmmfsw_one_four_lj_offset": 0.6787,
+        "charmmfsw_minus_gromacs_force_switch_lj": 3.2429
+      },
+      "lammps_conversion": {
+        "atom_count": 990,
+        "bond_count": 1020,
+        "angle_count": 1878,
+        "dihedral_count": 3744,
+        "improper_count": 72,
+        "zero_force_constant_one_four_dihedrals": 360,
+        "atom_type_count": 12,
+        "special_bonds": "charmm",
+        "urey_bradley_count": 792,
+        "weighted_one_four_count": 2736,
+        "data": "system.data",
+        "input": "in.cellulose",
+        "dispersion_correction": false,
+        "input_scope": "single-point run 0 validation; not a dynamics protocol"
+      },
+      "checks": {
+        "gromacs_angle_split_reproduces_u_b": true,
+        "openmm_improper_count": true,
+        "lammps_improper_count": true,
+        "openmm_terms_match": true,
+        "lammps_terms_match": true
+      },
+      "passed": true
+    },
+    {
+      "case": "beta_chitin_slab_periodic",
+      "face": [
+        1,
+        0,
+        0
+      ],
+      "layers": 3,
+      "chains": 9,
+      "vacuum_angstrom": 20.0,
+      "longitudinal_padding_angstrom": 0.0,
+      "atoms": 1458,
+      "impropers": 108,
+      "gromacs_plain_cutoff": {
+        "Bond": 23633.474609,
+        "U-B": 6549.275879,
+        "Proper-Dih.": 6273.306152,
+        "Improper-Dih.": 15.263352,
+        "LJ-14": 1099.528931,
+        "Coulomb-14": 17030.162109,
+        "LJ-(SR)": -2436.699707,
+        "Coulomb-(SR)": -19183.75,
+        "Coul.-recip.": 596.876282,
+        "Potential": 33577.433594
+      },
+      "gromacs_force_switch": {
+        "Bond": 23633.474609,
+        "U-B": 6549.275879,
+        "Proper-Dih.": 6273.306152,
+        "Improper-Dih.": 15.263352,
+        "LJ-14": 1099.528931,
+        "Coulomb-14": 17030.162109,
+        "LJ-(SR)": -2352.337402,
+        "Coulomb-(SR)": -18919.207031,
+        "Coul.-recip.": 332.767426,
+        "Potential": 33662.230469
+      },
+      "gromacs_angle_split": {
+        "angle": 3950.999527341812,
+        "urey_bradley": 2598.281030738187
+      },
+      "openmm_vs_gromacs_plain_cutoff": {
+        "bond": {
+          "engine_kj_mol": 23633.4755,
+          "gromacs_kj_mol": 23633.4746,
+          "difference_kj_mol": 0.0009,
+          "match": true
+        },
+        "urey_bradley": {
+          "engine_kj_mol": 2598.2828,
+          "gromacs_kj_mol": 2598.281,
+          "difference_kj_mol": 0.0017,
+          "match": true
+        },
+        "nonbonded": {
+          "engine_kj_mol": -2893.3348,
+          "gromacs_kj_mol": -2893.8824,
+          "difference_kj_mol": 0.5476,
+          "match": true
+        },
+        "angle": {
+          "engine_kj_mol": 3950.9994,
+          "gromacs_kj_mol": 3950.9995,
+          "difference_kj_mol": -0.0001,
+          "match": true
+        },
+        "proper_dihedral": {
+          "engine_kj_mol": 6273.3055,
+          "gromacs_kj_mol": 6273.3062,
+          "difference_kj_mol": -0.0007,
+          "match": true
+        },
+        "improper": {
+          "engine_kj_mol": 15.2637,
+          "gromacs_kj_mol": 15.2634,
+          "difference_kj_mol": 0.0004,
+          "match": true
+        },
+        "potential": {
+          "engine_kj_mol": 33577.9921,
+          "gromacs_kj_mol": 33577.4336,
+          "difference_kj_mol": 0.5585,
+          "match": true
+        },
+        "lj_14": {
+          "engine_kj_mol": 1099.5285,
+          "gromacs_kj_mol": 1099.5289,
+          "difference_kj_mol": -0.0004,
+          "match": true
+        },
+        "coulomb_14": {
+          "engine_kj_mol": 17030.184,
+          "gromacs_kj_mol": 17030.1621,
+          "difference_kj_mol": 0.0218,
+          "match": true
+        }
+      },
+      "lammps_vs_gromacs_force_switch": {
+        "bond": {
+          "engine_kj_mol": 23633.4755,
+          "gromacs_kj_mol": 23633.4746,
+          "difference_kj_mol": 0.0009,
+          "match": true
+        },
+        "angle": {
+          "engine_kj_mol": 3950.9994,
+          "gromacs_kj_mol": 3950.9995,
+          "difference_kj_mol": -0.0001,
+          "match": true
+        },
+        "urey_bradley": {
+          "engine_kj_mol": 2598.2827,
+          "gromacs_kj_mol": 2598.281,
+          "difference_kj_mol": 0.0017,
+          "match": true
+        },
+        "proper_dihedral": {
+          "engine_kj_mol": 6273.3055,
+          "gromacs_kj_mol": 6273.3062,
+          "difference_kj_mol": -0.0006,
+          "match": true
+        },
+        "improper": {
+          "engine_kj_mol": 15.2637,
+          "gromacs_kj_mol": 15.2634,
+          "difference_kj_mol": 0.0004,
+          "match": true
+        },
+        "lj_14": {
+          "engine_kj_mol": 1099.5285,
+          "gromacs_kj_mol": 1099.5289,
+          "difference_kj_mol": -0.0005,
+          "match": true
+        },
+        "coulomb_14": {
+          "engine_kj_mol": 17030.1843,
+          "gromacs_kj_mol": 17030.1621,
+          "difference_kj_mol": 0.0222,
+          "match": true
+        },
+        "nonbonded": {
+          "engine_kj_mol": -2808.4503,
+          "gromacs_kj_mol": -2809.086,
+          "difference_kj_mol": 0.6357,
+          "match": true
+        },
+        "potential": {
+          "engine_kj_mol": 33662.8764,
+          "gromacs_kj_mol": 33662.2305,
+          "difference_kj_mol": 0.6459,
+          "match": true
+        }
+      },
+      "lammps_raw": {
+        "raw_lj_14": 1100.5275,
+        "raw_coulomb_14": 17030.5887,
+        "raw_potential": 33673.0676,
+        "charmmfsw_one_four_lj_offset": 0.999,
+        "charmmfsw_minus_gromacs_force_switch_lj": 9.2291
+      },
+      "lammps_conversion": {
+        "atom_count": 1458,
+        "bond_count": 1512,
+        "angle_count": 2808,
+        "dihedral_count": 5616,
+        "improper_count": 108,
+        "zero_force_constant_one_four_dihedrals": 540,
+        "atom_type_count": 12,
+        "special_bonds": "charmm",
+        "urey_bradley_count": 1188,
+        "weighted_one_four_count": 4104,
+        "data": "system.data",
+        "input": "in.cellulose",
+        "dispersion_correction": false,
+        "input_scope": "single-point run 0 validation; not a dynamics protocol"
+      },
+      "checks": {
+        "gromacs_angle_split_reproduces_u_b": true,
+        "openmm_improper_count": true,
+        "lammps_improper_count": true,
+        "openmm_terms_match": true,
+        "lammps_terms_match": true
+      },
+      "passed": true
+    },
+    {
+      "case": "beta_chitin_slab_finite",
+      "face": [
+        1,
+        0,
+        0
+      ],
+      "layers": 3,
+      "chains": 9,
+      "vacuum_angstrom": 20.0,
+      "longitudinal_padding_angstrom": 12.0,
+      "atoms": 1485,
+      "impropers": 108,
+      "gromacs_plain_cutoff": {
+        "Bond": 24699.835938,
+        "U-B": 6610.716309,
+        "Proper-Dih.": 6213.129395,
+        "Improper-Dih.": 15.264165,
+        "LJ-14": 1168.442139,
+        "Coulomb-14": 18147.996094,
+        "LJ-(SR)": -2301.619141,
+        "Coulomb-(SR)": -19859.876953,
+        "Coul.-recip.": 849.829285,
+        "Potential": 35543.71875
+      },
+      "gromacs_force_switch": {
+        "Bond": 24699.835938,
+        "U-B": 6610.716309,
+        "Proper-Dih.": 6213.129395,
+        "Improper-Dih.": 15.264165,
+        "LJ-14": 1168.442139,
+        "Coulomb-14": 18147.996094,
+        "LJ-(SR)": -2225.108398,
+        "Coulomb-(SR)": -19556.158203,
+        "Coul.-recip.": 546.648499,
+        "Potential": 35620.765625
+      },
+      "gromacs_angle_split": {
+        "angle": 4012.4321764616607,
+        "urey_bradley": 2598.281030738189
+      },
+      "openmm_vs_gromacs_plain_cutoff": {
+        "bond": {
+          "engine_kj_mol": 24699.8515,
+          "gromacs_kj_mol": 24699.8359,
+          "difference_kj_mol": 0.0156,
+          "match": true
+        },
+        "urey_bradley": {
+          "engine_kj_mol": 2598.2828,
+          "gromacs_kj_mol": 2598.281,
+          "difference_kj_mol": 0.0017,
+          "match": true
+        },
+        "nonbonded": {
+          "engine_kj_mol": -1994.579,
+          "gromacs_kj_mol": -1995.2286,
+          "difference_kj_mol": 0.6495,
+          "match": true
+        },
+        "angle": {
+          "engine_kj_mol": 4012.4321,
+          "gromacs_kj_mol": 4012.4322,
+          "difference_kj_mol": -0.0001,
+          "match": true
+        },
+        "proper_dihedral": {
+          "engine_kj_mol": 6213.1304,
+          "gromacs_kj_mol": 6213.1294,
+          "difference_kj_mol": 0.001,
+          "match": true
+        },
+        "improper": {
+          "engine_kj_mol": 15.2637,
+          "gromacs_kj_mol": 15.2642,
+          "difference_kj_mol": -0.0004,
+          "match": true
+        },
+        "potential": {
+          "engine_kj_mol": 35544.3815,
+          "gromacs_kj_mol": 35543.7188,
+          "difference_kj_mol": 0.6627,
+          "match": true
+        },
+        "lj_14": {
+          "engine_kj_mol": 1168.4418,
+          "gromacs_kj_mol": 1168.4421,
+          "difference_kj_mol": -0.0004,
+          "match": true
+        },
+        "coulomb_14": {
+          "engine_kj_mol": 18148.0296,
+          "gromacs_kj_mol": 18147.9961,
+          "difference_kj_mol": 0.0335,
+          "match": true
+        }
+      },
+      "lammps_vs_gromacs_force_switch": {
+        "bond": {
+          "engine_kj_mol": 24699.8515,
+          "gromacs_kj_mol": 24699.8359,
+          "difference_kj_mol": 0.0156,
+          "match": true
+        },
+        "angle": {
+          "engine_kj_mol": 4012.4321,
+          "gromacs_kj_mol": 4012.4322,
+          "difference_kj_mol": -0.0001,
+          "match": true
+        },
+        "urey_bradley": {
+          "engine_kj_mol": 2598.2829,
+          "gromacs_kj_mol": 2598.281,
+          "difference_kj_mol": 0.0018,
+          "match": true
+        },
+        "proper_dihedral": {
+          "engine_kj_mol": 6213.1304,
+          "gromacs_kj_mol": 6213.1294,
+          "difference_kj_mol": 0.001,
+          "match": true
+        },
+        "improper": {
+          "engine_kj_mol": 15.2637,
+          "gromacs_kj_mol": 15.2642,
+          "difference_kj_mol": -0.0004,
+          "match": true
+        },
+        "lj_14": {
+          "engine_kj_mol": 1168.4418,
+          "gromacs_kj_mol": 1168.4421,
+          "difference_kj_mol": -0.0004,
+          "match": true
+        },
+        "coulomb_14": {
+          "engine_kj_mol": 18148.0297,
+          "gromacs_kj_mol": 18147.9961,
+          "difference_kj_mol": 0.0336,
+          "match": true
+        },
+        "nonbonded": {
+          "engine_kj_mol": -1917.4961,
+          "gromacs_kj_mol": -1918.1799,
+          "difference_kj_mol": 0.6838,
+          "match": true
+        },
+        "potential": {
+          "engine_kj_mol": 35621.4646,
+          "gromacs_kj_mol": 35620.7656,
+          "difference_kj_mol": 0.699,
+          "match": true
+        }
+      },
+      "lammps_raw": {
+        "raw_lj_14": 1169.4598,
+        "raw_coulomb_14": 18148.4607,
+        "raw_potential": 35630.6298,
+        "charmmfsw_one_four_lj_offset": 1.018,
+        "charmmfsw_minus_gromacs_force_switch_lj": 8.1675
+      },
+      "lammps_conversion": {
+        "atom_count": 1485,
+        "bond_count": 1530,
+        "angle_count": 2817,
+        "dihedral_count": 5616,
+        "improper_count": 108,
+        "zero_force_constant_one_four_dihedrals": 540,
+        "atom_type_count": 12,
+        "special_bonds": "charmm",
+        "urey_bradley_count": 1188,
+        "weighted_one_four_count": 4104,
+        "data": "system.data",
+        "input": "in.cellulose",
+        "dispersion_correction": false,
+        "input_scope": "single-point run 0 validation; not a dynamics protocol"
+      },
+      "checks": {
+        "gromacs_angle_split_reproduces_u_b": true,
+        "openmm_improper_count": true,
+        "lammps_improper_count": true,
+        "openmm_terms_match": true,
+        "lammps_terms_match": true
+      },
+      "passed": true
+    }
+  ],
+  "passed": true
+}

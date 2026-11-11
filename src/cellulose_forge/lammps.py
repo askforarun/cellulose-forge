@@ -148,6 +148,13 @@ if not charmm:
 raw_bonds = []
 raw_angles = []
 raw_dihedrals = []
+raw_impropers = []
+# OpenMM's GromacsTopFile writes GROMACS function-2 (harmonic) impropers as this
+# CustomTorsionForce. Only this exact form is converted.
+harmonic_torsion_expression = (
+    "0.5*k*(thetap-theta0)^2; thetap = step(-(theta-theta0+pi))*2*pi+theta"
+    "+step(theta-theta0-pi)*(-2*pi); pi = %.15g" % math.pi
+)
 for force in system.getForces():
     if isinstance(force, openmm.HarmonicBondForce):
         for i in range(force.getNumBonds()):
@@ -158,6 +165,22 @@ for force in system.getForces():
     elif isinstance(force, openmm.PeriodicTorsionForce):
         for i in range(force.getNumTorsions()):
             raw_dihedrals.append(force.getTorsionParameters(i))
+    elif isinstance(force, openmm.CustomTorsionForce):
+        names = [
+            force.getPerTorsionParameterName(i)
+            for i in range(force.getNumPerTorsionParameters())
+        ]
+        if (
+            force.getEnergyFunction() != harmonic_torsion_expression
+            or names != ["theta0", "k"]
+            or force.getNumGlobalParameters() != 0
+        ):
+            raise SystemExit(
+                "unsupported CustomTorsionForce for LAMMPS conversion: "
+                f"{force.getEnergyFunction()}"
+            )
+        for i in range(force.getNumTorsions()):
+            raw_impropers.append(force.getTorsionParameters(i))
     elif isinstance(force, (openmm.CMMotionRemover, openmm.NonbondedForce)):
         pass
     else:
@@ -211,6 +234,46 @@ for a, b, c, d, periodicity, phase, k in raw_dihedrals:
     dihedrals.append((
         type_id(dihedral_types, parameters), int(a)+1, int(b)+1, int(c)+1, int(d)+1
     ))
+# CHARMM dihedral types with zero force constant (for example HCP1-NC2D1-
+# CC3161-CC3162 in BGLCNA) are dropped by OpenMM, but their 1-4 pairs remain.
+# Carry each such pair on a zero-force-constant dihedral with 1-4 weight 1.
+zero_dihedral_pairs = []
+if charmm and weighted_pairs != exception_pairs:
+    adjacency = [set() for _ in range(system.getNumParticles())]
+    for first, second in covalent_pairs:
+        adjacency[first].add(second)
+        adjacency[second].add(first)
+    for first, last in sorted(exception_pairs - weighted_pairs):
+        path = next(
+            (
+                (first, second, third, last)
+                for second in sorted(adjacency[first])
+                for third in sorted(adjacency[second] & adjacency[last])
+                if len({first, second, third, last}) == 4
+            ),
+            None,
+        )
+        if path is None:
+            continue
+        parameters = (0.0, 1, 0.0, 1.0)
+        dihedrals.append((type_id(dihedral_types, parameters), *(index + 1 for index in path)))
+        weighted_pairs.add((first, last))
+        zero_dihedral_pairs.append((first, last))
+
+impropers, improper_types = [], {}
+for a, b, c, d, (theta0, k) in raw_impropers:
+    if abs(theta0) > 1e-12:
+        raise SystemExit(
+            f"improper {a+1}-{b+1}-{c+1}-{d+1} has a nonzero equilibrium angle; "
+            "LAMMPS improper_style harmonic is used only for planar (chi0 = 0) impropers"
+        )
+    # GROMACS/OpenMM: E = (1/2) k xi^2 (kJ/mol/rad^2); LAMMPS harmonic: E = K chi^2.
+    # Hence K = k/2, then kJ -> kcal.
+    parameters = (0.5*k/4.184, 0.0)
+    impropers.append((
+        type_id(improper_types, parameters), int(a)+1, int(b)+1, int(c)+1, int(d)+1
+    ))
+
 if charmm and weighted_pairs != exception_pairs:
     missing = sorted(exception_pairs-weighted_pairs)
     raise SystemExit(f"CHARMM 1-4 exceptions without a matching dihedral: {missing[:5]}")
@@ -258,9 +321,10 @@ for root in range(system.getNumParticles()):
 lines = [
     "CelluloseForge LAMMPS data", "",
     f"{system.getNumParticles()} atoms", f"{len(bonds)} bonds",
-    f"{len(angles)} angles", f"{len(dihedrals)} dihedrals", "0 impropers", "",
+    f"{len(angles)} angles", f"{len(dihedrals)} dihedrals", f"{len(impropers)} impropers", "",
     f"{len(atom_types)} atom types", f"{len(bond_types)} bond types",
-    f"{len(angle_types)} angle types", f"{len(dihedral_types)} dihedral types", "",
+    f"{len(angle_types)} angle types", f"{len(dihedral_types)} dihedral types",
+    *([f"{len(improper_types)} improper types"] if improper_types else []), "",
     f"0.0 {a[0]:.12g} xlo xhi", f"0.0 {b[1]:.12g} ylo yhi",
     f"0.0 {c[2]:.12g} zlo zhi", f"{b[0]:.12g} {c[0]:.12g} {c[1]:.12g} xy xz yz",
     "", "Masses", "",
@@ -298,6 +362,10 @@ for params, index in sorted(dihedral_types.items(), key=lambda item: item[1]):
         f"{index} {params[0]:.12g} {int(params[1])} "
         f"{int(params[2])} {params[3]:.1f}"
     )
+if improper_types:
+    lines += ["", "Improper Coeffs", ""]
+    for params, index in sorted(improper_types.items(), key=lambda item: item[1]):
+        lines.append(f"{index} {params[0]:.12g} {params[1]:.12g}")
 lines += ["", "Atoms # full", ""]
 for index, ((charge, _, _), atom_type, molecule, xyz, image) in enumerate(zip(
     particles, atom_type_ids, request["molecule_ids"], positions, images
@@ -308,7 +376,10 @@ for index, ((charge, _, _), atom_type, molecule, xyz, image) in enumerate(zip(
         f"{xyz[0]:.12g} {xyz[1]:.12g} {xyz[2]:.12g} "
         f"{image[0]} {image[1]} {image[2]}"
     )
-for title, records in (("Bonds", bonds), ("Angles", angles), ("Dihedrals", dihedrals)):
+sections = [("Bonds", bonds), ("Angles", angles), ("Dihedrals", dihedrals)]
+if impropers:
+    sections.append(("Impropers", impropers))
+for title, records in sections:
     lines += ["", title, ""]
     for index, record in enumerate(records, start=1):
         lines.append(f"{index} " + " ".join(str(value) for value in record))
@@ -316,6 +387,8 @@ open(request["data_path"], "w", encoding="utf-8").write("\n".join(lines) + "\n")
 print(json.dumps({
     "atom_count": system.getNumParticles(), "bond_count": len(bonds),
     "angle_count": len(angles), "dihedral_count": len(dihedrals),
+    "improper_count": len(impropers),
+    "zero_force_constant_one_four_dihedrals": len(zero_dihedral_pairs),
     "atom_type_count": len(atom_types),
     "special_bonds": "charmm" if charmm else "lj/coul 0 0 1",
     "urey_bradley_count": len(urey_bradley),
@@ -379,6 +452,9 @@ def write_lammps_system(  # noqa: PLR0913
         dihedral_style = "charmm"
         pair_style = "lj/cut/coul/long 10.0"
         special_bonds = "lj/coul 0.0 0.0 1.0"
+    has_impropers = int(metadata.get("improper_count", 0)) > 0
+    improper_line = "improper_style harmonic\n" if has_impropers else ""
+    improper_thermo = " eimp" if has_impropers else ""
     tail_correction = "yes" if dispersion_correction and force_field.lower() == "glycam" else "no"
     files.input.write_text(
         f"""units real
@@ -387,13 +463,13 @@ boundary p p p
 bond_style harmonic
 angle_style {angle_style}
 dihedral_style {dihedral_style}
-pair_style {pair_style}
+{improper_line}pair_style {pair_style}
 pair_modify mix arithmetic tail {tail_correction}
 special_bonds {special_bonds}
 read_data system.data
 kspace_style pppm 1.0e-5
 thermo 100
-thermo_style custom step temp pe ebond eangle edihed evdwl ecoul elong
+thermo_style custom step temp pe ebond eangle edihed evdwl ecoul elong{improper_thermo}
 timestep 1.0
 # This file is an initial-energy validation input, not a dynamics protocol.
 run 0
