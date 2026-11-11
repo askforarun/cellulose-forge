@@ -579,9 +579,10 @@ lengths, and a short minimization. Run dynamics from the output directory with:
 python run_openmm.py --minimize-iterations 1000 --steps 10000
 ```
 
-Add `--no-restraints` to switch the restraints off, or `--pressure-bar 1
---pressure-axes x` for pressure coupling in the slab plane perpendicular to the
-chains. The chain axis of a periodic system is never scaled. See
+Add `--no-restraints` to switch the restraints off. Pressure coupling in the
+slab plane perpendicular to the chains, `--pressure-bar 1 --pressure-axes x`,
+requires `--no-restraints`, because the barostat does not rescale the restraint
+reference positions. The chain axis of a periodic system is never scaled. See
 `docs/openmm.md` for the validation boundary.
 
 If `tleap` or ParmEd is installed outside the active environment:

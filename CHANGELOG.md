@@ -32,11 +32,13 @@ All notable changes to CelluloseForge are documented in this file.
 - A finite 18-chain DP6 dual-format GLYCAM build passes GROMACS preprocessing
   and completes an AmberTools23 `sander` smoke minimization with finite bonded
   energies.
-- OpenMM 8.5 and GROMACS 2024.2 zero-step energies agree by interaction
-  category within 6e-6 relative for finite and periodic GLYCAM06j-1 and
-  CHARMM36 I-beta slabs and a periodic triclinic GLYCAM bulk crystal. Short
-  OpenMM NVT runs, and NPT runs with the chain axis fixed, keep every bonded
-  distance within 0.023 nm of equilibrium.
+- OpenMM 8.5 and GROMACS 2024.2 zero-step bonded and 1-4 energies agree within
+  8e-6 relative, and total nonbonded energies within 1.3e-4 with matching
+  cutoff, PME, and dispersion settings, for finite and periodic I-beta slabs,
+  a periodic triclinic I-beta bulk crystal, and periodic I-alpha, II, and III-I
+  slabs with GLYCAM06j-1 and CHARMM36. Short OpenMM NVT runs, and NPT runs with
+  the chain axis fixed, keep every bonded distance within 0.026 nm of
+  equilibrium.
 
 ## 1.1.2 - 2026-11-07
 

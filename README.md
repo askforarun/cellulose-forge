@@ -710,8 +710,9 @@ or use `environment.yml`. The output contains `system.xml`, `state.xml`,
 periodic chains, every bonded force and the nonbonded 1--4 exceptions use
 periodic boundary conditions, stored in `system.xml`. Each build records
 per-force initial energies, a bond-length check, and a short minimization in
-`build_report.json`. OpenMM and GROMACS energies agree by interaction category
-within 6 × 10^-6 relative for the validated systems. Use `--openmm-python` when
+`build_report.json`. For all four allomorphs and both force fields, OpenMM and
+GROMACS bonded and 1--4 energies agree within 8 × 10^-6 relative, and total
+nonbonded energies within 1.3 × 10^-4 with matching settings. Use `--openmm-python` when
 OpenMM is installed under a different interpreter. Barostats in OpenMM move
 molecules rigidly, so periodic chains are run with the chain axis fixed; use
 GROMACS for fully anisotropic NPT of periodic crystals. See

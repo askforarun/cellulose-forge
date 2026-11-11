@@ -199,15 +199,15 @@ not a claim that a production simulation of the large slab has been completed.
 
 ## OpenMM engine validation
 
-`validate_openmm_engine.py` builds five I-beta systems with both GROMACS and
-OpenMM output from the same mapped structure: finite and covalently periodic
-`(110)` slabs (three layers of four DP8 chains) with GLYCAM06j-1 and CHARMM36,
-and a periodic triclinic GLYCAM bulk crystal (3 × 3 × 2 cells, DP4). For each
-system it compares OpenMM and GROMACS zero-step energies by interaction
-category (bonds, angles, torsions, and combined Lennard-Jones and Coulomb 1-4
-terms; CHARMM36 bonds, angles, and Urey-Bradley terms are compared together),
-runs the generated `run_openmm.py` for 1 ps of NVT, and, for the periodic
-slabs, 1 ps of NPT with the barostat scaling only the in-plane `x` axis.
+`validate_openmm_engine.py` builds eleven systems with both GROMACS and OpenMM
+output from the same mapped structure: finite and covalently periodic I-beta
+`(110)` slabs (three layers of four DP8 chains) with GLYCAM06j-1 and CHARMM36, a
+periodic triclinic GLYCAM I-beta bulk crystal (3 × 3 × 2 cells, DP4), and
+periodic I-alpha `(010)`, II `(110)`, and III-I `(110)` slabs (three layers of
+six DP8 chains) with both force fields. For each system it compares OpenMM and
+GROMACS zero-step energies and runs the generated `run_openmm.py` for 1 ps of
+NVT; the periodic I-beta slabs also run 1 ps of NPT with the barostat scaling
+only the in-plane `x` axis.
 
 ```bash
 uv run python validation/validate_openmm_engine.py \
@@ -215,11 +215,22 @@ uv run python validation/validate_openmm_engine.py \
   --tleap-executable /path/to/tleap --parmed-python /path/to/python-with-parmed
 ```
 
-With OpenMM 8.5 and GROMACS 2024.2, every interaction category agreed within
-6 × 10^-6 relative. GROMACS used `periodic-molecules = yes` for the periodic
-systems; OpenMM used periodic bonded forces and periodic nonbonded exceptions.
-After NVT and fixed-chain-axis NPT, every bonded distance remained within 0.023
-nm of its equilibrium length, so the boundary-crossing glycosidic bonds stayed
-intact. Results are stored in `results/openmm_engine_validation.json`. These are
-engine-equivalence and short-run integration checks, not material-property
-validation.
+Two kinds of energy agreement are recorded separately:
+
+- Bonded and 1-4 categories (bonds, angles, torsions, and combined
+  Lennard-Jones and Coulomb 1-4 terms; CHARMM36 bonds, angles, and Urey-Bradley
+  terms are compared together) agreed within 8 × 10^-6 relative.
+- The total nonbonded energy agreed within 1.3 × 10^-4 relative. For this
+  comparison GROMACS used plain cutoffs (`vdw-modifier` and `coulomb-modifier`
+  `None`), `ewald-rtol` 1 × 10^-5, and the same dispersion correction as the
+  OpenMM system: on for the bulk crystal and off for slabs. The residual
+  difference reflects the engines' different PME grids.
+
+GROMACS used `periodic-molecules = yes` for the periodic systems; OpenMM used
+periodic bonded forces and periodic nonbonded exceptions. After NVT and
+fixed-chain-axis NPT, every bonded distance remained within 0.026 nm of its
+equilibrium length, so the boundary-crossing glycosidic bonds stayed intact.
+The results file, `results/openmm_engine_validation.json`, records the
+CelluloseForge commit (`c0574c3`, clean working tree), OpenMM 8.5, and GROMACS
+2024.2. These are engine-equivalence and short-run integration checks, not
+material-property validation.

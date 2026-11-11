@@ -68,6 +68,17 @@ build fails if
 
 A ten-iteration minimization of the constrained system is also recorded.
 
+## Nonbonded settings
+
+The serialized system uses PME with a 1 nm cutoff and OpenMM's default PME
+accuracy (`ewaldErrorTolerance` 5 × 10^-4). The isotropic long-range dispersion
+correction is enabled for bulk crystals and unit cells, and disabled for slabs
+and fibrils, whose vacuum regions violate its homogeneous-system assumption.
+The build report records the cutoff, the dispersion setting, and both PME
+tolerances. Build-time energies are evaluated with a tighter tolerance
+(1 × 10^-5, GROMACS's default `ewald-rtol`) so that they can be compared with
+other engines.
+
 ## Running the system
 
 ```bash
@@ -94,21 +105,42 @@ stretch or compress the boundary-crossing O4--C1 bond. The runner therefore
 refuses to scale the chain axis for periodic chains, and it requires a
 rectangular box.
 
+Position restraints hold atoms to fixed Cartesian reference coordinates, which
+a barostat does not rescale. The runner therefore refuses `--pressure-bar` while
+restraints are active; add `--no-restraints` to run with pressure coupling.
+
 | Ensemble | Status |
 | --- | --- |
-| NVT | Supported |
-| NPT with the chain axis fixed (rectangular box) | Supported; short-run validated |
+| NVT, with or without restraints | Supported |
+| NPT with the chain axis fixed (rectangular box, no restraints) | Supported; short-run validated |
 | Fully anisotropic NPT of periodic crystals | Use GROMACS |
 
 ## Validation
 
-`validation/validate_openmm_engine.py` builds five Iβ systems (finite and
-periodic GLYCAM06j-1 and CHARMM36 slabs and a periodic triclinic GLYCAM bulk
-crystal), compares OpenMM and GROMACS zero-step energies by interaction
-category, and runs short NVT and fixed-chain-axis NPT simulations. With OpenMM
-8.5 and GROMACS 2024.2, every category agreed within 6 × 10^-6 relative, and
-all bonded distances stayed within 0.023 nm of equilibrium after dynamics.
-Results are stored in `validation/results/openmm_engine_validation.json`.
+`validation/validate_openmm_engine.py` builds eleven systems: finite and
+periodic Iβ (110) slabs with GLYCAM06j-1 and CHARMM36, a periodic triclinic
+GLYCAM Iβ bulk crystal, and periodic Iα (010), II (110), and III_I (110) slabs
+with both force fields. For each it compares OpenMM and GROMACS zero-step
+energies and runs 1 ps of NVT; the periodic Iβ slabs also run 1 ps of NPT with
+the chain axis fixed.
+
+With OpenMM 8.5 and GROMACS 2024.2:
+
+- bonded terms (bonds, angles, Urey-Bradley, and torsions) and the 1--4 terms
+  agreed within 8 × 10^-6 relative. These are force-field definitions, so the
+  agreement is limited only by GROMACS output precision;
+- the total nonbonded energy (short-range Lennard-Jones and Coulomb, PME
+  reciprocal, 1--4, and, for the bulk crystal, dispersion correction) agreed
+  within 1.3 × 10^-4 relative when GROMACS used matching settings: plain
+  cutoffs without potential shifts, `ewald-rtol` 1 × 10^-5, and the same
+  dispersion correction. The remaining difference comes from the engines'
+  different PME grids;
+- after dynamics, every bonded distance stayed within 0.026 nm of its
+  equilibrium length, including the boundary-crossing glycosidic bonds.
+
+The results file records the CelluloseForge commit, OpenMM and GROMACS
+versions, and every per-category value. These are engine-equivalence and
+short-run integration checks, not material-property validation.
 
 The OpenMM integration tests run only when OpenMM is importable by the test
 interpreter or by the interpreter named in `CELLULOSE_FORGE_OPENMM_PYTHON`.
