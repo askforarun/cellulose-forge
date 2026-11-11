@@ -178,6 +178,8 @@ def test_cli_builds_chitin_charmm36_openmm_and_lammps(
     data = (output / "system.data").read_text(encoding="utf-8")
     assert f"{impropers} impropers" in data
     assert "\nImproper Coeffs\n" in data
-    lammps_input = (output / "in.cellulose").read_text(encoding="utf-8")
+    assert not (output / "in.cellulose").exists()
+    assert report["outputs"]["lammps_input"] == "in.chitin"
+    lammps_input = (output / "in.chitin").read_text(encoding="utf-8")
     assert "improper_style harmonic" in lammps_input
     assert (output / "system.xml").is_file()

@@ -72,6 +72,20 @@ _BONDED_ABSOLUTE_TOLERANCE = 0.05
 # After removing documented LAMMPS energy conventions, nonbonded totals must
 # agree to this fraction of the summed nonbonded component magnitudes.
 _NONBONDED_RELATIVE_TOLERANCE = 5.0e-5
+_DYNAMICS_STEPS = 2000
+_EXPECTED_TERMS = frozenset(
+    {
+        "bond",
+        "angle",
+        "urey_bradley",
+        "proper_dihedral",
+        "improper",
+        "lj_14",
+        "coulomb_14",
+        "nonbonded",
+        "potential",
+    }
+)
 _GMX_TERMS = (
     "Bond",
     "U-B",
@@ -305,7 +319,7 @@ def _lammps_run(directory: Path, executable: str, input_name: str) -> dict[str, 
 
 
 def _lammps(directory: Path, executable: str) -> dict[str, float]:
-    full = _lammps_run(directory, executable, "in.cellulose")
+    full = _lammps_run(directory, executable, "in.chitin")
     data = (directory / "system.data").read_text(encoding="utf-8")
 
     def replace_section(text: str, title: str, keep: int, zeros: list[str]) -> str:
@@ -319,12 +333,13 @@ def _lammps(directory: Path, executable: str) -> dict[str, float]:
     variant = replace_section(variant, "Dihedral Coeffs", 4, ["0.0"])
     (directory / "variant.data").write_text(variant, encoding="utf-8")
     (directory / "in.variant").write_text(
-        (directory / "in.cellulose")
+        (directory / "in.chitin")
         .read_text(encoding="utf-8")
         .replace("read_data system.data", "read_data variant.data"),
         encoding="utf-8",
     )
     reduced = _lammps_run(directory, executable, "in.variant")
+    dynamics = _lammps_dynamics(directory, executable)
     offset = _charmmfsw_one_four_offset(data)
     lj_14 = full["E_vdwl"] - reduced["E_vdwl"] - offset
     coulomb_14 = (full["E_coul"] - reduced["E_coul"]) * _COULOMB_RATIO
@@ -342,6 +357,7 @@ def _lammps(directory: Path, executable: str) -> dict[str, float]:
         "coulomb_14": coulomb_14,
         "nonbonded": nonbonded,
         "potential": full["PotEng"] - full["E_vdwl"] - full["E_coul"] - full["E_long"] + nonbonded,
+        **dynamics,
         "raw_lj_14": full["E_vdwl"] - reduced["E_vdwl"],
         "raw_coulomb_14": full["E_coul"] - reduced["E_coul"],
         "raw_potential": full["PotEng"],
@@ -446,6 +462,50 @@ def _charmmfsw_short_range_offset(data: str) -> float:
             )
         )
     return total * _KCAL
+
+
+def _lammps_dynamics(directory: Path, executable: str) -> dict[str, float]:
+    """Run 1 ps NVT at 300 K (0.5 fs, no constraints) from the built coordinates.
+
+    This exercises improper forces, which the single-point comparison does not.
+    LAMMPS ``minimize`` is not used: the packaged LAMMPS 22 Jul 2025 build used
+    here exits with a segmentation fault after any minimization completes,
+    independently of this system's force field.
+    """
+    text = (directory / "in.chitin").read_text(encoding="utf-8")
+    controls = (
+        "timestep 0.5\n"
+        "velocity all create 300.0 4928459 mom yes rot no dist gaussian\n"
+        "fix thermostat all nvt temp 300.0 300.0 50.0\n"
+        f"thermo {_DYNAMICS_STEPS}\n"
+        f"run {_DYNAMICS_STEPS}\n"
+    )
+    (directory / "in.dynamics").write_text(text.replace("run 0\n", controls), encoding="utf-8")
+    completed = subprocess.run(
+        [executable, "-in", "in.dynamics", "-log", "dynamics.log"],
+        cwd=directory,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    log = (directory / "dynamics.log").read_text(encoding="utf-8")
+    if completed.returncode != 0 or re.search(r"ERROR|\bnan\b|\binf\b", log, re.IGNORECASE):
+        msg = f"LAMMPS dynamics smoke test failed:\n{log[-2000:]}"
+        raise RuntimeError(msg)
+    headers = list(re.finditer(r"^\s*Step\s+Temp\s+PotEng.*$", log, flags=re.MULTILINE))
+    names = headers[-1].group(0).split()
+    rows = [
+        row.split()
+        for row in log[headers[-1].end() :].splitlines()
+        if row.strip() and row.split()[0].isdigit()
+    ]
+    final = dict(zip(names, (float(v) for v in rows[-1]), strict=True))
+    return {
+        "dynamics_final_step": final["Step"],
+        "dynamics_final_temperature_k": final["Temp"],
+        "dynamics_final_potential": final["PotEng"] * _KCAL,
+        "dynamics_final_improper": final.get("E_impro", math.nan) * _KCAL,
+    }
 
 
 def _charmmfsw_one_four_offset(data: str) -> float:
@@ -596,6 +656,7 @@ def _case(  # noqa: PLR0913, PLR0917
         lammps_directory,
         force_field="charmm36",
         python_executable=openmm_python,
+        polymer="chitin",
     )
     lammps_energies = _lammps(lammps_directory, lammps)
 
@@ -608,6 +669,18 @@ def _case(  # noqa: PLR0913, PLR0917
         "gromacs_angle_split_reproduces_u_b": split_consistent,
         "openmm_improper_count": improper_count == expected_impropers,
         "lammps_improper_count": lammps_metadata.get("improper_count") == expected_impropers,
+        "openmm_all_expected_terms_present": set(openmm_comparison) == _EXPECTED_TERMS,
+        "lammps_all_expected_terms_present": set(lammps_comparison) == _EXPECTED_TERMS,
+        "lammps_dynamics_smoke_test_completed": lammps_energies.get("dynamics_final_step")
+        == _DYNAMICS_STEPS
+        and all(
+            math.isfinite(lammps_energies[key])
+            for key in (
+                "dynamics_final_temperature_k",
+                "dynamics_final_potential",
+                "dynamics_final_improper",
+            )
+        ),
         "openmm_terms_match": all(bool(row["match"]) for row in openmm_comparison.values()),
         "lammps_terms_match": all(bool(row["match"]) for row in lammps_comparison.values()),
     }
@@ -624,7 +697,7 @@ def _case(  # noqa: PLR0913, PLR0917
         "lammps_raw": {
             key: round(value, 4)
             for key, value in lammps_energies.items()
-            if key.startswith(("raw_", "charmmfsw"))
+            if key.startswith(("raw_", "charmmfsw", "dynamics_"))
         },
         "lammps_conversion": lammps_metadata,
         "checks": checks,

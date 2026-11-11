@@ -612,6 +612,7 @@ def _write_lammps_output(  # noqa: PLR0913
                 args.force_field == "glycam" and args.shape in {"bulk", "crystal", "unit-cell"}
             ),
             python_executable=args.openmm_python,
+            polymer=args.polymer,
         )
     except (FileNotFoundError, RuntimeError, ValueError) as error:
         parser.error(str(error))

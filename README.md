@@ -150,7 +150,11 @@ electrostatics, and total nonbonded energy. Bonded terms agree within
 comparison removes three documented conventions: the CHARMM Coulomb constant
 (332.0716 vs 332.0637), the constant 1-4 LJ offsets of
 `dihedral_style charmmfsw`, and the constant shift between CHARMM vfswitch and
-GROMACS force-switch; forces are unaffected by these. GLYCAM/Amber and
+GROMACS force-switch. The two Lennard-Jones convention differences are
+constant potential offsets and do not affect forces. The different Coulomb
+constants produce a small proportional difference (about 2.4e-5) in
+electrostatic energies and forces, which is accounted for in the energy
+comparison. GLYCAM/Amber and
 fibrils are not yet available for chitin.
 
 ## Table of contents

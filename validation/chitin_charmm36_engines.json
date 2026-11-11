@@ -168,6 +168,10 @@
         }
       },
       "lammps_raw": {
+        "dynamics_final_step": 2000.0,
+        "dynamics_final_temperature_k": 293.6699,
+        "dynamics_final_potential": 4885.1639,
+        "dynamics_final_improper": 37.1992,
         "raw_lj_14": 870.8742,
         "raw_coulomb_14": 11249.802,
         "raw_potential": 20425.2274,
@@ -186,7 +190,7 @@
         "urey_bradley_count": 792,
         "weighted_one_four_count": 2736,
         "data": "system.data",
-        "input": "in.cellulose",
+        "input": "in.chitin",
         "dispersion_correction": false,
         "input_scope": "single-point run 0 validation; not a dynamics protocol"
       },
@@ -194,6 +198,9 @@
         "gromacs_angle_split_reproduces_u_b": true,
         "openmm_improper_count": true,
         "lammps_improper_count": true,
+        "openmm_all_expected_terms_present": true,
+        "lammps_all_expected_terms_present": true,
+        "lammps_dynamics_smoke_test_completed": true,
         "openmm_terms_match": true,
         "lammps_terms_match": true
       },
@@ -353,6 +360,10 @@
         }
       },
       "lammps_raw": {
+        "dynamics_final_step": 2000.0,
+        "dynamics_final_temperature_k": 311.0582,
+        "dynamics_final_potential": 5339.5861,
+        "dynamics_final_improper": 30.2716,
         "raw_lj_14": 902.9974,
         "raw_coulomb_14": 11977.2197,
         "raw_potential": 22859.1225,
@@ -371,7 +382,7 @@
         "urey_bradley_count": 792,
         "weighted_one_four_count": 2736,
         "data": "system.data",
-        "input": "in.cellulose",
+        "input": "in.chitin",
         "dispersion_correction": false,
         "input_scope": "single-point run 0 validation; not a dynamics protocol"
       },
@@ -379,6 +390,9 @@
         "gromacs_angle_split_reproduces_u_b": true,
         "openmm_improper_count": true,
         "lammps_improper_count": true,
+        "openmm_all_expected_terms_present": true,
+        "lammps_all_expected_terms_present": true,
+        "lammps_dynamics_smoke_test_completed": true,
         "openmm_terms_match": true,
         "lammps_terms_match": true
       },
@@ -538,6 +552,10 @@
         }
       },
       "lammps_raw": {
+        "dynamics_final_step": 2000.0,
+        "dynamics_final_temperature_k": 298.0322,
+        "dynamics_final_potential": 6396.9214,
+        "dynamics_final_improper": 103.4251,
         "raw_lj_14": 1100.5275,
         "raw_coulomb_14": 17030.5887,
         "raw_potential": 33673.0676,
@@ -556,7 +574,7 @@
         "urey_bradley_count": 1188,
         "weighted_one_four_count": 4104,
         "data": "system.data",
-        "input": "in.cellulose",
+        "input": "in.chitin",
         "dispersion_correction": false,
         "input_scope": "single-point run 0 validation; not a dynamics protocol"
       },
@@ -564,6 +582,9 @@
         "gromacs_angle_split_reproduces_u_b": true,
         "openmm_improper_count": true,
         "lammps_improper_count": true,
+        "openmm_all_expected_terms_present": true,
+        "lammps_all_expected_terms_present": true,
+        "lammps_dynamics_smoke_test_completed": true,
         "openmm_terms_match": true,
         "lammps_terms_match": true
       },
@@ -723,6 +744,10 @@
         }
       },
       "lammps_raw": {
+        "dynamics_final_step": 2000.0,
+        "dynamics_final_temperature_k": 312.6652,
+        "dynamics_final_potential": 6706.2131,
+        "dynamics_final_improper": 136.0488,
         "raw_lj_14": 1169.4598,
         "raw_coulomb_14": 18148.4607,
         "raw_potential": 35630.6298,
@@ -741,7 +766,7 @@
         "urey_bradley_count": 1188,
         "weighted_one_four_count": 4104,
         "data": "system.data",
-        "input": "in.cellulose",
+        "input": "in.chitin",
         "dispersion_correction": false,
         "input_scope": "single-point run 0 validation; not a dynamics protocol"
       },
@@ -749,6 +774,9 @@
         "gromacs_angle_split_reproduces_u_b": true,
         "openmm_improper_count": true,
         "lammps_improper_count": true,
+        "openmm_all_expected_terms_present": true,
+        "lammps_all_expected_terms_present": true,
+        "lammps_dynamics_smoke_test_completed": true,
         "openmm_terms_match": true,
         "lammps_terms_match": true
       },

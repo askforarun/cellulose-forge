@@ -410,11 +410,17 @@ def write_lammps_system(  # noqa: PLR0913
     force_field: str = "glycam",
     dispersion_correction: bool = False,
     python_executable: str | None = None,
+    polymer: str = "cellulose",
 ) -> tuple[LammpsSystemFiles, dict[str, object]]:
-    """Write an exact LAMMPS representation or reject unsupported semantics."""
+    """Write an exact LAMMPS representation or reject unsupported semantics.
+
+    The input is ``in.cellulose`` for cellulose (unchanged for compatibility)
+    and ``in.<polymer>`` otherwise, for example ``in.chitin``.
+    """
     directory = Path(output_directory)
     directory.mkdir(parents=True, exist_ok=True)
-    files = LammpsSystemFiles(directory / LAMMPS_DATA_FILE, directory / LAMMPS_INPUT_FILE)
+    input_name = LAMMPS_INPUT_FILE if polymer == "cellulose" else f"in.{polymer}"
+    files = LammpsSystemFiles(directory / LAMMPS_DATA_FILE, directory / input_name)
     molecule_ids = [int(value) for value in system.chain_numbers]
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_lammps_") as temporary:
         request_path = Path(temporary) / "request.json"
