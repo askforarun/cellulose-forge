@@ -8,6 +8,7 @@ import pytest
 
 from cellulose_forge.cli import main
 from cellulose_forge.glycam import GlycamChainFiles
+from cellulose_forge.openmm import OpenMMPositionRestraints, OpenMMSystemFiles
 
 
 def _use_committed_glycam_reference(
@@ -498,7 +499,7 @@ def test_cli_rejects_md_engine_without_force_field(tmp_path: Path) -> None:
         )
 
 
-def test_cli_rejects_periodic_native_openmm_engine(tmp_path: Path) -> None:
+def test_cli_rejects_native_amber_engine_for_charmm36(tmp_path: Path) -> None:
     with pytest.raises(SystemExit, match="2"):
         main(
             [
@@ -510,9 +511,9 @@ def test_cli_rejects_periodic_native_openmm_engine(tmp_path: Path) -> None:
                 "--chain-boundary",
                 "periodic",
                 "--force-field",
-                "glycam",
+                "charmm36",
                 "--md-engine",
-                "openmm",
+                "amber",
                 "--output",
                 str(tmp_path / "invalid"),
             ]
@@ -774,39 +775,106 @@ def test_cli_writes_finite_glycam_slab_system(
     assert "CELLULOSE_CHAIN  2" in (output / "system.top").read_text(encoding="utf-8")
 
 
-def test_cli_writes_and_validates_finite_openmm_system(
+def _record_openmm_writer(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
+    """Replace the OpenMM writer with a recorder that checks its GROMACS inputs."""
+    calls: dict[str, object] = {}
+
+    def write(
+        system: object,
+        gromacs_topology: str | Path,
+        gromacs_coordinates: str | Path,
+        output_directory: str | Path,
+        **kwargs: object,
+    ) -> tuple[OpenMMSystemFiles, dict[str, object]]:
+        assert Path(gromacs_topology).is_file()
+        assert Path(gromacs_coordinates).is_file()
+        calls.update(kwargs)
+        calls["system"] = system
+        directory = Path(output_directory)
+        files = OpenMMSystemFiles(
+            system=directory / "system.xml",
+            state=directory / "state.xml",
+            topology=directory / "topology.cif",
+            runner=directory / "run_openmm.py",
+        )
+        for path in (files.system, files.state, files.topology, files.runner):
+            path.touch()
+        return files, {"status": "passed", "chain_axis": "y"}
+
+    monkeypatch.setattr("cellulose_forge.cli.write_openmm_system", write)
+    return calls
+
+
+def test_cli_writes_periodic_restrained_openmm_system(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _use_committed_glycam_reference(monkeypatch, chain_boundary="periodic")
+    calls = _record_openmm_writer(monkeypatch)
+    output = tmp_path / "ibeta_openmm"
+
+    result = main(
+        [
+            "build",
+            "--allomorph",
+            "I-beta",
+            "--shape",
+            "slab",
+            "--face",
+            "1",
+            "1",
+            "0",
+            "--layers",
+            "2",
+            "--chains-per-layer",
+            "2",
+            "--degree-polymerization",
+            "12",
+            "--chain-boundary",
+            "periodic",
+            "--vacuum",
+            "30",
+            "--force-field",
+            "glycam",
+            "--md-engine",
+            "gromacs",
+            "--md-engine",
+            "openmm",
+            "--restrain-layers",
+            "1",
+            "--restraint-force",
+            "1000",
+            "1000",
+            "1000",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    assert calls["periodic_chains"] is True
+    restraints = calls["restraints"]
+    assert isinstance(restraints, OpenMMPositionRestraints)
+    assert restraints.force_constants_kj_mol_nm2 == (1000.0, 1000.0, 1000.0)
+    assert len(restraints.atom_indices) == 2 * 12 * 11
+    report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
+    assert report["md_engines"] == ["gromacs", "openmm"]
+    assert report["openmm_validation"]["status"] == "passed"
+    assert report["outputs"]["openmm_system"] == "system.xml"
+    assert report["outputs"]["openmm_state"] == "state.xml"
+    assert report["outputs"]["openmm_topology"] == "topology.cif"
+    assert report["outputs"]["openmm_runner"] == "run_openmm.py"
+    assert report["outputs"]["gromacs_topology"] == "system.top"
+    assert "amber_topology" not in report["outputs"]
+
+
+def test_cli_openmm_only_build_keeps_gromacs_files_internal(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _use_committed_glycam_reference(monkeypatch, chain_boundary="finite")
-
-    def write_amber(
-        system: object,
-        template_prmtop: object,
-        template_inpcrd: object,
-        output_directory: str | Path,
-        **kwargs: object,
-    ) -> tuple[Path, Path, dict[str, object]]:
-        del system, template_prmtop, template_inpcrd, kwargs
-        directory = Path(output_directory)
-        topology = directory / "structure.prmtop"
-        coordinates = directory / "structure.inpcrd"
-        topology.touch()
-        coordinates.touch()
-        return topology, coordinates, {"status": "passed"}
-
-    monkeypatch.setattr("cellulose_forge.cli.write_glycam_amber_system", write_amber)
-    monkeypatch.setattr(
-        "cellulose_forge.cli.validate_openmm_system",
-        lambda *args, **kwargs: {
-            "status": "passed",
-            "openmm_version": "8.5",
-            "platform": "CPU",
-            "initial_potential_energy_kj_mol": 100.0,
-            "minimized_potential_energy_kj_mol": 80.0,
-        },
-    )
-    output = tmp_path / "ibeta_openmm"
+    calls = _record_openmm_writer(monkeypatch)
+    output = tmp_path / "ibeta_openmm_only"
 
     result = main(
         [
@@ -834,8 +902,6 @@ def test_cli_writes_and_validates_finite_openmm_system(
             "--force-field",
             "glycam",
             "--md-engine",
-            "gromacs",
-            "--md-engine",
             "openmm",
             "--output",
             str(output),
@@ -843,12 +909,14 @@ def test_cli_writes_and_validates_finite_openmm_system(
     )
 
     assert result == 0
+    assert calls["periodic_chains"] is False
+    assert calls["restraints"] is None
+    assert not (output / "system.top").exists()
+    assert not (output / "structure.gro").exists()
     report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
-    assert report["md_engines"] == ["gromacs", "openmm"]
-    assert report["openmm_validation"]["status"] == "passed"
-    assert report["outputs"]["amber_topology"] == "structure.prmtop"
-    assert report["outputs"]["openmm_runner"] == "run_openmm.py"
-    assert report["outputs"]["gromacs_topology"] == "system.top"
+    assert report["md_engines"] == ["openmm"]
+    assert "gromacs_topology" not in report["outputs"]
+    assert report["outputs"]["openmm_system"] == "system.xml"
 
 
 def test_cli_rejects_unpadded_finite_force_field_slab(tmp_path: Path) -> None:

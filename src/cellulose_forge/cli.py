@@ -53,7 +53,11 @@ from cellulose_forge.glycam_mapping import (
     map_crystal_to_periodic_glycam,
 )
 from cellulose_forge.gromacs import write_glycam_gromacs_system
-from cellulose_forge.openmm import validate_openmm_system, write_openmm_runner
+from cellulose_forge.openmm import (
+    OpenMMSystemFiles,
+    heavy_atom_restraints,
+    write_openmm_system,
+)
 from cellulose_forge.restraints import (
     ChainRestraints,
     group_mapped_chains,
@@ -404,8 +408,8 @@ def _resolve_md_engines(
 
     if args.force_field == "none" and engines:
         parser.error("--md-engine requires --force-field glycam or charmm36")
-    if args.force_field == "charmm36" and engines != ("gromacs",):
-        parser.error("CHARMM36 currently supports --md-engine gromacs only")
+    if args.force_field == "charmm36" and not set(engines) <= {"gromacs", "openmm"}:
+        parser.error("CHARMM36 supports --md-engine gromacs and openmm")
     if args.force_field == "glycam" and not engines:
         parser.error("GLYCAM builds require at least one --md-engine")
     args.md_engines = engines
@@ -483,7 +487,56 @@ def _validate_written_periodic_topology(
         parser.error(str(error))
 
 
-def _write_charmm36_build(  # noqa: PLR0912
+def _write_openmm_output(  # noqa: PLR0913
+    args: argparse.Namespace,
+    mapped: GlycamMappedSystem,
+    restraints: ChainRestraints | None,
+    *,
+    gromacs_topology: Path,
+    gromacs_coordinates: Path,
+    parser: argparse.ArgumentParser,
+) -> tuple[OpenMMSystemFiles, dict[str, object]]:
+    """Serialize and validate the OpenMM system for a force-field build."""
+    try:
+        return write_openmm_system(
+            mapped,
+            gromacs_topology,
+            gromacs_coordinates,
+            args.output,
+            periodic_chains=args.chain_boundary == "periodic",
+            restraints=(
+                None
+                if restraints is None
+                else heavy_atom_restraints(
+                    mapped, restraints.chain_ids, restraints.force_constants
+                )
+            ),
+            python_executable=args.openmm_python,
+        )
+    except (FileNotFoundError, RuntimeError, ValueError) as error:
+        parser.error(str(error))
+
+
+def _engine_outputs(
+    coordinate_path: Path,
+    engine_files: dict[str, str],
+    openmm_files: OpenMMSystemFiles | None,
+) -> dict[str, str]:
+    """Collect the written file names for the build report."""
+    outputs = {"coordinates": coordinate_path.name, **engine_files}
+    if openmm_files is not None:
+        outputs.update(
+            {
+                "openmm_system": openmm_files.system.name,
+                "openmm_state": openmm_files.state.name,
+                "openmm_topology": openmm_files.topology.name,
+                "openmm_runner": openmm_files.runner.name,
+            }
+        )
+    return outputs
+
+
+def _write_charmm36_build(  # noqa: PLR0912, PLR0915
     args: argparse.Namespace,
     crystal: BulkCrystal,
     parser: argparse.ArgumentParser,
@@ -544,18 +597,32 @@ def _write_charmm36_build(  # noqa: PLR0912
         )
     args.output.mkdir(parents=True, exist_ok=True)
     coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
-    gro_path, itp_path, topology_path, force_field_path = write_charmm36_system(
-        mapped,
-        topology,
-        force_field_directory,
-        args.output,
-        restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
-        restraint_force=restraints.force_constants if restraints else None,
-    )
-    if args.chain_boundary == "periodic":
-        written_periodic_bond_validation = _validate_written_periodic_topology(
-            mapped, itp_path, topology_path, parser
+    write_gromacs = "gromacs" in args.md_engines
+    openmm_files: OpenMMSystemFiles | None = None
+    openmm_metadata: dict[str, object] | None = None
+    with tempfile.TemporaryDirectory(prefix="cellulose_forge_charmm36_") as temporary:
+        gromacs_directory = args.output if write_gromacs else Path(temporary)
+        gro_path, itp_path, topology_path, force_field_path = write_charmm36_system(
+            mapped,
+            topology,
+            force_field_directory,
+            gromacs_directory,
+            restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
+            restraint_force=restraints.force_constants if restraints else None,
         )
+        if args.chain_boundary == "periodic":
+            written_periodic_bond_validation = _validate_written_periodic_topology(
+                mapped, itp_path, topology_path, parser
+            )
+        if "openmm" in args.md_engines:
+            openmm_files, openmm_metadata = _write_openmm_output(
+                args,
+                mapped,
+                restraints,
+                gromacs_topology=topology_path,
+                gromacs_coordinates=gro_path,
+                parser=parser,
+            )
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
@@ -577,16 +644,23 @@ def _write_charmm36_build(  # noqa: PLR0912
         ),
         "reference_force_field": str(force_field_directory),
         "charmm36_release": CHARMM36_RELEASE,
-        "outputs": {
-            "coordinates": coordinate_path.name,
-            "gromacs_coordinates": gro_path.name,
-            "gromacs_molecule_topology": itp_path.name,
-            "gromacs_topology": topology_path.name,
-            "gromacs_force_field": force_field_path.name,
-        },
+        "outputs": _engine_outputs(
+            coordinate_path,
+            {
+                "gromacs_coordinates": gro_path.name,
+                "gromacs_molecule_topology": itp_path.name,
+                "gromacs_topology": topology_path.name,
+                "gromacs_force_field": force_field_path.name,
+            }
+            if write_gromacs
+            else {},
+            openmm_files,
+        ),
         "geometry_annotations": list(crystal.annotations),
         "chirality_validation": validate_cellulose_chirality(crystal),
     }
+    if openmm_metadata is not None:
+        report["openmm_validation"] = openmm_metadata
     if periodic_image_contact is not None:
         report["closest_longitudinal_periodic_image_contact"] = (
             periodic_image_contact.as_dict()
@@ -645,21 +719,19 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
     write_gromacs = "gromacs" in args.md_engines
     write_amber = "amber" in args.md_engines
     write_openmm = "openmm" in args.md_engines
-    write_native_amber = write_amber or write_openmm
-    if write_native_amber and chain_boundary == "periodic":
+    if write_amber and chain_boundary == "periodic":
         parser.error(
-            "native Amber and OpenMM output currently support finite chains only; "
-            "the Amber topology does not minimum-image bonded terms across the periodic "
-            "chain boundary. Use "
-            "--chain-boundary finite with longitudinal padding, or use GROMACS output "
-            "for covalently periodic chains"
+            "native Amber output currently supports finite chains only; Amber does not "
+            "minimum-image bonded terms across the periodic chain boundary. Use "
+            "--chain-boundary finite with longitudinal padding, or use GROMACS or "
+            "OpenMM output for covalently periodic chains"
         )
     gro_path: Path | None = None
     topology_path: Path | None = None
     amber_topology_path: Path | None = None
     amber_coordinate_path: Path | None = None
     amber_metadata: dict[str, object] | None = None
-    openmm_runner_path: Path | None = None
+    openmm_files: OpenMMSystemFiles | None = None
     openmm_metadata: dict[str, object] | None = None
 
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_glycam_") as temporary:
@@ -693,15 +765,29 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             mapped, chain_mapping = group_mapped_chains(mapped, restraints.chain_ids)
         output_directory.mkdir(parents=True, exist_ok=True)
         coordinate_path = write_coordinates(crystal, output_directory / "structure.pdb")
-        if write_gromacs:
-            gro_path, topology_path = write_glycam_gromacs_system(
+        if write_gromacs or write_openmm:
+            gromacs_directory = (
+                output_directory if write_gromacs else Path(temporary) / "gromacs"
+            )
+            written_gro, written_topology = write_glycam_gromacs_system(
                 mapped,
                 files.gromacs_topology,
-                output_directory,
+                gromacs_directory,
                 restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
                 restraint_force=restraints.force_constants if restraints else None,
             )
-        if write_native_amber:
+            if write_gromacs:
+                gro_path, topology_path = written_gro, written_topology
+            if write_openmm:
+                openmm_files, openmm_metadata = _write_openmm_output(
+                    args,
+                    mapped,
+                    restraints,
+                    gromacs_topology=written_topology,
+                    gromacs_coordinates=written_gro,
+                    parser=parser,
+                )
+        if write_amber:
             amber_topology_path, amber_coordinate_path, amber_metadata = (
                 write_glycam_amber_system(
                     mapped,
@@ -711,40 +797,27 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                     python_executable=args.parmed_python,
                 )
             )
-        if write_openmm:
-            assert amber_topology_path is not None
-            assert amber_coordinate_path is not None
-            openmm_runner_path = write_openmm_runner(output_directory)
-            try:
-                openmm_metadata = validate_openmm_system(
-                    amber_topology_path,
-                    amber_coordinate_path,
-                    python_executable=args.openmm_python,
-                )
-            except (FileNotFoundError, RuntimeError, ValueError) as error:
-                parser.error(str(error))
         if chain_boundary == "periodic" and topology_path is not None:
             written_periodic_bond_validation = _validate_written_periodic_topology(
                 mapped, topology_path, topology_path, parser
             )
 
-    outputs = {"coordinates": coordinate_path.name}
+    engine_files: dict[str, str] = {}
     if gro_path is not None and topology_path is not None:
-        outputs.update(
+        engine_files.update(
             {
                 "gromacs_coordinates": gro_path.name,
                 "gromacs_topology": topology_path.name,
             }
         )
     if amber_topology_path is not None and amber_coordinate_path is not None:
-        outputs.update(
+        engine_files.update(
             {
                 "amber_topology": amber_topology_path.name,
                 "amber_coordinates": amber_coordinate_path.name,
             }
         )
-    if openmm_runner_path is not None:
-        outputs["openmm_runner"] = openmm_runner_path.name
+    outputs = _engine_outputs(coordinate_path, engine_files, openmm_files)
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,

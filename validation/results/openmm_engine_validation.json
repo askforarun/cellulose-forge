@@ -1,0 +1,407 @@
+{
+  "cases": {
+    "charmm36_finite_slab": {
+      "atom_count": 2052,
+      "build_arguments": [
+        "--allomorph",
+        "I-beta",
+        "--shape",
+        "slab",
+        "--face",
+        "1",
+        "1",
+        "0",
+        "--layers",
+        "3",
+        "--chains-per-layer",
+        "4",
+        "--degree-polymerization",
+        "8",
+        "--vacuum",
+        "30",
+        "--padding-longitudinal",
+        "12",
+        "--chain-boundary",
+        "finite",
+        "--force-field",
+        "charmm36",
+        "--md-engine",
+        "gromacs",
+        "--md-engine",
+        "openmm"
+      ],
+      "chain_axis": "y",
+      "chain_boundary": "finite",
+      "energy_comparison": {
+        "categories": {
+          "bonds_angles_and_urey_bradley": {
+            "gromacs_kj_mol": 20734.31,
+            "openmm_kj_mol": 20734.269719971096,
+            "relative_difference": 1.9426751555666572e-06
+          },
+          "one_four": {
+            "gromacs_kj_mol": 59529.15,
+            "openmm_kj_mol": 59529.23356726082,
+            "relative_difference": 1.4038040324021247e-06
+          },
+          "torsions": {
+            "gromacs_kj_mol": 13415.8,
+            "openmm_kj_mol": 13415.839743074659,
+            "relative_difference": 2.9624081053520475e-06
+          }
+        },
+        "maximum_relative_difference": 2.9624081053520475e-06
+      },
+      "force_field": "charmm36",
+      "initial_maximum_bond_length_deviation_nm": 0.02377110241390812,
+      "nvt": {
+        "arguments": [],
+        "box_lengths_nm": [
+          2.38579,
+          5.352,
+          4.64391
+        ],
+        "final_potential_energy_kj_mol": 39790.599462,
+        "final_temperature_k": 250.09992383762875,
+        "final_volume_nm3": 59.296916896192805,
+        "maximum_bond_length_deviation_nm": 0.021380149060222453,
+        "steps": 500
+      },
+      "periodic_forces": []
+    },
+    "charmm36_periodic_slab": {
+      "atom_count": 2016,
+      "build_arguments": [
+        "--allomorph",
+        "I-beta",
+        "--shape",
+        "slab",
+        "--face",
+        "1",
+        "1",
+        "0",
+        "--layers",
+        "3",
+        "--chains-per-layer",
+        "4",
+        "--degree-polymerization",
+        "8",
+        "--vacuum",
+        "30",
+        "--chain-boundary",
+        "periodic",
+        "--force-field",
+        "charmm36",
+        "--md-engine",
+        "gromacs",
+        "--md-engine",
+        "openmm"
+      ],
+      "chain_axis": "y",
+      "chain_boundary": "periodic",
+      "energy_comparison": {
+        "categories": {
+          "bonds_angles_and_urey_bradley": {
+            "gromacs_kj_mol": 20313.52,
+            "openmm_kj_mol": 20313.44808823722,
+            "relative_difference": 3.540093631304816e-06
+          },
+          "one_four": {
+            "gromacs_kj_mol": 57588.38,
+            "openmm_kj_mol": 57588.421505896644,
+            "relative_difference": 7.207338814950694e-07
+          },
+          "torsions": {
+            "gromacs_kj_mol": 13424.3,
+            "openmm_kj_mol": 13424.279524020074,
+            "relative_difference": 1.5252921884435288e-06
+          }
+        },
+        "maximum_relative_difference": 3.540093631304816e-06
+      },
+      "force_field": "charmm36",
+      "initial_maximum_bond_length_deviation_nm": 0.02377110241390812,
+      "npt_fixed_chain_axis": {
+        "arguments": [
+          "--pressure-bar",
+          "1",
+          "--pressure-axes",
+          "x"
+        ],
+        "box_lengths_nm": [
+          2.3917698902042286,
+          4.152,
+          4.64391
+        ],
+        "final_potential_energy_kj_mol": 38953.308412,
+        "final_temperature_k": 246.50997615279596,
+        "final_volume_nm3": 46.116945388117664,
+        "maximum_bond_length_deviation_nm": 0.021340882479193884,
+        "steps": 500
+      },
+      "nvt": {
+        "arguments": [],
+        "box_lengths_nm": [
+          2.38579,
+          4.152,
+          4.64391
+        ],
+        "final_potential_energy_kj_mol": 38801.95473,
+        "final_temperature_k": 249.2337022564954,
+        "final_volume_nm3": 46.001644049512805,
+        "maximum_bond_length_deviation_nm": 0.02001969413225091,
+        "steps": 500
+      },
+      "periodic_forces": [
+        "NonbondedForce exceptions",
+        "HarmonicBondForce",
+        "HarmonicAngleForce",
+        "PeriodicTorsionForce"
+      ]
+    },
+    "glycam_finite_slab": {
+      "atom_count": 2052,
+      "build_arguments": [
+        "--allomorph",
+        "I-beta",
+        "--shape",
+        "slab",
+        "--face",
+        "1",
+        "1",
+        "0",
+        "--layers",
+        "3",
+        "--chains-per-layer",
+        "4",
+        "--degree-polymerization",
+        "8",
+        "--vacuum",
+        "30",
+        "--padding-longitudinal",
+        "12",
+        "--chain-boundary",
+        "finite",
+        "--force-field",
+        "glycam",
+        "--md-engine",
+        "gromacs",
+        "--md-engine",
+        "openmm"
+      ],
+      "chain_axis": "y",
+      "chain_boundary": "finite",
+      "energy_comparison": {
+        "categories": {
+          "angles": {
+            "gromacs_kj_mol": 2151.44,
+            "openmm_kj_mol": 2151.4452489283667,
+            "relative_difference": 2.4397279806337064e-06
+          },
+          "bonds_and_urey_bradley": {
+            "gromacs_kj_mol": 13270.4,
+            "openmm_kj_mol": 13270.43390784068,
+            "relative_difference": 2.5551483511878614e-06
+          },
+          "one_four": {
+            "gromacs_kj_mol": 86267.72,
+            "openmm_kj_mol": 86267.47235985352,
+            "relative_difference": 2.870600341367427e-06
+          },
+          "torsions": {
+            "gromacs_kj_mol": 3030.63,
+            "openmm_kj_mol": 3030.632402301276,
+            "relative_difference": 7.926738916021751e-07
+          }
+        },
+        "maximum_relative_difference": 2.870600341367427e-06
+      },
+      "force_field": "glycam",
+      "initial_maximum_bond_length_deviation_nm": 0.013031255087919386,
+      "nvt": {
+        "arguments": [],
+        "box_lengths_nm": [
+          2.38579,
+          5.352,
+          4.64391
+        ],
+        "final_potential_energy_kj_mol": 43274.910525,
+        "final_temperature_k": 248.36957582128116,
+        "final_volume_nm3": 59.296916896192805,
+        "maximum_bond_length_deviation_nm": 0.01085369046717774,
+        "steps": 500
+      },
+      "periodic_forces": []
+    },
+    "glycam_periodic_slab": {
+      "atom_count": 2016,
+      "build_arguments": [
+        "--allomorph",
+        "I-beta",
+        "--shape",
+        "slab",
+        "--face",
+        "1",
+        "1",
+        "0",
+        "--layers",
+        "3",
+        "--chains-per-layer",
+        "4",
+        "--degree-polymerization",
+        "8",
+        "--vacuum",
+        "30",
+        "--chain-boundary",
+        "periodic",
+        "--force-field",
+        "glycam",
+        "--md-engine",
+        "gromacs",
+        "--md-engine",
+        "openmm"
+      ],
+      "chain_axis": "y",
+      "chain_boundary": "periodic",
+      "energy_comparison": {
+        "categories": {
+          "angles": {
+            "gromacs_kj_mol": 2179.05,
+            "openmm_kj_mol": 2179.0503627764915,
+            "relative_difference": 1.6648378482778577e-07
+          },
+          "bonds_and_urey_bradley": {
+            "gromacs_kj_mol": 13273.3,
+            "openmm_kj_mol": 13273.375045335957,
+            "relative_difference": 5.65385668656918e-06
+          },
+          "one_four": {
+            "gromacs_kj_mol": 84990.93000000001,
+            "openmm_kj_mol": 84990.6630527904,
+            "relative_difference": 3.1408905585833903e-06
+          },
+          "torsions": {
+            "gromacs_kj_mol": 3062.5,
+            "openmm_kj_mol": 3062.5083222964813,
+            "relative_difference": 2.7174845653258227e-06
+          }
+        },
+        "maximum_relative_difference": 5.65385668656918e-06
+      },
+      "force_field": "glycam",
+      "initial_maximum_bond_length_deviation_nm": 0.013031255087919386,
+      "npt_fixed_chain_axis": {
+        "arguments": [
+          "--pressure-bar",
+          "1",
+          "--pressure-axes",
+          "x"
+        ],
+        "box_lengths_nm": [
+          2.360699957141585,
+          4.152,
+          4.64391
+        ],
+        "final_potential_energy_kj_mol": 43047.591229,
+        "final_temperature_k": 242.8386544332364,
+        "final_volume_nm3": 45.51787002884886,
+        "maximum_bond_length_deviation_nm": 0.011874306053071798,
+        "steps": 500
+      },
+      "nvt": {
+        "arguments": [],
+        "box_lengths_nm": [
+          2.38579,
+          4.152,
+          4.64391
+        ],
+        "final_potential_energy_kj_mol": 43255.350949,
+        "final_temperature_k": 255.37826196438795,
+        "final_volume_nm3": 46.001644049512805,
+        "maximum_bond_length_deviation_nm": 0.011415005731433225,
+        "steps": 500
+      },
+      "periodic_forces": [
+        "NonbondedForce exceptions",
+        "HarmonicBondForce",
+        "HarmonicAngleForce",
+        "PeriodicTorsionForce"
+      ]
+    },
+    "glycam_periodic_triclinic_bulk": {
+      "atom_count": 1512,
+      "build_arguments": [
+        "--allomorph",
+        "I-beta",
+        "--shape",
+        "bulk",
+        "--cells",
+        "3",
+        "3",
+        "2",
+        "--chain-boundary",
+        "periodic",
+        "--force-field",
+        "glycam",
+        "--md-engine",
+        "gromacs",
+        "--md-engine",
+        "openmm"
+      ],
+      "chain_axis": "z",
+      "chain_boundary": "periodic",
+      "energy_comparison": {
+        "categories": {
+          "angles": {
+            "gromacs_kj_mol": 1633.9,
+            "openmm_kj_mol": 1633.9021974442323,
+            "relative_difference": 1.3449074192127151e-06
+          },
+          "bonds_and_urey_bradley": {
+            "gromacs_kj_mol": 10009.9,
+            "openmm_kj_mol": 10009.948959408477,
+            "relative_difference": 4.891098660072334e-06
+          },
+          "one_four": {
+            "gromacs_kj_mol": 63762.36,
+            "openmm_kj_mol": 63762.301909000445,
+            "relative_difference": 9.110547281363762e-07
+          },
+          "torsions": {
+            "gromacs_kj_mol": 2302.51,
+            "openmm_kj_mol": 2302.503314259641,
+            "relative_difference": 2.903674841561611e-06
+          }
+        },
+        "maximum_relative_difference": 4.891098660072334e-06
+      },
+      "force_field": "glycam",
+      "initial_maximum_bond_length_deviation_nm": 0.0130312550879194,
+      "nvt": {
+        "arguments": [],
+        "box_lengths_nm": [
+          2.3352,
+          2.44448,
+          2.076
+        ],
+        "final_potential_energy_kj_mol": 30316.538071,
+        "final_temperature_k": 248.05980903230517,
+        "final_volume_nm3": 11.850533968896,
+        "maximum_bond_length_deviation_nm": 0.01156649271914803,
+        "steps": 500
+      },
+      "periodic_forces": [
+        "NonbondedForce exceptions",
+        "HarmonicBondForce",
+        "HarmonicAngleForce",
+        "PeriodicTorsionForce"
+      ]
+    }
+  },
+  "gromacs_version": "2024.2-Homebrew",
+  "maximum_relative_energy_difference": 5.65385668656918e-06,
+  "openmm_version": "8.5",
+  "platform": "CPU",
+  "temperature_k": 300.0,
+  "timestep_fs": 2.0
+}

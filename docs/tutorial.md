@@ -557,27 +557,32 @@ available for existing scripts. The selected engines are recorded in
 
 ### OpenMM output
 
-OpenMM reuses the complete Amber-format GLYCAM topology and coordinates:
+OpenMM output is available for GLYCAM06j-1 and CHARMM36, with finite or
+covalently periodic chains. This example writes a periodic slab with its middle
+layer restrained:
 
 ```bash
 cellulose-forge build \
-  --allomorph I-beta --shape fibril --fibril-model 18-chain \
-  --degree-polymerization 12 --chain-boundary finite --vacuum 30 \
-  --padding-longitudinal 20 --force-field glycam \
-  --md-engine openmm \
-  --output cellulose_forge_tutorial/ibeta_18chain_openmm
+  --allomorph I-beta --shape slab --face 1 1 0 \
+  --layers 3 --chains-per-layer 4 --degree-polymerization 8 \
+  --chain-boundary periodic --vacuum 30 \
+  --force-field glycam --md-engine openmm \
+  --restrain-layers 2 --restraint-force 1000 1000 1000 \
+  --output cellulose_forge_tutorial/ibeta_110_openmm
 ```
 
-The build performs an OpenMM load, finite-energy check, and short minimization.
-Run a longer minimization or dynamics workflow from the output directory with:
+The output directory contains `system.xml`, `state.xml`, `topology.cif`, and
+`run_openmm.py`. The build checks per-force energies, minimum-image bond
+lengths, and a short minimization. Run dynamics from the output directory with:
 
 ```bash
 python run_openmm.py --minimize-iterations 1000 --steps 10000
 ```
 
-The generated runner writes `openmm_final.pdb` and, when dynamics steps are
-requested, `trajectory.dcd`. Native OpenMM output currently supports finite
-GLYCAM chains only. See `docs/openmm.md` for the validation boundary.
+Add `--no-restraints` to switch the restraints off, or `--pressure-bar 1
+--pressure-axes x` for pressure coupling in the slab plane perpendicular to the
+chains. The chain axis of a periodic system is never scaled. See
+`docs/openmm.md` for the validation boundary.
 
 If `tleap` or ParmEd is installed outside the active environment:
 

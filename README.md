@@ -686,30 +686,35 @@ multi-chain system and use the same mapped coordinates, periodic box, GLYCAM
 charges, and bonded topology as the GROMACS output. The build report records a
 ParmEd reload check of atom count, residue count, total charge, and box.
 Native Amber output currently supports finite chains only. Covalently periodic
-chains remain available through GROMACS because Amber does not minimum-image a
-bonded interaction crossing the chain-direction box boundary.
+chains remain available through GROMACS and OpenMM because Amber does not
+minimum-image a bonded interaction crossing the chain-direction box boundary.
 See [`docs/amber.md`](docs/amber.md) for the format semantics and engine-level
 validation boundary.
 
 ### OpenMM mode
 
-Finite GLYCAM systems can be emitted and checked directly with OpenMM:
+GLYCAM06j-1 and CHARMM36 systems, with finite or covalently periodic chains,
+can be written as serialized OpenMM systems:
 
 ```bash
 cellulose-forge build \
-  --allomorph I-beta --shape fibril --fibril-model 18-chain \
-  --degree-polymerization 12 --chain-boundary finite --vacuum 30 \
-  --padding-longitudinal 20 --force-field glycam \
-  --md-engine openmm --output ibeta_18chain_openmm
+  --allomorph I-beta --shape slab --face 1 1 0 \
+  --layers 3 --chains-per-layer 4 --degree-polymerization 8 \
+  --chain-boundary periodic --vacuum 30 \
+  --force-field glycam --md-engine openmm --output ibeta_110_openmm
 ```
 
 Install the optional Python dependency with `pip install 'cellulose-forge[openmm]'`
-or use `environment.yml`. The output contains complete `structure.prmtop` and
-`structure.inpcrd` files plus `run_openmm.py`. During construction,
-CelluloseForge loads the files in OpenMM, verifies finite potential energy, and
-performs a ten-iteration minimization smoke test. Engine version, platform, and
-energies are recorded in `build_report.json`. Use `--openmm-python` when OpenMM
-is installed under a different interpreter. See
+or use `environment.yml`. The output contains `system.xml`, `state.xml`,
+`topology.cif`, and `run_openmm.py`; the runner needs only OpenMM. For
+periodic chains, every bonded force and the nonbonded 1--4 exceptions use
+periodic boundary conditions, stored in `system.xml`. Each build records
+per-force initial energies, a bond-length check, and a short minimization in
+`build_report.json`. OpenMM and GROMACS energies agree by interaction category
+within 6 × 10^-6 relative for the validated systems. Use `--openmm-python` when
+OpenMM is installed under a different interpreter. Barostats in OpenMM move
+molecules rigidly, so periodic chains are run with the chain axis fixed; use
+GROMACS for fully anisotropic NPT of periodic crystals. See
 [`docs/openmm.md`](docs/openmm.md).
 
 Existing scripts using `--topology-format gromacs|amber|both` remain valid but

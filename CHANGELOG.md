@@ -9,9 +9,12 @@ All notable changes to CelluloseForge are documented in this file.
 - Added repeatable `--md-engine gromacs|amber` selection and recorded the
   resolved engines in each build report. `--topology-format` remains as a
   deprecated compatibility alias.
-- Added `--md-engine openmm` for finite-chain GLYCAM systems. It writes complete
-  Amber-format inputs and a standalone runner, then records an engine-level
-  OpenMM load, finite-energy, and minimization smoke test in the build report.
+- Added `--md-engine openmm` for GLYCAM06j-1 and CHARMM36 systems with finite
+  or covalently periodic chains. Builds write a serialized OpenMM `system.xml`,
+  `state.xml`, `topology.cif`, and a standalone `run_openmm.py`. Periodic chains
+  enable periodic boundary conditions for every bonded force and for
+  nonbonded 1-4 exceptions. Position restraints are included as a switchable
+  force, and the runner keeps the chain axis fixed under pressure coupling.
 - Added I-beta 18-chain (`2,3,4,4,3,2`) and 24-chain
   (`3,4,5,5,4,3`) fibril presets.
 - Added `--fibril-profile` for deterministic custom I-beta row profiles within
@@ -29,6 +32,11 @@ All notable changes to CelluloseForge are documented in this file.
 - A finite 18-chain DP6 dual-format GLYCAM build passes GROMACS preprocessing
   and completes an AmberTools23 `sander` smoke minimization with finite bonded
   energies.
+- OpenMM 8.5 and GROMACS 2024.2 zero-step energies agree by interaction
+  category within 6e-6 relative for finite and periodic GLYCAM06j-1 and
+  CHARMM36 I-beta slabs and a periodic triclinic GLYCAM bulk crystal. Short
+  OpenMM NVT runs, and NPT runs with the chain axis fixed, keep every bonded
+  distance within 0.023 nm of equilibrium.
 
 ## 1.1.2 - 2026-11-07
 

@@ -221,7 +221,7 @@ def render_text(checks: tuple[DiagnosticCheck, ...]) -> str:
             f"coordinate-only builds ready: {coordinate_ready}",
             f"GLYCAM/GROMACS-file builds ready: {glycam_ready}",
             f"GROMACS preprocessing/simulation ready: {simulation_ready}",
-            f"OpenMM builds ready: {openmm_ready}",
+            f"GLYCAM/OpenMM builds ready: {openmm_ready}",
         )
     )
     return "\n".join(lines)

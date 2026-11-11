@@ -26,7 +26,7 @@ apply minimum-image treatment to a bonded interaction crossing the periodic
 chain-direction boundary. A covalently periodic cellulose chain would
 therefore contain a box-length O4--C1 bonded term even though the corresponding
 GROMACS topology is valid. CelluloseForge refuses this unsafe combination.
-Use GROMACS output for covalently periodic chains.
+Use GROMACS or OpenMM output for covalently periodic chains.
 
 ## Development validation
 
