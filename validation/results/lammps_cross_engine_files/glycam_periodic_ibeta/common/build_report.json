@@ -49,6 +49,7 @@
     "weighted_one_four_count": 0
   },
   "md_engines": [
+    "gromacs",
     "openmm",
     "lammps"
   ],
@@ -88,7 +89,7 @@
     ],
     "position_restraint_atom_count": 0,
     "position_restraint_parameter": null,
-    "python_executable": "python with OpenMM 8.5",
+    "python_executable": "python with OpenMM",
     "serialized_constraints": "HBonds",
     "serialized_ewald_error_tolerance": 0.0005,
     "status": "passed",
@@ -98,6 +99,8 @@
   },
   "outputs": {
     "coordinates": "structure.pdb",
+    "gromacs_coordinates": "structure.gro",
+    "gromacs_topology": "system.top",
     "lammps_data": "system.data",
     "lammps_input": "in.cellulose",
     "openmm_runner": "run_openmm.py",
@@ -110,7 +113,12 @@
       "bond_count": 96,
       "maximum_distance_angstrom": 1.428976320843138
     },
-    "written_topology": null
+    "written_topology": {
+      "bond_count": 96,
+      "maximum_distance_angstrom": 1.428976320843138,
+      "molecule_count": 8,
+      "molecule_type_count": 1
+    }
   },
   "reference_generation": {
     "test_fixture": "dp12_periodic_reference"

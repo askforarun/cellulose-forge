@@ -27,7 +27,8 @@ cellulose-forge build \
 
 The output contains `system.data`, `in.cellulose`, crystallographic
 coordinates, and `build_report.json`. The generated LAMMPS model uses `real`
-units, `atom_style full`, harmonic bonds and angles, Fourier torsions,
+units, `atom_style full`, harmonic bonds and angles, CHARMM-style periodic
+torsions with zero dihedral 1--4 weights,
 `lj/cut/coul/long`, PPPM electrostatics, and full GLYCAM 1--4 interactions.
 CHARMM36 output instead uses the CHARMM-specific LAMMPS styles
 `angle_style charmm`, `dihedral_style charmmfsw`, and

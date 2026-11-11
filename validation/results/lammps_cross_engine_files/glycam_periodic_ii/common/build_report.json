@@ -100,7 +100,7 @@
     ],
     "position_restraint_atom_count": 0,
     "position_restraint_parameter": null,
-    "python_executable": "python with OpenMM 8.5",
+    "python_executable": "python with OpenMM",
     "serialized_constraints": "HBonds",
     "serialized_ewald_error_tolerance": 0.0005,
     "status": "passed",

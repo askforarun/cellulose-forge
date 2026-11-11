@@ -4,6 +4,12 @@ All notable changes to CelluloseForge are documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- Emit GLYCAM torsions with the standard LAMMPS `charmm` dihedral style and
+  zero dihedral 1--4 weights, preserving the energy while avoiding the
+  optional package required by `dihedral_style fourier`.
+
 ### Added
 
 - Added experimental `--md-engine lammps` output for finite and periodic

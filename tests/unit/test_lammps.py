@@ -58,6 +58,8 @@ def test_writer_records_molecules_and_emits_safe_input(
     assert files.data.is_file()
     text = files.input.read_text(encoding="utf-8")
     assert "special_bonds lj/coul 0.0 0.0 1.0" in text
+    assert "dihedral_style charmm" in text
+    assert "dihedral_style fourier" not in text
     assert "read_data system.data" in text
     assert "pair_modify mix arithmetic tail no" in text
     assert "not a dynamics protocol" in text

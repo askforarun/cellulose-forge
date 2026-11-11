@@ -1,4 +1,4 @@
-# This file was created Wed Nov 11 18:25:28 2026
+# This file was created Wed Nov 11 19:52:52 2026
 # Created by:
 #                 :-) GROMACS - gmx energy, 2024.2-Homebrew (-:
 # 
@@ -9,7 +9,7 @@
 #   gmx energy -f single_point.edr -o single_point.xvg
 # gmx energy is part of G R O M A C S:
 #
-# Green Red Orange Magenta Azure Cyan Skyblue
+# GROwing Monsters And Cloning Shrimps
 #
 @    title "GROMACS Energies"
 @    xaxis  label "Time (ps)"

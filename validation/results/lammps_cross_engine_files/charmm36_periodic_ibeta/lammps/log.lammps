@@ -73,9 +73,9 @@ For more information see https://docs.lammps.org/err0027 (src/domain.cpp:1052)
 Per MPI rank memory allocation (min/avg/max) = 19.13 | 19.13 | 19.13 Mbytes
    Step          Temp          PotEng         E_bond        E_angle        E_dihed         E_vdwl         E_coul         E_long    
          0   0              10128.614      3048.3355      594.03278      2406.5017     -123.3382       11292.667     -7089.5847    
-Loop time of 6.67e-07 on 1 procs for 0 steps with 1512 atoms
+Loop time of 5.41e-07 on 1 procs for 0 steps with 1512 atoms
 
-149.9% CPU use with 1 MPI tasks x no OpenMP threads
+184.8% CPU use with 1 MPI tasks x no OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
@@ -87,7 +87,7 @@ Neigh   | 0          | 0          | 0          |   0.0 |  0.00
 Comm    | 0          | 0          | 0          |   0.0 |  0.00
 Output  | 0          | 0          | 0          |   0.0 |  0.00
 Modify  | 0          | 0          | 0          |   0.0 |  0.00
-Other   |            | 6.67e-07   |            |       |100.00
+Other   |            | 5.41e-07   |            |       |100.00
 
 Nlocal:           1512 ave        1512 max        1512 min
 Histogram: 1 0 0 0 0 0 0 0 0 0
