@@ -105,3 +105,49 @@ def test_cli_builds_chitin_charmm36_gromacs_slab(
     )  # fmt: skip
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "WARNING" not in completed.stdout + completed.stderr
+
+
+def test_cli_restrained_chitin_uses_posres_chitin(tmp_path: Path) -> None:
+    force_field = _force_field()
+    output = tmp_path / "restrained"
+    arguments = _slab_arguments(
+        "beta",
+        "periodic",
+        output,
+        "--charmm-force-field-directory",
+        str(force_field),
+        "--restrain-layers",
+        "1",
+        "--restraint-force",
+        "1000",
+        "1000",
+        "1000",
+    )
+    assert main(arguments) == 0
+    itp = (output / "chitin_charmm36.itp").read_text(encoding="utf-8")
+    assert "#ifdef POSRES_CHITIN" in itp
+    assert "POSRES_CELLULOSE" not in itp
+    report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
+    assert report["position_restraints"]["define"] == "POSRES_CHITIN"
+
+    gmx = shutil.which("gmx")
+    if gmx is None:
+        pytest.skip("GROMACS executable 'gmx' is not installed")
+    mdp = tmp_path / "posres.mdp"
+    mdp.write_text(
+        (_ROOT / "validation/periodic_pme_minim.mdp").read_text(encoding="utf-8")
+        + "define = -DPOSRES_CHITIN\n",
+        encoding="utf-8",
+    )
+    completed = subprocess.run(
+        [
+            gmx, "grompp", "-f", str(mdp), "-c", "structure.gro", "-r", "structure.gro",
+            "-p", "system.top", "-o", "posres.tpr", "-po", "processed.mdp", "-maxwarn", "0",
+        ],
+        cwd=output, capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    dump = subprocess.run(
+        [gmx, "dump", "-s", "posres.tpr"], cwd=output, capture_output=True, text=True, check=False
+    )
+    assert "POSRES" in dump.stdout

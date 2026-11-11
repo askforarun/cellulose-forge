@@ -1108,7 +1108,9 @@ def write_charmm36_system(  # noqa: PLR0913
             if isinstance(topology, PeriodicCharmm36Topology)
             else tuple(atom.atom_name for atom in topology.topology_atoms)
         )
-        restrained_itp += position_restraints_section(restraint_atom_names, restraint_force)
+        restrained_itp += position_restraints_section(
+            restraint_atom_names, restraint_force, define=f"POSRES_{polymer.upper()}"
+        )
         itp_text += "\n" + restrained_itp
         molecule_rows.append(f"{restrained_name}  {restrained_chain_count}")
     itp_path.write_text(itp_text, encoding="utf-8")

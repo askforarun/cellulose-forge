@@ -816,7 +816,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         }
     if restraints is not None:
         report["position_restraints"] = {
-            "define": "POSRES_CELLULOSE",
+            "define": f"POSRES_{args.polymer.upper()}",
             "selected_chain_ids": list(restraints.chain_ids),
             "selected_layer_ids": list(restraints.layer_ids),
             "layer_mapping": [

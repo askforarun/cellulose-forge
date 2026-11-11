@@ -128,11 +128,15 @@ The output directory contains `chitin_charmm36.itp` (cellulose keeps
 use free-sugar termini: the reducing end keeps O1/HO1 (-0.18 e) and the
 non-reducing end keeps HO4 (+0.18 e).
 
-The topology was compared term by term with a psfgen build of the canonical
-`top_all36_carb.rtf` (`validation/validate_chitin_charmm36_reference.py`), and
-alpha and beta periodic bulk, periodic (1 0 0) slabs, and finite (1 0 0) slabs
-pass `gmx grompp`, minimization, and a 1 ps NVT smoke test
-(`validation/validate_chitin_charmm36_gromacs.py`). psfgen was used only to
+The generated finite DP6 topology was compared with an independent psfgen
+build from the canonical `top_all36_carb.rtf`
+(`validation/validate_chitin_charmm36_reference.py`), covering atom
+properties, terminal composition, interaction graphs, impropers, 1-4 pairs,
+and function types. Numerical parameters were resolved and exercised through
+the GROMACS validation workflows: alpha and beta periodic bulk, periodic
+(1 0 0) slabs, and finite (1 0 0) slabs pass `gmx grompp`, minimization, and a
+1 ps NVT smoke test (`validation/validate_chitin_charmm36_gromacs.py`).
+Position restraints for chitin use the `POSRES_CHITIN` define. psfgen was used only to
 build that reference; CelluloseForge does not need it. OpenMM and LAMMPS
 output, GLYCAM/Amber, and fibrils are not yet available for chitin.
 

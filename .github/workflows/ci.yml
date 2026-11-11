@@ -70,6 +70,7 @@ jobs:
           uv run cellulose-forge forcefield install charmm36 \
             --archive charmm36-feb2026_cgenff-5.0.ff.tgz
       - run: uv run pytest tests/integration/test_gromacs_workflows.py -m "gromacs and scientific_integration" -q
+      - run: uv run pytest tests/integration/test_chitin_charmm36.py tests/unit/test_charmm36_chitin.py -q -rs
 
   openmm-gromacs-integration:
     # Exercise the native OpenMM output against independent GROMACS
