@@ -233,4 +233,6 @@ equilibrium length, so the boundary-crossing glycosidic bonds stayed intact.
 The results file, `results/openmm_engine_validation.json`, records the
 CelluloseForge commit (`c0574c3`, clean working tree), OpenMM 8.5, and GROMACS
 2024.2. These are engine-equivalence and short-run integration checks, not
-material-property validation.
+material-property validation. GitHub Actions installs OpenMM and GROMACS in a
+dedicated Linux job and runs the four finite/periodic, GLYCAM/CHARMM36
+cross-engine integration tests for every push and pull request.
