@@ -6,6 +6,7 @@ dependencies:
   - numpy>=1.26,<2.3
   - ambertools
   - parmed
+  - openmm
   - pip
   - pip:
       - -e .

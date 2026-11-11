@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "cellulose-forge"
 version = "1.1.2"
-description = "Build crystalline cellulose structures for GROMACS simulations."
+description = "Build crystalline cellulose structures for molecular simulation."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "GPL-3.0-or-later" }
@@ -42,6 +42,9 @@ dev = [
 docs = [
   "mkdocs>=1.6",
   "mkdocs-material>=9.5",
+]
+openmm = [
+  "openmm>=8.1",
 ]
 
 [project.scripts]

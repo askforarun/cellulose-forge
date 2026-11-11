@@ -53,6 +53,7 @@ from cellulose_forge.glycam_mapping import (
     map_crystal_to_periodic_glycam,
 )
 from cellulose_forge.gromacs import write_glycam_gromacs_system
+from cellulose_forge.openmm import validate_openmm_system, write_openmm_runner
 from cellulose_forge.restraints import (
     ChainRestraints,
     group_mapped_chains,
@@ -217,6 +218,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="optional Python interpreter containing ParmEd",
     )
+    build.add_argument(
+        "--openmm-python",
+        type=Path,
+        help="optional Python interpreter containing OpenMM",
+    )
     restraint_selector = build.add_mutually_exclusive_group()
     restraint_selector.add_argument(
         "--restrain-chains",
@@ -255,6 +261,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Python interpreter to check for an importable ParmEd",
     )
+    doctor.add_argument(
+        "--openmm-python",
+        type=Path,
+        help="Python interpreter to check for an importable OpenMM",
+    )
     doctor.add_argument("--json", action="store_true", help="emit machine-readable JSON")
 
     forcefield = subparsers.add_parser(
@@ -291,9 +302,11 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
         checks = run_diagnostics(
             tleap_executable=args.tleap_executable,
             parmed_python=str(args.parmed_python) if args.parmed_python else None,
+            openmm_python=str(args.openmm_python) if args.openmm_python else None,
         )
         print(render_json(checks) if args.json else render_text(checks))
-        return 0 if all(check.ok for check in checks if check.name != "gmx") else 1
+        optional_engines = {"gmx", "openmm"}
+        return 0 if all(check.ok for check in checks if check.name not in optional_engines) else 1
     if args.command == "build":
         _resolve_md_engines(args, build_parser())
         if args.padding_longitudinal is not None and args.padding_z is not None:
@@ -391,8 +404,6 @@ def _resolve_md_engines(
 
     if args.force_field == "none" and engines:
         parser.error("--md-engine requires --force-field glycam or charmm36")
-    if "openmm" in engines:
-        parser.error("--md-engine openmm is reserved for a future release")
     if args.force_field == "charmm36" and engines != ("gromacs",):
         parser.error("CHARMM36 currently supports --md-engine gromacs only")
     if args.force_field == "glycam" and not engines:
@@ -633,10 +644,13 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
     output_directory = args.output
     write_gromacs = "gromacs" in args.md_engines
     write_amber = "amber" in args.md_engines
-    if write_amber and chain_boundary == "periodic":
+    write_openmm = "openmm" in args.md_engines
+    write_native_amber = write_amber or write_openmm
+    if write_native_amber and chain_boundary == "periodic":
         parser.error(
-            "native Amber output currently supports finite chains only; Amber does not "
-            "minimum-image bonded terms across the periodic chain boundary. Use "
+            "native Amber and OpenMM output currently support finite chains only; "
+            "the Amber topology does not minimum-image bonded terms across the periodic "
+            "chain boundary. Use "
             "--chain-boundary finite with longitudinal padding, or use GROMACS output "
             "for covalently periodic chains"
         )
@@ -645,6 +659,8 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
     amber_topology_path: Path | None = None
     amber_coordinate_path: Path | None = None
     amber_metadata: dict[str, object] | None = None
+    openmm_runner_path: Path | None = None
+    openmm_metadata: dict[str, object] | None = None
 
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_glycam_") as temporary:
         files, reference_metadata = generate_glycam_gromacs_reference(
@@ -685,7 +701,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                 restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
                 restraint_force=restraints.force_constants if restraints else None,
             )
-        if write_amber:
+        if write_native_amber:
             amber_topology_path, amber_coordinate_path, amber_metadata = (
                 write_glycam_amber_system(
                     mapped,
@@ -695,6 +711,18 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                     python_executable=args.parmed_python,
                 )
             )
+        if write_openmm:
+            assert amber_topology_path is not None
+            assert amber_coordinate_path is not None
+            openmm_runner_path = write_openmm_runner(output_directory)
+            try:
+                openmm_metadata = validate_openmm_system(
+                    amber_topology_path,
+                    amber_coordinate_path,
+                    python_executable=args.openmm_python,
+                )
+            except (FileNotFoundError, RuntimeError, ValueError) as error:
+                parser.error(str(error))
         if chain_boundary == "periodic" and topology_path is not None:
             written_periodic_bond_validation = _validate_written_periodic_topology(
                 mapped, topology_path, topology_path, parser
@@ -715,6 +743,8 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                 "amber_coordinates": amber_coordinate_path.name,
             }
         )
+    if openmm_runner_path is not None:
+        outputs["openmm_runner"] = openmm_runner_path.name
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
@@ -734,6 +764,8 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
     }
     if amber_metadata is not None:
         report["amber_validation"] = amber_metadata
+    if openmm_metadata is not None:
+        report["openmm_validation"] = openmm_metadata
     if periodic_image_contact is not None:
         report["closest_longitudinal_periodic_image_contact"] = (
             periodic_image_contact.as_dict()

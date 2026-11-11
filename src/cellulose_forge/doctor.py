@@ -1,4 +1,4 @@
-"""Environment diagnostics for coordinate-only and GLYCAM/GROMACS builds."""
+"""Environment diagnostics for supported coordinate and simulation outputs."""
 
 from __future__ import annotations
 
@@ -145,10 +145,45 @@ def _check_gromacs() -> DiagnosticCheck:
     )
 
 
+def _check_openmm(python_executable: str | None) -> DiagnosticCheck:
+    interpreter = python_executable or sys.executable
+    try:
+        probe = subprocess.run(
+            [interpreter, "-c", "import openmm; print(openmm.__version__)"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return DiagnosticCheck(
+            name="openmm",
+            required_for="--md-engine openmm builds",
+            ok=False,
+            detail=f"could not probe OpenMM with {interpreter}: {error}",
+            fix="install cellulose-forge[openmm] or pass --openmm-python",
+        )
+    if probe.returncode != 0:
+        return DiagnosticCheck(
+            name="openmm",
+            required_for="--md-engine openmm builds",
+            ok=False,
+            detail=f"not importable with interpreter {interpreter}",
+            fix="install cellulose-forge[openmm] or pass --openmm-python",
+        )
+    return DiagnosticCheck(
+        name="openmm",
+        required_for="--md-engine openmm builds",
+        ok=True,
+        detail=f"OpenMM {probe.stdout.strip()} via {interpreter}",
+    )
+
+
 def run_diagnostics(
     *,
     tleap_executable: str = "tleap",
     parmed_python: str | None = None,
+    openmm_python: str | None = None,
 ) -> tuple[DiagnosticCheck, ...]:
     """Run every environment check and return the results in report order."""
     return (
@@ -158,6 +193,7 @@ def run_diagnostics(
         _check_tleap(tleap_executable),
         _check_parmed(parmed_python),
         _check_gromacs(),
+        _check_openmm(openmm_python),
     )
 
 
@@ -176,12 +212,16 @@ def render_text(checks: tuple[DiagnosticCheck, ...]) -> str:
         check.ok for check in checks if check.name in {"tleap", "parmed"}
     )
     simulation_ready = glycam_ready and all(check.ok for check in checks if check.name == "gmx")
+    openmm_ready = glycam_ready and all(
+        check.ok for check in checks if check.name == "openmm"
+    )
     lines.extend(
         (
             "",
             f"coordinate-only builds ready: {coordinate_ready}",
             f"GLYCAM/GROMACS-file builds ready: {glycam_ready}",
             f"GROMACS preprocessing/simulation ready: {simulation_ready}",
+            f"OpenMM builds ready: {openmm_ready}",
         )
     )
     return "\n".join(lines)
@@ -196,6 +236,9 @@ def render_json(checks: tuple[DiagnosticCheck, ...]) -> str:
         check.ok for check in checks if check.name in {"tleap", "parmed"}
     )
     simulation_ready = glycam_ready and all(check.ok for check in checks if check.name == "gmx")
+    openmm_ready = glycam_ready and all(
+        check.ok for check in checks if check.name == "openmm"
+    )
     payload = {
         "checks": [
             {
@@ -210,5 +253,6 @@ def render_json(checks: tuple[DiagnosticCheck, ...]) -> str:
         "coordinate_only_ready": coordinate_ready,
         "glycam_gromacs_files_ready": glycam_ready,
         "gromacs_simulation_ready": simulation_ready,
+        "openmm_ready": openmm_ready,
     }
     return json.dumps(payload, indent=2, sort_keys=True)

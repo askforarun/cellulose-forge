@@ -44,6 +44,17 @@ def test_missing_parmed_interpreter_is_reported_instead_of_raising() -> None:
     assert by_name["parmed"].fix is not None
 
 
+def test_missing_openmm_interpreter_is_reported_instead_of_raising() -> None:
+    missing = "/definitely/not/a/real/openmm-python-interpreter"
+
+    checks = run_diagnostics(openmm_python=missing)
+    by_name = {check.name: check for check in checks}
+
+    assert by_name["openmm"].ok is False
+    assert missing in by_name["openmm"].detail
+    assert by_name["openmm"].fix is not None
+
+
 def test_render_text_reports_readiness_tiers() -> None:
     checks = run_diagnostics(tleap_executable="definitely-not-a-real-tleap-binary")
 
@@ -64,4 +75,5 @@ def test_render_json_is_valid_and_matches_check_count() -> None:
         "coordinate_only_ready",
         "glycam_gromacs_files_ready",
         "gromacs_simulation_ready",
+        "openmm_ready",
     }

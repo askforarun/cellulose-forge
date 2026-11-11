@@ -498,7 +498,7 @@ def test_cli_rejects_md_engine_without_force_field(tmp_path: Path) -> None:
         )
 
 
-def test_cli_rejects_unimplemented_openmm_engine(tmp_path: Path) -> None:
+def test_cli_rejects_periodic_native_openmm_engine(tmp_path: Path) -> None:
     with pytest.raises(SystemExit, match="2"):
         main(
             [
@@ -772,6 +772,83 @@ def test_cli_writes_finite_glycam_slab_system(
         "distance_angstrom"
     ] >= 1.0
     assert "CELLULOSE_CHAIN  2" in (output / "system.top").read_text(encoding="utf-8")
+
+
+def test_cli_writes_and_validates_finite_openmm_system(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _use_committed_glycam_reference(monkeypatch, chain_boundary="finite")
+
+    def write_amber(
+        system: object,
+        template_prmtop: object,
+        template_inpcrd: object,
+        output_directory: str | Path,
+        **kwargs: object,
+    ) -> tuple[Path, Path, dict[str, object]]:
+        del system, template_prmtop, template_inpcrd, kwargs
+        directory = Path(output_directory)
+        topology = directory / "structure.prmtop"
+        coordinates = directory / "structure.inpcrd"
+        topology.touch()
+        coordinates.touch()
+        return topology, coordinates, {"status": "passed"}
+
+    monkeypatch.setattr("cellulose_forge.cli.write_glycam_amber_system", write_amber)
+    monkeypatch.setattr(
+        "cellulose_forge.cli.validate_openmm_system",
+        lambda *args, **kwargs: {
+            "status": "passed",
+            "openmm_version": "8.5",
+            "platform": "CPU",
+            "initial_potential_energy_kj_mol": 100.0,
+            "minimized_potential_energy_kj_mol": 80.0,
+        },
+    )
+    output = tmp_path / "ibeta_openmm"
+
+    result = main(
+        [
+            "build",
+            "--allomorph",
+            "I-beta",
+            "--shape",
+            "slab",
+            "--face",
+            "1",
+            "1",
+            "0",
+            "--layers",
+            "1",
+            "--chains-per-layer",
+            "2",
+            "--degree-polymerization",
+            "12",
+            "--chain-boundary",
+            "finite",
+            "--vacuum",
+            "30",
+            "--padding-longitudinal",
+            "12",
+            "--force-field",
+            "glycam",
+            "--md-engine",
+            "gromacs",
+            "--md-engine",
+            "openmm",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
+    assert report["md_engines"] == ["gromacs", "openmm"]
+    assert report["openmm_validation"]["status"] == "passed"
+    assert report["outputs"]["amber_topology"] == "structure.prmtop"
+    assert report["outputs"]["openmm_runner"] == "run_openmm.py"
+    assert report["outputs"]["gromacs_topology"] == "system.top"
 
 
 def test_cli_rejects_unpadded_finite_force_field_slab(tmp_path: Path) -> None:

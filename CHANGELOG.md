@@ -8,7 +8,10 @@ All notable changes to CelluloseForge are documented in this file.
 
 - Added repeatable `--md-engine gromacs|amber` selection and recorded the
   resolved engines in each build report. `--topology-format` remains as a
-  deprecated compatibility alias; `openmm` is reserved for future support.
+  deprecated compatibility alias.
+- Added `--md-engine openmm` for finite-chain GLYCAM systems. It writes complete
+  Amber-format inputs and a standalone runner, then records an engine-level
+  OpenMM load, finite-energy, and minimization smoke test in the build report.
 - Added I-beta 18-chain (`2,3,4,4,3,2`) and 24-chain
   (`3,4,5,5,4,3`) fibril presets.
 - Added `--fibril-profile` for deterministic custom I-beta row profiles within

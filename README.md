@@ -576,7 +576,7 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--padding-longitudinal` | angstrom | Total chain-axis padding; periodic chains require zero |
 | `--padding-z` | angstrom | Deprecated alias for `--padding-longitudinal` |
 | `--force-field` | `none`, `glycam`, `charmm36` | Coordinate-only construction or molecular-mechanics parameter set |
-| `--md-engine` | `gromacs`, `amber`, `openmm` | Target engine; repeat for multiple outputs. OpenMM is reserved but not yet implemented |
+| `--md-engine` | `gromacs`, `amber`, `openmm` | Target engine; repeat for multiple outputs |
 | `--topology-format` | `gromacs`, `amber`, `both` | Deprecated compatibility alias for GLYCAM builds |
 | `--tleap-executable` | executable path | `tleap` used for GLYCAM builds |
 | `--parmed-python` | Python path | Interpreter containing ParmEd |
@@ -690,6 +690,27 @@ chains remain available through GROMACS because Amber does not minimum-image a
 bonded interaction crossing the chain-direction box boundary.
 See [`docs/amber.md`](docs/amber.md) for the format semantics and engine-level
 validation boundary.
+
+### OpenMM mode
+
+Finite GLYCAM systems can be emitted and checked directly with OpenMM:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape fibril --fibril-model 18-chain \
+  --degree-polymerization 12 --chain-boundary finite --vacuum 30 \
+  --padding-longitudinal 20 --force-field glycam \
+  --md-engine openmm --output ibeta_18chain_openmm
+```
+
+Install the optional Python dependency with `pip install 'cellulose-forge[openmm]'`
+or use `environment.yml`. The output contains complete `structure.prmtop` and
+`structure.inpcrd` files plus `run_openmm.py`. During construction,
+CelluloseForge loads the files in OpenMM, verifies finite potential energy, and
+performs a ten-iteration minimization smoke test. Engine version, platform, and
+energies are recorded in `build_report.json`. Use `--openmm-python` when OpenMM
+is installed under a different interpreter. See
+[`docs/openmm.md`](docs/openmm.md).
 
 Existing scripts using `--topology-format gromacs|amber|both` remain valid but
 emit a deprecation warning. New workflows should use `--md-engine`.
