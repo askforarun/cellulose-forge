@@ -210,6 +210,7 @@ class AllomorphDefinition:
     symmetry_operations: tuple[SpaceGroupOperation, ...]
     citation: str
     doi: str
+    polymer: str = "cellulose"
 
     def __post_init__(self) -> None:
         if not self.name or not self.space_group or not self.symmetry_operations:
@@ -220,11 +221,20 @@ class AllomorphDefinition:
             raise ValueError(msg)
 
 
-def _load_payload(name: str) -> dict[str, Any]:
+SUPPORTED_POLYMERS = ("cellulose", "chitin")
+
+
+def _load_payload(name: str, polymer: str = "cellulose") -> dict[str, Any]:
     if re.fullmatch(r"[a-z][a-z0-9_]*", name) is None:
         msg = f"invalid allomorph identifier: {name!r}"
         raise ValueError(msg)
-    resource = resources.files("cellulose_forge.data.crystallography").joinpath(f"{name}.json")
+    if polymer not in SUPPORTED_POLYMERS:
+        msg = f"unknown polymer: {polymer!r}"
+        raise ValueError(msg)
+    directory = resources.files("cellulose_forge.data.crystallography")
+    if polymer != "cellulose":
+        directory = directory.joinpath(polymer)
+    resource = directory.joinpath(f"{name}.json")
     if not resource.is_file():
         msg = f"unknown allomorph definition: {name!r}"
         raise ValueError(msg)
@@ -232,9 +242,9 @@ def _load_payload(name: str) -> dict[str, Any]:
         return cast(dict[str, Any], json.load(handle))
 
 
-def load_allomorph(name: str) -> AllomorphDefinition:
+def load_allomorph(name: str, polymer: str = "cellulose") -> AllomorphDefinition:
     """Load a validated, package-owned crystallographic definition."""
-    payload = _load_payload(name)
+    payload = _load_payload(name, polymer)
     cell_payload = cast(dict[str, Any], payload["unit_cell"])
     unit_cell = UnitCell(
         a=float(cell_payload["a"]),
@@ -274,6 +284,7 @@ def load_allomorph(name: str) -> AllomorphDefinition:
         symmetry_operations=symmetry_operations,
         citation=str(provenance["citation"]),
         doi=str(provenance["doi"]),
+        polymer=str(payload.get("polymer", "cellulose")),
     )
 
 
