@@ -43,7 +43,7 @@ and link it into the example folder:
 ```bash
 cellulose-forge forcefield install charmm36
 cd chitin_beta_100_charmm36_periodic
-ln -s ~/.local/share/cellulose-forge/forcefields/charmm36-feb2026_cgenff-5.0.ff charmm36.ff
+ln -s "$(cellulose-forge forcefield path charmm36)" charmm36.ff
 ```
 
 (`cellulose-forge build` copies `charmm36.ff` into new outputs automatically.)
@@ -72,7 +72,8 @@ LAMMPS (`in.cellulose` or `in.chitin` evaluates the initial energy with
 `run 0`; add your own minimization or dynamics controls):
 
 ```bash
-lmp -in in.chitin
+lmp -in in.chitin      # chitin examples
+lmp -in in.cellulose   # cellulose examples
 ```
 
 Amber (GLYCAM folder only):
