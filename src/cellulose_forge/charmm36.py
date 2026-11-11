@@ -24,6 +24,18 @@ _RING_ALIGNMENT_ATOMS = ("C1", "C3", "C5")
 _MISSING_CELLULOSE_II_HYDROGENS = frozenset({"HO2", "HO3", "HO6"})
 _HYDROXYL_OXYGEN_BY_HYDROGEN = {"HO2": "O2", "HO3": "O3", "HO6": "O6"}
 _MAXIMUM_GLYCOSIDIC_BOND_ANGSTROM = 2.0
+# CHARMM36 BGLCNA names for the N-acetyl group and the crystal labels used by
+# the chitin definitions. Glucose (BGLC) has none of these names.
+_CRYSTAL_NAME_BY_CHARMM_NAME = {
+    "N": "N2",
+    "HN": "HN2",
+    "C": "C7",
+    "O": "O7",
+    "CT": "C8",
+    "HT1": "H81",
+    "HT2": "H82",
+    "HT3": "H83",
+}
 _MINIMUM_ATOMTYPE_FIELDS = 3
 _NATIVE_REFERENCE_DP = 8
 _PATCH_DELETIONS = frozenset({"O1", "HO1", "HO4"})
@@ -243,7 +255,7 @@ def _derive_periodic_topology(
     )
     repeat_charge = sum(atom.charge for atom in topology_atoms)
     if not np.isclose(repeat_charge, 0.0, atol=1.0e-6):
-        msg = f"CHARMM36 internal BGLC repeat is not neutral ({repeat_charge:.8f})"
+        msg = f"CHARMM36 internal repeat is not neutral ({repeat_charge:.8f})"
         raise ValueError(msg)
 
     lower = 3
@@ -296,14 +308,20 @@ def _derive_periodic_topology(
     )
 
 
-def _read_bglc_rtp(
+def _read_rtp_residue(
     force_field_directory: Path,
-) -> tuple[list[tuple[str, str, float]], list[tuple[str, str]]]:
-    """Read the BGLC atoms and bonds from the installed GROMACS RTP."""
+    residue: str,
+) -> tuple[
+    list[tuple[str, str, float]],
+    list[tuple[str, str]],
+    list[tuple[str, str, str, str]],
+]:
+    """Read one residue's atoms, bonds, and impropers from the installed RTP."""
     block = ""
     section = ""
     atoms: list[tuple[str, str, float]] = []
     bonds: list[tuple[str, str]] = []
+    impropers: list[tuple[str, str, str, str]] = []
     for raw_line in (
         (force_field_directory / "carb.rtp")
         .read_text(encoding="utf-8", errors="replace")
@@ -314,22 +332,49 @@ def _read_bglc_rtp(
             continue
         if line.startswith("[") and line.endswith("]"):
             name = line[1:-1].strip()
-            if name == "BGLC":
-                block = "BGLC"
+            if name == residue:
+                block = residue
                 section = ""
-            elif block == "BGLC" and name in {"atoms", "bonds"}:
+            elif block == residue and name in {"atoms", "bonds", "impropers"}:
                 section = name
-            elif block == "BGLC":
+            elif block == residue:
                 break
             continue
         fields = line.split()
-        if block == "BGLC" and section == "atoms":
+        if block != residue:
+            continue
+        if section == "atoms":
             atoms.append((fields[0], fields[1], float(fields[2])))
-        elif block == "BGLC" and section == "bonds":
+        elif section == "bonds":
             bonds.append((fields[0], fields[1]))
+        elif section == "impropers":
+            impropers.append((fields[0], fields[1], fields[2], fields[3]))
     if not atoms or not bonds:
-        msg = f"could not read BGLC atoms and bonds from {force_field_directory / 'carb.rtp'}"
+        msg = f"could not read {residue} atoms and bonds from {force_field_directory / 'carb.rtp'}"
         raise ValueError(msg)
+    return atoms, bonds, impropers
+
+
+def _read_residue(
+    force_field_directory: Path,
+    residue: str,
+) -> tuple[
+    list[tuple[str, str, float]],
+    list[tuple[str, str]],
+    list[tuple[str, str, str, str]],
+]:
+    """Read a residue; BGLC (no impropers) keeps its dedicated reader."""
+    if residue == "BGLC":
+        atoms, bonds = _read_bglc_rtp(force_field_directory)
+        return atoms, bonds, []
+    return _read_rtp_residue(force_field_directory, residue)
+
+
+def _read_bglc_rtp(
+    force_field_directory: Path,
+) -> tuple[list[tuple[str, str, float]], list[tuple[str, str]]]:
+    """Read the BGLC atoms and bonds from the installed GROMACS RTP."""
+    atoms, bonds, _ = _read_rtp_residue(force_field_directory, "BGLC")
     return atoms, bonds
 
 
@@ -403,13 +448,18 @@ def native_periodic_charmm36_topology(
     force_field_directory: str | Path,
     *,
     degree_polymerization: int,
+    residue: str = "BGLC",
 ) -> PeriodicCharmm36Topology:
-    """Construct a cyclic cellulose topology from BGLC and the 14bb patch."""
+    """Construct a cyclic chain topology from an RTP residue and the 14bb patch.
+
+    ``residue`` is ``BGLC`` for cellulose or ``BGLCNA`` for chitin. Residue
+    impropers are added per residue as function-2 dihedrals.
+    """
     if degree_polymerization < _MINIMUM_PERIODIC_DP or degree_polymerization % 2:
         msg = "periodic CHARMM36 chains require an even DP of at least 4"
         raise ValueError(msg)
     directory = Path(force_field_directory)
-    rtp_atoms, rtp_bonds = _read_bglc_rtp(directory)
+    rtp_atoms, rtp_bonds, rtp_impropers = _read_residue(directory, residue)
     masses = _read_atom_type_masses(directory)
     patched_atoms: list[Charmm36TemplateAtom] = []
     for name, atom_type, charge in rtp_atoms:
@@ -422,7 +472,7 @@ def native_periodic_charmm36_topology(
             msg = f"CHARMM36 atom type {patched_type} has no mass in ffnonbonded.itp"
             raise ValueError(msg) from error
         patched_atoms.append(
-            Charmm36TemplateAtom(1, "BGLC", name, patched_charge, patched_type, mass)
+            Charmm36TemplateAtom(1, residue, name, patched_charge, patched_type, mass)
         )
     names = {atom.atom_name for atom in patched_atoms}
     patched_bonds = {
@@ -430,23 +480,23 @@ def native_periodic_charmm36_topology(
     }
     atoms_per_residue = len(patched_atoms)
     index_by_residue_name = {
-        (residue, atom.atom_name): residue * atoms_per_residue + position
-        for residue in range(_NATIVE_REFERENCE_DP)
+        (source_residue, atom.atom_name): source_residue * atoms_per_residue + position
+        for source_residue in range(_NATIVE_REFERENCE_DP)
         for position, atom in enumerate(patched_atoms)
     }
     indexed_bonds: set[tuple[int, int]] = set()
-    for residue in range(_NATIVE_REFERENCE_DP):
+    for source_residue in range(_NATIVE_REFERENCE_DP):
         for first, second in patched_bonds:
             indexed_bonds.add(
                 (
-                    index_by_residue_name[(residue, first)],
-                    index_by_residue_name[(residue, second)],
+                    index_by_residue_name[(source_residue, first)],
+                    index_by_residue_name[(source_residue, second)],
                 )
             )
-        following = (residue + 1) % _NATIVE_REFERENCE_DP
+        following = (source_residue + 1) % _NATIVE_REFERENCE_DP
         indexed_bonds.add(
             (
-                index_by_residue_name[(residue, "O4")],
+                index_by_residue_name[(source_residue, "O4")],
                 index_by_residue_name[(following, "C1")],
             )
         )
@@ -468,6 +518,14 @@ def native_periodic_charmm36_topology(
         _IndexedInteraction(section, row, (parameters[section],))
         for section in ("bonds", "pairs", "angles", "dihedrals")
         for row in sorted(graph[section])
+    ) + tuple(
+        _IndexedInteraction(
+            "dihedrals",
+            tuple(index_by_residue_name[(position, name)] for name in improper),
+            ("2",),
+        )
+        for position in range(_NATIVE_REFERENCE_DP)
+        for improper in rtp_impropers
     )
     source = Charmm36ChainTemplate("CARB_8", source_atoms, source_interactions)
     return _derive_periodic_topology(source, degree_polymerization)
@@ -477,19 +535,24 @@ def native_finite_charmm36_topology(  # noqa: PLR0912
     force_field_directory: str | Path,
     *,
     degree_polymerization: int,
+    residue: str = "BGLC",
 ) -> FiniteCharmm36Topology:
-    """Construct a neutral, explicitly terminated cellulose chain."""
+    """Construct a neutral, explicitly terminated chain of one RTP residue.
+
+    ``residue`` is ``BGLC`` for cellulose or ``BGLCNA`` for chitin. Residue
+    impropers are added per residue as function-2 dihedrals.
+    """
     if degree_polymerization < 1:
         msg = "finite CHARMM36 chains require a positive DP"
         raise ValueError(msg)
     directory = Path(force_field_directory)
-    rtp_atoms, rtp_bonds = _read_bglc_rtp(directory)
+    rtp_atoms, rtp_bonds, rtp_impropers = _read_residue(directory, residue)
     masses = _read_atom_type_masses(directory)
     topology_atoms: list[Charmm36TemplateAtom] = []
     index_by_residue_name: dict[tuple[int, str], int] = {}
-    for residue in range(1, degree_polymerization + 1):
-        linked_from_previous = residue > 1
-        linked_to_next = residue < degree_polymerization
+    for position in range(1, degree_polymerization + 1):
+        linked_from_previous = position > 1
+        linked_to_next = position < degree_polymerization
         for name, base_atom_type, base_charge in rtp_atoms:
             if linked_from_previous and name in {"O1", "HO1"}:
                 continue
@@ -505,23 +568,23 @@ def native_finite_charmm36_topology(  # noqa: PLR0912
             except KeyError as error:
                 msg = f"CHARMM36 atom type {atom_type} has no mass in ffnonbonded.itp"
                 raise ValueError(msg) from error
-            index_by_residue_name[(residue, name)] = len(topology_atoms)
+            index_by_residue_name[(position, name)] = len(topology_atoms)
             topology_atoms.append(
-                Charmm36TemplateAtom(residue, "BGLC", name, charge, atom_type, mass)
+                Charmm36TemplateAtom(position, residue, name, charge, atom_type, mass)
             )
 
     bonds: set[tuple[int, int]] = set()
-    for residue in range(1, degree_polymerization + 1):
+    for position in range(1, degree_polymerization + 1):
         for first, second in rtp_bonds:
-            first_key = (residue, first)
-            second_key = (residue, second)
+            first_key = (position, first)
+            second_key = (position, second)
             if first_key in index_by_residue_name and second_key in index_by_residue_name:
                 bonds.add((index_by_residue_name[first_key], index_by_residue_name[second_key]))
-        if residue < degree_polymerization:
+        if position < degree_polymerization:
             bonds.add(
                 (
-                    index_by_residue_name[(residue, "O4")],
-                    index_by_residue_name[(residue + 1, "C1")],
+                    index_by_residue_name[(position, "O4")],
+                    index_by_residue_name[(position + 1, "C1")],
                 )
             )
     graph = _enumerate_graph_interactions(bonds)
@@ -530,6 +593,14 @@ def native_finite_charmm36_topology(  # noqa: PLR0912
         _IndexedInteraction(section, row, (functions[section],))
         for section in ("bonds", "pairs", "angles", "dihedrals")
         for row in sorted(graph[section])
+    ) + tuple(
+        _IndexedInteraction(
+            "dihedrals",
+            tuple(index_by_residue_name[(position, name)] for name in improper),
+            ("2",),
+        )
+        for position in range(1, degree_polymerization + 1)
+        for improper in rtp_impropers
     )
     topology = FiniteCharmm36Topology(
         degree_polymerization,
@@ -541,6 +612,11 @@ def native_finite_charmm36_topology(  # noqa: PLR0912
         msg = f"finite CHARMM36 chain is not neutral ({topology.total_charge:.8f})"
         raise ValueError(msg)
     return topology
+
+
+def _crystal_name(charmm_name: str) -> str:
+    """Return the crystal-definition label for a CHARMM36 atom name."""
+    return _CRYSTAL_NAME_BY_CHARMM_NAME.get(charmm_name, charmm_name)
 
 
 def _coordinate_lookup(
@@ -726,7 +802,7 @@ def map_periodic_charmm36(
                 chain_number=chain_number,
                 residue_number=crystal_residue_number,
             )
-            expected_names = {atom.atom_name for atom in topology.topology_atoms}
+            expected_names = {_crystal_name(atom.atom_name) for atom in topology.topology_atoms}
             missing = expected_names.difference(lookup).difference(generated_names)
             if missing:
                 msg = (
@@ -757,7 +833,7 @@ def map_periodic_charmm36(
                     )
                     output_coordinates.append(lookup[oxygen_name] + direction * bond_length)
                 else:
-                    output_coordinates.append(lookup[atom.atom_name])
+                    output_coordinates.append(lookup[_crystal_name(atom.atom_name)])
 
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)
@@ -870,7 +946,7 @@ def map_finite_charmm36(
                     )
                     coordinate = lookup[oxygen_name] + direction * bond_length
                 else:
-                    coordinate = lookup[atom.atom_name]
+                    coordinate = lookup[_crystal_name(atom.atom_name)]
                 output_coordinates.append(coordinate)
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)
