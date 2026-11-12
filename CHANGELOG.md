@@ -29,7 +29,12 @@ All notable changes to CelluloseForge are documented in this file.
   K = k/2, and carries CHARMM 1-4 pairs whose dihedral has zero force constant
   on a zero-force-constant dihedral. Energies match GROMACS term by term for
   alpha and beta, finite and periodic slabs
-  (`validation/validate_chitin_charmm36_engines.py`).
+  (`validation/validate_charmm36_engines.py`).
+- Cellulose CHARMM36 LAMMPS audit: the same term-by-term comparison
+  (`--polymer cellulose`) for I-beta, I-alpha and II slabs shows that the
+  CHARMM Coulomb constant and the two charmmfsw Lennard-Jones energy
+  conventions explain 89-95% of the earlier 2-2.5e-4 LAMMPS/GROMACS
+  total-potential gap; corrected totals agree within 2.5e-5.
 - A regression test that records hashes of fourteen coordinate-only cellulose
   builds, so cellulose output cannot change unnoticed.
 

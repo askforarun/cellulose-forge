@@ -59,8 +59,26 @@ system within approximately 4.5 × 10^-5 relative. Finite and periodic I-beta
 CHARMM36 cases also pass `run 0`; their bond, angle/Urey--Bradley, and torsion
 energies agree with GROMACS within 2 × 10^-5 relative and their total
 potential energies within 5 × 10^-4 when both engines use the official
-CHARMM36 10--12 angstrom force-switch settings. A broader allomorph and
-dynamics validation matrix is required before release.
+CHARMM36 10--12 angstrom force-switch settings.
+
+That raw 2--2.5 × 10^-4 total-potential gap is almost entirely three LAMMPS
+energy conventions, audited term by term in
+`validation/validate_charmm36_engines.py --polymer cellulose`
+(results in `validation/cellulose_charmm36_engines.json`) for I-beta (1 1 0)
+finite and periodic, I-alpha (0 1 0) periodic, and II (1 1 0) periodic slabs:
+
+- LAMMPS uses the CHARMM Coulomb constant (332.0716 vs GROMACS 332.0637,
+  a 2.4 × 10^-5 proportional difference in electrostatic energies and forces);
+- `dihedral_style charmmfsw` adds a constant energy offset to each 1--4 pair;
+- CHARMM vfswitch (`lj/charmmfsw`) and GROMACS force-switch differ by a
+  constant potential shift.
+
+The two Lennard--Jones differences are constant offsets and do not affect
+forces. Together the three account for 89--95% of the raw gap; after removing
+them, total potentials agree within 2.5 × 10^-5 and nonbonded totals within
+1.1 kJ/mol, and bonds, angles, Urey--Bradley, proper dihedrals, 1--4
+Lennard--Jones, and 1--4 electrostatics each agree within 0.2 kJ/mol. The
+same audit for chitin is in `validation/chitin_charmm36_engines.json`.
 
 Reproduce the cross-engine checks with:
 

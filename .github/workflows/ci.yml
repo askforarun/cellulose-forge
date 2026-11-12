@@ -141,7 +141,13 @@ jobs:
           fi
       - name: Chitin term-by-term energies vs GROMACS (OpenMM and LAMMPS)
         run: |
-          uv run python validation/validate_chitin_charmm36_engines.py \
+          uv run python validation/validate_charmm36_engines.py --polymer chitin \
             --work-directory chitin-engines \
             --openmm-python "$(uv run python -c 'import sys; print(sys.executable)')" \
             --lammps "$(command -v lmp)" --output chitin-engines.json
+      - name: Cellulose term-by-term energies vs GROMACS (OpenMM and LAMMPS)
+        run: |
+          uv run python validation/validate_charmm36_engines.py --polymer cellulose \
+            --work-directory cellulose-engines \
+            --openmm-python "$(uv run python -c 'import sys; print(sys.executable)')" \
+            --lammps "$(command -v lmp)" --output cellulose-engines.json
