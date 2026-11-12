@@ -31,10 +31,11 @@ All notable changes to CelluloseForge are documented in this file.
   alpha and beta, finite and periodic slabs
   (`validation/validate_charmm36_engines.py`).
 - Cellulose CHARMM36 LAMMPS audit: the same term-by-term comparison
-  (`--polymer cellulose`) for I-beta, I-alpha and II slabs shows that the
-  CHARMM Coulomb constant and the two charmmfsw Lennard-Jones energy
-  conventions explain 89-95% of the earlier 2-2.5e-4 LAMMPS/GROMACS
-  total-potential gap; corrected totals agree within 2.5e-5.
+  (`--polymer cellulose`) for I-beta, I-alpha, II and III-I slabs shows that
+  the CHARMM Coulomb constant and the two charmmfsw Lennard-Jones energy
+  conventions explain 85-95% of the earlier 1.8-2.5e-4 LAMMPS/GROMACS
+  total-potential gap; corrected totals agree within 2.7e-5. Validation
+  results record the commit, tree status and engine versions.
 - A regression test that records hashes of fourteen coordinate-only cellulose
   builds, so cellulose output cannot change unnoticed.
 

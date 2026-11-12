@@ -1,5 +1,13 @@
 {
   "test": "chitin CHARMM36 term-by-term energies: GROMACS vs OpenMM and LAMMPS",
+  "provenance": {
+    "cellulose_forge_version": "1.1.2",
+    "git_commit": "73fd223a687a9a0f8304b463414bedb06c46a3e6",
+    "git_tracked_tree_clean": true,
+    "gromacs_version": "2024.2-Homebrew",
+    "openmm_version": "8.1.1",
+    "lammps_version": "22 Jul 2025 - Update 4"
+  },
   "tolerances": {
     "bonded_relative": 2e-05,
     "bonded_absolute_kj_mol": 0.05,
@@ -15,7 +23,10 @@
   "nonbonded_tolerance": "relative to the summed magnitude of GROMACS nonbonded components",
   "results": [
     {
-      "case": "alpha_chitin_slab_periodic",
+      "case": "alpha_chitin_100_periodic",
+      "polymer": "chitin",
+      "allomorph": "alpha",
+      "chain_boundary": "periodic",
       "face": [
         1,
         0,
@@ -207,7 +218,10 @@
       "passed": true
     },
     {
-      "case": "alpha_chitin_slab_finite",
+      "case": "alpha_chitin_100_finite",
+      "polymer": "chitin",
+      "allomorph": "alpha",
+      "chain_boundary": "finite",
       "face": [
         1,
         0,
@@ -399,7 +413,10 @@
       "passed": true
     },
     {
-      "case": "beta_chitin_slab_periodic",
+      "case": "beta_chitin_100_periodic",
+      "polymer": "chitin",
+      "allomorph": "beta",
+      "chain_boundary": "periodic",
       "face": [
         1,
         0,
@@ -591,7 +608,10 @@
       "passed": true
     },
     {
-      "case": "beta_chitin_slab_finite",
+      "case": "beta_chitin_100_finite",
+      "polymer": "chitin",
+      "allomorph": "beta",
+      "chain_boundary": "finite",
       "face": [
         1,
         0,
