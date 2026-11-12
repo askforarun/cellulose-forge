@@ -1,15 +1,18 @@
-"""Compare chitin CHARMM36 energies term by term across GROMACS, OpenMM and LAMMPS.
+"""Compare CHARMM36 energies term by term across GROMACS, OpenMM and LAMMPS.
 
-For alpha and beta chitin (1 0 0) slabs with finite and periodic chains, the
-same generated GROMACS topology is evaluated at the built coordinates by:
+``--polymer chitin`` (default) evaluates alpha and beta chitin (1 0 0) slabs;
+``--polymer cellulose`` evaluates I-beta (1 1 0) finite and periodic, I-alpha
+(0 1 0) periodic, and II (1 1 0) periodic slabs. In every case the same
+generated GROMACS topology is evaluated at the built coordinates by:
 
 - GROMACS (reference);
 - OpenMM, through the CelluloseForge OpenMM reader (``GromacsTopFile``);
 - LAMMPS, through the CelluloseForge LAMMPS converter.
 
-Compared categories: bonds, angles, Urey-Bradley, proper dihedrals, the two
-acetyl impropers, 1-4 Lennard-Jones, 1-4 electrostatics, and total nonbonded
-energy, plus the total potential.
+Compared categories: bonds, angles, Urey-Bradley, proper dihedrals, impropers
+(the two acetyl impropers for chitin; none for cellulose, which must then be
+zero in every engine), 1-4 Lennard-Jones, 1-4 electrostatics, and total
+nonbonded energy, plus the total potential.
 
 GROMACS reports angles and Urey-Bradley together as ``U-B``. The split is taken
 from GROMACS's own resolved parameters (``gmx dump``) evaluated at the GRO
@@ -23,8 +26,8 @@ OpenMM is compared with GROMACS using a plain 1.0 nm cutoff; LAMMPS uses
 with the matching force-switch settings for that comparison.
 
 Usage:
-    python validation/validate_chitin_charmm36_engines.py --work-directory DIR \\
-        --openmm-python PYTHON [--lammps lmp_serial] [--output FILE]
+    python validation/validate_charmm36_engines.py --polymer chitin|cellulose \
+        --work-directory DIR --openmm-python PYTHON [--lammps lmp_serial] [--output FILE]
 """
 
 from __future__ import annotations
@@ -54,7 +57,9 @@ from cellulose_forge.charmm36 import (
     native_periodic_charmm36_topology,
     write_charmm36_system,
 )
+from cellulose_forge.crystallography import MillerIndex, load_allomorph
 from cellulose_forge.forcefields import discover_charmm36_directory
+from cellulose_forge.geometry import BulkCrystal, build_slab_with_sizing
 from cellulose_forge.lammps import write_lammps_system
 
 _KCAL = 4.184
@@ -318,8 +323,8 @@ def _lammps_run(directory: Path, executable: str, input_name: str) -> dict[str, 
     return {name: float(value) * _KCAL for name, value in zip(names, row, strict=True)}
 
 
-def _lammps(directory: Path, executable: str) -> dict[str, float]:
-    full = _lammps_run(directory, executable, "in.chitin")
+def _lammps(directory: Path, executable: str, input_name: str) -> dict[str, float]:
+    full = _lammps_run(directory, executable, input_name)
     data = (directory / "system.data").read_text(encoding="utf-8")
 
     def replace_section(text: str, title: str, keep: int, zeros: list[str]) -> str:
@@ -333,13 +338,13 @@ def _lammps(directory: Path, executable: str) -> dict[str, float]:
     variant = replace_section(variant, "Dihedral Coeffs", 4, ["0.0"])
     (directory / "variant.data").write_text(variant, encoding="utf-8")
     (directory / "in.variant").write_text(
-        (directory / "in.chitin")
+        (directory / input_name)
         .read_text(encoding="utf-8")
         .replace("read_data system.data", "read_data variant.data"),
         encoding="utf-8",
     )
     reduced = _lammps_run(directory, executable, "in.variant")
-    dynamics = _lammps_dynamics(directory, executable)
+    dynamics = _lammps_dynamics(directory, executable, input_name)
     offset = _charmmfsw_one_four_offset(data)
     lj_14 = full["E_vdwl"] - reduced["E_vdwl"] - offset
     coulomb_14 = (full["E_coul"] - reduced["E_coul"]) * _COULOMB_RATIO
@@ -464,7 +469,7 @@ def _charmmfsw_short_range_offset(data: str) -> float:
     return total * _KCAL
 
 
-def _lammps_dynamics(directory: Path, executable: str) -> dict[str, float]:
+def _lammps_dynamics(directory: Path, executable: str, input_name: str) -> dict[str, float]:
     """Run 1 ps NVT at 300 K (0.5 fs, no constraints) from the built coordinates.
 
     This exercises improper forces, which the single-point comparison does not.
@@ -472,7 +477,7 @@ def _lammps_dynamics(directory: Path, executable: str) -> dict[str, float]:
     here exits with a segmentation fault after any minimization completes,
     independently of this system's force field.
     """
-    text = (directory / "in.chitin").read_text(encoding="utf-8")
+    text = (directory / input_name).read_text(encoding="utf-8")
     controls = (
         "timestep 0.5\n"
         "velocity all create 300.0 4928459 mom yes rot no dist gaussian\n"
@@ -504,7 +509,7 @@ def _lammps_dynamics(directory: Path, executable: str) -> dict[str, float]:
         "dynamics_final_step": final["Step"],
         "dynamics_final_temperature_k": final["Temp"],
         "dynamics_final_potential": final["PotEng"] * _KCAL,
-        "dynamics_final_improper": final.get("E_impro", math.nan) * _KCAL,
+        "dynamics_final_improper": final.get("E_impro", 0.0) * _KCAL,
     }
 
 
@@ -581,7 +586,7 @@ def _reference(gromacs: dict[str, float], split: dict[str, float]) -> dict[str, 
         "angle": split["angle"],
         "urey_bradley": split["urey_bradley"],
         "proper_dihedral": gromacs["Proper-Dih."],
-        "improper": gromacs["Improper-Dih."],
+        "improper": gromacs.get("Improper-Dih.", 0.0),
         "lj_14": gromacs["LJ-14"],
         "coulomb_14": gromacs["Coulomb-14"],
         "nonbonded": gromacs["LJ-14"]
@@ -593,11 +598,61 @@ def _reference(gromacs: dict[str, float], split: dict[str, float]) -> dict[str, 
     }
 
 
+_CELLULOSE_CASES = (
+    ("I-beta", (1, 1, 0), "finite"),
+    ("I-beta", (1, 1, 0), "periodic"),
+    ("I-alpha", (0, 1, 0), "periodic"),
+    ("II", (1, 1, 0), "periodic"),
+)
+_CHITIN_CASES = (
+    ("alpha", (1, 0, 0), "periodic"),
+    ("alpha", (1, 0, 0), "finite"),
+    ("beta", (1, 0, 0), "periodic"),
+    ("beta", (1, 0, 0), "finite"),
+)
+
+
+def _cellulose_slab(
+    allomorph: str, face: tuple[int, int, int], boundary: str
+) -> tuple[BulkCrystal, dict[str, object]]:
+    """Two-layer, six-chain DP6 slab, as in the existing cellulose LAMMPS test."""
+    crystal = build_slab_with_sizing(
+        load_allomorph(allomorph.lower().replace("-", "_")),
+        MillerIndex(*face),
+        layers=2,
+        chains_per_layer=6,
+        degree_polymerization=6,
+        vacuum=30.0,
+        padding_z=12.0 if boundary == "finite" else 0.0,
+        chain_boundary=boundary,
+    )
+    return crystal, {
+        "face": list(face),
+        "layers": 2,
+        "chains": len(set(crystal.chain_numbers)),
+        "vacuum_angstrom": 30.0,
+        "longitudinal_padding_angstrom": 12.0 if boundary == "finite" else 0.0,
+    }
+
+
 def _case(  # noqa: PLR0913, PLR0917
-    allomorph: str, boundary: str, work: Path, ff: Path, openmm_python: str, lammps: str
+    polymer: str,
+    allomorph: str,
+    face: tuple[int, int, int],
+    boundary: str,
+    work: Path,
+    ff: Path,
+    openmm_python: str,
+    lammps: str,
 ) -> dict[str, object]:
     periodic = boundary == "periodic"
-    crystal, geometry = _build(allomorph, "slab", boundary, 2.4)
+    chitin = polymer == "chitin"
+    residue = "BGLCNA" if chitin else "BGLC"
+    crystal, geometry = (
+        _build(allomorph, "slab", boundary, 2.4)
+        if chitin
+        else _cellulose_slab(allomorph, face, boundary)
+    )
     dp = len(
         {
             residue
@@ -608,20 +663,21 @@ def _case(  # noqa: PLR0913, PLR0917
     topology: PeriodicCharmm36Topology | FiniteCharmm36Topology
     if periodic:
         periodic_topology = native_periodic_charmm36_topology(
-            ff, degree_polymerization=dp, residue="BGLCNA"
+            ff, degree_polymerization=dp, residue=residue
         )
         topology = periodic_topology
         system = map_periodic_charmm36(crystal, periodic_topology)
     else:
         finite_topology = native_finite_charmm36_topology(
-            ff, degree_polymerization=dp, residue="BGLCNA"
+            ff, degree_polymerization=dp, residue=residue
         )
         topology = finite_topology
         system = map_finite_charmm36(crystal, finite_topology)
-    directory = work / f"{allomorph}_chitin_slab_{boundary}"
+    face_label = "".join(str(index) for index in face)
+    directory = work / f"{allomorph.lower().replace('-', '_')}_{polymer}_{face_label}_{boundary}"
     if directory.exists():
         shutil.rmtree(directory)
-    _, _, top_path, _ = write_charmm36_system(system, topology, ff, directory, polymer="chitin")
+    _, _, top_path, _ = write_charmm36_system(system, topology, ff, directory, polymer=polymer)
 
     plain = _gromacs(directory, _PLAIN_MDP, "plain", periodic=periodic)
     switched = _gromacs(directory, _SWITCHED_MDP, "switched", periodic=periodic)
@@ -647,6 +703,8 @@ def _case(  # noqa: PLR0913, PLR0917
         raise RuntimeError(msg)
     openmm_energies = json.loads(completed.stdout.strip().splitlines()[-1])
     improper_count = int(openmm_energies.pop("improper_count"))
+    # Cellulose has no impropers, so OpenMM creates no improper force.
+    openmm_energies.setdefault("improper", 0.0)
 
     lammps_directory = directory / "lammps"
     _, lammps_metadata = write_lammps_system(
@@ -656,15 +714,16 @@ def _case(  # noqa: PLR0913, PLR0917
         lammps_directory,
         force_field="charmm36",
         python_executable=openmm_python,
-        polymer="chitin",
+        polymer=polymer,
     )
-    lammps_energies = _lammps(lammps_directory, lammps)
+    input_name = "in.chitin" if chitin else "in.cellulose"
+    lammps_energies = _lammps(lammps_directory, lammps, input_name)
 
     openmm_comparison = _compare(openmm_energies, _reference(plain, split), _nonbonded_scale(plain))
     lammps_comparison = _compare(
         lammps_energies, _reference(switched, split), _nonbonded_scale(switched)
     )
-    expected_impropers = 2 * dp * system.chain_count
+    expected_impropers = 2 * dp * system.chain_count if chitin else 0
     checks = {
         "gromacs_angle_split_reproduces_u_b": split_consistent,
         "openmm_improper_count": improper_count == expected_impropers,
@@ -686,6 +745,9 @@ def _case(  # noqa: PLR0913, PLR0917
     }
     return {
         "case": directory.name,
+        "polymer": polymer,
+        "allomorph": allomorph,
+        "chain_boundary": boundary,
         **geometry,
         "atoms": len(system.atom_names),
         "impropers": expected_impropers,
@@ -707,6 +769,7 @@ def _case(  # noqa: PLR0913, PLR0917
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--polymer", choices=["chitin", "cellulose"], default="chitin")
     parser.add_argument("--work-directory", type=Path, required=True)
     parser.add_argument("--openmm-python", required=True)
     parser.add_argument("--lammps", default=shutil.which("lmp_serial") or "lmp")
@@ -714,13 +777,22 @@ def main() -> int:
     args = parser.parse_args()
     ff = discover_charmm36_directory()
     args.work_directory.mkdir(parents=True, exist_ok=True)
+    cases = _CHITIN_CASES if args.polymer == "chitin" else _CELLULOSE_CASES
     results = [
-        _case(allomorph, boundary, args.work_directory, ff, args.openmm_python, args.lammps)
-        for allomorph in ("alpha", "beta")
-        for boundary in ("periodic", "finite")
+        _case(
+            args.polymer,
+            allomorph,
+            face,
+            boundary,
+            args.work_directory,
+            ff,
+            args.openmm_python,
+            args.lammps,
+        )
+        for allomorph, face, boundary in cases
     ]
     report = {
-        "test": "chitin CHARMM36 term-by-term energies: GROMACS vs OpenMM and LAMMPS",
+        "test": f"{args.polymer} CHARMM36 term-by-term energies: GROMACS vs OpenMM and LAMMPS",
         "tolerances": {
             "bonded_relative": _BONDED_RELATIVE_TOLERANCE,
             "bonded_absolute_kj_mol": _BONDED_ABSOLUTE_TOLERANCE,

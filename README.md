@@ -142,7 +142,7 @@ build that reference; CelluloseForge does not need it.
 
 OpenMM and LAMMPS energies were compared with GROMACS term by term for alpha
 and beta, finite and periodic (1 0 0) slabs
-(`validation/validate_chitin_charmm36_engines.py`): bonds, angles,
+(`validation/validate_charmm36_engines.py`): bonds, angles,
 Urey-Bradley, proper dihedrals, the acetyl impropers, 1-4 Lennard-Jones, 1-4
 electrostatics, and total nonbonded energy. Bonded terms agree within
 0.03 kJ/mol and nonbonded totals within 0.7 kJ/mol. LAMMPS impropers use
