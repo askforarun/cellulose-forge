@@ -1,0 +1,149 @@
+{
+  "molecule": "beta-D-cellobiose",
+  "degree_polymerization": 2,
+  "coordinates": "CelluloseForge I-beta (110), finite DP2 chain",
+  "smiles_source": "PubChem CID 10712 (beta-cellobiose)",
+  "openff_force_field": "openff-2.3.0.offxml",
+  "charge_method": "am1bcc",
+  "charge_provenance": {
+    "method": "am1bcc",
+    "backend": "AmberToolsToolkitWrapper",
+    "use_conformers": null,
+    "conformer_behavior": "OpenFF generated one charge conformer internally; it was not the retained CelluloseForge crystallographic conformer and is not stored by the toolkit",
+    "openff_toolkit_version": "0.19.0",
+    "openff_nagl_version": "not used",
+    "openff_nagl_models_version": "not used",
+    "ambertools_version": "26.0 (Conda environment pin)",
+    "graph_sha256": "624ac6029b07c60930b3997a00b5118e2e757aa5a05b786964da1a5f1265c41a",
+    "crystallographic_coordinate_sha256": "0452f2d4a0bb6dc6e779c6452137daae497a4137a808638a11a05a4a72481a0f",
+    "charged_cache_sha256": "e718a9e41e4d6ade459b91def9492c11b93e392936c922242120ad246b7b3ad8"
+  },
+  "atom_count": 45,
+  "bond_count": 46,
+  "formal_charge_e": 0.0,
+  "partial_charge_e": -1.6653345369377348e-16,
+  "parameter_counts": {
+    "Constraints": 22,
+    "Bonds": 46,
+    "Angles": 83,
+    "ProperTorsions": 132,
+    "ImproperTorsions": 0,
+    "vdW": 45,
+    "Electrostatics": 0,
+    "LibraryCharges": 0,
+    "NAGLCharges": 0
+  },
+  "openmm_forces": [
+    "NonbondedForce",
+    "PeriodicTorsionForce",
+    "HarmonicAngleForce",
+    "HarmonicBondForce",
+    "CMMotionRemover"
+  ],
+  "cross_engine_single_point": {
+    "openmm": {
+      "Bond": 6.1440908683428415,
+      "Angle": 23.208400577255105,
+      "Torsion": 145.4010758442512,
+      "vdW": -19.037543793652134,
+      "vdW 1-4": 49.97699500280263,
+      "Electrostatics": -712.6225726787378,
+      "Electrostatics 1-4": 973.0754362854802
+    },
+    "gromacs": {
+      "Bond": 6.144138813018799,
+      "Angle": 23.208499908447266,
+      "Torsion": 145.40106201171875,
+      "vdW": -18.955720901489258,
+      "vdW 1-4": 49.977020263671875,
+      "Electrostatics": -712.6665019989014,
+      "Electrostatics 1-4": 973.074951171875
+    },
+    "comparison": {
+      "Angle": {
+        "openmm_kj_mol": 23.208400577255105,
+        "gromacs_kj_mol": 23.208499908447266,
+        "difference_kj_mol": -9.933119216043451e-05,
+        "relative_difference": 4.279948835653986e-06,
+        "tolerance_kj_mol": 0.01,
+        "passed": true
+      },
+      "Bond": {
+        "openmm_kj_mol": 6.1440908683428415,
+        "gromacs_kj_mol": 6.144138813018799,
+        "difference_kj_mol": -4.794467595736762e-05,
+        "relative_difference": 7.80331913331414e-06,
+        "tolerance_kj_mol": 0.01,
+        "passed": true
+      },
+      "Electrostatics": {
+        "openmm_kj_mol": -712.6225726787378,
+        "gromacs_kj_mol": -712.6665019989014,
+        "difference_kj_mol": 0.04392932016355644,
+        "relative_difference": 6.16407815441621e-05,
+        "tolerance_kj_mol": 0.0675,
+        "passed": true
+      },
+      "Electrostatics 1-4": {
+        "openmm_kj_mol": 973.0754362854802,
+        "gromacs_kj_mol": 973.074951171875,
+        "difference_kj_mol": 0.00048511360523662006,
+        "relative_difference": 4.985364825243597e-07,
+        "tolerance_kj_mol": 0.01,
+        "passed": true
+      },
+      "Torsion": {
+        "openmm_kj_mol": 145.4010758442512,
+        "gromacs_kj_mol": 145.40106201171875,
+        "difference_kj_mol": 1.3832532459900904e-05,
+        "relative_difference": 9.513363212468834e-08,
+        "tolerance_kj_mol": 0.01,
+        "passed": true
+      },
+      "vdW": {
+        "openmm_kj_mol": -19.037543793652134,
+        "gromacs_kj_mol": -18.955720901489258,
+        "difference_kj_mol": -0.08182289216287586,
+        "relative_difference": 0.004297975256144063,
+        "tolerance_kj_mol": 0.45,
+        "passed": true
+      },
+      "vdW 1-4": {
+        "openmm_kj_mol": 49.97699500280263,
+        "gromacs_kj_mol": 49.977020263671875,
+        "difference_kj_mol": -2.526086924348192e-05,
+        "relative_difference": 5.054496868802713e-07,
+        "tolerance_kj_mol": 0.01,
+        "passed": true
+      }
+    },
+    "nonbonded_tolerance_policy_kj_mol_per_atom": {
+      "vdW": 0.01,
+      "Electrostatics": 0.0015
+    },
+    "passed": true,
+    "failed_terms": []
+  },
+  "initial_energy_kj_mol": 501.8350830078125,
+  "minimized_energy_kj_mol": 419.062744140625,
+  "minimization_rms_displacement_angstrom": 0.21317220311461194,
+  "minimization_max_displacement_angstrom": 0.5532975884043739,
+  "openmm_nvt_smoke_test": {
+    "duration_ps": 1.0,
+    "temperature_k": 300.0,
+    "time_step_fs": 1.0,
+    "random_seed": 20261112,
+    "final_potential_energy_kj_mol": 513.156494140625,
+    "final_kinetic_energy_kj_mol": 135.04286193847656,
+    "maximum_bond_length_change_angstrom": 0.07362294694121974,
+    "passed": true
+  },
+  "exported_files": {
+    "cellodextrin_dp2.gro": 2087,
+    "cellodextrin_dp2.inpcrd": 1738,
+    "cellodextrin_dp2.prmtop": 24522,
+    "cellodextrin_dp2.top": 40940,
+    "cellodextrin_dp2_pointenergy.in": 120,
+    "cellodextrin_dp2_pointenergy.mdp": 708
+  }
+}

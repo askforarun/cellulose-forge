@@ -1,0 +1,622 @@
+{
+  "matrix": "periodic DP6 cellulose reference slabs",
+  "charge_method": "NAGL openff-gnn-am1bcc-1.0.0.pt",
+  "template_sha256": "92a8d7303ef9f8be71bc087d01e3cf412a84d622c8c38adc97c284eb88e1c296",
+  "software_versions": {
+    "openff-toolkit": "0.19.0",
+    "openff-interchange": "0.5.5",
+    "openff-nagl": "0.6.1",
+    "openff-nagl-models": "2026.9.0",
+    "openmm": "8.6.1",
+    "gromacs": "2024.2-Homebrew"
+  },
+  "pme_settings": {
+    "openmm_ewald_tolerance": 1e-06,
+    "gromacs_ewald_rtol": 1e-06,
+    "gromacs_pme_order": 8,
+    "gromacs_fourierspacing_nm": 0.05
+  },
+  "cases": {
+    "i_alpha": {
+      "system": "I-alpha (010)",
+      "atom_count": 1008,
+      "geometry": {
+        "chains_checked": 8,
+        "bonds_checked": 1056,
+        "hydrogen_bond_length_range_angstrom": [
+          0.9685242346317415,
+          0.9916642858900891
+        ],
+        "heavy_bond_length_range_angstrom": [
+          1.3969615072195052,
+          1.545065635642487
+        ],
+        "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.09506563564248705,
+        "passed": true
+      },
+      "stereochemistry": {
+        "reference": "PubChem-derived finite DP6 internal residue 3",
+        "centres_checked": 240,
+        "template_label_failures": [],
+        "coordinate_parity_failures": [],
+        "negative_controls": {
+          "C1_local_inversion_rejected": true,
+          "C3_local_inversion_rejected": true,
+          "whole_chain_mirror_rejected": true
+        },
+        "passed": true
+      },
+      "periodic_boundary_bonds": {
+        "boundary_bonds_checked": 8,
+        "length_range_angstrom": [
+          1.3969615072195052,
+          1.3969615072195116
+        ],
+        "passed": true
+      },
+      "energy_comparison": {
+        "Angle": {
+          "openmm_kj_mol": 1860.9081766049137,
+          "gromacs_kj_mol": 1860.9105224609375,
+          "difference_per_atom_kj_mol": -2.327238118843366e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Bond": {
+          "openmm_kj_mol": 6472.847940965031,
+          "gromacs_kj_mol": 6472.841796875,
+          "difference_per_atom_kj_mol": 6.095327411537529e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Electrostatics": {
+          "openmm_kj_mol": -15900.441175000113,
+          "gromacs_kj_mol": -15900.463623046875,
+          "difference_per_atom_kj_mol": 2.226988766100447e-05,
+          "tolerance_per_atom_kj_mol": 5e-05,
+          "passed": true
+        },
+        "Electrostatics 1-4": {
+          "openmm_kj_mol": 21762.837699140717,
+          "gromacs_kj_mol": 21762.830078125,
+          "difference_per_atom_kj_mol": 7.560531465002449e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Torsion": {
+          "openmm_kj_mol": 3883.550744808123,
+          "gromacs_kj_mol": 3883.55078125,
+          "difference_per_atom_kj_mol": -3.6152655754434934e-08,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "vdW": {
+          "openmm_kj_mol": -1850.2170032930871,
+          "gromacs_kj_mol": -1850.21630859375,
+          "difference_per_atom_kj_mol": -6.891858503429772e-07,
+          "tolerance_per_atom_kj_mol": 1e-05,
+          "passed": true
+        },
+        "vdW 1-4": {
+          "openmm_kj_mol": 1238.0633821572137,
+          "gromacs_kj_mol": 1238.064208984375,
+          "difference_per_atom_kj_mol": -8.202650409628636e-07,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        }
+      },
+      "initial_energy_kj_mol": 17467.547056276497,
+      "minimized_energy_kj_mol": 6677.235970410068,
+      "openmm_nvt": {
+        "duration_ps": 1.0,
+        "platform": "CPU",
+        "platform_properties": {
+          "Threads": "1"
+        },
+        "minimized_boundary_bonds": {
+          "boundary_bonds_checked": 8,
+          "length_range_angstrom": [
+            1.414870608967629,
+            1.4203581897244846
+          ],
+          "passed": true
+        },
+        "minimized_all_bonds": {
+          "chains_checked": 8,
+          "bonds_checked": 1056,
+          "hydrogen_bond_length_range_angstrom": [
+            0.9711625420200394,
+            1.0924458722586574
+          ],
+          "heavy_bond_length_range_angstrom": [
+            1.4148705774711234,
+            1.5524921135492151
+          ],
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10249211354921517,
+          "passed": true
+        },
+        "final_boundary_bonds": {
+          "boundary_bonds_checked": 8,
+          "length_range_angstrom": [
+            1.36140653831844,
+            1.4430887580294036
+          ],
+          "passed": true
+        },
+        "final_all_bond_ranges": {
+          "chains_checked": 8,
+          "bonds_checked": 1056,
+          "hydrogen_bond_length_range_angstrom": [
+            0.971162541824493,
+            1.0924459988388637
+          ],
+          "heavy_bond_length_range_angstrom": [
+            1.3158199191097628,
+            1.6510130505419476
+          ],
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.20101305054194762
+        },
+        "all_bond_stability": {
+          "bonds_checked": 1056,
+          "maximum_change_angstrom": 0.12168283434871063,
+          "all_finite": true,
+          "passed": true
+        },
+        "final_energy_kj_mol": 9322.215164627429,
+        "passed": true
+      },
+      "passed": true
+    },
+    "i_beta": {
+      "system": "I-beta (110)",
+      "atom_count": 1008,
+      "geometry": {
+        "chains_checked": 8,
+        "bonds_checked": 1056,
+        "hydrogen_bond_length_range_angstrom": [
+          0.9677703829703738,
+          0.9832730200099061
+        ],
+        "heavy_bond_length_range_angstrom": [
+          1.4052750771168758,
+          1.5581034616701583
+        ],
+        "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10810346167015839,
+        "passed": true
+      },
+      "stereochemistry": {
+        "reference": "PubChem-derived finite DP6 internal residue 3",
+        "centres_checked": 240,
+        "template_label_failures": [],
+        "coordinate_parity_failures": [],
+        "negative_controls": {
+          "C1_local_inversion_rejected": true,
+          "C3_local_inversion_rejected": true,
+          "whole_chain_mirror_rejected": true
+        },
+        "passed": true
+      },
+      "periodic_boundary_bonds": {
+        "boundary_bonds_checked": 8,
+        "length_range_angstrom": [
+          1.415182279258883,
+          1.4289763208431316
+        ],
+        "passed": true
+      },
+      "energy_comparison": {
+        "Angle": {
+          "openmm_kj_mol": 584.6667038489002,
+          "gromacs_kj_mol": 584.6692504882812,
+          "difference_per_atom_kj_mol": -2.526427957420873e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Bond": {
+          "openmm_kj_mol": 6534.792189571491,
+          "gromacs_kj_mol": 6534.79248046875,
+          "difference_per_atom_kj_mol": -2.8858855081298746e-07,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Electrostatics": {
+          "openmm_kj_mol": -15617.785722802175,
+          "gromacs_kj_mol": -15617.792053222656,
+          "difference_per_atom_kj_mol": 6.280179048998333e-06,
+          "tolerance_per_atom_kj_mol": 5e-05,
+          "passed": true
+        },
+        "Electrostatics 1-4": {
+          "openmm_kj_mol": 21261.56246613848,
+          "gromacs_kj_mol": 21261.55859375,
+          "difference_per_atom_kj_mol": 3.841655237169656e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Torsion": {
+          "openmm_kj_mol": 3349.425550668871,
+          "gromacs_kj_mol": 3349.424560546875,
+          "difference_per_atom_kj_mol": 9.822638849036882e-07,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "vdW": {
+          "openmm_kj_mol": -2316.1557358894443,
+          "gromacs_kj_mol": -2316.156494140625,
+          "difference_per_atom_kj_mol": 7.522333142275336e-07,
+          "tolerance_per_atom_kj_mol": 1e-05,
+          "passed": true
+        },
+        "vdW 1-4": {
+          "openmm_kj_mol": 1235.8580331356466,
+          "gromacs_kj_mol": 1235.8594970703125,
+          "difference_per_atom_kj_mol": -1.452316136840362e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        }
+      },
+      "initial_energy_kj_mol": 15032.359200842606,
+      "minimized_energy_kj_mol": 6761.474780023627,
+      "openmm_nvt": {
+        "duration_ps": 1.0,
+        "platform": "CPU",
+        "platform_properties": {
+          "Threads": "1"
+        },
+        "minimized_boundary_bonds": {
+          "boundary_bonds_checked": 8,
+          "length_range_angstrom": [
+            1.414685676027021,
+            1.4206528706188373
+          ],
+          "passed": true
+        },
+        "minimized_all_bonds": {
+          "chains_checked": 8,
+          "bonds_checked": 1056,
+          "hydrogen_bond_length_range_angstrom": [
+            0.9711625418270595,
+            1.0924458110509494
+          ],
+          "heavy_bond_length_range_angstrom": [
+            1.4146855453979719,
+            1.551151917677043
+          ],
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10115191767704301,
+          "passed": true
+        },
+        "final_boundary_bonds": {
+          "boundary_bonds_checked": 8,
+          "length_range_angstrom": [
+            1.364906801041588,
+            1.4546307502714897
+          ],
+          "passed": true
+        },
+        "final_all_bond_ranges": {
+          "chains_checked": 8,
+          "bonds_checked": 1056,
+          "hydrogen_bond_length_range_angstrom": [
+            0.9711625418244952,
+            1.0924460568532033
+          ],
+          "heavy_bond_length_range_angstrom": [
+            1.3447007383128051,
+            1.6364151569248624
+          ],
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.18641515692486244
+        },
+        "all_bond_stability": {
+          "bonds_checked": 1056,
+          "maximum_change_angstrom": 0.10369803316719195,
+          "all_finite": true,
+          "passed": true
+        },
+        "final_energy_kj_mol": 9357.359779429187,
+        "passed": true
+      },
+      "passed": true
+    },
+    "ii": {
+      "system": "II (110)",
+      "atom_count": 1008,
+      "geometry": {
+        "chains_checked": 8,
+        "bonds_checked": 1056,
+        "hydrogen_bond_length_range_angstrom": [
+          0.9612174571864572,
+          0.9839000509527107
+        ],
+        "heavy_bond_length_range_angstrom": [
+          1.3933376085700329,
+          1.5300567302608654
+        ],
+        "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.08005673026086546,
+        "passed": true
+      },
+      "stereochemistry": {
+        "reference": "PubChem-derived finite DP6 internal residue 3",
+        "centres_checked": 240,
+        "template_label_failures": [],
+        "coordinate_parity_failures": [],
+        "negative_controls": {
+          "C1_local_inversion_rejected": true,
+          "C3_local_inversion_rejected": true,
+          "whole_chain_mirror_rejected": true
+        },
+        "passed": true
+      },
+      "periodic_boundary_bonds": {
+        "boundary_bonds_checked": 8,
+        "length_range_angstrom": [
+          1.3933376085700397,
+          1.3940861632979435
+        ],
+        "passed": true
+      },
+      "energy_comparison": {
+        "Angle": {
+          "openmm_kj_mol": 957.6351790401299,
+          "gromacs_kj_mol": 957.63720703125,
+          "difference_per_atom_kj_mol": -2.011895952523987e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Bond": {
+          "openmm_kj_mol": 6619.080405434338,
+          "gromacs_kj_mol": 6619.0771484375,
+          "difference_per_atom_kj_mol": 3.231147656736409e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Electrostatics": {
+          "openmm_kj_mol": -15830.74538496435,
+          "gromacs_kj_mol": -15830.744354248047,
+          "difference_per_atom_kj_mol": -1.022536014802643e-06,
+          "tolerance_per_atom_kj_mol": 5e-05,
+          "passed": true
+        },
+        "Electrostatics 1-4": {
+          "openmm_kj_mol": 22579.10065315901,
+          "gromacs_kj_mol": 22579.095703125,
+          "difference_per_atom_kj_mol": 4.910748025900426e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Torsion": {
+          "openmm_kj_mol": 2823.2966385380796,
+          "gromacs_kj_mol": 2823.29638671875,
+          "difference_per_atom_kj_mol": 2.498207634975159e-07,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "vdW": {
+          "openmm_kj_mol": -1973.725045524017,
+          "gromacs_kj_mol": -1973.724853515625,
+          "difference_per_atom_kj_mol": -1.904845159771636e-07,
+          "tolerance_per_atom_kj_mol": 1e-05,
+          "passed": true
+        },
+        "vdW 1-4": {
+          "openmm_kj_mol": 1418.086625182903,
+          "gromacs_kj_mol": 1418.087646484375,
+          "difference_per_atom_kj_mol": -1.0131959048261966e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        }
+      },
+      "initial_energy_kj_mol": 16592.72589465131,
+      "minimized_energy_kj_mol": 7273.850631917093,
+      "openmm_nvt": {
+        "duration_ps": 1.0,
+        "platform": "CPU",
+        "platform_properties": {
+          "Threads": "1"
+        },
+        "minimized_boundary_bonds": {
+          "boundary_bonds_checked": 8,
+          "length_range_angstrom": [
+            1.4175296462529,
+            1.4212227429115587
+          ],
+          "passed": true
+        },
+        "minimized_all_bonds": {
+          "chains_checked": 8,
+          "bonds_checked": 1056,
+          "hydrogen_bond_length_range_angstrom": [
+            0.9711625418266637,
+            1.09244580920437
+          ],
+          "heavy_bond_length_range_angstrom": [
+            1.4167830945599493,
+            1.563981242697412
+          ],
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.11398124269741206,
+          "passed": true
+        },
+        "final_boundary_bonds": {
+          "boundary_bonds_checked": 8,
+          "length_range_angstrom": [
+            1.3795548963318505,
+            1.4753366065146922
+          ],
+          "passed": true
+        },
+        "final_all_bond_ranges": {
+          "chains_checked": 8,
+          "bonds_checked": 1056,
+          "hydrogen_bond_length_range_angstrom": [
+            0.971162541824495,
+            1.092446005485804
+          ],
+          "heavy_bond_length_range_angstrom": [
+            1.3429762274496486,
+            1.627464079673339
+          ],
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.1774640796733391
+        },
+        "all_bond_stability": {
+          "bonds_checked": 1056,
+          "maximum_change_angstrom": 0.10809828337477745,
+          "all_finite": true,
+          "passed": true
+        },
+        "final_energy_kj_mol": 9620.338262491592,
+        "passed": true
+      },
+      "passed": true
+    },
+    "iii_i": {
+      "system": "III-I (110)",
+      "atom_count": 1008,
+      "geometry": {
+        "chains_checked": 8,
+        "bonds_checked": 1056,
+        "hydrogen_bond_length_range_angstrom": [
+          0.9699959371125589,
+          0.9966266658039367
+        ],
+        "heavy_bond_length_range_angstrom": [
+          1.3775884124462718,
+          1.5279086324148445
+        ],
+        "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.07790863241484458,
+        "passed": true
+      },
+      "stereochemistry": {
+        "reference": "PubChem-derived finite DP6 internal residue 3",
+        "centres_checked": 240,
+        "template_label_failures": [],
+        "coordinate_parity_failures": [],
+        "negative_controls": {
+          "C1_local_inversion_rejected": true,
+          "C3_local_inversion_rejected": true,
+          "whole_chain_mirror_rejected": true
+        },
+        "passed": true
+      },
+      "periodic_boundary_bonds": {
+        "boundary_bonds_checked": 8,
+        "length_range_angstrom": [
+          1.3775884124462736,
+          1.3775884124462774
+        ],
+        "passed": true
+      },
+      "energy_comparison": {
+        "Angle": {
+          "openmm_kj_mol": 649.6962394518271,
+          "gromacs_kj_mol": 649.6966552734375,
+          "difference_per_atom_kj_mol": -4.125214389201603e-07,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Bond": {
+          "openmm_kj_mol": 6824.101823792558,
+          "gromacs_kj_mol": 6824.08935546875,
+          "difference_per_atom_kj_mol": 1.2369368857348273e-05,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Electrostatics": {
+          "openmm_kj_mol": -16360.713888610808,
+          "gromacs_kj_mol": -16360.746612548828,
+          "difference_per_atom_kj_mol": 3.246422422654134e-05,
+          "tolerance_per_atom_kj_mol": 5e-05,
+          "passed": true
+        },
+        "Electrostatics 1-4": {
+          "openmm_kj_mol": 22283.542120292288,
+          "gromacs_kj_mol": 22283.52734375,
+          "difference_per_atom_kj_mol": 1.4659268142875388e-05,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "Torsion": {
+          "openmm_kj_mol": 3625.020306190737,
+          "gromacs_kj_mol": 3625.02001953125,
+          "difference_per_atom_kj_mol": 2.843844115540421e-07,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        },
+        "vdW": {
+          "openmm_kj_mol": -1740.5314398374605,
+          "gromacs_kj_mol": -1740.531982421875,
+          "difference_per_atom_kj_mol": 5.382781889494932e-07,
+          "tolerance_per_atom_kj_mol": 1e-05,
+          "passed": true
+        },
+        "vdW 1-4": {
+          "openmm_kj_mol": 1369.5886137733282,
+          "gromacs_kj_mol": 1369.5908203125,
+          "difference_per_atom_kj_mol": -2.1890269561171164e-06,
+          "tolerance_per_atom_kj_mol": 2e-05,
+          "passed": true
+        }
+      },
+      "initial_energy_kj_mol": 16650.700267185224,
+      "minimized_energy_kj_mol": 7683.169141574171,
+      "openmm_nvt": {
+        "duration_ps": 1.0,
+        "platform": "CPU",
+        "platform_properties": {
+          "Threads": "1"
+        },
+        "minimized_boundary_bonds": {
+          "boundary_bonds_checked": 8,
+          "length_range_angstrom": [
+            1.4212715187898595,
+            1.4247354792284608
+          ],
+          "passed": true
+        },
+        "minimized_all_bonds": {
+          "chains_checked": 8,
+          "bonds_checked": 1056,
+          "hydrogen_bond_length_range_angstrom": [
+            0.9711625418462443,
+            1.092445809175605
+          ],
+          "heavy_bond_length_range_angstrom": [
+            1.4212707935825424,
+            1.5557203337948788
+          ],
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10572033379487888,
+          "passed": true
+        },
+        "final_boundary_bonds": {
+          "boundary_bonds_checked": 8,
+          "length_range_angstrom": [
+            1.4037948049176858,
+            1.4624876682014873
+          ],
+          "passed": true
+        },
+        "final_all_bond_ranges": {
+          "chains_checked": 8,
+          "bonds_checked": 1056,
+          "hydrogen_bond_length_range_angstrom": [
+            0.9711625418267,
+            1.0924524902003214
+          ],
+          "heavy_bond_length_range_angstrom": [
+            1.3390810330804408,
+            1.6246661631658093
+          ],
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.1746661631658093
+        },
+        "all_bond_stability": {
+          "bonds_checked": 1056,
+          "maximum_change_angstrom": 0.09680148394812416,
+          "all_finite": true,
+          "passed": true
+        },
+        "final_energy_kj_mol": 10228.081772375723,
+        "passed": true
+      },
+      "passed": true
+    }
+  },
+  "passed": true
+}
