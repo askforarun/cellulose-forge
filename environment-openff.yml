@@ -4,13 +4,16 @@ channels:
 dependencies:
   - python=3.12
   - numpy>=1.26,<2.3
-  - ambertools=26
   - openff-toolkit=0.19.0
   - openff-interchange=0.5.5
   - openff-nagl=0.6.1
   - openff-nagl-models=2026.9.0
   - openmm=8.6.1
-  - parmed
+  - gromacs=2024.2
+  - pytest
+  - pytest-cov
+  - ruff
+  - mypy
   - pip
   - pip:
       - -e .

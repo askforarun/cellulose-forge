@@ -914,6 +914,15 @@ Following the Cellulose-Builder convention for I-beta,
 `(100)` and `(010)` expose origin-chain layers, whereas `(200)` and `(020)`
 expose center-chain layers halfway through the unit cell.
 
+## Experimental OpenFF Sage support
+
+CelluloseForge includes an optional, experimental OpenFF Sage 2.3 backend for
+finite/periodic cellulose slabs and periodic bulk crystals, with GROMACS and
+OpenMM output. It constructs the molecular graph directly and uses NAGL
+charges; AmberTools is not required. Model construction is validated, but
+force-field accuracy for cellulose has not been assessed. See
+[`docs/openff.md`](docs/openff.md) for the precise scope and installation.
+
 ## Development and testing
 
 ```bash

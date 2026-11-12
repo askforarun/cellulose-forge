@@ -9,6 +9,8 @@ import warnings
 from collections.abc import Sequence
 from pathlib import Path
 
+import numpy as np
+
 from cellulose_forge import __version__
 from cellulose_forge.amber import write_glycam_amber_system
 from cellulose_forge.charmm36 import (
@@ -56,6 +58,15 @@ from cellulose_forge.glycam_mapping import (
 )
 from cellulose_forge.gromacs import write_glycam_gromacs_system
 from cellulose_forge.lammps import LammpsSystemFiles, write_lammps_system
+from cellulose_forge.openff_sage import (
+    SAGE_FORCE_FIELD,
+    VALIDATION_SCOPE,
+    build_sage_system,
+    dispersion_correction_for_shape,
+    reduced_periodic_box,
+    write_sage_outputs,
+    write_sage_report,
+)
 from cellulose_forge.openmm import (
     OpenMMSystemFiles,
     heavy_atom_restraints,
@@ -78,6 +89,7 @@ _CHITIN_SHAPES = {"unit-cell", "bulk", "crystal", "slab"}
 _MANNAN_ALLOMORPHS = {"I": "i"}
 _MANNAN_SHAPES = {"unit-cell", "bulk", "crystal"}
 _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 3.0
+_MINIMUM_OPENFF_BULK_EDGE_ANGSTROM = 18.0
 _RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 12.0
 
 
@@ -108,9 +120,7 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         version=f"%(prog)s {__version__}",
     )
     subparsers = parser.add_subparsers(dest="command")
-    build = subparsers.add_parser(
-        "build", help="build a cellulose, chitin, or mannan structure"
-    )
+    build = subparsers.add_parser("build", help="build a cellulose, chitin, or mannan structure")
     build.add_argument(
         "--polymer",
         choices=["cellulose", "chitin", "mannan"],
@@ -211,9 +221,9 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     build.add_argument(
         "--force-field",
-        choices=["none", "glycam", "charmm36"],
+        choices=["none", "glycam", "charmm36", "openff"],
         default="none",
-        help="write coordinates only or a simulation-ready GROMACS system",
+        help=("write coordinates only or a force-field system; openff is experimental"),
     )
     build.add_argument(
         "--topology-format",
@@ -324,7 +334,7 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
+def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
     """Run the command-line interface."""
     args = build_parser().parse_args(argv)
     if args.command == "forcefield":
@@ -383,6 +393,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
             _write_glycam_build(args, crystal, build_parser())
         elif args.force_field == "charmm36":
             _write_charmm36_build(args, crystal, build_parser(), definition)
+        elif args.force_field == "openff":
+            _write_openff_build(args, crystal, build_parser(), definition)
         else:
             if any(
                 value is not None
@@ -422,9 +434,7 @@ def _load_definition(  # noqa: PLR0912 - polymer-specific validation is kept tog
         if args.shape not in _MANNAN_SHAPES:
             parser.error("mannan currently supports --shape unit-cell and bulk")
         if args.force_field != "none":
-            parser.error(
-                "mannan force-field output is not implemented; use --force-field none"
-            )
+            parser.error("mannan force-field output is not implemented; use --force-field none")
         return load_allomorph(_MANNAN_ALLOMORPHS[args.allomorph], polymer="mannan")
     if args.allomorph not in _CHITIN_ALLOMORPHS:
         parser.error(f"chitin allomorphs are {', '.join(_CHITIN_ALLOMORPHS)}")
@@ -445,9 +455,7 @@ def _load_definition(  # noqa: PLR0912 - polymer-specific validation is kept tog
     return load_allomorph(name, polymer="chitin")
 
 
-def _validate_polymer_chirality(
-    crystal: BulkCrystal, polymer: str
-) -> dict[str, object]:
+def _validate_polymer_chirality(crystal: BulkCrystal, polymer: str) -> dict[str, object]:
     if polymer == "cellulose":
         return validate_cellulose_chirality(crystal)
     if polymer == "mannan":
@@ -479,7 +487,7 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         engines = ("gromacs",)
 
     if args.force_field == "none" and engines:
-        parser.error("--md-engine requires --force-field glycam or charmm36")
+        parser.error("--md-engine requires a supported force-field build")
     if args.force_field == "charmm36" and not set(engines) <= {
         "gromacs",
         "openmm",
@@ -488,6 +496,8 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         parser.error("CHARMM36 supports --md-engine gromacs, openmm, and lammps")
     if args.force_field == "glycam" and not engines:
         parser.error("GLYCAM builds require at least one --md-engine")
+    if args.force_field == "openff" and not set(engines) <= {"gromacs", "openmm"}:
+        parser.error("experimental OpenFF supports --md-engine gromacs and openmm only")
     args.md_engines = engines
 
 
@@ -674,6 +684,92 @@ def _engine_outputs(
             }
         )
     return outputs
+
+
+def _write_openff_build(
+    args: argparse.Namespace,
+    crystal: BulkCrystal,
+    parser: argparse.ArgumentParser,
+    definition: AllomorphDefinition,
+) -> None:
+    """Write the deliberately bounded experimental OpenFF Sage workflow."""
+    if args.polymer != "cellulose":
+        parser.error("experimental OpenFF Sage support is limited to cellulose")
+    if args.shape == "fibril":
+        parser.error("experimental OpenFF Sage fibril output is not validated")
+    if args.shape == "unit-cell":
+        parser.error(
+            "experimental OpenFF Sage supports finite slabs, periodic slabs, "
+            "and periodic bulk crystals"
+        )
+    if args.shape in {"bulk", "crystal"} and args.chain_boundary != "periodic":
+        parser.error("experimental OpenFF Sage bulk crystals require periodic chains")
+    if args.shape == "slab" and args.chain_boundary not in {"finite", "periodic"}:
+        parser.error("OpenFF Sage slabs require --chain-boundary finite or periodic")
+    if args.shape not in {"slab", "bulk", "crystal"}:
+        parser.error("this geometry is outside the validated OpenFF Sage scope")
+    if any(
+        value is not None
+        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
+    ):
+        parser.error("OpenFF Sage position restraints are not implemented")
+    if (
+        args.shape in {"bulk", "crystal"}
+        and min(abs(np.diag(reduced_periodic_box(crystal.basis_vectors))))
+        <= _MINIMUM_OPENFF_BULK_EDGE_ANGSTROM
+    ):
+        parser.error(
+            "OpenFF Sage bulk boxes must exceed twice the 9 angstrom cutoff "
+            "in every direction; increase --cells"
+        )
+    if args.output.suffix:
+        parser.error("--output must be a directory for --force-field openff")
+    warnings.warn(
+        "OpenFF Sage support is experimental: model construction is validated, "
+        "but force-field accuracy for cellulose has not been assessed",
+        UserWarning,
+        stacklevel=1,
+    )
+    try:
+        build = build_sage_system(crystal, args.chain_boundary)
+        dispersion = dispersion_correction_for_shape(args.shape)
+        outputs = write_sage_outputs(
+            build,
+            args.output,
+            args.md_engines,
+            dispersion_correction=dispersion,
+        )
+    except (ImportError, RuntimeError, ValueError) as error:
+        parser.error(str(error))
+    report: dict[str, object] = {
+        "software": "CelluloseForge",
+        "version": __version__,
+        "experimental": True,
+        "polymer": "cellulose",
+        "allomorph": crystal.allomorph,
+        "shape": args.shape,
+        "force_field": {"file": SAGE_FORCE_FIELD, "version": "2.3.0"},
+        "charge_method": build.charge_provenance,
+        "chain_boundary": args.chain_boundary,
+        "degree_polymerization": build.degree_polymerization,
+        "chain_count": build.mapped.chain_count,
+        "atom_count": build.mapped.atom_count,
+        "stereochemistry": build.stereochemistry,
+        "dispersion_correction": dispersion,
+        "engines": list(args.md_engines),
+        "outputs": outputs,
+        "crystallographic_source": {
+            "definition": definition.name,
+            "citation": definition.citation,
+            "doi": definition.doi,
+        },
+        "validation_scope": VALIDATION_SCOPE,
+    }
+    write_sage_report(args.output / "build_report.json", report)
+    print(
+        "Experimental OpenFF Sage files written; model construction validated, "
+        "force-field accuracy for cellulose not assessed."
+    )
 
 
 def _write_charmm36_build(  # noqa: PLR0912, PLR0915

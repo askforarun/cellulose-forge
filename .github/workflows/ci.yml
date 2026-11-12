@@ -8,6 +8,27 @@ permissions:
   contents: read
 
 jobs:
+  openff-sage-integration:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment-openff.yml
+          cache-environment: true
+      - name: OpenFF Sage unit tests (no skips)
+        shell: micromamba-shell {0}
+        run: |
+          pytest tests/unit/test_openff_sage.py tests/integration/test_openff_sage_workflows.py -q -rs | tee openff-tests.log
+          if grep -q "skipped" openff-tests.log; then
+            echo "OpenFF Sage tests were skipped"; exit 1
+          fi
+      - name: Reduced periodic-bulk model-construction validator
+        shell: micromamba-shell {0}
+        run: >-
+          python validation/validate_openff_periodic_bulk.py
+          --case i_beta --output openff-periodic-bulk-ci.json
+
   test:
     strategy:
       matrix:

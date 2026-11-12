@@ -6,6 +6,13 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Added
 
+- Optional experimental OpenFF Sage 2.3 output for finite and periodic
+  cellulose slabs and periodic bulk crystals through GROMACS and OpenMM.
+- Direct OpenFF glucan graph construction without AmberTools, NAGL charges,
+  and build-time stereochemistry and periodic charge-equivalence checks.
+- Geometry-specific Sage dispersion policy: enabled for bulk crystals and
+  disabled for vacuum slabs.
+
 - Coordinate-only alpha- and beta-chitin unit cells and periodic bulk crystals
   with `--polymer chitin`. Definitions are converted from the refined structures
   of Sikorski, Hori and Wada (2009) and Nishiyama, Noishiki and Wada (2011) by

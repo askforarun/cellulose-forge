@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import subprocess
 import sys
 import tempfile
 from contextlib import chdir
@@ -27,7 +29,9 @@ from validate_openff_finite_slab import (  # noqa: E402
     MAXIMUM_BOND_CHANGE_ANGSTROM,
     MAXIMUM_HEAVY_BOND_DEVIATION_ANGSTROM,
     MAXIMUM_XH_BOND_ANGSTROM,
+    MINIM_MDP,
     MINIMUM_XH_BOND_ANGSTROM,
+    NVT_MDP,
     TIGHT_ENERGY_MDP,
     disable_slab_dispersion_correction,
     energies,
@@ -163,12 +167,14 @@ def centre_parity(
 def independent_stereo_reference() -> tuple[dict[str, int], dict[str, str]]:
     """Read parity and absolute labels from finite PubChem internal residue 3."""
     finite = Molecule.from_json(
-        (ROOT / "validation/results/openff_cellodextrin_dp6_nagl_charged.json")
-        .read_text(encoding="utf-8")
+        (ROOT / "validation/results/openff_cellodextrin_dp6_nagl_charged.json").read_text(
+            encoding="utf-8"
+        )
     )
     positions = finite.conformers[0].m_as(unit.angstrom)
     atoms = [
-        atom for atom in finite.atoms
+        atom
+        for atom in finite.atoms
         if atom.name in STEREOCENTRE_NAMES
         and int(atom.metadata["residue_number"]) == REFERENCE_INTERNAL_RESIDUE
     ]
@@ -189,14 +195,11 @@ def independent_periodic_stereochemistry_checks(
     label_failures = [
         (int(atom.metadata["residue_number"]), atom.name, atom.stereochemistry)
         for atom in template.atoms
-        if atom.name in STEREOCENTRE_NAMES
-        and atom.stereochemistry != reference_labels[atom.name]
+        if atom.name in STEREOCENTRE_NAMES and atom.stereochemistry != reference_labels[atom.name]
     ]
     parity_failures: list[tuple[int, int, str]] = []
     for chain in range(CHAIN_COUNT):
-        chain_positions = positions[
-            chain * template.n_atoms : (chain + 1) * template.n_atoms
-        ]
+        chain_positions = positions[chain * template.n_atoms : (chain + 1) * template.n_atoms]
         for atom in template.atoms:
             if atom.name in STEREOCENTRE_NAMES:
                 if centre_parity(chain_positions, atom, box) != reference_parity[atom.name]:
@@ -208,14 +211,13 @@ def independent_periodic_stereochemistry_checks(
     first_chain = positions[: template.n_atoms]
     for name in ("C1", "C3"):
         target = next(
-            atom for atom in template.atoms
+            atom
+            for atom in template.atoms
             if atom.name == name
             and int(atom.metadata["residue_number"]) == REFERENCE_INTERNAL_RESIDUE
         )
         altered = first_chain.copy()
-        neighbours = sorted(
-            target.bonded_atoms, key=lambda item: (item.symbol, item.name)
-        )[:3]
+        neighbours = sorted(target.bonded_atoms, key=lambda item: (item.symbol, item.name))[:3]
         left, right = neighbours[0].molecule_atom_index, neighbours[1].molecule_atom_index
         altered[[left, right]] = altered[[right, left]]
         controls[f"{name}_local_inversion_rejected"] = (
@@ -276,8 +278,7 @@ def periodic_all_bond_lengths(
         [
             np.linalg.norm(
                 minimum_image(
-                    positions[offset + bond.atom2_index]
-                    - positions[offset + bond.atom1_index],
+                    positions[offset + bond.atom2_index] - positions[offset + bond.atom1_index],
                     box,
                 )
             )
@@ -323,6 +324,75 @@ def gromacs_values(interchange: object) -> dict[str, float]:
         return energies(process_gromacs_energies(raw, detailed=True))
 
 
+def run_gromacs_periodic_smoke_test(interchange: object) -> dict[str, object]:
+    """Run isolated GROMACS minimization and 1 ps NVT for a periodic slab."""
+    with tempfile.TemporaryDirectory(prefix="cellulose_forge_openff_periodic_gmx_") as tmp:
+        directory = Path(tmp)
+        prefix = str(directory / "structure")
+        interchange.to_gromacs(prefix, decimal=8)  # type: ignore[attr-defined]
+        minim = MINIM_MDP.replace("periodic-molecules = no", "periodic-molecules = yes")
+        nvt = NVT_MDP.replace("periodic-molecules = no", "periodic-molecules = yes")
+        (directory / "minim.mdp").write_text(minim, encoding="utf-8")
+        (directory / "nvt.mdp").write_text(nvt, encoding="utf-8")
+        commands = (
+            [
+                "gmx",
+                "grompp",
+                "-f",
+                "minim.mdp",
+                "-c",
+                "structure.gro",
+                "-p",
+                "structure.top",
+                "-o",
+                "minim.tpr",
+                "-maxwarn",
+                "0",
+            ],
+            ["gmx", "mdrun", "-deffnm", "minim", "-ntmpi", "1"],
+            [
+                "gmx",
+                "grompp",
+                "-f",
+                "nvt.mdp",
+                "-c",
+                "minim.gro",
+                "-p",
+                "structure.top",
+                "-o",
+                "nvt.tpr",
+                "-maxwarn",
+                "0",
+            ],
+            ["gmx", "mdrun", "-deffnm", "nvt", "-ntmpi", "1"],
+        )
+        logs = []
+        for command in commands:
+            completed = subprocess.run(
+                command, cwd=directory, text=True, capture_output=True, check=True
+            )
+            logs.append(completed.stdout + completed.stderr)
+        combined = "\n".join(logs) + (directory / "nvt.log").read_text(encoding="utf-8")
+        failures = [
+            marker
+            for marker, pattern in {
+                "LINCS": r"LINCS WARNING",
+                "NaN": r"\bnan\b",
+                "non-finite": r"non-finite",
+            }.items()
+            if re.search(pattern, combined, flags=re.IGNORECASE)
+        ]
+        reached = "Statistics over 1001 steps" in combined
+        return {
+            "grompp_maxwarn": 0,
+            "minimization_completed": (directory / "minim.gro").exists(),
+            "nvt_duration_ps": 1.0,
+            "nvt_reached_final_step": reached,
+            "failure_markers": failures,
+            "passed": (directory / "minim.gro").exists() and reached and not failures,
+        }
+
+
 def validate_case(  # noqa: PLR0913, PLR0915, PLR0917
     allomorph: str,
     face: tuple[int, int, int],
@@ -332,14 +402,20 @@ def validate_case(  # noqa: PLR0913, PLR0915, PLR0917
     reference_labels: dict[str, str],
 ) -> dict[str, object]:
     crystal = build_chain_parallel_slab(
-        load_allomorph(allomorph), MillerIndex(*face), layers=LAYERS,
-        chains_per_layer=CHAINS_PER_LAYER, degree_polymerization=DP,
-        vacuum=20.0, chain_boundary="periodic",
+        load_allomorph(allomorph),
+        MillerIndex(*face),
+        layers=LAYERS,
+        chains_per_layer=CHAINS_PER_LAYER,
+        degree_polymerization=DP,
+        vacuum=20.0,
+        chain_boundary="periodic",
     )
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_openff_periodic_map_") as tmp:
         files, _ = generate_glycam_gromacs_reference(
-            degree_polymerization=DP, chain_boundary="periodic",
-            directory=tmp, parmed_python=sys.executable,
+            degree_polymerization=DP,
+            chain_boundary="periodic",
+            directory=tmp,
+            parmed_python=sys.executable,
         )
         mapped = map_crystal_to_periodic_glycam(crystal, files.pdb)
     if mapped.atom_count != CHAIN_COUNT * template.n_atoms:
@@ -375,11 +451,10 @@ def validate_case(  # noqa: PLR0913, PLR0915, PLR0917
         reference_parity,
         reference_labels,
     )
-    boundary = periodic_bond_checks(
-        mapped.cartesian_coordinates, crystal.basis_vectors, template
-    )
+    boundary = periodic_bond_checks(mapped.cartesian_coordinates, crystal.basis_vectors, template)
     omm, system = openmm_values(interchange)
     gmx = gromacs_values(interchange)
+    gromacs_smoke = run_gromacs_periodic_smoke_test(interchange)
     required = set(ENERGY_TOLERANCES_PER_ATOM_KJ_MOL)
     if required - set(omm) or required - set(gmx):
         raise RuntimeError("One engine omitted a required periodic energy term")
@@ -397,22 +472,18 @@ def validate_case(  # noqa: PLR0913, PLR0915, PLR0917
     platform = openmm.Platform.getPlatformByName("CPU")
     platform_properties = {"Threads": "1"}
     minimization_integrator = openmm.VerletIntegrator(0.001)
-    context = openmm.Context(
-        system, minimization_integrator, platform, platform_properties
-    )
+    context = openmm.Context(system, minimization_integrator, platform, platform_properties)
     context.setPeriodicBoxVectors(*interchange.box.to_openmm())
     context.setPositions(interchange.positions.to_openmm())
-    initial = context.getState(getEnergy=True).getPotentialEnergy().value_in_unit(
-        openmm.unit.kilojoule_per_mole
+    initial = (
+        context.getState(getEnergy=True)
+        .getPotentialEnergy()
+        .value_in_unit(openmm.unit.kilojoule_per_mole)
     )
     openmm.LocalEnergyMinimizer.minimize(context, tolerance=10.0, maxIterations=2000)
     minimized = context.getState(getEnergy=True, getPositions=True)
-    minimized_positions = minimized.getPositions(asNumpy=True).value_in_unit(
-        openmm.unit.angstrom
-    )
-    minimized_boundary = periodic_bond_checks(
-        minimized_positions, crystal.basis_vectors, template
-    )
+    minimized_positions = minimized.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
+    minimized_boundary = periodic_bond_checks(minimized_positions, crystal.basis_vectors, template)
     minimized_all_bonds = periodic_geometry_checks(
         minimized_positions, crystal.basis_vectors, template
     )
@@ -439,9 +510,7 @@ def validate_case(  # noqa: PLR0913, PLR0915, PLR0917
     minimized_lengths = periodic_all_bond_lengths(
         minimized_positions, crystal.basis_vectors, template
     )
-    final_lengths = periodic_all_bond_lengths(
-        final_positions, crystal.basis_vectors, template
-    )
+    final_lengths = periodic_all_bond_lengths(final_positions, crystal.basis_vectors, template)
     maximum_bond_change = float(np.max(np.abs(final_lengths - minimized_lengths)))
     all_bond_stability = {
         "bonds_checked": len(final_lengths),
@@ -450,8 +519,7 @@ def validate_case(  # noqa: PLR0913, PLR0915, PLR0917
             np.isfinite(minimized_lengths).all() and np.isfinite(final_lengths).all()
         ),
         "passed": bool(
-            np.isfinite(maximum_bond_change)
-            and maximum_bond_change < MAXIMUM_BOND_CHANGE_ANGSTROM
+            np.isfinite(maximum_bond_change) and maximum_bond_change < MAXIMUM_BOND_CHANGE_ANGSTROM
         ),
     }
     return {
@@ -477,28 +545,35 @@ def validate_case(  # noqa: PLR0913, PLR0915, PLR0917
             "final_energy_kj_mol": final.getPotentialEnergy().value_in_unit(
                 openmm.unit.kilojoule_per_mole
             ),
-            "passed": minimized_boundary["passed"] and final_boundary["passed"]
-            and minimized_all_bonds["passed"] and all_bond_stability["passed"],
+            "passed": minimized_boundary["passed"]
+            and final_boundary["passed"]
+            and minimized_all_bonds["passed"]
+            and all_bond_stability["passed"],
         },
+        "gromacs_smoke_test": gromacs_smoke,
         "passed": bool(
-            geometry["passed"] and stereo["passed"] and boundary["passed"]
+            geometry["passed"]
+            and stereo["passed"]
+            and boundary["passed"]
             and all(value["passed"] for value in comparison.values())
-            and minimized_boundary["passed"] and final_boundary["passed"]
-            and minimized_all_bonds["passed"] and all_bond_stability["passed"]
+            and minimized_boundary["passed"]
+            and final_boundary["passed"]
+            and minimized_all_bonds["passed"]
+            and all_bond_stability["passed"]
+            and gromacs_smoke["passed"]
         ),
     }
 
 
 def main() -> None:
     template = Molecule.from_json(
-        (ROOT / "validation/results/openff_cellodextrin_dp6_periodic_nagl_charged.json")
-        .read_text(encoding="utf-8")
+        (ROOT / "validation/results/openff_cellodextrin_dp6_periodic_nagl_charged.json").read_text(
+            encoding="utf-8"
+        )
     )
     reference_parity, reference_labels = independent_stereo_reference()
     cases = {
-        name: validate_case(
-            name, face, label, template, reference_parity, reference_labels
-        )
+        name: validate_case(name, face, label, template, reference_parity, reference_labels)
         for name, face, label in CASES
     }
     template_path = ROOT / "validation/results/openff_cellodextrin_dp6_periodic_nagl_charged.json"
