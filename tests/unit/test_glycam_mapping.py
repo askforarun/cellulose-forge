@@ -31,6 +31,13 @@ def _dp12_slab(chains: int = 2, *, periodic: bool = False):
     )
 
 
+def _angle(left: np.ndarray, centre: np.ndarray, right: np.ndarray) -> float:
+    first = left - centre
+    second = right - centre
+    cosine = np.dot(first, second) / (np.linalg.norm(first) * np.linalg.norm(second))
+    return float(np.degrees(np.arccos(np.clip(cosine, -1.0, 1.0))))
+
+
 def test_dp12_mapping_matches_validated_glycam_atom_and_residue_order() -> None:
     mapped = map_crystal_to_finite_glycam(_dp12_slab(), REFERENCE_PDB)
 
@@ -198,7 +205,38 @@ def test_ii_mapping_generates_force_field_hydrogens_and_maps_antiparallel_chains
                 if chain == chain_number and mapped_residue == residue_number
             }
             for oxygen, hydrogen in (("O2", "H2O"), ("O3", "H3O"), ("O6", "H6O")):
-                assert 0.8 < np.linalg.norm(residue[hydrogen] - residue[oxygen]) < 1.1
+                suffix = oxygen[1:]
+                assert np.linalg.norm(residue[hydrogen] - residue[oxygen]) == pytest.approx(
+                    0.96, abs=1.0e-6
+                )
+                assert _angle(residue[f"C{suffix}"], residue[oxygen], residue[hydrogen]) == (
+                    pytest.approx(108.5, abs=1.0e-6)
+                )
+    inverse = np.linalg.inv(mapped.basis_vectors)
+    closest_hydrogen = np.inf
+    closest_heavy = np.inf
+    for index, name in enumerate(mapped.atom_names):
+        if name not in {"H2O", "H3O", "H6O"}:
+            continue
+        for other, other_name in enumerate(mapped.atom_names):
+            if index == other:
+                continue
+            same_residue = (
+                mapped.chain_numbers[index] == mapped.chain_numbers[other]
+                and mapped.residue_numbers[index] == mapped.residue_numbers[other]
+            )
+            if same_residue and other_name == "O" + name[1]:
+                continue
+            delta = mapped.cartesian_coordinates[other] - mapped.cartesian_coordinates[index]
+            fractional = delta @ inverse
+            fractional -= np.round(fractional)
+            distance = float(np.linalg.norm(fractional @ mapped.basis_vectors))
+            if other_name.startswith("H"):
+                closest_hydrogen = min(closest_hydrogen, distance)
+            else:
+                closest_heavy = min(closest_heavy, distance)
+    assert closest_hydrogen >= 2.0
+    assert closest_heavy >= 1.8
     for chain_number in (1, 2):
         chain_indices = [
             index for index, chain in enumerate(mapped.chain_numbers) if chain == chain_number

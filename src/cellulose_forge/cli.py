@@ -1145,10 +1145,12 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             "atoms": ["HO2", "HO3", "HO6"],
             "scope": "each anhydroglucose residue",
             "method": (
-                "GLYCAM hydroxyl direction from C1/C3/C5 rigid alignment with "
-                "the source O-H bond length preserved"
+                "tetrahedral C-O-H placement from the C1/C3/C5-aligned "
+                "GLYCAM reference torsion"
             ),
+            "geometry": "0.96 A O-H and 108.5 degree C-O-H",
             "reason": "hydroxyl-hydrogen coordinates are absent from the diffraction dataset",
+            "requires_minimization_or_restrained_relaxation": True,
         }
     (output_directory / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",

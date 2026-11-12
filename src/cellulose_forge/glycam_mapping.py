@@ -10,6 +10,7 @@ import numpy as np
 from cellulose_forge.clashes import validate_finite_periodic_image_contact
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
+from cellulose_forge.hydroxyl import tetrahedral_hydroxyl_hydrogen
 
 _GLYCAM_TO_CRYSTAL_NAME = {"H2O": "HO2", "H3O": "HO3", "H6O": "HO6"}
 _REDUCING_ALIGNMENT_ATOMS = ("C1", "H1", "O5")
@@ -361,20 +362,18 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0915
                     if crystal_name in generated_names:
                         assert hydrogen_transform is not None
                         oxygen_name = _HYDROXYL_OXYGEN_BY_GLYCAM_HYDROGEN[atom.name]
+                        carbon_name = "C" + oxygen_name[1:]
                         aligned_hydrogen = _transform_coordinate(
                             atom.coordinates,
                             hydrogen_transform,
                         )
-                        aligned_oxygen = _transform_coordinate(
-                            reference_lookup[oxygen_name],
-                            hydrogen_transform,
+                        coordinate = tetrahedral_hydroxyl_hydrogen(
+                            target[carbon_name],
+                            target[oxygen_name],
+                            aligned_hydrogen,
+                            avoid_coordinates=crystal.cartesian_coordinates,
+                            periodic_box=crystal.basis_vectors,
                         )
-                        direction = aligned_hydrogen - aligned_oxygen
-                        direction /= np.linalg.norm(direction)
-                        bond_length = np.linalg.norm(
-                            atom.coordinates - reference_lookup[oxygen_name]
-                        )
-                        coordinate = target[oxygen_name] + direction * bond_length
                     else:
                         coordinate = target[crystal_name]
                 output_coordinates.append(coordinate)
@@ -470,14 +469,17 @@ def map_crystal_to_periodic_glycam(
                 if crystal_name in generated_names:
                     assert hydrogen_transform is not None
                     oxygen_name = _HYDROXYL_OXYGEN_BY_GLYCAM_HYDROGEN[atom.name]
+                    carbon_name = "C" + oxygen_name[1:]
                     aligned_hydrogen = _transform_coordinate(atom.coordinates, hydrogen_transform)
-                    aligned_oxygen = _transform_coordinate(
-                        reference_lookup[oxygen_name], hydrogen_transform
+                    output_coordinates.append(
+                        tetrahedral_hydroxyl_hydrogen(
+                            target[carbon_name],
+                            target[oxygen_name],
+                            aligned_hydrogen,
+                            avoid_coordinates=crystal.cartesian_coordinates,
+                            periodic_box=crystal.basis_vectors,
+                        )
                     )
-                    direction = aligned_hydrogen - aligned_oxygen
-                    direction /= np.linalg.norm(direction)
-                    bond_length = np.linalg.norm(atom.coordinates - reference_lookup[oxygen_name])
-                    output_coordinates.append(target[oxygen_name] + direction * bond_length)
                 else:
                     output_coordinates.append(target[crystal_name])
 
