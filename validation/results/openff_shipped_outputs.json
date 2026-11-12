@@ -1,0 +1,54 @@
+{
+  "validation": "exact shipped experimental OpenFF outputs",
+  "cases": {
+    "i_beta_110_periodic_slab": {
+      "shape": "slab",
+      "dispersion_correction": false,
+      "openmm_force_settings": {
+        "CustomNonbondedForce": false,
+        "NonbondedForce": false
+      },
+      "gromacs": {
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "point_potential_kj_mol": 15030.202148,
+        "dispersion_correction_kj_mol": 0.0,
+        "passed": true
+      },
+      "openmm_point_potential_kj_mol": 15028.9422092305,
+      "openmm_dispersion_correction_kj_mol": 0.0,
+      "correction_relative_difference": 0.0,
+      "correction_relative_tolerance": 0.005,
+      "total_potential_relative_difference": 8.382713399956044e-05,
+      "total_potential_relative_tolerance": 0.0005,
+      "passed": true
+    },
+    "i_beta_periodic_bulk": {
+      "shape": "bulk",
+      "dispersion_correction": true,
+      "openmm_force_settings": {
+        "CustomNonbondedForce": true,
+        "NonbondedForce": true
+      },
+      "gromacs": {
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "point_potential_kj_mol": 19388.552734,
+        "dispersion_correction_kj_mol": -518.135681,
+        "passed": true
+      },
+      "openmm_point_potential_kj_mol": 19384.162930714236,
+      "openmm_dispersion_correction_kj_mol": -519.9783542360819,
+      "correction_relative_difference": 0.003543749890875936,
+      "correction_relative_tolerance": 0.005,
+      "total_potential_relative_difference": 0.00022641211780944696,
+      "total_potential_relative_tolerance": 0.0005,
+      "passed": true
+    }
+  },
+  "passed": true
+}

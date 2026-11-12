@@ -1,0 +1,55 @@
+{
+  "software": "CelluloseForge",
+  "version": "1.1.2",
+  "experimental": true,
+  "polymer": "cellulose",
+  "allomorph": "I-beta",
+  "shape": "bulk",
+  "force_field": {
+    "file": "openff-2.3.0.offxml",
+    "version": "2.3.0"
+  },
+  "charge_method": {
+    "method": "openff-gnn-am1bcc-1.0.0.pt",
+    "openff_toolkit": "0.19.0",
+    "openff_nagl": "0.6.1",
+    "openff_nagl_models": "2026.9.0",
+    "net_charge_e": 1.4432899320127035e-15,
+    "periodic_equivalent_atom_charges": true,
+    "charge_sha256": "b94defc580a74888519cfece4553a220ae24e81f7559ed097ce8355474f1c006"
+  },
+  "chain_boundary": "periodic",
+  "degree_polymerization": 4,
+  "chain_count": 18,
+  "atom_count": 1512,
+  "stereochemistry": {
+    "reference": "independent PubChem finite DP6 internal-residue signed parity",
+    "centres_checked": 360,
+    "failures": [],
+    "passed": true
+  },
+  "dispersion_correction": true,
+  "engines": [
+    "gromacs",
+    "openmm"
+  ],
+  "outputs": {
+    "gromacs_coordinates": "structure.gro",
+    "gromacs_topology": "system.top",
+    "openmm_written": true,
+    "periodic_forces": [
+      "CustomBondForce",
+      "HarmonicAngleForce",
+      "HarmonicBondForce",
+      "NonbondedForce exceptions",
+      "PeriodicTorsionForce"
+    ],
+    "dispersion_correction": true
+  },
+  "crystallographic_source": {
+    "definition": "I-beta",
+    "citation": "Nishiyama, Y.; Langan, P.; Chanzy, H. J. Am. Chem. Soc. 2002, 124, 9074-9082.",
+    "doi": "10.1021/ja0257319"
+  },
+  "validation_scope": "model construction validated; force-field accuracy for cellulose not assessed"
+}

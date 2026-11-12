@@ -9,8 +9,6 @@ import warnings
 from collections.abc import Sequence
 from pathlib import Path
 
-import numpy as np
-
 from cellulose_forge import __version__
 from cellulose_forge.amber import write_glycam_amber_system
 from cellulose_forge.charmm36 import (
@@ -63,7 +61,7 @@ from cellulose_forge.openff_sage import (
     VALIDATION_SCOPE,
     build_sage_system,
     dispersion_correction_for_shape,
-    reduced_periodic_box,
+    periodic_box_heights,
     write_sage_outputs,
     write_sage_report,
 )
@@ -715,7 +713,7 @@ def _write_openff_build(
         parser.error("OpenFF Sage position restraints are not implemented")
     if (
         args.shape in {"bulk", "crystal"}
-        and min(abs(np.diag(reduced_periodic_box(crystal.basis_vectors))))
+        and min(periodic_box_heights(crystal.basis_vectors))
         <= _MINIMUM_OPENFF_BULK_EDGE_ANGSTROM
     ):
         parser.error(
@@ -765,6 +763,15 @@ def _write_openff_build(
         },
         "validation_scope": VALIDATION_SCOPE,
     }
+    if crystal.allomorph == "II":
+        report["generated_force_field_coordinates"] = {
+            "atoms": ["HO2", "HO3", "HO6"],
+            "scope": "each anhydroglucose residue",
+            "method": "tetrahedral C-O-H placement from the aligned reference torsion",
+            "geometry": "0.96 A O-H and 108.5 degree C-O-H",
+            "reason": "hydroxyl-hydrogen coordinates are absent from the diffraction dataset",
+            "requires_minimization_or_restrained_relaxation": True,
+        }
     write_sage_report(args.output / "build_report.json", report)
     print(
         "Experimental OpenFF Sage files written; model construction validated, "

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 import re
 import subprocess
@@ -33,7 +32,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "validation"))
 
 from validate_openff_finite_slab import (  # noqa: E402
-    ENERGY_TOLERANCES_PER_ATOM_KJ_MOL,
+    compare_energy_terms,
     energies,
 )
 
@@ -43,7 +42,9 @@ from cellulose_forge.openff_sage import (  # noqa: E402
     SAGE_FORCE_FIELD,
     build_sage_system,
     dispersion_correction_for_shape,
+    periodic_box_heights,
     reduced_periodic_box,
+    shortest_lattice_vector,
 )
 
 ALLOMORPHS = ("i_alpha", "i_beta", "ii", "iii_i")
@@ -94,10 +95,21 @@ nstxout-compressed = 100
 
 def _replication(allomorph: str) -> tuple[int, int, int]:
     vectors = load_allomorph(allomorph).unit_cell.vectors()
-    return tuple(  # type: ignore[return-value]
-        max(1, math.ceil(MINIMUM_EDGE_ANGSTROM / abs(float(vectors[axis, axis]))))
-        for axis in range(3)
+    candidates = (
+        (i, j, k)
+        for i in range(1, 9)
+        for j in range(1, 9)
+        for k in range(1, 9)
     )
+    valid = [
+        replication
+        for replication in candidates
+        if min(periodic_box_heights(vectors * np.asarray(replication)[:, None]))
+        >= MINIMUM_EDGE_ANGSTROM
+    ]
+    if not valid:
+        raise RuntimeError(f"could not size an OpenFF bulk box for {allomorph}")
+    return min(valid, key=lambda item: (item[0] * item[1] * item[2], item))
 
 
 def _interchange(build: object) -> object:
@@ -321,7 +333,7 @@ def validate_case(allomorph: str) -> dict[str, object]:
     replication = _replication(allomorph)
     crystal = build_bulk_crystal(load_allomorph(allomorph), replication)
     if (
-        min(abs(np.diag(reduced_periodic_box(crystal.basis_vectors))))
+        min(periodic_box_heights(crystal.basis_vectors))
         <= MINIMUM_ALLOWED_EDGE_ANGSTROM
     ):
         raise RuntimeError("bulk box does not exceed twice the 9 A cutoff")
@@ -331,32 +343,17 @@ def validate_case(allomorph: str) -> dict[str, object]:
         directory = Path(temporary)
         openmm_values = _openmm_energies(interchange)
         gromacs_values = _gromacs_energies(interchange, directory)
-        required = set(ENERGY_TOLERANCES_PER_ATOM_KJ_MOL)
-        missing = sorted(required - openmm_values.keys() | required - gromacs_values.keys())
-        if missing:
-            raise RuntimeError(f"required energy terms missing: {missing}")
-        tolerances = dict(ENERGY_TOLERANCES_PER_ATOM_KJ_MOL)
-        # GROMACS 2024.2 mixed precision rounds aggregate electrostatic terms.
-        # The limits remain below 0.0001 kJ mol-1 atom-1 and are recorded per
-        # case rather than hidden in a total-energy comparison.
-        tolerances["Electrostatics"] = 6.0e-5
-        tolerances["Electrostatics 1-4"] = 1.0e-4
-        comparison = {
-            term: {
-                "difference_per_atom_kj_mol": abs(openmm_values[term] - gromacs_values[term])
-                / build.mapped.atom_count,
-                "tolerance_per_atom_kj_mol": tolerances[term],
-                "passed": abs(openmm_values[term] - gromacs_values[term]) / build.mapped.atom_count
-                <= tolerances[term],
-            }
-            for term in sorted(required)
-        }
+        comparison = compare_energy_terms(openmm_values, gromacs_values)
         smoke = _run_gromacs(interchange, directory)
         openmm_smoke = _run_openmm(build, interchange)
     return {
         "allomorph": allomorph,
         "replication": list(replication),
         "box_edges_angstrom": [float(np.linalg.norm(vector)) for vector in crystal.basis_vectors],
+        "shortest_lattice_vector_angstrom": shortest_lattice_vector(crystal.basis_vectors),
+        "perpendicular_box_heights_angstrom": list(
+            periodic_box_heights(crystal.basis_vectors)
+        ),
         "reduced_box_diagonal_angstrom": list(np.diag(reduced_periodic_box(crystal.basis_vectors))),
         "atom_count": build.mapped.atom_count,
         "stereochemistry": build.stereochemistry,

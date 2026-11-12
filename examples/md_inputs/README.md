@@ -11,6 +11,7 @@ the exact build and its validation; machine-local paths are redacted.
 | `chitin_beta_100_charmm36_periodic` | beta-chitin (1 0 0) slab, CHARMM36, periodic chains | 1296 | 8 x 6 | yes | yes | yes | - |
 | `chitin_alpha_100_charmm36_finite` | alpha-chitin (1 0 0) slab, CHARMM36, finite chains | 1320 | 8 x 6 | yes | yes | yes | - |
 | `cellulose_ibeta_110_glycam_finite` | I-beta (1 1 0) slab, GLYCAM06j-1, finite chains | 1548 | 12 x 6 | yes | yes | yes | yes |
+| `cellulose_ibeta_openff_sage_periodic_bulk` | I-beta bulk crystal, OpenFF Sage 2.3, periodic chains | 1512 | 18 x 4 | yes | yes | - | - |
 
 Amber output is written only for finite chains, because Amber does not apply
 minimum images to bonded terms across a periodic chain boundary.
@@ -18,6 +19,11 @@ minimum images to bonded terms across a periodic chain boundary.
 These are short demonstration systems, not production models: the slabs are
 two layers thick and DP 6, and the run inputs are smoke-test protocols. Choose
 system size, equilibration, and production settings for your own study.
+The OpenFF bulk folder additionally contains a 1 ns gently coupled
+Parrinello--Rahman anisotropic NPT
+equilibration template and a 50 ns Parrinello--Rahman anisotropic production
+template. These are starting protocols for the planned stability assessment;
+their presence is not a stability result.
 
 ## Rebuilding
 
@@ -59,6 +65,17 @@ gmx grompp -f minim.mdp -c structure.gro -p system.top -o minim.tpr
 gmx mdrun -deffnm minim
 gmx grompp -f nvt.mdp -c minim.gro -p system.top -o nvt.tpr
 gmx mdrun -deffnm nvt
+```
+
+For the OpenFF periodic-bulk NPT example, continue from the generated NVT
+checkpoint:
+
+```bash
+gmx grompp -f npt_equil.mdp -c nvt.gro -t nvt.cpt -p system.top -o npt_equil.tpr
+gmx mdrun -deffnm npt_equil
+gmx grompp -f npt_production.mdp -c npt_equil.gro -t npt_equil.cpt \
+  -p system.top -o npt_production.tpr
+gmx mdrun -deffnm npt_production
 ```
 
 OpenMM (minimization, then Langevin dynamics):

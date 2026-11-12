@@ -20,6 +20,7 @@ import numpy as np
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
+from cellulose_forge.hydroxyl import tetrahedral_hydroxyl_hydrogen
 
 SAGE_FORCE_FIELD = "openff-2.3.0.offxml"
 NAGL_CHARGE_MODEL = "openff-gnn-am1bcc-1.0.0.pt"
@@ -166,6 +167,24 @@ def periodic_box_heights(box: FloatArray) -> tuple[float, float, float]:
     if not all(np.isfinite(heights)) or min(heights) <= 0:
         raise ValueError("OpenFF output requires a non-degenerate periodic box")
     return (float(heights[0]), float(heights[1]), float(heights[2]))
+
+
+def shortest_lattice_vector(box: FloatArray) -> float:
+    """Return the shortest non-zero translation of a three-dimensional lattice."""
+    vectors = np.asarray(box, dtype=np.float64)
+    if (
+        not np.isfinite(vectors).all()
+        or abs(float(np.linalg.det(vectors))) <= _BOX_DEGENERACY_TOLERANCE
+    ):
+        raise ValueError("OpenFF output requires a non-degenerate periodic box")
+    translations = (
+        np.asarray((i, j, k), dtype=np.float64) @ vectors
+        for i in range(-2, 3)
+        for j in range(-2, 3)
+        for k in range(-2, 3)
+        if (i, j, k) != (0, 0, 0)
+    )
+    return min(float(np.linalg.norm(translation)) for translation in translations)
 
 
 def require_openff() -> tuple[Any, Any, Any]:
@@ -383,15 +402,16 @@ def _mapped_coordinates(crystal: BulkCrystal, molecule: Any, boundary: str) -> G
                 coordinate = _transform(_NONREDUCING_REFERENCE[name], nonreducing)
             elif crystal.allomorph == "II" and name in _MISSING_II_HYDROGENS:
                 oxygen = "O" + name[2]
+                carbon = "C" + name[2]
                 transform = hydrogen_transforms[residue]
                 aligned_h = _transform(_INTERNAL_REFERENCE[name], transform)
-                aligned_o = _transform(_INTERNAL_REFERENCE[oxygen], transform)
-                direction = aligned_h - aligned_o
-                direction /= np.linalg.norm(direction)
-                length = np.linalg.norm(
-                    np.asarray(_INTERNAL_REFERENCE[name]) - np.asarray(_INTERNAL_REFERENCE[oxygen])
+                coordinate = tetrahedral_hydroxyl_hydrogen(
+                    target[carbon],
+                    target[oxygen],
+                    aligned_h,
+                    avoid_coordinates=crystal.cartesian_coordinates,
+                    periodic_box=crystal.basis_vectors,
                 )
-                coordinate = target[oxygen] + direction * length
             else:
                 coordinate = target[name]
             output.append(coordinate)
@@ -539,6 +559,8 @@ def write_sage_outputs(
             if periodic:
                 force.setExceptionsUsePeriodicBoundaryConditions(True)
                 periodic_forces.append("NonbondedForce exceptions")
+        elif isinstance(force, openmm.CustomNonbondedForce):
+            force.setUseLongRangeCorrection(dispersion_correction)
         elif periodic and hasattr(force, "setUsesPeriodicBoundaryConditions"):
             force.setUsesPeriodicBoundaryConditions(True)
             periodic_forces.append(force.__class__.__name__)
@@ -555,10 +577,11 @@ def write_sage_outputs(
                 keepIds=True,
             )
         # topology.cif carries coordinates and box vectors and is the
-        # generated runner's single source of initial state.
+        # generated smoke-test runner's single source of initial state.
         runner = output_directory / "run_openmm.py"
         runner.write_text(
             """from pathlib import Path
+
 import openmm
 from openmm import app, unit
 

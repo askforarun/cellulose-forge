@@ -1,0 +1,13 @@
+integrator = steep
+emtol = 1000
+nsteps = 5000
+cutoff-scheme = Verlet
+coulombtype = PME
+rcoulomb = 0.9
+vdwtype = Cut-off
+vdw-modifier = Potential-switch
+rvdw-switch = 0.8
+rvdw = 0.9
+DispCorr = EnerPres
+constraints = h-bonds
+periodic-molecules = yes

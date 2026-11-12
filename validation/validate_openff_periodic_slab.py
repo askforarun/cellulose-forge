@@ -25,7 +25,6 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "validation"))
 
 from validate_openff_finite_slab import (  # noqa: E402
-    ENERGY_TOLERANCES_PER_ATOM_KJ_MOL,
     MAXIMUM_BOND_CHANGE_ANGSTROM,
     MAXIMUM_HEAVY_BOND_DEVIATION_ANGSTROM,
     MAXIMUM_XH_BOND_ANGSTROM,
@@ -33,6 +32,7 @@ from validate_openff_finite_slab import (  # noqa: E402
     MINIMUM_XH_BOND_ANGSTROM,
     NVT_MDP,
     TIGHT_ENERGY_MDP,
+    compare_energy_terms,
     disable_slab_dispersion_correction,
     energies,
 )
@@ -393,7 +393,7 @@ def run_gromacs_periodic_smoke_test(interchange: object) -> dict[str, object]:
         }
 
 
-def validate_case(  # noqa: PLR0913, PLR0915, PLR0917
+def validate_case(  # noqa: PLR0913, PLR0917
     allomorph: str,
     face: tuple[int, int, int],
     label: str,
@@ -455,20 +455,7 @@ def validate_case(  # noqa: PLR0913, PLR0915, PLR0917
     omm, system = openmm_values(interchange)
     gmx = gromacs_values(interchange)
     gromacs_smoke = run_gromacs_periodic_smoke_test(interchange)
-    required = set(ENERGY_TOLERANCES_PER_ATOM_KJ_MOL)
-    if required - set(omm) or required - set(gmx):
-        raise RuntimeError("One engine omitted a required periodic energy term")
-    comparison = {
-        term: {
-            "openmm_kj_mol": omm[term],
-            "gromacs_kj_mol": gmx[term],
-            "difference_per_atom_kj_mol": (omm[term] - gmx[term]) / mapped.atom_count,
-            "tolerance_per_atom_kj_mol": ENERGY_TOLERANCES_PER_ATOM_KJ_MOL[term],
-            "passed": abs(omm[term] - gmx[term]) / mapped.atom_count
-            <= ENERGY_TOLERANCES_PER_ATOM_KJ_MOL[term],
-        }
-        for term in sorted(required)
-    }
+    comparison = compare_energy_terms(omm, gmx)
     platform = openmm.Platform.getPlatformByName("CPU")
     platform_properties = {"Threads": "1"}
     minimization_integrator = openmm.VerletIntegrator(0.001)

@@ -48,15 +48,36 @@ CASES = (
     ("ii", (1, 1, 0), "II (110)"),
     ("iii_i", (1, 1, 0), "III-I (110)"),
 )
-ENERGY_TOLERANCES_PER_ATOM_KJ_MOL = {
-    "Bond": 2.0e-5,
-    "Angle": 2.0e-5,
-    "Torsion": 2.0e-5,
-    "vdW": 1.0e-5,
-    "vdW 1-4": 2.0e-5,
-    "Electrostatics": 5.0e-5,
-    "Electrostatics 1-4": 2.0e-5,
-}
+REQUIRED_ENERGY_TERMS = frozenset(
+    {"Bond", "Angle", "Torsion", "vdW", "vdW 1-4", "Electrostatics", "Electrostatics 1-4"}
+)
+ENERGY_RELATIVE_TOLERANCE = 1.0e-5
+
+
+def compare_energy_terms(
+    openmm_values: dict[str, float], gromacs_values: dict[str, float]
+) -> dict[str, dict[str, float | bool]]:
+    """Compare every required term with one documented relative tolerance."""
+    missing_openmm = sorted(REQUIRED_ENERGY_TERMS - set(openmm_values))
+    missing_gromacs = sorted(REQUIRED_ENERGY_TERMS - set(gromacs_values))
+    if missing_openmm or missing_gromacs:
+        raise RuntimeError(
+            f"Missing required energy terms: OpenMM={missing_openmm}, GROMACS={missing_gromacs}"
+        )
+    return {
+        term: {
+            "openmm_kj_mol": openmm_values[term],
+            "gromacs_kj_mol": gromacs_values[term],
+            "difference_kj_mol": openmm_values[term] - gromacs_values[term],
+            "relative_difference": abs(openmm_values[term] - gromacs_values[term])
+            / max(abs(openmm_values[term]), abs(gromacs_values[term]), 1.0),
+            "relative_tolerance": ENERGY_RELATIVE_TOLERANCE,
+            "passed": abs(openmm_values[term] - gromacs_values[term])
+            / max(abs(openmm_values[term]), abs(gromacs_values[term]), 1.0)
+            <= ENERGY_RELATIVE_TOLERANCE,
+        }
+        for term in sorted(REQUIRED_ENERGY_TERMS)
+    }
 
 TIGHT_ENERGY_MDP = """integrator = md
 nsteps = 0
@@ -461,30 +482,7 @@ def validate_case(
 
     openmm_values = openmm_slab_energies(interchange)
     gromacs_values = gromacs_slab_energies(interchange)
-    required_terms = set(ENERGY_TOLERANCES_PER_ATOM_KJ_MOL)
-    missing_openmm_terms = sorted(required_terms - set(openmm_values))
-    missing_gromacs_terms = sorted(required_terms - set(gromacs_values))
-    if missing_openmm_terms or missing_gromacs_terms:
-        raise RuntimeError(
-            "Missing required energy terms: "
-            f"OpenMM={missing_openmm_terms}, GROMACS={missing_gromacs_terms}"
-        )
-    comparison = {
-        term: {
-            "openmm_kj_mol": openmm_values[term],
-            "gromacs_kj_mol": gromacs_values[term],
-            "difference_kj_mol": openmm_values[term] - gromacs_values[term],
-            "difference_per_atom_kj_mol": (
-                openmm_values[term] - gromacs_values[term]
-            )
-            / expected_atoms,
-            "tolerance_per_atom_kj_mol": ENERGY_TOLERANCES_PER_ATOM_KJ_MOL[term],
-            "passed": abs(openmm_values[term] - gromacs_values[term])
-            / expected_atoms
-            <= ENERGY_TOLERANCES_PER_ATOM_KJ_MOL[term],
-        }
-        for term in sorted(required_terms)
-    }
+    comparison = compare_energy_terms(openmm_values, gromacs_values)
     failed_energy_terms = [
         term for term, values in comparison.items() if not values["passed"]
     ]

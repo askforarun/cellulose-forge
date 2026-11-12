@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 from importlib.util import find_spec
 from pathlib import Path
 
@@ -32,6 +33,13 @@ def test_openff_slab_outputs(tmp_path: Path, boundary: str, padding: float) -> N
     assert report["gromacs_coordinates"] == "structure.gro"
     assert (tmp_path / "system.top").is_file()
     assert "DispCorr = no" in (tmp_path / "minim.mdp").read_text()
+    openmm = importlib.import_module("openmm")
+    system = openmm.XmlSerializer.deserialize((tmp_path / "system.xml").read_text())
+    for force in system.getForces():
+        if isinstance(force, openmm.NonbondedForce):
+            assert force.getUseDispersionCorrection() is False
+        elif isinstance(force, openmm.CustomNonbondedForce):
+            assert force.getUseLongRangeCorrection() is False
 
 
 def test_openff_periodic_bulk_outputs(tmp_path: Path) -> None:
@@ -42,3 +50,10 @@ def test_openff_periodic_bulk_outputs(tmp_path: Path) -> None:
     assert "DispCorr = EnerPres" in (tmp_path / "minim.mdp").read_text()
     assert (tmp_path / "system.xml").is_file()
     assert (tmp_path / "topology.cif").is_file()
+    openmm = importlib.import_module("openmm")
+    system = openmm.XmlSerializer.deserialize((tmp_path / "system.xml").read_text())
+    for force in system.getForces():
+        if isinstance(force, openmm.NonbondedForce):
+            assert force.getUseDispersionCorrection() is True
+        elif isinstance(force, openmm.CustomNonbondedForce):
+            assert force.getUseLongRangeCorrection() is True

@@ -33,12 +33,16 @@ cellulose-forge build \
 OpenFF Sage was fitted with a homogeneous-fluid dispersion correction. It is
 therefore enabled for bulk crystals and disabled for vacuum-containing slabs,
 consistently in the serialized OpenMM system and generated GROMACS inputs.
+Bulk boxes are accepted only when every perpendicular periodic-box height
+exceeds twice the 9 A nonbonded cutoff. The shortest non-zero lattice
+translation is also recorded by the validation matrix.
 
 ## Validation boundary
 
 Model construction is validated: graph connectivity, stereochemistry,
 periodic bonded terms, NAGL charge equivalence, and term-by-term GROMACS versus
 OpenMM energies. Generated systems also undergo minimization and short NVT
-smoke tests. These checks do **not** establish the physical accuracy or
+smoke tests. The generated `run_openmm.py` is a smoke-test runner, not a
+production simulation protocol. These checks do **not** establish the physical accuracy or
 transferability of OpenFF Sage for crystalline cellulose; that scientific
 assessment is outside the software validation scope.
