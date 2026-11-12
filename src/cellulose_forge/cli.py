@@ -45,6 +45,7 @@ from cellulose_forge.geometry import (
     build_slab_with_sizing,
     build_unit_cell,
     validate_cellulose_chirality,
+    validate_mannose_chirality,
     validate_pyranose_chirality,
 )
 from cellulose_forge.glycam import GLYCAM_LEAPRC, generate_glycam_gromacs_reference
@@ -74,6 +75,8 @@ _CELLULOSE_ALLOMORPHS = {
 }
 _CHITIN_ALLOMORPHS = {"alpha": "alpha", "beta": "beta"}
 _CHITIN_SHAPES = {"unit-cell", "bulk", "crystal", "slab"}
+_MANNAN_ALLOMORPHS = {"I": "i"}
+_MANNAN_SHAPES = {"unit-cell", "bulk", "crystal"}
 _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 3.0
 _RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 12.0
 
@@ -105,18 +108,20 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         version=f"%(prog)s {__version__}",
     )
     subparsers = parser.add_subparsers(dest="command")
-    build = subparsers.add_parser("build", help="build a cellulose or chitin structure")
+    build = subparsers.add_parser(
+        "build", help="build a cellulose, chitin, or mannan structure"
+    )
     build.add_argument(
         "--polymer",
-        choices=["cellulose", "chitin"],
+        choices=["cellulose", "chitin", "mannan"],
         default="cellulose",
         help="crystalline polysaccharide (default: cellulose)",
     )
     build.add_argument(
         "--allomorph",
-        choices=[*_CELLULOSE_ALLOMORPHS, *_CHITIN_ALLOMORPHS],
+        choices=[*_CELLULOSE_ALLOMORPHS, *_CHITIN_ALLOMORPHS, *_MANNAN_ALLOMORPHS],
         required=True,
-        help="cellulose: I-alpha, I-beta, II, III-I; chitin: alpha, beta",
+        help="cellulose: I-alpha, I-beta, II, III-I; chitin: alpha, beta; mannan: I",
     )
     build.add_argument(
         "--o6-conformation",
@@ -399,7 +404,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912
     return 0
 
 
-def _load_definition(
+def _load_definition(  # noqa: PLR0912 - polymer-specific validation is kept together
     args: argparse.Namespace, parser: argparse.ArgumentParser
 ) -> AllomorphDefinition:
     """Resolve the polymer and allomorph options to a crystal definition."""
@@ -409,6 +414,18 @@ def _load_definition(
         if args.o6_conformation is not None:
             parser.error("--o6-conformation applies only to alpha-chitin")
         return load_allomorph(_CELLULOSE_ALLOMORPHS[args.allomorph])
+    if args.polymer == "mannan":
+        if args.allomorph not in _MANNAN_ALLOMORPHS:
+            parser.error(f"mannan allomorphs are {', '.join(_MANNAN_ALLOMORPHS)}")
+        if args.o6_conformation is not None:
+            parser.error("--o6-conformation applies only to alpha-chitin")
+        if args.shape not in _MANNAN_SHAPES:
+            parser.error("mannan currently supports --shape unit-cell and bulk")
+        if args.force_field != "none":
+            parser.error(
+                "mannan force-field output is not implemented; use --force-field none"
+            )
+        return load_allomorph(_MANNAN_ALLOMORPHS[args.allomorph], polymer="mannan")
     if args.allomorph not in _CHITIN_ALLOMORPHS:
         parser.error(f"chitin allomorphs are {', '.join(_CHITIN_ALLOMORPHS)}")
     if args.o6_conformation is not None and args.allomorph != "alpha":
@@ -426,6 +443,16 @@ def _load_definition(
     if args.o6_conformation == "minor":
         name = "alpha_o6_minor"
     return load_allomorph(name, polymer="chitin")
+
+
+def _validate_polymer_chirality(
+    crystal: BulkCrystal, polymer: str
+) -> dict[str, object]:
+    if polymer == "cellulose":
+        return validate_cellulose_chirality(crystal)
+    if polymer == "mannan":
+        return validate_mannose_chirality(crystal)
+    return validate_pyranose_chirality(crystal, "N-acetyl-beta-D-glucosamine")
 
 
 def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
@@ -481,6 +508,14 @@ def _polymer_report_fields(
     }
     if args.allomorph == "alpha":
         fields["o6_conformation"] = args.o6_conformation or "major"
+    if args.polymer == "mannan":
+        fields["modelled_hydrogen_coordinates"] = {
+            "atoms": ["HO2", "HO3", "HO6"],
+            "source": "modelled; absent from the primary Table I coordinate set",
+            "geometry": "0.96 A O-H and 109.5 degree C-O-H",
+            "short_primary_contact": "O3...O5 = 2.385 A",
+            "requires_restrained_relaxation_before_force_field_use": True,
+        }
     return fields
 
 
@@ -506,11 +541,7 @@ def _write_coordinate_only_report(
         "requested_output": str(requested_output),
         "outputs": {"coordinates": coordinate_path.name},
         "geometry_annotations": list(crystal.annotations),
-        "chirality_validation": (
-            validate_cellulose_chirality(crystal)
-            if args.polymer == "cellulose"
-            else validate_pyranose_chirality(crystal, "N-acetyl-beta-D-glucosamine")
-        ),
+        "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),
     }
     if args.polymer != "cellulose":
         report.update(_polymer_report_fields(args, definition))
@@ -783,11 +814,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             lammps_files,
         ),
         "geometry_annotations": list(crystal.annotations),
-        "chirality_validation": (
-            validate_cellulose_chirality(crystal)
-            if args.polymer == "cellulose"
-            else validate_pyranose_chirality(crystal, "N-acetyl-beta-D-glucosamine")
-        ),
+        "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),
     }
     if args.polymer != "cellulose":
         report.update(_polymer_report_fields(args, definition))

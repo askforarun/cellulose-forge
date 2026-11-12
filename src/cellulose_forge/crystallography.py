@@ -223,7 +223,7 @@ class AllomorphDefinition:
             raise ValueError(msg)
 
 
-SUPPORTED_POLYMERS = ("cellulose", "chitin")
+SUPPORTED_POLYMERS = ("cellulose", "chitin", "mannan")
 
 
 def _load_payload(name: str, polymer: str = "cellulose") -> dict[str, Any]:

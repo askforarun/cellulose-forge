@@ -120,8 +120,23 @@ _PYRANOSE_STEREOCENTRES: tuple[tuple[str, tuple[str, str, str], int], ...] = (
     ("C5", ("C4", "O5", "H5"), -1),
 )
 
+# beta-D-mannose is the C2 epimer of beta-D-glucose. The other four ring
+# stereocentres therefore retain the signs used above.
+_MANNAN_STEREOCENTRES: tuple[tuple[str, tuple[str, str, str], int], ...] = (
+    ("C1", ("O5", "C2", "H1"), -1),
+    ("C2", ("C1", "C3", "H2"), -1),
+    ("C3", ("C2", "C4", "H3"), -1),
+    ("C4", ("C3", "C5", "H4"), 1),
+    ("C5", ("C4", "O5", "H5"), -1),
+)
 
-def validate_pyranose_chirality(crystal: BulkCrystal, configuration: str) -> dict[str, object]:
+
+def validate_pyranose_chirality(
+    crystal: BulkCrystal,
+    configuration: str,
+    *,
+    stereocentres: tuple[tuple[str, tuple[str, str, str], int], ...] = _PYRANOSE_STEREOCENTRES,
+) -> dict[str, object]:
     """Validate all five ring stereocentres of every beta-D-pyranose residue."""
     labels = np.asarray(crystal.atom_labels)
     chains = np.asarray(crystal.chain_numbers)
@@ -132,7 +147,7 @@ def validate_pyranose_chirality(crystal: BulkCrystal, configuration: str) -> dic
         mask = (chains == chain) & (residues == residue)
         lookup = dict(zip(labels[mask], crystal.cartesian_coordinates[mask], strict=True))
         residue_count += 1
-        for centre, substituents, expected in _PYRANOSE_STEREOCENTRES:
+        for centre, substituents, expected in stereocentres:
             required = {centre, *substituents}
             if not required.issubset(lookup):
                 msg = (
@@ -157,17 +172,26 @@ def validate_pyranose_chirality(crystal: BulkCrystal, configuration: str) -> dic
     return {
         "status": "passed",
         "configuration": configuration,
-        "stereocentres": [centre for centre, _, _ in _PYRANOSE_STEREOCENTRES],
+        "stereocentres": [centre for centre, _, _ in stereocentres],
         "substituent_orders": {
-            centre: list(substituents) for centre, substituents, _ in _PYRANOSE_STEREOCENTRES
+            centre: list(substituents) for centre, substituents, _ in stereocentres
         },
         "expected_signed_volume_signs": {
             centre: "positive" if expected > 0 else "negative"
-            for centre, _, expected in _PYRANOSE_STEREOCENTRES
+            for centre, _, expected in stereocentres
         },
         "residue_count": residue_count,
         "minimum_absolute_signed_volume_angstrom3": minimum,
     }
+
+
+def validate_mannose_chirality(crystal: BulkCrystal) -> dict[str, object]:
+    """Validate all ring stereocentres as beta-D-mannose."""
+    return validate_pyranose_chirality(
+        crystal,
+        "beta-D-mannose",
+        stereocentres=_MANNAN_STEREOCENTRES,
+    )
 
 
 _FIBRIL_FRAGMENT_IDS = {

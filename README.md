@@ -1,8 +1,9 @@
 # CelluloseForge
 
 CelluloseForge is a crystallography-first Python tool for building atomistic
-cellulose structures. It generates periodic bulk crystals, chain-parallel
-surface slabs for four cellulose allomorphs, and literature-defined fibrils. Supported systems can
+crystalline polysaccharide structures. It generates cellulose and chitin
+crystals, coordinate-only Mannan I crystals, chain-parallel surface slabs,
+and literature-defined fibrils. Supported systems can
 also be parameterized with GLYCAM06j-1 or CHARMM36 and written directly for
 GROMACS; the development version on `main` also writes serialized OpenMM
 systems and native Amber files for finite GLYCAM chains. CHARMM36 topology
@@ -34,6 +35,7 @@ generation does not require VMD or `psfgen` at runtime.
 ## Key features
 
 - Crystallographic datasets for cellulose I-alpha, I-beta, II, and III-I.
+- A primary-literature Mannan I coordinate model with antiparallel chains.
 - Periodic bulk replication along the crystallographic `a`, `b`, and `c` axes.
 - Chain-parallel slabs for I-alpha, I-beta, II, and III-I selected with signed
   Miller indices.
@@ -62,6 +64,7 @@ generation does not require VMD or `psfgen` at runtime.
 | Slab | Chain-parallel faces for I-alpha, I-beta, II, and III-I | Finite and periodic GLYCAM/CHARMM36 matrices validated for I-alpha `(010)`, I-beta `(110)`, II `(110)`, and III-I `(110)` |
 | 36-chain fibril | I-alpha, I-beta, II | Geometry presets tested; periodic GLYCAM and finite/periodic CHARMM36 GROMACS workflows validated |
 | 18- and 24-chain fibril, custom profiles (`main`) | I-beta | 18-chain finite and 24-chain periodic presets pass GROMACS preprocessing with GLYCAM and CHARMM36 |
+| Mannan I unit cell and periodic bulk (`main`) | Mannan I | Primary-paper cell, symmetry, covalent geometry, beta-D-mannose stereochemistry, periodic O4-C1 linkage, and interchain contacts tested; coordinate-only |
 
 Simulation engines by force field and chain boundary:
 
@@ -156,6 +159,38 @@ constants produce a small proportional difference (about 2.4e-5) in
 electrostatic energies and forces, which is accounted for in the energy
 comparison. GLYCAM/Amber and
 fibrils are not yet available for chitin.
+
+### Mannan
+
+`--polymer mannan` currently builds coordinate-only Mannan I unit cells and
+periodic bulk crystals:
+
+```bash
+cellulose-forge build --polymer mannan --allomorph I \
+  --shape bulk --cells 4 4 5 --output mannan_i.pdb
+```
+
+The model uses the orthorhombic P2<sub>1</sub>2<sub>1</sub>2<sub>1</sub> cell
+(`a = 8.92`, `b = 7.21`, `c = 10.27` A) and antiparallel two-fold helices of
+Chanzy *et al.*, *Macromolecules* 1987, 20, 2407-2413
+(doi:10.1021/ma00176a014). Table I supplies the non-hydroxyl coordinates and
+the paper supplies the chain transforms. The tabulated O1 duplicates the
+screw-related O4 glycosidic oxygen and is stored once as O4. Hydroxyl
+hydrogens, absent from the table, are modelled with tetrahedral C-O-H geometry
+toward acceptors in the reported hydrogen-bond network and are identified as
+modelled in the package-data provenance and build report. Their coupled
+torsions avoid periodic hydrogen clashes while preserving the primary heavy
+atoms. The Table I O3...O5 contact is 2.385 A, shorter than later refinements;
+any future force-field use must therefore begin with a restrained relaxation
+of the modelled hydrogens.
+
+Every residue is checked at all five ring stereocentres as beta-D-mannose.
+The unit-cell and bulk tests also check covalent distances, periodic O4-C1
+linkages, antiparallel-chain packing, and interchain clashes. Slabs and
+force-field output remain disabled until separately implemented and
+validated. Mannan II is not yet enabled because its hydrated four-chain
+atomic model and water sites must first be recovered and audited against the
+primary structural source; it will not be inferred from Mannan I.
 
 ## Table of contents
 
