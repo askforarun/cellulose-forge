@@ -2,7 +2,7 @@
 
 ``--polymer chitin`` (default) evaluates alpha and beta chitin (1 0 0) slabs;
 ``--polymer cellulose`` evaluates I-beta (1 1 0) finite and periodic, I-alpha
-(0 1 0) periodic, and II (1 1 0) periodic slabs. In every case the same
+(0 1 0) periodic, II (1 1 0) periodic, and III-I (1 1 0) periodic slabs. In every case the same
 generated GROMACS topology is evaluated at the built coordinates by:
 
 - GROMACS (reference);
@@ -603,6 +603,7 @@ _CELLULOSE_CASES = (
     ("I-beta", (1, 1, 0), "periodic"),
     ("I-alpha", (0, 1, 0), "periodic"),
     ("II", (1, 1, 0), "periodic"),
+    ("III-I", (1, 1, 0), "periodic"),
 )
 _CHITIN_CASES = (
     ("alpha", (1, 0, 0), "periodic"),
@@ -767,6 +768,33 @@ def _case(  # noqa: PLR0913, PLR0917
     }
 
 
+def _provenance(openmm_python: str, lammps: str, work: Path) -> dict[str, object]:
+    """Record the code revision and engine versions behind a validation run."""
+    root = Path(__file__).resolve().parents[1]
+
+    def output(command: list[str], cwd: Path = root) -> str:
+        completed = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
+        return (completed.stdout + completed.stderr).strip()
+
+    status = output(["git", "status", "--porcelain", "--untracked-files=no"])
+    gromacs = re.search(r"GROMACS version:\s*(\S+)", output(["gmx", "--version"]))
+    probe = work / "lammps_version.in"
+    probe.write_text("info\n", encoding="utf-8")
+    lammps_banner = re.search(
+        r"LAMMPS \(([^)]+)\)", output([lammps, "-in", probe.name, "-log", "none"], work)
+    )
+    from cellulose_forge import __version__  # noqa: PLC0415
+
+    return {
+        "cellulose_forge_version": __version__,
+        "git_commit": output(["git", "rev-parse", "HEAD"]),
+        "git_tracked_tree_clean": status == "",
+        "gromacs_version": gromacs.group(1) if gromacs else None,
+        "openmm_version": output([openmm_python, "-c", "import openmm; print(openmm.__version__)"]),
+        "lammps_version": lammps_banner.group(1) if lammps_banner else None,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--polymer", choices=["chitin", "cellulose"], default="chitin")
@@ -793,6 +821,7 @@ def main() -> int:
     ]
     report = {
         "test": f"{args.polymer} CHARMM36 term-by-term energies: GROMACS vs OpenMM and LAMMPS",
+        "provenance": _provenance(args.openmm_python, args.lammps, args.work_directory),
         "tolerances": {
             "bonded_relative": _BONDED_RELATIVE_TOLERANCE,
             "bonded_absolute_kj_mol": _BONDED_ABSOLUTE_TOLERANCE,
