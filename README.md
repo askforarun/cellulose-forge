@@ -4,8 +4,9 @@ CelluloseForge is a crystallography-first Python tool for building atomistic
 crystalline polysaccharide structures. It generates cellulose and chitin
 crystals, coordinate-only Mannan I crystals, chain-parallel surface slabs,
 and literature-defined fibrils. Supported systems can also be parameterized
-with GLYCAM06j-1 or CHARMM36, or with experimental OpenFF Sage 2.3, and
-written for GROMACS, OpenMM, LAMMPS and (for finite GLYCAM chains) Amber.
+with GLYCAM06j-1 or CHARMM36, or with experimental OpenFF Sage 2.3, OPLS-AA or
+OPLS-AA-SEI, and written for GROMACS, OpenMM, LAMMPS and (for finite GLYCAM
+chains) Amber.
 CHARMM36 topology generation does not require VMD or `psfgen` at runtime.
 
 ![CelluloseForge overview showing supported cellulose structures and GROMACS force-field outputs](docs/assets/celluloseforge-overview.png)
@@ -18,7 +19,8 @@ CHARMM36 topology generation does not require VMD or `psfgen` at runtime.
 > GLYCAM chains; experimental **LAMMPS output**; **CHARMM36 chitin**;
 > coordinate-only **Mannan I**; I-beta **18- and 24-chain fibril presets** and
 > **custom I-beta fibril profiles**; an experimental **OpenFF Sage 2.3**
-> backend; and starting **run inputs for every engine**. These will be part of
+> backend; experimental **OPLS-AA and OPLS-AA-SEI** for GROMACS, OpenMM and
+> LAMMPS; and starting **run inputs for every engine**. These will be part of
 > the next release; until then, install from `main` to use them.
 > **CHARMM/PSF output** and **odd-DP chains** remain planned. Feedback and
 > contributions are welcome.
@@ -45,6 +47,8 @@ CHARMM36 topology generation does not require VMD or `psfgen` at runtime.
 - Direct finite- and periodic-chain CHARMM36 topology generation without VMD
   or `psfgen`.
 - Experimental OpenFF Sage 2.3 with NAGL charges, without AmberTools.
+- Experimental OPLS-AA and OPLS-AA-SEI carbohydrate parameters (Damm et al.
+  1997; Kony et al. 2002) with no external dependencies.
 - GROMACS, OpenMM, LAMMPS and Amber output, each with starting minimization
   and smoke-test run inputs, plus a machine-readable build report.
 - Machine-readable diagnostics and deterministic outputs suitable for workflow
@@ -55,19 +59,19 @@ CHARMM36 topology generation does not require VMD or `psfgen` at runtime.
 | Structure | Polymers and allomorphs | Force-field output |
 |---|---|---|
 | Unit cell | Cellulose I-alpha, I-beta, II, III-I; alpha- and beta-chitin; Mannan I | Coordinate-only: a single cell is narrower than twice any force-field cutoff, so use a periodic bulk crystal for force-field output |
-| Periodic bulk | Cellulose I-alpha, I-beta, II, III-I; alpha- and beta-chitin; Mannan I | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage (cellulose); CHARMM36 (chitin); coordinate-only (Mannan I) |
-| Slab | Chain-parallel faces of the four cellulose allomorphs and of alpha- and beta-chitin | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage (cellulose); CHARMM36 (chitin) |
-| 36-chain fibril | Cellulose I-alpha, I-beta, II | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage |
-| 18- and 24-chain fibril, custom profiles (`main`) | Cellulose I-beta | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage |
+| Periodic bulk | Cellulose I-alpha, I-beta, II, III-I; alpha- and beta-chitin; Mannan I | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI (cellulose); CHARMM36 (chitin); coordinate-only (Mannan I) |
+| Slab | Chain-parallel faces of the four cellulose allomorphs and of alpha- and beta-chitin | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI (cellulose); CHARMM36 (chitin) |
+| 36-chain fibril | Cellulose I-alpha, I-beta, II | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI |
+| 18- and 24-chain fibril, custom profiles (`main`) | Cellulose I-beta | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI |
 
 Simulation engines by force field and chain boundary:
 
-| Engine | GLYCAM06j-1 | CHARMM36 | OpenFF Sage (experimental) | Status |
-|---|---|---|---|---|
-| GROMACS | Finite and periodic | Finite and periodic | Finite and periodic | Released (1.1.2) for GLYCAM and CHARMM36 |
-| OpenMM | Finite and periodic | Finite and periodic | Finite and periodic | On `main` |
-| LAMMPS | Finite and periodic | Finite and periodic | Not available | Experimental on `main` |
-| Amber | Finite only | Not available | Not available | On `main` |
+| Engine | GLYCAM06j-1 | CHARMM36 | OpenFF Sage (experimental) | OPLS-AA, OPLS-AA-SEI (experimental) | Status |
+|---|---|---|---|---|---|
+| GROMACS | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | Released (1.1.2) for GLYCAM and CHARMM36 |
+| OpenMM | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | On `main` |
+| LAMMPS | Finite and periodic | Finite and periodic | Not available | Finite and periodic | Experimental on `main` |
+| Amber | Finite only | Not available | Not available | Not available | On `main` |
 
 Native Amber output cannot represent covalently periodic chains because Amber
 does not minimum-image bonded terms across the box boundary; use GROMACS or
@@ -123,10 +127,12 @@ In addition to the coordinate-only requirements:
 AmberTools, ParmEd, VMD, and `psfgen` are not required for CHARMM36 builds.
 CelluloseForge reads the official GROMACS CHARMM36 files directly.
 
-### OpenMM, LAMMPS and OpenFF Sage builds
+### OpenMM, LAMMPS, OpenFF Sage and OPLS builds
 
-- OpenMM output (and LAMMPS output, which is converted through OpenMM)
-  requires the `openmm` Python package.
+- OpenMM output (and GLYCAM and CHARMM36 LAMMPS output, which is converted
+  through OpenMM) requires the `openmm` Python package.
+- OPLS-AA and OPLS-AA-SEI need no extra packages for GROMACS and LAMMPS
+  output; their OpenMM output needs `openmm`.
 - Experimental OpenFF Sage builds require the separate conda environment in
   `environment-openff.yml` (OpenFF Toolkit, Interchange, NAGL and OpenMM).
   AmberTools is not required.
@@ -630,6 +636,34 @@ Chitin, mannan, Amber, LAMMPS, unit cells, finite bulk crystals, and position
 restraints are rejected for OpenFF. See [`docs/openff.md`](docs/openff.md) for
 the precise scope.
 
+### Experimental OPLS-AA and OPLS-AA-SEI
+
+`--force-field opls-aa` applies the OPLS-AA carbohydrate parameters of Damm et
+al. (1997) and `--force-field opls-aa-sei` the OPLS-AA-SEI refinement of Kony
+et al. (2002), which reparameterizes several torsions and divides 1-5
+electrostatics within each residue by 1.26 (1-6 hydroxymethyl/C4-hydroxyl
+pairs by 1.22). Both cover finite and periodic cellulose slabs and fibrils and
+periodic bulk crystals, with GROMACS, OpenMM and LAMMPS output, and need no
+external parameter files. The topologies are validated against the published
+parameters and across the three engines; force-field accuracy for cellulose
+has not been assessed.
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape slab --face 1 1 0 \
+  --layers 3 --chains-per-layer 4 --degree-polymerization 6 \
+  --chain-boundary periodic --vacuum 30 \
+  --force-field opls-aa-sei \
+  --md-engine gromacs --md-engine openmm --md-engine lammps \
+  --output opls_sei_ibeta_slab
+```
+
+In LAMMPS the SEI-scaled pairs are tabulated pseudo-bonds, so their energy
+appears in `ebond`. Chitin, mannan, Amber, unit cells, finite bulk crystals
+and position restraints are rejected. See [`docs/opls.md`](docs/opls.md) for
+parameter sources, the three interpretations needed to apply the
+monosaccharide parameters to cellulose, and each engine's representation.
+
 ### Selective chain position restraints
 
 GLYCAM and CHARMM36 builds can apply GROMACS position restraints to the heavy
@@ -764,9 +798,10 @@ emit a deprecation warning. New workflows should use `--md-engine`.
 | GLYCAM06j-1 | PME, plain 1.0 nm cut-off | PME, 1.0 nm cut-off | `lj/cut/coul/long 10.0` | `cut = 10.0` |
 | CHARMM36 | PME, plain 1.0 nm cut-off (smoke test only, labelled in the file) | PME, 1.0 nm cut-off | `lj/charmmfsw/coul/long 10.0 12.0` (official force switch) | not available |
 | OpenFF Sage | PME 0.9 nm; Lennard-Jones potential switch 0.8--0.9 nm | Sage switch 0.8--0.9 nm, PME 0.9 nm | not available | not available |
+| OPLS-AA, OPLS-AA-SEI | PME, plain 1.0 nm cut-off | PME, 1.0 nm cut-off; geometric-mixing Lennard-Jones in a `CustomNonbondedForce` | `lj/cut/coul/long 10.0`, `mix geometric`; SEI pairs as tabulated pseudo-bonds | not available |
 
-Long-range dispersion correction follows one rule in every engine: GLYCAM06
-and Sage use it for bulk crystals and unit cells only, CHARMM36 never uses it,
+Long-range dispersion correction follows one rule in every engine: GLYCAM06,
+OPLS-AA and Sage use it for bulk crystals and unit cells only, CHARMM36 never uses it,
 and slabs and fibrils never use it. It appears as `DispCorr` in GROMACS, as
 the flags of both nonbonded forces in OpenMM, as `pair_modify tail` in LAMMPS,
 and as `vdwmeth` in Amber.
@@ -809,7 +844,7 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--padding-y` | angstrom | Total fibril padding in its second transverse direction (Cartesian z); overrides `--vacuum` |
 | `--padding-longitudinal` | angstrom | Total chain-axis padding; periodic chains require zero |
 | `--padding-z` | angstrom | Deprecated alias for `--padding-longitudinal` |
-| `--force-field` | `none`, `glycam`, `charmm36`, `openff` | Coordinate-only construction or molecular-mechanics parameter set; `openff` is experimental |
+| `--force-field` | `none`, `glycam`, `charmm36`, `openff`, `opls-aa`, `opls-aa-sei` | Coordinate-only construction or molecular-mechanics parameter set; `openff`, `opls-aa` and `opls-aa-sei` are experimental |
 | `--md-engine` | `gromacs`, `amber`, `openmm`, `lammps` | Target engine; repeat for multiple outputs |
 | `--topology-format` | `gromacs`, `amber`, `both` | Deprecated compatibility alias for GLYCAM builds |
 | `--tleap-executable` | executable path | `tleap` used for GLYCAM builds |
@@ -872,13 +907,19 @@ convention for I-beta, `(100)` and `(010)` expose origin-chain layers, whereas
 ### Periodic box size
 
 Every force-field build requires each perpendicular box height to exceed twice
-the GROMACS/OpenMM nonbonded cutoff: 20 Å for GLYCAM06 and CHARMM36 and 18 Å
-for OpenFF Sage. GROMACS and OpenMM evaluate pairs by the minimum-image
-convention; LAMMPS replicates ghost atoms for every periodic image and has no
-such limit, but its files are produced through an OpenMM system, so the same
-rule applies to every build. A slab or fibril with less transverse vacuum than
-the longest interaction range (10 Å GLYCAM, 12 Å CHARMM36, 9 Å Sage) produces a
-warning, because the vacuum-based choice to disable dispersion correction then
+the GROMACS/OpenMM nonbonded cutoff plus a 0.5 Å pair-list buffer on each side:
+21 Å for GLYCAM06, CHARMM36, OPLS-AA and OPLS-AA-SEI (1.0 nm cutoff) and 19 Å
+for OpenFF Sage (0.9 nm). GROMACS and OpenMM evaluate pairs by the
+minimum-image convention. The 0.5 Å margin is a conservative CelluloseForge
+policy, not a general pair-list requirement: the Verlet buffer GROMACS adds
+before its own box check depends on the MD settings (temperature, time step,
+`nstlist`, `verlet-buffer-tolerance`). With the generated inputs a 1.0 nm cutoff
+was rejected on a 20.62 Å box and accepted on 21.04 Å; production settings
+with longer time steps or neighbour-list intervals may need larger boxes. LAMMPS replicates ghost atoms for every periodic image and has no
+such limit, but the same rule applies to every build so that all engines'
+files remain usable. A slab or fibril with less transverse vacuum than the
+longest interaction range (10 Å GLYCAM and OPLS, 12 Å CHARMM36, 9 Å Sage)
+produces a warning, because the vacuum-based choice to disable dispersion correction then
 no longer holds.
 
 ## Validation
@@ -986,6 +1027,29 @@ Energies are accepted within an empirical mixed-precision criterion,
 (`measure_openff_mixed_precision.py`). These checks do not establish the
 accuracy of OpenFF Sage for crystalline cellulose.
 
+### Experimental OPLS-AA and OPLS-AA-SEI
+
+[`validation/validate_opls_cellulose.py`](validation/validate_opls_cellulose.py)
+covers finite and periodic slabs and 36-chain fibrils and periodic bulk
+crystals of every supported allomorph, for both variants
+([`validation/results/opls_cellulose_matrix.json`](validation/results/opls_cellulose_matrix.json)):
+
+- the Kony et al. Table 3 OPLS-AA torsions and every explicit bond and angle
+  parameter equal the installed GROMACS `oplsaa.ff`;
+- torsion, 1-4 and SEI-pair energies recomputed in NumPy agree with
+  double-precision GROMACS, and the OPLS-AA-SEI minus OPLS-AA nonbonded energy
+  equals the analytic effect of the scaling;
+- OpenMM and LAMMPS agree with double-precision GROMACS term by term
+  (bonds, angles, torsions, 1-4 and SEI pairs, Lennard-Jones) within 10^-6
+  relative, and in Coulomb and total energy within 10^-5 of the total
+  potential, on identical, unrounded coordinates; the LAMMPS SEI tables are
+  compared separately with an independent recomputation of the SEI pairs;
+- GROMACS (`grompp -maxwarn 0`, minimization, 1 ps NVT), the generated OpenMM
+  runner (minimization and 1 ps) and the generated LAMMPS input all run.
+
+These checks do not establish the accuracy of either force field for
+crystalline cellulose.
+
 ### What is not validated
 
 - Force-field accuracy against experiment (cell parameters, hydrogen-bond
@@ -995,9 +1059,10 @@ accuracy of OpenFF Sage for crystalline cellulose.
 
 ## Common errors
 
-**`the periodic box must exceed twice the N angstrom nonbonded cutoff in every direction`**
+**`the periodic box must exceed N angstrom (twice the ... nonbonded cutoff plus a 0.5 angstrom pair-list buffer on each side) in every direction`**
 : The box is too small for the force field's cutoff in at least one direction
-  (20 Å for GLYCAM06 and CHARMM36, 18 Å for OpenFF Sage). Increase `--cells`
+  (21 Å for GLYCAM06, CHARMM36, OPLS-AA and OPLS-AA-SEI; 19 Å for OpenFF
+  Sage). Increase `--cells`
   for bulk crystals, or `--chains-per-layer`, `--layers`,
   `--degree-polymerization`, the padding, or `--vacuum` for slabs and fibrils.
 
@@ -1048,6 +1113,10 @@ accuracy of OpenFF Sage for crystalline cellulose.
 : OpenFF currently covers cellulose slabs, fibrils, and periodic bulk crystals
   with GROMACS or OpenMM output. Use GLYCAM06 or CHARMM36 for other
   combinations.
+
+**`experimental OPLS-AA support is limited to cellulose` / `experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps`**
+: OPLS-AA and OPLS-AA-SEI cover cellulose slabs, fibrils, and periodic bulk
+  crystals with GROMACS, OpenMM or LAMMPS output (no Amber, no restraints).
 
 **`mannan force-field output is not implemented; use --force-field none`**
 : Mannan I is coordinate-only.

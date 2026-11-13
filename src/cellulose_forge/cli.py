@@ -69,6 +69,14 @@ from cellulose_forge.openmm import (
     heavy_atom_restraints,
     write_openmm_system,
 )
+from cellulose_forge.opls import (
+    OplsBuild,
+    build_opls_system,
+    topology_report,
+    write_opls_report,
+    write_opls_system,
+)
+from cellulose_forge.opls_engines import write_opls_lammps, write_opls_openmm
 from cellulose_forge.restraints import (
     ChainRestraints,
     group_mapped_chains,
@@ -77,6 +85,7 @@ from cellulose_forge.restraints import (
 from cellulose_forge.run_inputs import (
     GROMACS_CUTOFF_ANGSTROM,
     INTERACTION_RANGE_ANGSTROM,
+    PAIRLIST_BUFFER_ANGSTROM,
     dispersion_correction,
     is_vacuum_shape,
     write_amber_run_inputs,
@@ -95,6 +104,7 @@ _MANNAN_ALLOMORPHS = {"I": "i"}
 _MANNAN_SHAPES = {"unit-cell", "bulk", "crystal"}
 _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 3.0
 _RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 12.0
+_OPLS_FORCE_FIELDS = frozenset({"opls-aa", "opls-aa-sei"})
 
 
 def _parse_fibril_profile(value: str) -> tuple[int, ...]:
@@ -225,9 +235,12 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     build.add_argument(
         "--force-field",
-        choices=["none", "glycam", "charmm36", "openff"],
+        choices=["none", "glycam", "charmm36", "openff", "opls-aa", "opls-aa-sei"],
         default="none",
-        help=("write coordinates only or a force-field system; openff is experimental"),
+        help=(
+            "write coordinates only or a force-field system; openff, opls-aa and "
+            "opls-aa-sei are experimental"
+        ),
     )
     build.add_argument(
         "--topology-format",
@@ -402,6 +415,9 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         elif args.force_field == "openff":
             _check_force_field_box(args, crystal, build_parser())
             _write_openff_build(args, crystal, build_parser(), definition)
+        elif args.force_field in _OPLS_FORCE_FIELDS:
+            _check_force_field_box(args, crystal, build_parser())
+            _write_opls_build(args, crystal, build_parser(), definition)
         else:
             if any(
                 value is not None
@@ -505,6 +521,13 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         parser.error("GLYCAM builds require at least one --md-engine")
     if args.force_field == "openff" and not set(engines) <= {"gromacs", "openmm"}:
         parser.error("experimental OpenFF supports --md-engine gromacs and openmm only")
+    if args.force_field in _OPLS_FORCE_FIELDS and (
+        not engines or not set(engines) <= {"gromacs", "openmm", "lammps"}
+    ):
+        parser.error(
+            "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, "
+            "and lammps"
+        )
     args.md_engines = engines
 
 
@@ -699,20 +722,23 @@ def _check_force_field_box(
     """Apply the same box and vacuum rules to every force-field build.
 
     The box rule uses the GROMACS/OpenMM real-space cutoff because both apply
-    the minimum-image convention (and LAMMPS output is converted through an
-    OpenMM system).  LAMMPS itself replicates ghost atoms for every image, so
-    its longer CHARMM36 force-switch range needs no larger box.
+    the minimum-image convention, plus CelluloseForge's conservative 0.5 A
+    margin on each side (see ``PAIRLIST_BUFFER_ANGSTROM``).  LAMMPS itself
+    replicates ghost atoms for every image, so its longer CHARMM36
+    force-switch range needs no larger box; one rule applies to every build.
     """
     cutoff = GROMACS_CUTOFF_ANGSTROM[args.force_field]
-    if min(periodic_box_heights(crystal.basis_vectors)) <= 2.0 * cutoff:
+    required = 2.0 * (cutoff + PAIRLIST_BUFFER_ANGSTROM)
+    if min(periodic_box_heights(crystal.basis_vectors)) <= required:
         remedy = (
             "increase --cells"
             if args.shape in {"bulk", "crystal", "unit-cell"}
             else "increase --degree-polymerization, the padding, or the vacuum"
         )
         parser.error(
-            f"the periodic box must exceed twice the {cutoff:g} angstrom nonbonded "
-            f"cutoff in every direction; {remedy}"
+            f"the periodic box must exceed {required:g} angstrom (twice the {cutoff:g} "
+            f"angstrom nonbonded cutoff plus a {PAIRLIST_BUFFER_ANGSTROM:g} angstrom "
+            f"pair-list buffer on each side) in every direction; {remedy}"
         )
     if not is_vacuum_shape(args.shape):
         return
@@ -736,6 +762,137 @@ def _check_force_field_box(
             UserWarning,
             stacklevel=1,
         )
+
+
+def _write_opls_engines(
+    args: argparse.Namespace,
+    build: OplsBuild,
+    dispersion: bool,
+    parser: argparse.ArgumentParser,
+) -> tuple[dict[str, str], dict[str, object]]:
+    """Write the requested GROMACS, OpenMM and LAMMPS files for an OPLS build."""
+    outputs: dict[str, str] = {}
+    engine_metadata: dict[str, object] = {}
+    if "gromacs" in args.md_engines:
+        outputs.update(write_opls_system(build, args.output))
+        outputs.update(
+            write_gromacs_run_inputs(
+                args.output,
+                force_field=args.force_field,
+                periodic_chains=args.chain_boundary == "periodic",
+                dispersion=dispersion,
+            )
+        )
+    if "openmm" in args.md_engines:
+        try:
+            openmm_files, engine_metadata["openmm"] = write_opls_openmm(
+                build,
+                args.output,
+                dispersion_correction=dispersion,
+                python_executable=args.openmm_python,
+            )
+        except (FileNotFoundError, RuntimeError, ValueError) as error:
+            parser.error(str(error))
+        outputs.update(
+            {
+                "openmm_system": openmm_files.system.name,
+                "openmm_state": openmm_files.state.name,
+                "openmm_topology": openmm_files.topology.name,
+                "openmm_runner": openmm_files.runner.name,
+            }
+        )
+    if "lammps" in args.md_engines:
+        try:
+            lammps_files, engine_metadata["lammps"] = write_opls_lammps(
+                build, args.output, dispersion_correction=dispersion
+            )
+        except ValueError as error:
+            parser.error(str(error))
+        outputs.update(
+            {"lammps_data": lammps_files.data.name, "lammps_input": lammps_files.input.name}
+        )
+        if lammps_files.table is not None:
+            outputs["lammps_sei_table"] = lammps_files.table.name
+    return outputs, engine_metadata
+
+
+def _write_opls_build(
+    args: argparse.Namespace,
+    crystal: BulkCrystal,
+    parser: argparse.ArgumentParser,
+    definition: AllomorphDefinition,
+) -> None:
+    """Write the experimental OPLS-AA or OPLS-AA-SEI GROMACS/OpenMM/LAMMPS workflow."""
+    name = "OPLS-AA-SEI" if args.force_field == "opls-aa-sei" else "OPLS-AA"
+    if args.polymer != "cellulose":
+        parser.error(f"experimental {name} support is limited to cellulose")
+    if args.shape == "unit-cell":
+        parser.error(
+            f"experimental {name} supports slabs, fibrils, and periodic bulk crystals"
+        )
+    if args.shape in {"bulk", "crystal"} and args.chain_boundary != "periodic":
+        parser.error(f"experimental {name} bulk crystals require periodic chains")
+    if args.shape in {"slab", "fibril"} and args.chain_boundary not in {"finite", "periodic"}:
+        parser.error(f"{name} {args.shape}s require --chain-boundary finite or periodic")
+    if any(
+        value is not None
+        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
+    ):
+        parser.error(f"{name} position restraints are not implemented")
+    if args.output.suffix:
+        parser.error(f"--output must be a directory for --force-field {args.force_field}")
+    warnings.warn(
+        f"{name} support is experimental: the topology is validated against the "
+        "published parameters, but force-field accuracy for cellulose has not been assessed",
+        UserWarning,
+        stacklevel=1,
+    )
+    try:
+        build = build_opls_system(crystal, args.force_field, args.chain_boundary)
+    except ValueError as error:
+        parser.error(str(error))
+    dispersion = dispersion_correction(args.force_field, args.shape)
+    outputs, engine_metadata = _write_opls_engines(args, build, dispersion, parser)
+    coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
+    report: dict[str, object] = {
+        "software": "CelluloseForge",
+        "version": __version__,
+        "experimental": True,
+        "polymer": "cellulose",
+        "allomorph": crystal.allomorph,
+        "shape": args.shape,
+        "force_field": name,
+        "chain_boundary": args.chain_boundary,
+        "degree_polymerization": build.topology.degree_polymerization,
+        "chain_count": build.mapped.chain_count,
+        "atom_count": build.mapped.atom_count,
+        "dispersion_correction": dispersion,
+        "md_engines": list(args.md_engines),
+        "outputs": {"coordinates": coordinate_path.name, **outputs},
+        "parameters": topology_report(build.topology),
+        "engine_validation": engine_metadata,
+        "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),
+        "crystallographic_source": {
+            "definition": definition.name,
+            "citation": definition.citation,
+            "doi": definition.doi,
+        },
+    }
+    if crystal.allomorph == "II":
+        report["generated_force_field_coordinates"] = {
+            "atoms": ["HO2", "HO3", "HO6"],
+            "scope": "each anhydroglucose residue",
+            "method": (
+                "tetrahedral C-O-H placement, class by class (HO3, HO2, HO6); "
+                "intrachain O3-H...O5 first, otherwise the clash-free torsion with "
+                "the best geometric hydrogen bond, otherwise the aligned reference torsion"
+            ),
+            "geometry": "0.96 A O-H and 108.5 degree C-O-H",
+            "reason": "hydroxyl-hydrogen coordinates are absent from the diffraction dataset",
+            "requires_minimization_or_restrained_relaxation": True,
+        }
+    write_opls_report(args.output / "build_report.json", report)
+    print(f"Experimental {name} files written to {args.output}")
 
 
 def _write_openff_build(

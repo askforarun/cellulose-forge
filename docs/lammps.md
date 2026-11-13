@@ -15,6 +15,10 @@ cellulose-forge build \
 Select `--force-field charmm36` after installing the pinned CHARMM36 files to
 write the corresponding CHARMM system:
 
+Experimental OPLS-AA and OPLS-AA-SEI builds (`--force-field opls-aa` or
+`opls-aa-sei`) write their LAMMPS files directly, without OpenMM; see
+[`opls.md`](opls.md) for their styles and the tabulated SEI pair terms.
+
 ```bash
 cellulose-forge forcefield install charmm36
 cellulose-forge build \

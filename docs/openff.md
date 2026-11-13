@@ -50,8 +50,9 @@ therefore enabled for bulk crystals and disabled for slabs and fibrils, whose
 transverse vacuum violates its assumption, consistently in the serialized
 OpenMM system and generated GROMACS inputs. This is the same rule used for
 GLYCAM06; CHARMM36 never uses the correction. As for every force field, the
-periodic box must exceed twice the nonbonded cutoff (9 A for Sage) in every
-perpendicular direction, and a slab or fibril with less transverse vacuum than
+periodic box must exceed twice the nonbonded cutoff plus a 0.5 A pair-list
+buffer on each side (19 A for Sage's 0.9 nm cutoff) in every perpendicular
+direction, and a slab or fibril with less transverse vacuum than
 the cutoff triggers a warning.
 
 ## Validation boundary

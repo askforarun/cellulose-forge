@@ -6,6 +6,14 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Added
 
+- Experimental OPLS-AA (Damm et al. 1997) and OPLS-AA-SEI (Kony et al. 2002)
+  for finite and periodic cellulose slabs and fibrils and periodic bulk
+  crystals, with GROMACS, OpenMM and LAMMPS output (`--force-field opls-aa`
+  or `opls-aa-sei`). Parameters are written explicitly; OPLS-AA-SEI scales
+  1-5 electrostatics within each residue by 1/1.26 and hydroxymethyl/C4
+  hydroxyl 1-6 pairs by 1/1.22. OpenMM systems are built directly; LAMMPS SEI
+  pairs are tabulated pseudo-bonds. Validated across the three engines in
+  `validation/validate_opls_cellulose.py`.
 - Optional experimental OpenFF Sage 2.3 output for finite and periodic
   cellulose slabs and periodic bulk crystals through GROMACS and OpenMM.
 - Direct OpenFF glucan graph construction without AmberTools, NAGL charges,
@@ -31,8 +39,14 @@ All notable changes to CelluloseForge are documented in this file.
   the cross-engine validators, and standard CHARMM36 practice. Amber inputs set
   `vdwmeth` accordingly.
 - Every force-field build now rejects periodic boxes no wider than twice the
-  nonbonded cutoff in any perpendicular direction, and warns when a slab or
+  nonbonded cutoff plus a 0.5 A pair-list buffer on each side (21 A for a
+  1.0 nm cutoff, 19 A for Sage) in any perpendicular direction, and warns when a slab or
   fibril has less transverse vacuum than the longest interaction range.
+  The 0.5 A margin is a conservative CelluloseForge policy: the GROMACS Verlet
+  buffer depends on the MD settings, and with the generated inputs a 1.0 nm
+  cutoff was rejected by `grompp` on a 20.62 A box (above the previous 20 A
+  threshold) and accepted on 21.04 A. This tightens the rule for every force
+  field.
 
 - Cellulose II hydroxyl hydrogens (HO2, HO3, HO6), which are absent from the
   diffraction data, are now placed on an exact tetrahedral cone (0.96 A O-H,

@@ -5,7 +5,7 @@ engine is selected:
 
 * Long-range dispersion correction is used only for homogeneous periodic
   systems (bulk crystals and unit cells) and only for force fields fitted with
-  it (GLYCAM06 and OpenFF Sage).  CHARMM36 is parameterized without it, and
+  it (GLYCAM06, OPLS-AA and OpenFF Sage).  CHARMM36 is parameterized without it, and
   slabs and fibrils contain vacuum, which the isotropic correction does not
   describe.
 * Each engine receives a short minimization and a 1 ps NVT smoke-test input in
@@ -18,19 +18,40 @@ from pathlib import Path
 
 _HOMOGENEOUS_SHAPES = frozenset({"bulk", "crystal", "unit-cell"})
 _VACUUM_SHAPES = frozenset({"slab", "fibril"})
-_FORCE_FIELDS = frozenset({"glycam", "charmm36", "openff"})
+_FORCE_FIELDS = frozenset({"glycam", "charmm36", "openff", "opls-aa", "opls-aa-sei"})
 
 # Longest nonbonded interaction range of any generated engine input, in
 # angstrom (CHARMM36 reaches 12 A in the LAMMPS 10--12 A force switch).  Used
 # only to warn when slab or fibril vacuum is thinner than this range.
-INTERACTION_RANGE_ANGSTROM = {"glycam": 10.0, "charmm36": 12.0, "openff": 9.0}
+INTERACTION_RANGE_ANGSTROM = {
+    "glycam": 10.0,
+    "charmm36": 12.0,
+    "openff": 9.0,
+    "opls-aa": 10.0,
+    "opls-aa-sei": 10.0,
+}
 # Real-space cutoff of the generated GROMACS and OpenMM inputs, in angstrom.
 # GROMACS and OpenMM evaluate pairs by the minimum-image convention, so every
-# perpendicular box height must exceed twice this cutoff.  LAMMPS builds ghost
-# atoms for every periodic image within its cutoff and has no such limit, but
-# its files are produced through an OpenMM system, so the same box rule
-# applies to every build.
-GROMACS_CUTOFF_ANGSTROM = {"glycam": 10.0, "charmm36": 10.0, "openff": 9.0}
+# perpendicular box height must exceed twice this cutoff.
+#
+# CelluloseForge policy (conservative, not a general pair-list requirement):
+# every build also requires a 0.5 A margin on each side.  The Verlet buffer
+# GROMACS adds before its own box check depends on the MD settings
+# (temperature, time step, nstlist, verlet-buffer-tolerance), not on the force
+# field.  For the generated inputs a 1.0 nm cutoff was rejected on a 20.62 A box
+# and accepted on 21.04 A, and the 1 ps NVT input needed a 0.024 nm buffer.
+# Production settings with longer time steps or neighbour-list intervals may
+# need larger boxes.  LAMMPS replicates ghost atoms for every image and has no
+# such limit; one rule is applied to every build so that all selected engines'
+# files remain usable together.
+PAIRLIST_BUFFER_ANGSTROM = 0.5
+GROMACS_CUTOFF_ANGSTROM = {
+    "glycam": 10.0,
+    "charmm36": 10.0,
+    "openff": 9.0,
+    "opls-aa": 10.0,
+    "opls-aa-sei": 10.0,
+}
 
 
 def _require_force_field(force_field: str) -> str:
