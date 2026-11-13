@@ -10,7 +10,7 @@ import numpy as np
 from cellulose_forge.clashes import validate_finite_periodic_image_contact
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
-from cellulose_forge.hydroxyl import tetrahedral_hydroxyl_hydrogen
+from cellulose_forge.hydroxyl import HydroxylHydrogenPlacer
 
 _GLYCAM_TO_CRYSTAL_NAME = {"H2O": "HO2", "H3O": "HO3", "H6O": "HO6"}
 _REDUCING_ALIGNMENT_ATOMS = ("C1", "H1", "O5")
@@ -243,7 +243,7 @@ def _periodic_chain_residue_order(
     return tuple(order)
 
 
-def map_crystal_to_finite_glycam(  # noqa: PLR0915
+def map_crystal_to_finite_glycam(  # noqa: PLR0912, PLR0915
     crystal: BulkCrystal,
     reference_pdb: str | Path,
 ) -> GlycamMappedSystem:
@@ -298,6 +298,13 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0915
     nonreducing_reference = {
         atom.name: atom.coordinates for atom in reference_residues[nonreducing_reference_number]
     }
+    placer = (
+        HydroxylHydrogenPlacer(
+            crystal.atom_labels, crystal.cartesian_coordinates, crystal.basis_vectors
+        )
+        if generated_names
+        else None
+    )
 
     for chain_number in chain_numbers:
         crystal_residue_order = _finite_chain_residue_order(
@@ -367,17 +374,23 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0915
                             atom.coordinates,
                             hydrogen_transform,
                         )
-                        coordinate = tetrahedral_hydroxyl_hydrogen(
+                        assert placer is not None
+                        placer.request(
+                            len(output_coordinates),
                             target[carbon_name],
                             target[oxygen_name],
                             aligned_hydrogen,
-                            avoid_coordinates=crystal.cartesian_coordinates,
-                            periodic_box=crystal.basis_vectors,
+                            donor=oxygen_name,
+                            preferred_acceptor="O5" if oxygen_name == "O3" else None,
                         )
+                        coordinate = np.zeros(3)
                     else:
                         coordinate = target[crystal_name]
                 output_coordinates.append(coordinate)
 
+    if placer is not None:
+        for index, coordinate in placer.resolve().items():
+            output_coordinates[index] = coordinate
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)
     system = GlycamMappedSystem(
@@ -441,6 +454,13 @@ def map_crystal_to_periodic_glycam(
     output_residue_numbers: list[int] = []
     output_chain_numbers: list[int] = []
     output_coordinates: list[FloatArray] = []
+    placer = (
+        HydroxylHydrogenPlacer(
+            crystal.atom_labels, crystal.cartesian_coordinates, crystal.basis_vectors
+        )
+        if generated_names
+        else None
+    )
     for chain_number in chain_numbers:
         crystal_residue_order = _periodic_chain_residue_order(
             crystal,
@@ -471,18 +491,22 @@ def map_crystal_to_periodic_glycam(
                     oxygen_name = _HYDROXYL_OXYGEN_BY_GLYCAM_HYDROGEN[atom.name]
                     carbon_name = "C" + oxygen_name[1:]
                     aligned_hydrogen = _transform_coordinate(atom.coordinates, hydrogen_transform)
-                    output_coordinates.append(
-                        tetrahedral_hydroxyl_hydrogen(
-                            target[carbon_name],
-                            target[oxygen_name],
-                            aligned_hydrogen,
-                            avoid_coordinates=crystal.cartesian_coordinates,
-                            periodic_box=crystal.basis_vectors,
-                        )
+                    assert placer is not None
+                    placer.request(
+                        len(output_coordinates),
+                        target[carbon_name],
+                        target[oxygen_name],
+                        aligned_hydrogen,
+                        donor=oxygen_name,
+                        preferred_acceptor="O5" if oxygen_name == "O3" else None,
                     )
+                    output_coordinates.append(np.zeros(3))
                 else:
                     output_coordinates.append(target[crystal_name])
 
+    if placer is not None:
+        for index, coordinate in placer.resolve().items():
+            output_coordinates[index] = coordinate
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)
     return GlycamMappedSystem(

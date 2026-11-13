@@ -1,7 +1,13 @@
+; Steepest-descent minimization for chemically capped finite chains.
 integrator              = steep
 nsteps                  = 10000
 emtol                   = 1000.0
 emstep                  = 0.01
+; CHARMM36 CROSS-ENGINE SMOKE-TEST SETTINGS, NOT THE CHARMM36 PRODUCTION
+; PROTOCOL.  The plain 1.0 nm cut-off matches the validated GROMACS/OpenMM
+; comparison (OpenMM cannot reproduce the CHARMM force switch).  For
+; production use vdw-modifier = force-switch, rvdw-switch = 1.0 and
+; rvdw = rcoulomb = 1.2, which requires every box height above 2.4 nm.
 cutoff-scheme           = Verlet
 nstlist                 = 20
 rlist                   = 1.0
@@ -11,6 +17,7 @@ fourierspacing          = 0.12
 pme-order               = 4
 vdwtype                 = Cut-off
 rvdw                    = 1.0
-DispCorr                 = no
+DispCorr                = no
 pbc                     = xyz
+periodic-molecules      = no
 constraints             = none

@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "validation"))
 
+from _provenance import provenance  # noqa: E402
 from validate_openff_finite_slab import (  # noqa: E402
     MAXIMUM_BOND_CHANGE_ANGSTROM,
     MAXIMUM_HEAVY_BOND_DEVIATION_ANGSTROM,
@@ -32,6 +33,7 @@ from validate_openff_finite_slab import (  # noqa: E402
     MINIMUM_XH_BOND_ANGSTROM,
     NVT_MDP,
     TIGHT_ENERGY_MDP,
+    bonded_term_counts,
     compare_energy_terms,
     disable_slab_dispersion_correction,
     energies,
@@ -455,7 +457,7 @@ def validate_case(  # noqa: PLR0913, PLR0917
     omm, system = openmm_values(interchange)
     gmx = gromacs_values(interchange)
     gromacs_smoke = run_gromacs_periodic_smoke_test(interchange)
-    comparison = compare_energy_terms(omm, gmx)
+    comparison = compare_energy_terms(omm, gmx, bonded_term_counts(system))
     platform = openmm.Platform.getPlatformByName("CPU")
     platform_properties = {"Threads": "1"}
     minimization_integrator = openmm.VerletIntegrator(0.001)
@@ -480,6 +482,8 @@ def validate_case(  # noqa: PLR0913, PLR0917
         1.0 / openmm.unit.picosecond,
         0.001 * openmm.unit.picoseconds,
     )
+    # Seed the thermostat noise so stored NVT results are reproducible.
+    integrator.setRandomNumberSeed(20261112)
     context = openmm.Context(system, integrator, platform, platform_properties)
     context.setPeriodicBoxVectors(*interchange.box.to_openmm())
     context.setPositions(minimized.getPositions())
@@ -566,6 +570,9 @@ def main() -> None:
     template_path = ROOT / "validation/results/openff_cellodextrin_dp6_periodic_nagl_charged.json"
     result = {
         "matrix": "periodic DP6 cellulose reference slabs",
+        "provenance": provenance(
+            ("openff-toolkit", "openff-interchange", "openff-nagl", "openff-nagl-models", "openmm")
+        ),
         "charge_method": "NAGL openff-gnn-am1bcc-1.0.0.pt",
         "template_sha256": hashlib.sha256(template_path.read_bytes()).hexdigest(),
         "software_versions": {

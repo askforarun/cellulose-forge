@@ -3,14 +3,20 @@
 from __future__ import annotations
 
 import importlib
+import time
 from collections import Counter
 from importlib.util import find_spec
+from pathlib import Path
 
 import numpy as np
 import pytest
+from hydroxyl_contacts import modelled_hydroxyl_contacts
 
+from cellulose_forge import cli
+from cellulose_forge.cli import main
 from cellulose_forge.crystallography import load_allomorph
 from cellulose_forge.geometry import build_bulk_crystal
+from cellulose_forge.glycam_mapping import map_crystal_to_periodic_glycam
 from cellulose_forge.openff_sage import (
     _REFERENCE_PARITY,
     _centre_parity,
@@ -26,8 +32,9 @@ def test_dispersion_policy_is_geometry_specific() -> None:
     assert dispersion_correction_for_shape("bulk") is True
     assert dispersion_correction_for_shape("crystal") is True
     assert dispersion_correction_for_shape("slab") is False
+    assert dispersion_correction_for_shape("fibril") is False
     with pytest.raises(ValueError, match="undefined"):
-        dispersion_correction_for_shape("fibril")
+        dispersion_correction_for_shape("cylinder")
 
 
 def test_missing_optional_dependency_has_installation_message(
@@ -142,34 +149,30 @@ def test_cellulose_ii_modelled_hydrogens_are_tetrahedral() -> None:
                 assert _angle(
                     atoms[f"C{suffix}"], atoms[f"O{suffix}"], atoms[f"HO{suffix}"]
                 ) == pytest.approx(108.5, abs=1.0e-6)
-    inverse = np.linalg.inv(build.mapped.basis_vectors)
-    closest_hydrogen = np.inf
-    closest_heavy = np.inf
-    for index, name in enumerate(build.mapped.atom_names):
-        if name not in {"HO2", "HO3", "HO6"}:
-            continue
-        for other, other_name in enumerate(build.mapped.atom_names):
-            if index == other:
-                continue
-            same_residue = (
-                build.mapped.chain_numbers[index] == build.mapped.chain_numbers[other]
-                and build.mapped.residue_numbers[index] == build.mapped.residue_numbers[other]
-            )
-            if same_residue and other_name == "O" + name[2]:
-                continue
-            delta = (
-                build.mapped.cartesian_coordinates[other]
-                - build.mapped.cartesian_coordinates[index]
-            )
-            fractional = delta @ inverse
-            fractional -= np.round(fractional)
-            distance = float(np.linalg.norm(fractional @ build.mapped.basis_vectors))
-            if other_name.startswith("H"):
-                closest_hydrogen = min(closest_hydrogen, distance)
-            else:
-                closest_heavy = min(closest_heavy, distance)
-    assert closest_hydrogen >= 2.0
-    assert closest_heavy >= 1.8
+    contacts = modelled_hydroxyl_contacts(
+        build.mapped, {"HO2": "O2", "HO3": "O3", "HO6": "O6"}
+    )
+    assert contacts["hydrogen"] >= 1.9
+    # Hydrogen-bond acceptors may approach to ~1.7 A, as in neutron structures.
+    assert contacts["oxygen"] >= 1.6
+    assert contacts["other_heavy"] >= 2.0
+    assert contacts["hydrogen_bonded_fraction"] >= 0.95
+    # The intrachain O3-H...O5 bond is present in every cellulose allomorph.
+    assert contacts["o3_to_intrachain_o5_fraction"] == 1.0
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+def test_cellulose_ii_hydrogen_placement_scales_to_large_bulk() -> None:
+    crystal = build_bulk_crystal(load_allomorph("ii"), (6, 5, 4))
+    start = time.perf_counter()
+    build = build_sage_system(crystal, "periodic")
+    assert time.perf_counter() - start < 60.0
+    contacts = modelled_hydroxyl_contacts(
+        build.mapped, {"HO2": "O2", "HO3": "O3", "HO6": "O6"}
+    )
+    assert contacts["hydrogen_bonded_fraction"] >= 0.95
+    # The intrachain O3-H...O5 bond is present in every cellulose allomorph.
+    assert contacts["o3_to_intrachain_o5_fraction"] == 1.0
 
 
 @pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
@@ -198,3 +201,64 @@ def test_stereochemical_negative_controls_reject_inversions_and_mirror() -> None
         mirrored = positions.copy()
         mirrored[:, 0] *= -1
         assert _centre_parity(mirrored, atom, np.eye(3) * 20.0) == -original
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    (
+        ["--shape", "slab", "--face", "1", "1", "0", "--layers", "6", "--chains-per-layer", "4"],
+        ["--shape", "fibril", "--fibril-model", "18-chain"],
+    ),
+)
+def test_openff_vacuum_shapes_warn_below_cutoff_vacuum(
+    tmp_path: Path, arguments: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def stop(*_: object, **__: object) -> None:
+        raise SystemExit(0)
+
+    # Stop before any OpenFF work; only the CLI vacuum policy is under test.
+    monkeypatch.setattr(cli, "build_sage_system", stop)
+    with pytest.warns(UserWarning, match="less than 9 angstrom of transverse vacuum"):
+        with pytest.raises(SystemExit):
+            main(
+                [
+                    "build", "--allomorph", "I-beta", *arguments,
+                    "--degree-polymerization", "6", "--chain-boundary", "periodic",
+                    "--vacuum", "5", "--force-field", "openff", "--md-engine", "gromacs",
+                    "--output", str(tmp_path / "out"),
+                ]
+            )
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+def test_glycam_and_openff_place_identical_cellulose_ii_hydrogens() -> None:
+    crystal = build_bulk_crystal(load_allomorph("ii"), (2, 2, 6))
+    glycam = map_crystal_to_periodic_glycam(
+        crystal, Path("examples/glycam/dp12_periodic_reference/cellulose_periodic_chain.pdb")
+    )
+    openff = build_sage_system(crystal, "periodic").mapped
+
+    def hydrogens_by_oxygen(
+        mapped: object, names: dict[str, str]
+    ) -> dict[tuple[float, float, float], np.ndarray]:
+        atoms = list(
+            zip(
+                mapped.atom_names,  # type: ignore[attr-defined]
+                mapped.chain_numbers,  # type: ignore[attr-defined]
+                mapped.residue_numbers,  # type: ignore[attr-defined]
+                np.asarray(mapped.cartesian_coordinates),  # type: ignore[attr-defined]
+                strict=True,
+            )
+        )
+        oxygen = {(name, chain, residue): xyz for name, chain, residue, xyz in atoms}
+        return {
+            tuple(np.round(oxygen[(names[name], chain, residue)], 4)): xyz
+            for name, chain, residue, xyz in atoms
+            if name in names
+        }
+
+    from_glycam = hydrogens_by_oxygen(glycam, {"H2O": "O2", "H3O": "O3", "H6O": "O6"})
+    from_openff = hydrogens_by_oxygen(openff, {"HO2": "O2", "HO3": "O3", "HO6": "O6"})
+    assert from_glycam.keys() == from_openff.keys()
+    for oxygen_position, hydrogen in from_glycam.items():
+        np.testing.assert_allclose(hydrogen, from_openff[oxygen_position], atol=1e-6)

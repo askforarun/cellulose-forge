@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import importlib
+import json
+import re
 from importlib.util import find_spec
 from pathlib import Path
 
 import pytest
 
+from cellulose_forge.cli import main
 from cellulose_forge.crystallography import MillerIndex, load_allomorph
 from cellulose_forge.geometry import build_bulk_crystal, build_chain_parallel_slab
 from cellulose_forge.openff_sage import build_sage_system, write_sage_outputs
@@ -32,7 +35,7 @@ def test_openff_slab_outputs(tmp_path: Path, boundary: str, padding: float) -> N
     assert report["dispersion_correction"] is False
     assert report["gromacs_coordinates"] == "structure.gro"
     assert (tmp_path / "system.top").is_file()
-    assert "DispCorr = no" in (tmp_path / "minim.mdp").read_text()
+    assert re.search(r"^DispCorr\s*=\s*no$", (tmp_path / "minim.mdp").read_text(), re.MULTILINE)
     openmm = importlib.import_module("openmm")
     system = openmm.XmlSerializer.deserialize((tmp_path / "system.xml").read_text())
     for force in system.getForces():
@@ -47,7 +50,8 @@ def test_openff_periodic_bulk_outputs(tmp_path: Path) -> None:
     build = build_sage_system(crystal, "periodic")
     report = write_sage_outputs(build, tmp_path, ("gromacs", "openmm"), dispersion_correction=True)
     assert report["dispersion_correction"] is True
-    assert "DispCorr = EnerPres" in (tmp_path / "minim.mdp").read_text()
+    minim = (tmp_path / "minim.mdp").read_text()
+    assert re.search(r"^DispCorr\s*=\s*EnerPres$", minim, re.MULTILINE)
     assert (tmp_path / "system.xml").is_file()
     assert (tmp_path / "topology.cif").is_file()
     openmm = importlib.import_module("openmm")
@@ -57,3 +61,60 @@ def test_openff_periodic_bulk_outputs(tmp_path: Path) -> None:
             assert force.getUseDispersionCorrection() is True
         elif isinstance(force, openmm.CustomNonbondedForce):
             assert force.getUseLongRangeCorrection() is True
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    (
+        ["--fibril-model", "36-chain", "--chain-boundary", "periodic"],
+        [
+            "--fibril-profile", "2,3,3,2", "--chain-boundary", "finite",
+            "--padding-longitudinal", "12",
+        ],
+    ),
+)
+def test_openff_fibril_cli_outputs(tmp_path: Path, arguments: list[str]) -> None:
+    output = tmp_path / "fibril"
+    assert (
+        main(
+            [
+                "build", "--allomorph", "I-beta", "--shape", "fibril", *arguments,
+                "--degree-polymerization", "6", "--vacuum", "20",
+                "--force-field", "openff", "--md-engine", "gromacs", "--md-engine", "openmm",
+                "--output", str(output),
+            ]
+        )
+        == 0
+    )
+    report = json.loads((output / "build_report.json").read_text())
+    assert report["shape"] == "fibril"
+    assert report["dispersion_correction"] is False
+    assert report["stereochemistry"]["passed"] is True
+    assert re.search(r"^DispCorr\s*=\s*no$", (output / "minim.mdp").read_text(), re.MULTILINE)
+    openmm = importlib.import_module("openmm")
+    system = openmm.XmlSerializer.deserialize((output / "system.xml").read_text())
+    for force in system.getForces():
+        if isinstance(force, openmm.NonbondedForce):
+            assert force.getUseDispersionCorrection() is False
+        elif isinstance(force, openmm.CustomNonbondedForce):
+            assert force.getUseLongRangeCorrection() is False
+
+
+def test_openff_openmm_only_build_writes_no_gromacs_files(tmp_path: Path) -> None:
+    output = tmp_path / "openmm_only"
+    assert (
+        main(
+            [
+                "build", "--allomorph", "I-beta", "--shape", "bulk", "--cells", "3", "3", "2",
+                "--chain-boundary", "periodic", "--force-field", "openff",
+                "--md-engine", "openmm", "--output", str(output),
+            ]
+        )
+        == 0
+    )
+    for name in ("structure.gro", "system.top", "minim.mdp", "nvt.mdp"):
+        assert not (output / name).exists(), name
+    for name in ("system.xml", "state.xml", "topology.cif", "run_openmm.py"):
+        assert (output / name).is_file(), name
+    report = json.loads((output / "build_report.json").read_text())
+    assert not any(key.startswith("gromacs") for key in report["outputs"])

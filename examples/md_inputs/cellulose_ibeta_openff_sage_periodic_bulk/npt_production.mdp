@@ -1,7 +1,7 @@
 title = I-beta OpenFF Sage anisotropic NPT production
 integrator = md
 dt = 0.002
-nsteps = 25000000
+nsteps = 50000000
 continuation = yes
 constraints = h-bonds
 constraint-algorithm = lincs

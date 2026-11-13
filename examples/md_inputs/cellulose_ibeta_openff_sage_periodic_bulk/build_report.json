@@ -36,6 +36,12 @@
   "outputs": {
     "gromacs_coordinates": "structure.gro",
     "gromacs_topology": "system.top",
+    "gromacs_minimization_input": "minim.mdp",
+    "gromacs_nvt_input": "nvt.mdp",
+    "openmm_system": "system.xml",
+    "openmm_state": "state.xml",
+    "openmm_topology": "topology.cif",
+    "openmm_runner": "run_openmm.py",
     "openmm_written": true,
     "periodic_forces": [
       "CustomBondForce",

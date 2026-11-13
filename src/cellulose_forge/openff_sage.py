@@ -20,7 +20,15 @@ import numpy as np
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
-from cellulose_forge.hydroxyl import tetrahedral_hydroxyl_hydrogen
+from cellulose_forge.hydroxyl import HydroxylHydrogenPlacer
+from cellulose_forge.openmm import (
+    OPENMM_RUNNER_FILE,
+    OPENMM_STATE_FILE,
+    chain_axis,
+    render_openmm_runner,
+)
+from cellulose_forge.run_inputs import dispersion_correction as _dispersion_policy
+from cellulose_forge.run_inputs import write_gromacs_run_inputs
 
 SAGE_FORCE_FIELD = "openff-2.3.0.offxml"
 NAGL_CHARGE_MODEL = "openff-gnn-am1bcc-1.0.0.pt"
@@ -132,12 +140,8 @@ class SageBuild:
 
 
 def dispersion_correction_for_shape(shape: str) -> bool:
-    """Return the validated Sage long-range-dispersion policy."""
-    if shape in {"bulk", "crystal"}:
-        return True
-    if shape == "slab":
-        return False
-    raise ValueError(f"OpenFF Sage dispersion policy is undefined for shape {shape!r}")
+    """Return the shared dispersion policy for an OpenFF Sage build."""
+    return _dispersion_policy("openff", shape)
 
 
 def reduced_periodic_box(box: FloatArray) -> FloatArray:
@@ -363,6 +367,13 @@ def _mapped_coordinates(crystal: BulkCrystal, molecule: Any, boundary: str) -> G
     names: list[str] = []
     residues: list[int] = []
     chains: list[int] = []
+    placer = (
+        HydroxylHydrogenPlacer(
+            crystal.atom_labels, crystal.cartesian_coordinates, crystal.basis_vectors
+        )
+        if crystal.allomorph == "II"
+        else None
+    )
     for chain in chain_numbers:
         order = _residue_order(crystal, chain, periodic)
         targets = {
@@ -405,19 +416,25 @@ def _mapped_coordinates(crystal: BulkCrystal, molecule: Any, boundary: str) -> G
                 carbon = "C" + name[2]
                 transform = hydrogen_transforms[residue]
                 aligned_h = _transform(_INTERNAL_REFERENCE[name], transform)
-                coordinate = tetrahedral_hydroxyl_hydrogen(
+                assert placer is not None
+                placer.request(
+                    len(output),
                     target[carbon],
                     target[oxygen],
                     aligned_h,
-                    avoid_coordinates=crystal.cartesian_coordinates,
-                    periodic_box=crystal.basis_vectors,
+                    donor=oxygen,
+                    preferred_acceptor="O5" if oxygen == "O3" else None,
                 )
+                coordinate = np.zeros(3)
             else:
                 coordinate = target[name]
             output.append(coordinate)
             names.append(name)
             residues.append(residue)
             chains.append(chain)
+    if placer is not None:
+        for index, coordinate in placer.resolve().items():
+            output[index] = coordinate
     coordinates = np.vstack(output)
     coordinates.setflags(write=False)
     return GlycamMappedSystem(
@@ -535,16 +552,15 @@ def write_sage_outputs(
         topology, charge_from_molecules=[build.molecule]
     )
     interchange.positions = build.mapped.cartesian_coordinates * unit.angstrom
-    prefix = str(output_directory / "structure")
-    interchange.to_gromacs(prefix, decimal=8)
-    generated_top = output_directory / "structure.top"
-    system_top = output_directory / "system.top"
-    generated_top.replace(system_top)
-    gro = output_directory / "structure.gro"
-    # Interchange writes this helper for its internal point-energy driver.  It
-    # is not part of the supported CelluloseForge output and its defaults may
-    # differ from the geometry-aware inputs written below.
-    (output_directory / "structure_pointenergy.mdp").unlink(missing_ok=True)
+    write_gromacs = "gromacs" in engines
+    if write_gromacs:
+        prefix = str(output_directory / "structure")
+        interchange.to_gromacs(prefix, decimal=8)
+        (output_directory / "structure.top").replace(output_directory / "system.top")
+        # Interchange writes this helper for its internal point-energy driver.
+        # It is not part of the supported CelluloseForge output and its
+        # defaults may differ from the geometry-aware inputs written below.
+        (output_directory / "structure_pointenergy.mdp").unlink(missing_ok=True)
 
     periodic = build.chain_boundary == "periodic"
     system = interchange.to_openmm_system(
@@ -576,63 +592,55 @@ def write_sage_outputs(
                 handle,
                 keepIds=True,
             )
-        # topology.cif carries coordinates and box vectors and is the
-        # generated smoke-test runner's single source of initial state.
-        runner = output_directory / "run_openmm.py"
-        runner.write_text(
-            """from pathlib import Path
-
-import openmm
-from openmm import app, unit
-
-root = Path(__file__).resolve().parent
-system = openmm.XmlSerializer.deserialize((root / "system.xml").read_text())
-pdbx = app.PDBxFile(str(root / "topology.cif"))
-integrator = openmm.LangevinMiddleIntegrator(
-    300 * unit.kelvin, 1 / unit.picosecond, 0.001 * unit.picoseconds
-)
-simulation = app.Simulation(pdbx.topology, system, integrator)
-simulation.context.setPositions(pdbx.positions)
-simulation.minimizeEnergy()
-simulation.step(1000)
-""",
+        # The starting state carries positions and box vectors; the runner is
+        # the same configurable OpenMM runner used for GLYCAM and CHARMM36.
+        context = openmm.Context(
+            system,
+            openmm.VerletIntegrator(0.001),
+            openmm.Platform.getPlatformByName("Reference"),
+        )
+        context.setPeriodicBoxVectors(*interchange.box.to_openmm())
+        context.setPositions(interchange.positions.to_openmm())
+        (output_directory / OPENMM_STATE_FILE).write_text(
+            openmm.XmlSerializer.serialize(context.getState(getPositions=True)),
             encoding="utf-8",
         )
-    dispcorr = "EnerPres" if dispersion_correction else "no"
-    periodic_molecules = "yes" if periodic else "no"
-    minim = f"""integrator = steep
-emtol = 1000
-nsteps = 5000
-cutoff-scheme = Verlet
-coulombtype = PME
-rcoulomb = 0.9
-vdwtype = Cut-off
-vdw-modifier = Potential-switch
-rvdw-switch = 0.8
-rvdw = 0.9
-DispCorr = {dispcorr}
-constraints = h-bonds
-periodic-molecules = {periodic_molecules}
-"""
-    nvt = (
-        minim.replace("integrator = steep", "integrator = md").replace(
-            "emtol = 1000\nnsteps = 5000", "dt = 0.001\nnsteps = 1000"
+        del context
+        runner = output_directory / OPENMM_RUNNER_FILE
+        runner.write_text(
+            render_openmm_runner(
+                chain_axis=chain_axis(build.mapped),
+                periodic_chains=periodic,
+                has_restraints=False,
+            ),
+            encoding="utf-8",
         )
-        + """tcoupl = v-rescale
-tc-grps = System
-tau-t = 1.0
-ref-t = 300
-pcoupl = no
-gen-vel = yes
-gen-temp = 300
-gen-seed = 20261112
-"""
-    )
-    (output_directory / "minim.mdp").write_text(minim, encoding="utf-8")
-    (output_directory / "nvt.mdp").write_text(nvt, encoding="utf-8")
+        runner.chmod(0o755)
+    outputs: dict[str, str] = {}
+    if write_gromacs:
+        outputs.update(
+            {
+                "gromacs_coordinates": "structure.gro",
+                "gromacs_topology": "system.top",
+                **write_gromacs_run_inputs(
+                    output_directory,
+                    force_field="openff",
+                    periodic_chains=periodic,
+                    dispersion=dispersion_correction,
+                ),
+            }
+        )
+    if "openmm" in engines:
+        outputs.update(
+            {
+                "openmm_system": "system.xml",
+                "openmm_state": OPENMM_STATE_FILE,
+                "openmm_topology": "topology.cif",
+                "openmm_runner": OPENMM_RUNNER_FILE,
+            }
+        )
     return {
-        "gromacs_coordinates": gro.name,
-        "gromacs_topology": system_top.name,
+        **outputs,
         "openmm_written": "openmm" in engines,
         "periodic_forces": sorted(set(periodic_forces)),
         "dispersion_correction": dispersion_correction,

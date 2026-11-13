@@ -60,7 +60,6 @@ from cellulose_forge.openff_sage import (
     SAGE_FORCE_FIELD,
     VALIDATION_SCOPE,
     build_sage_system,
-    dispersion_correction_for_shape,
     periodic_box_heights,
     write_sage_outputs,
     write_sage_report,
@@ -75,6 +74,14 @@ from cellulose_forge.restraints import (
     group_mapped_chains,
     resolve_chain_restraints,
 )
+from cellulose_forge.run_inputs import (
+    GROMACS_CUTOFF_ANGSTROM,
+    INTERACTION_RANGE_ANGSTROM,
+    dispersion_correction,
+    is_vacuum_shape,
+    write_amber_run_inputs,
+    write_gromacs_run_inputs,
+)
 
 _CELLULOSE_ALLOMORPHS = {
     "I-alpha": "i_alpha",
@@ -87,7 +94,6 @@ _CHITIN_SHAPES = {"unit-cell", "bulk", "crystal", "slab"}
 _MANNAN_ALLOMORPHS = {"I": "i"}
 _MANNAN_SHAPES = {"unit-cell", "bulk", "crystal"}
 _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 3.0
-_MINIMUM_OPENFF_BULK_EDGE_ANGSTROM = 18.0
 _RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 12.0
 
 
@@ -388,10 +394,13 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         else:
             crystal = _build_fibril(args, definition, build_parser())
         if args.force_field == "glycam":
+            _check_force_field_box(args, crystal, build_parser())
             _write_glycam_build(args, crystal, build_parser())
         elif args.force_field == "charmm36":
+            _check_force_field_box(args, crystal, build_parser())
             _write_charmm36_build(args, crystal, build_parser(), definition)
         elif args.force_field == "openff":
+            _check_force_field_box(args, crystal, build_parser())
             _write_openff_build(args, crystal, build_parser(), definition)
         else:
             if any(
@@ -616,7 +625,7 @@ def _write_openmm_output(  # noqa: PLR0913
             gromacs_coordinates,
             args.output,
             periodic_chains=args.chain_boundary == "periodic",
-            dispersion_correction=args.shape in {"bulk", "crystal", "unit-cell"},
+            dispersion_correction=dispersion_correction(args.force_field, args.shape),
             restraints=(
                 None
                 if restraints is None
@@ -647,9 +656,7 @@ def _write_lammps_output(  # noqa: PLR0913
             gromacs_coordinates,
             args.output,
             force_field=args.force_field,
-            dispersion_correction=(
-                args.force_field == "glycam" and args.shape in {"bulk", "crystal", "unit-cell"}
-            ),
+            dispersion_correction=dispersion_correction(args.force_field, args.shape),
             python_executable=args.openmm_python,
             polymer=args.polymer,
         )
@@ -684,6 +691,53 @@ def _engine_outputs(
     return outputs
 
 
+def _check_force_field_box(
+    args: argparse.Namespace,
+    crystal: BulkCrystal,
+    parser: argparse.ArgumentParser,
+) -> None:
+    """Apply the same box and vacuum rules to every force-field build.
+
+    The box rule uses the GROMACS/OpenMM real-space cutoff because both apply
+    the minimum-image convention (and LAMMPS output is converted through an
+    OpenMM system).  LAMMPS itself replicates ghost atoms for every image, so
+    its longer CHARMM36 force-switch range needs no larger box.
+    """
+    cutoff = GROMACS_CUTOFF_ANGSTROM[args.force_field]
+    if min(periodic_box_heights(crystal.basis_vectors)) <= 2.0 * cutoff:
+        remedy = (
+            "increase --cells"
+            if args.shape in {"bulk", "crystal", "unit-cell"}
+            else "increase --degree-polymerization, the padding, or the vacuum"
+        )
+        parser.error(
+            f"the periodic box must exceed twice the {cutoff:g} angstrom nonbonded "
+            f"cutoff in every direction; {remedy}"
+        )
+    if not is_vacuum_shape(args.shape):
+        return
+    # Slabs and fibrils are run without dispersion correction on the premise of
+    # transverse vacuum.  The vacuum is the user's choice; warn only when
+    # periodic images come within the longest generated interaction range.
+    gaps = (
+        [args.vacuum]
+        if args.shape == "slab"
+        else [
+            args.vacuum if args.padding_x is None else args.padding_x,
+            args.vacuum if args.padding_y is None else args.padding_y,
+        ]
+    )
+    interaction_range = INTERACTION_RANGE_ANGSTROM[args.force_field]
+    if min(gaps) < interaction_range:
+        warnings.warn(
+            f"the {args.shape} has less than {interaction_range:g} angstrom of transverse "
+            "vacuum, so periodic images interact; dispersion correction is still "
+            "disabled for this vacuum geometry (use --vacuum 20 or greater)",
+            UserWarning,
+            stacklevel=1,
+        )
+
+
 def _write_openff_build(
     args: argparse.Namespace,
     crystal: BulkCrystal,
@@ -693,33 +747,22 @@ def _write_openff_build(
     """Write the deliberately bounded experimental OpenFF Sage workflow."""
     if args.polymer != "cellulose":
         parser.error("experimental OpenFF Sage support is limited to cellulose")
-    if args.shape == "fibril":
-        parser.error("experimental OpenFF Sage fibril output is not validated")
     if args.shape == "unit-cell":
         parser.error(
-            "experimental OpenFF Sage supports finite slabs, periodic slabs, "
-            "and periodic bulk crystals"
+            "experimental OpenFF Sage supports finite and periodic slabs and "
+            "fibrils, and periodic bulk crystals"
         )
     if args.shape in {"bulk", "crystal"} and args.chain_boundary != "periodic":
         parser.error("experimental OpenFF Sage bulk crystals require periodic chains")
-    if args.shape == "slab" and args.chain_boundary not in {"finite", "periodic"}:
-        parser.error("OpenFF Sage slabs require --chain-boundary finite or periodic")
-    if args.shape not in {"slab", "bulk", "crystal"}:
+    if args.shape in {"slab", "fibril"} and args.chain_boundary not in {"finite", "periodic"}:
+        parser.error(f"OpenFF Sage {args.shape}s require --chain-boundary finite or periodic")
+    if args.shape not in {"slab", "fibril", "bulk", "crystal"}:
         parser.error("this geometry is outside the validated OpenFF Sage scope")
     if any(
         value is not None
         for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
     ):
         parser.error("OpenFF Sage position restraints are not implemented")
-    if (
-        args.shape in {"bulk", "crystal"}
-        and min(periodic_box_heights(crystal.basis_vectors))
-        <= _MINIMUM_OPENFF_BULK_EDGE_ANGSTROM
-    ):
-        parser.error(
-            "OpenFF Sage bulk boxes must exceed twice the 9 angstrom cutoff "
-            "in every direction; increase --cells"
-        )
     if args.output.suffix:
         parser.error("--output must be a directory for --force-field openff")
     warnings.warn(
@@ -730,7 +773,7 @@ def _write_openff_build(
     )
     try:
         build = build_sage_system(crystal, args.chain_boundary)
-        dispersion = dispersion_correction_for_shape(args.shape)
+        dispersion = dispersion_correction("openff", args.shape)
         outputs = write_sage_outputs(
             build,
             args.output,
@@ -763,11 +806,20 @@ def _write_openff_build(
         },
         "validation_scope": VALIDATION_SCOPE,
     }
+    if args.shape == "fibril":
+        report["fibril"] = {
+            "model": args.fibril_model or "custom",
+            "row_profile": list(args.fibril_profile) if args.fibril_profile else None,
+        }
     if crystal.allomorph == "II":
         report["generated_force_field_coordinates"] = {
             "atoms": ["HO2", "HO3", "HO6"],
             "scope": "each anhydroglucose residue",
-            "method": "tetrahedral C-O-H placement from the aligned reference torsion",
+            "method": (
+                "tetrahedral C-O-H placement, class by class (HO3, HO2, HO6); "
+                "intrachain O3-H...O5 first, otherwise the clash-free torsion with "
+                "the best geometric hydrogen bond, otherwise the aligned reference torsion"
+            ),
             "geometry": "0.96 A O-H and 108.5 degree C-O-H",
             "reason": "hydroxyl-hydrogen coordinates are absent from the diffraction dataset",
             "requires_minimization_or_restrained_relaxation": True,
@@ -860,6 +912,17 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             restraint_force=restraints.force_constants if restraints else None,
             polymer=args.polymer,
         )
+        gromacs_run_inputs = (
+            write_gromacs_run_inputs(
+                args.output,
+                force_field="charmm36",
+                periodic_chains=args.chain_boundary == "periodic",
+                dispersion=dispersion_correction("charmm36", args.shape),
+                restraint_define=f"POSRES_{args.polymer.upper()}" if restraints else None,
+            )
+            if write_gromacs
+            else {}
+        )
         if args.chain_boundary == "periodic":
             written_periodic_bond_validation = _validate_written_periodic_topology(
                 mapped, itp_path, topology_path, parser
@@ -910,6 +973,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                 "gromacs_molecule_topology": itp_path.name,
                 "gromacs_topology": topology_path.name,
                 "gromacs_force_field": force_field_path.name,
+                **gromacs_run_inputs,
             }
             if write_gromacs
             else {},
@@ -1082,11 +1146,19 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             )
 
     engine_files: dict[str, str] = {}
+    dispersion = dispersion_correction("glycam", args.shape)
     if gro_path is not None and topology_path is not None:
         engine_files.update(
             {
                 "gromacs_coordinates": gro_path.name,
                 "gromacs_topology": topology_path.name,
+                **write_gromacs_run_inputs(
+                    output_directory,
+                    force_field="glycam",
+                    periodic_chains=chain_boundary == "periodic",
+                    dispersion=dispersion,
+                    restraint_define="POSRES_CELLULOSE" if restraints else None,
+                ),
             }
         )
     if amber_topology_path is not None and amber_coordinate_path is not None:
@@ -1094,6 +1166,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             {
                 "amber_topology": amber_topology_path.name,
                 "amber_coordinates": amber_coordinate_path.name,
+                **write_amber_run_inputs(output_directory, dispersion=dispersion),
             }
         )
     outputs = _engine_outputs(coordinate_path, engine_files, openmm_files, lammps_files)
@@ -1145,7 +1218,9 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             "atoms": ["HO2", "HO3", "HO6"],
             "scope": "each anhydroglucose residue",
             "method": (
-                "tetrahedral C-O-H placement from the C1/C3/C5-aligned "
+                "tetrahedral C-O-H placement, class by class (HO3, HO2, HO6); "
+                "intrachain O3-H...O5 first, otherwise the clash-free torsion with "
+                "the best geometric hydrogen bond, otherwise the C1/C3/C5-aligned "
                 "GLYCAM reference torsion"
             ),
             "geometry": "0.96 A O-H and 108.5 degree C-O-H",

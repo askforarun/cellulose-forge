@@ -1,9 +1,13 @@
 # Simulation-ready example inputs
 
 Small systems for trying each MD engine. Every folder holds the files that
-`cellulose-forge build` wrote, plus starting run inputs (`minim.mdp`,
-`nvt.mdp`, and `min.in` for Amber). `build_report.json` in each folder records
-the exact build and its validation; machine-local paths are redacted.
+`cellulose-forge build` wrote, including its starting run inputs:
+`minim.mdp` and `nvt.mdp` for GROMACS, the configurable `run_openmm.py` for
+OpenMM, and `min.in` and `nvt.in` for Amber. Every force field follows the
+same rule for long-range dispersion correction: GLYCAM06 and OpenFF Sage use it
+only for bulk crystals and unit cells; CHARMM36 never uses it; slabs and
+fibrils never use it. `build_report.json` in each folder records the exact
+build and its validation; machine-local paths are redacted.
 
 | Folder | System | Atoms | Chains x DP | GROMACS | OpenMM | LAMMPS | Amber |
 |---|---|---|---|---|---|---|---|
@@ -21,9 +25,11 @@ two layers thick and DP 6, and the run inputs are smoke-test protocols. Choose
 system size, equilibration, and production settings for your own study.
 The OpenFF bulk folder additionally contains a 1 ns gently coupled
 Parrinello--Rahman anisotropic NPT
-equilibration template and a 50 ns Parrinello--Rahman anisotropic production
+equilibration template and a 100 ns Parrinello--Rahman anisotropic production
 template. These are starting protocols for the planned stability assessment;
-their presence is not a stability result.
+their presence is not a stability result. The isotropic compressibility of
+water (4.5e-5 bar^-1) is used only to set the barostat response, as is
+conventional; it is not a property of crystalline cellulose.
 
 ## Rebuilding
 
@@ -93,10 +99,11 @@ lmp -in in.chitin      # chitin examples
 lmp -in in.cellulose   # cellulose examples
 ```
 
-Amber (GLYCAM folder only):
+Amber (GLYCAM folder only; minimization, then 1 ps NVT):
 
 ```bash
 sander -O -i min.in -p structure.prmtop -c structure.inpcrd -o min.out -r min.rst7
+sander -O -i nvt.in -p structure.prmtop -c min.rst7 -o nvt.out -r nvt.rst7 -x nvt.nc
 ```
 
 ## Checked

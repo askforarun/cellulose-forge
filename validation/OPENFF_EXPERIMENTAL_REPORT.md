@@ -5,7 +5,9 @@
 The `feature/openff-sage` milestone replaces the validation-only PDB/SMILES
 loader with a direct CelluloseForge molecular-graph builder. It supports
 finite and periodic cellulose slabs and periodic bulk crystals for all four
-cellulose allomorphs, using NAGL charges and GROMACS/OpenMM outputs without
+cellulose allomorphs, and finite and periodic fibrils (the literature 36-chain
+fibril for I-alpha, I-beta and II; the I-beta 18- and 24-chain presets and
+custom row profiles), using NAGL charges and GROMACS/OpenMM outputs without
 AmberTools. Every build checks C1--C5 signed stereochemical parity, neutrality,
 and periodic equivalent-atom charge equality.
 
@@ -20,9 +22,25 @@ For the detailed cross-engine point comparison, the correction is disabled in
 both engines to isolate the shared base potential from engine-specific
 long-range-correction conventions.
 
-Every detailed energy term is compared with a relative tolerance of
-`1e-5`. This accommodates mixed-precision rounding of the large aggregate
-electrostatic terms without assigning looser, term-specific thresholds.
+Every detailed energy term is compared with the empirical mixed-precision
+acceptance criterion `max(1e-5, 4 eps32 sqrt(N))` (relative), where
+`eps32 = 2^-24` and `N` is the number of interactions summed into that term
+(bonds, angles, torsions or 1-4 pairs; `N` is zero for the PME terms). It is
+not a general floating-point bound: rounding error also depends on term
+magnitudes, ordering and cancellation.
+
+`validation/measure_openff_mixed_precision.py` records the evidence in
+`validation/results/openff_mixed_precision_accumulation.json`. For the
+36-chain I-alpha finite fibril, OpenMM's CPU and double-precision Reference
+platforms agree to 1e-14 for the bonded terms, while both differ from
+mixed-precision GROMACS by 1.4e-5 (angles) and 2.2e-5 (torsions). Rounding the
+coordinates to single precision leaves these gaps unchanged, whereas summing
+the double-precision OpenMM per-interaction energies sequentially in single
+precision gives 1.8e-5 (8,892 angles) and 2.0e-5 (22,608 torsions), that is
+3.22 and 2.25 eps32 sqrt(N). For slab-sized systems the fixed 1e-5 floor
+governs, so their acceptance criterion is unchanged. If any case exceeds the
+criterion, the escalation check is a comparison against a double-precision
+GROMACS build.
 
 This establishes model construction and cross-engine transcription only.
 OpenFF Sage accuracy and transferability for crystalline cellulose have not
@@ -33,10 +51,10 @@ allomorph:
 
 | Allomorph | Replication | Atoms | Largest OpenMM bond change after 1 ps NVT (A) |
 | --- | ---: | ---: | ---: |
-| Ialpha | 3 x 3 x 4 | 1512 | 0.114 |
-| Ibeta | 3 x 3 x 2 | 1512 | 0.114 |
-| II | 3 x 3 x 2 | 1512 | 0.100 |
-| III-I | 5 x 3 x 2 | 1260 | 0.112 |
+| Ialpha | 3 x 3 x 4 | 1512 | 0.100 |
+| Ibeta | 3 x 3 x 2 | 1512 | 0.110 |
+| II | 3 x 3 x 2 | 1512 | 0.101 |
+| III-I | 5 x 3 x 2 | 1260 | 0.120 |
 
 For each case, the seven required energy categories were present, the
 cross-engine comparison passed, and both engines completed minimization and a
@@ -49,7 +67,91 @@ deserializes `system.xml`, preprocesses and runs the shipped GROMACS MDP files
 with zero warnings, and checks both OpenMM nonbonded force objects. For the
 bulk case, the OpenMM and GROMACS long-range corrections differ by 0.35% and
 their corrected total potentials by 0.023%; both differences and tolerances
-are recorded in `validation/results/openff_shipped_outputs.json`.
+are recorded in `validation/results/openff_shipped_outputs.json`. The
+serialized dispersion flags are read before the validator modifies the system.
+The 5e-4 relative total-potential tolerance reflects the production PME
+accuracy of the shipped files (OpenMM error tolerance 5e-4, GROMACS PME order
+4); the term-by-term matrices use 1e-6 Ewald tolerance and PME order 8.
+
+## Fibril results
+
+`validation/validate_openff_fibrils.py` builds every fibril geometry offered
+for OpenFF (DP 6, 20 A transverse vacuum, 12 A longitudinal padding for finite
+chains) and passes all ten cases. Each checks stereochemistry at every C1--C5
+centre, NAGL charge neutrality and periodic equivalence, all seven detailed
+energy terms against GROMACS, and GROMACS plus one-thread CPU OpenMM
+minimization and 1 ps NVT. Dispersion correction is disabled, as for slabs,
+because fibrils are surrounded by vacuum.
+
+| Allomorph | Fibril | Chains | Atoms | Largest OpenMM bond change (A) | Tightest energy term (relative difference / tolerance) |
+| --- | --- | --- | ---: | ---: | --- |
+| I-alpha | 36-chain | finite | 4644 | 0.115 | Angle 1.4e-05 / 2.2e-05 |
+| I-alpha | 36-chain | periodic | 4536 | 0.120 | Angle 1.9e-05 / 2.2e-05 |
+| I-beta | 36-chain | finite | 4644 | 0.117 | Bond 3.5e-06 / 1.2e-05 |
+| I-beta | 36-chain | periodic | 4536 | 0.121 | Electrostatics 1-4 1.1e-05 / 2.8e-05 |
+| II | 36-chain | finite | 4644 | 0.118 | Bond 6.5e-06 / 1.2e-05 |
+| II | 36-chain | periodic | 4536 | 0.121 | Bond 7.8e-06 / 1.2e-05 |
+| I-beta | 18-chain | finite | 2322 | 0.118 | Electrostatics 3.4e-06 / 1.0e-05 |
+| I-beta | 24-chain | finite | 3096 | 0.112 | Electrostatics 7.0e-06 / 1.0e-05 |
+| I-beta | 24-chain | periodic | 3024 | 0.137 | Electrostatics 1-4 1.2e-05 / 2.3e-05 |
+| I-beta | custom 2,3,3,2 | finite | 1290 | 0.120 | Bond 4.3e-06 / 1.0e-05 |
+
+The tightest margin is the I-alpha periodic 36-chain angle sum (86% of its
+single-precision tolerance). A double-precision GROMACS build would remove the
+accumulation term entirely and is the recommended check if this margin is
+ever exceeded. The shipped-output validator additionally runs the exact files
+written for a periodic 36-chain I-beta fibril; both OpenMM nonbonded forces
+are serialized with dispersion correction off, and the shipped total potentials
+agree to 4.9e-5 relative.
+
+## Cellulose II hydroxyl hydrogens
+
+The cellulose II diffraction model has no HO2, HO3 or HO6 coordinates. Both
+the GLYCAM and OpenFF builders place them on an exact tetrahedral cone (0.96 A
+O-H, 108.5 degree C-O-H), class by class (HO3, then HO2, then HO6). Each
+hydrogen sees the crystal and every hydrogen of earlier classes, but not other
+members of its own class, so symmetry-equivalent hydroxyls are treated
+identically and the result does not depend on the order in which a builder
+visits atoms. HO3 takes the intrachain O3-H...O5 bond, present in every
+cellulose allomorph, whenever a clash-free torsion can form it. Otherwise the
+builder chooses, among torsions keeping at least 2.0 A to hydrogen, 1.6 A to
+oxygen and 2.0 A to other heavy atoms, the one with the best geometric
+hydrogen-bond quality (the product of linearity between 120 and 180 degrees and
+closeness between 2.6 and 1.8 A), with the reference torsion as tie-break and
+fallback.
+
+`validation/validate_cellulose_ii_hydroxyls.py` records the resulting network
+per chain in `validation/results/cellulose_ii_hydroxyl_network.json`. In a
+2 x 2 x 6 periodic crystal every hydroxyl hydrogen-bonds, identically in all
+equivalent residues, and the GLYCAM and OpenFF builders give the same network:
+
+| Chain | O2-H | O3-H | O6-H |
+| --- | --- | --- | --- |
+| origin | O2 of a center chain (intersheet), 1.96 A, 172 deg | O5 of the next residue, 1.85 A, 168 deg | O2 of an origin chain, 1.83 A, 167 deg |
+| center | O6 of a center chain, 1.60 A, 160 deg | O5 of the next residue, 1.82 A, 161 deg | O6 of an origin chain, 1.85 A, 167 deg |
+
+This matches the published cellulose II scheme (Langan, Nishiyama and Chanzy,
+J. Am. Chem. Soc. 1999): intrachain O3-H...O5 in both chains, intermolecular
+O2-H...O6 and O6-H...O6, and intersheet O2-H...O2. The origin-chain O6-H...O2
+bond is the reverse of the published O2-H...O6 sense; the OH2 and OH6
+directions are those the literature reports as least certain. The center-chain
+O2-H...O6 contact (1.60 A) is set by the short experimental O2...O6 distance
+and relaxes on minimization. The build report marks these atoms as modelled
+and requiring minimization or restrained relaxation.
+
+The closest contacts of any modelled hydrogen, excluding its own O and C, are
+2.03 A to hydrogen and 2.40 A to carbon; the closest oxygen (1.60 A) is the
+intended center-chain O2-H...O6 acceptor. The torsion grid is anchored to a
+fixed global direction, so the GLYCAM and OpenFF builders place identical
+hydrogens (tested to 1e-6 A on a 2 x 2 x 6 crystal).
+
+Placement uses a periodic cell list whose bins are at least 4.5 A wide
+perpendicular to every lattice face. A regression test compares it with a
+single-bin brute-force search on a triclinic I-alpha crystal, as built and
+shifted across every periodic face, and finds identical positions to 1e-9 A.
+The same script times placement at four sizes: approximately 0.76 ms per
+hydroxyl from 4,320 to 34,560 atoms (4.36 s for 34,560 atoms), so the cost grows linearly with
+system size.
 
 ## Status
 
@@ -146,22 +248,23 @@ and 1 ps NVT.
 
 | Case | NAGL maximum OpenMM bond change | AM1-BCC maximum OpenMM bond change |
 |---|---:|---:|
-| I-alpha (010) | 0.098 A | 0.106 A |
-| I-beta (110) | 0.109 A | 0.104 A |
-| II (110) | 0.094 A | 0.105 A |
-| III-I (110) | 0.117 A | 0.109 A |
+| I-alpha (010) | 0.093 A | 0.092 A |
+| I-beta (110) | 0.103 A | 0.103 A |
+| II (110) | 0.093 A | 0.103 A |
+| III-I (110) | 0.104 A | 0.099 A |
 
-The largest absolute OpenMM/GROMACS discrepancy per atom is:
+The largest relative OpenMM/GROMACS difference for each term, across the four
+allomorphs, is (allowed: 1.0e-5 for every term):
 
-| Energy term | NAGL (kJ mol-1 atom-1) | AM1-BCC (kJ mol-1 atom-1) | Allowed |
+| Energy term | Finite NAGL | Finite AM1-BCC | Periodic NAGL |
 |---|---:|---:|---:|
-| Bonds | 1.43e-5 | 1.43e-5 | 2.0e-5 |
-| Angles | 3.94e-6 | 3.94e-6 | 2.0e-5 |
-| Torsions | 8.95e-7 | 8.95e-7 | 2.0e-5 |
-| vdW | 1.49e-6 | 1.49e-6 | 1.0e-5 |
-| vdW 1-4 | 2.04e-6 | 2.15e-6 | 2.0e-5 |
-| Electrostatics | 2.78e-5 | 2.67e-5 | 5.0e-5 |
-| Electrostatics 1-4 | 1.36e-5 | 9.97e-6 | 2.0e-5 |
+| Bonds | 2.2e-6 | 2.2e-6 | 1.8e-6 |
+| Angles | 2.5e-6 | 2.5e-6 | 4.4e-6 |
+| Torsions | 2.5e-7 | 2.5e-7 | 3.0e-7 |
+| vdW | 1.2e-6 | 1.2e-6 | 3.8e-7 |
+| vdW 1-4 | 1.6e-6 | 1.6e-6 | 1.7e-6 |
+| Electrostatics | 1.7e-6 | 1.5e-6 | 2.0e-6 |
+| Electrostatics 1-4 | 7.0e-7 | 5.2e-7 | 6.6e-7 |
 
 All seven required energy categories must be present in both engines; a
 missing term is an error rather than being silently omitted.
@@ -177,16 +280,22 @@ rejected in every case.
 
 Each system has eight O4--C1 bonds crossing the periodic boundary. Minimum-
 image checks cover those boundary bonds and all 1,056 bonds before and after
-OpenMM minimization and 1 ps NVT. The largest change in any bond is 0.122 A
-for I-alpha, 0.104 A for I-beta, 0.108 A for II, and 0.097 A for III-I. Final
-boundary-crossing O4--C1 bonds span 1.361--1.475 A across the matrix. The
-largest OpenMM/GROMACS point-energy difference is 3.24e-5 kJ mol-1 atom-1,
-from electrostatics; all seven required categories pass their tolerances.
+OpenMM minimization and 1 ps NVT. The largest change in any bond is 0.089 A
+for I-alpha, 0.097 A for I-beta, 0.101 A for II, and 0.099 A for III-I. Final
+boundary-crossing O4--C1 bonds span 1.353--1.512 A across the matrix. The
+largest relative OpenMM/GROMACS point-energy difference is 4.4e-6 (angles);
+all seven required categories pass the 1e-5 relative tolerance.
 
-All OpenMM minimization and NVT checks use the CPU platform with one thread,
-and the platform and properties are recorded in every case. This removes
-platform selection and CPU thread scheduling as sources of regenerated-value
-drift.
+All OpenMM minimization and NVT checks use the CPU platform with one thread
+and a seeded Langevin thermostat,
+and the platform and properties are recorded in every case. The fibril and
+bulk matrices reproduce their minimization and NVT results exactly from run to
+run. The finite- and periodic-slab validators do not: repeated runs of one
+finite slab give minimized potentials differing by about 0.03% and
+maximum bond changes differing by up to about 0.01 A, so their stored dynamics
+values carry that scatter. The point-energy comparisons are deterministic, and
+no pass/fail outcome depends on it; the source of the slab minimization
+variation has not yet been isolated.
 
 The current periodic dynamics check is OpenMM-only. GROMACS is used for the
 independent point-energy comparison, but periodic GROMACS minimization and NVT

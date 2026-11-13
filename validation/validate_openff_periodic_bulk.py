@@ -31,7 +31,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "validation"))
 
+from _provenance import provenance  # noqa: E402
 from validate_openff_finite_slab import (  # noqa: E402
+    bonded_term_counts,
     compare_energy_terms,
     energies,
 )
@@ -91,6 +93,15 @@ nstlog = 100
 nstxout-compressed = 100
 """
 )
+
+
+def _with_policy(mdp: str, *, periodic: bool, dispersion: bool) -> str:
+    """Apply the chain-boundary and dispersion policy to a bulk-style MDP."""
+    if not periodic:
+        mdp = mdp.replace("periodic-molecules = yes", "periodic-molecules = no")
+    if not dispersion:
+        mdp = mdp.replace("DispCorr = EnerPres", "DispCorr = no")
+    return mdp
 
 
 def _replication(allomorph: str) -> tuple[int, int, int]:
@@ -154,11 +165,13 @@ def _openmm_energies(interchange: object, periodic: bool = True) -> dict[str, fl
     return energies(_process(raw, system=system, combine_nonbonded_forces=False, detailed=True))
 
 
-def _gromacs_energies(interchange: object, directory: Path) -> dict[str, float]:
+def _gromacs_energies(
+    interchange: object, directory: Path, *, periodic: bool = True
+) -> dict[str, float]:
     prefix = str(directory / "structure")
     interchange.to_gromacs(prefix, decimal=8)  # type: ignore[attr-defined]
     mdp = directory / "point.mdp"
-    mdp.write_text(POINT_MDP, encoding="utf-8")
+    mdp.write_text(_with_policy(POINT_MDP, periodic=periodic, dispersion=False), encoding="utf-8")
     with chdir(directory):
         subprocess.run(
             [
@@ -190,11 +203,18 @@ def _gromacs_energies(interchange: object, directory: Path) -> dict[str, float]:
     return values
 
 
-def _run_gromacs(interchange: object, directory: Path) -> dict[str, object]:
+def _run_gromacs(
+    interchange: object,
+    directory: Path,
+    *,
+    periodic: bool = True,
+    dispersion: bool = True,
+) -> dict[str, object]:
     prefix = str(directory / "structure")
     interchange.to_gromacs(prefix, decimal=8)  # type: ignore[attr-defined]
-    (directory / "minim.mdp").write_text(MINIM_MDP, encoding="utf-8")
-    (directory / "nvt.mdp").write_text(NVT_MDP, encoding="utf-8")
+    policy = {"periodic": periodic, "dispersion": dispersion}
+    (directory / "minim.mdp").write_text(_with_policy(MINIM_MDP, **policy), encoding="utf-8")
+    (directory / "nvt.mdp").write_text(_with_policy(NVT_MDP, **policy), encoding="utf-8")
     commands = (
         [
             "gmx",
@@ -274,7 +294,13 @@ def _bond_lengths(positions: np.ndarray, box: np.ndarray, build: object) -> np.n
     )
 
 
-def _run_openmm(build: object, interchange: object) -> dict[str, object]:
+def _run_openmm(
+    build: object,
+    interchange: object,
+    *,
+    periodic: bool = True,
+    dispersion: bool = True,
+) -> dict[str, object]:
     system = interchange.to_openmm_system(  # type: ignore[attr-defined]
         combine_nonbonded_forces=False,
         add_constrained_forces=True,
@@ -282,11 +308,11 @@ def _run_openmm(build: object, interchange: object) -> dict[str, object]:
     )
     for force in system.getForces():
         if isinstance(force, openmm.NonbondedForce):
-            force.setUseDispersionCorrection(True)
-            force.setExceptionsUsePeriodicBoundaryConditions(True)
+            force.setUseDispersionCorrection(dispersion)
+            force.setExceptionsUsePeriodicBoundaryConditions(periodic)
         elif isinstance(force, openmm.CustomNonbondedForce):
-            force.setUseLongRangeCorrection(True)
-        elif hasattr(force, "setUsesPeriodicBoundaryConditions"):
+            force.setUseLongRangeCorrection(dispersion)
+        elif periodic and hasattr(force, "setUsesPeriodicBoundaryConditions"):
             force.setUsesPeriodicBoundaryConditions(True)
     platform = openmm.Platform.getPlatformByName("CPU")
     properties = {"Threads": "1"}
@@ -302,6 +328,8 @@ def _run_openmm(build: object, interchange: object) -> dict[str, object]:
         1 / openmm.unit.picosecond,
         0.001 * openmm.unit.picoseconds,
     )
+    # Seed the thermostat noise so stored NVT results are reproducible.
+    integrator.setRandomNumberSeed(20261112)
     context = openmm.Context(system, integrator, platform, properties)
     context.setPeriodicBoxVectors(*interchange.box.to_openmm())  # type: ignore[attr-defined]
     context.setPositions(minimized.getPositions())
@@ -343,7 +371,13 @@ def validate_case(allomorph: str) -> dict[str, object]:
         directory = Path(temporary)
         openmm_values = _openmm_energies(interchange)
         gromacs_values = _gromacs_energies(interchange, directory)
-        comparison = compare_energy_terms(openmm_values, gromacs_values)
+        comparison = compare_energy_terms(
+            openmm_values,
+            gromacs_values,
+            bonded_term_counts(
+                interchange.to_openmm_system(combine_nonbonded_forces=False)  # type: ignore[attr-defined]
+            ),
+        )
         smoke = _run_gromacs(interchange, directory)
         openmm_smoke = _run_openmm(build, interchange)
     return {
@@ -386,6 +420,9 @@ def main() -> None:
     cases = {name: validate_case(name) for name in names}
     result = {
         "matrix": "periodic cellulose bulk crystals, OpenFF Sage 2.3/NAGL",
+        "provenance": provenance(
+            ("openff-toolkit", "openff-interchange", "openff-nagl", "openff-nagl-models", "openmm")
+        ),
         "validation_scope": (
             "model construction validated; force-field accuracy for cellulose not assessed"
         ),

@@ -256,9 +256,12 @@ and should use at least 12 Å through `--padding-longitudinal`; the validated
 examples use 12--20 Å.
 
 Cellulose II is a separate documented case: its diffraction dataset omits
-HO2, HO3, and HO6. GLYCAM output generates those hydrogen coordinates using
-the aligned force-field hydroxyl directions while preserving GLYCAM O--H bond
-lengths. It does not alter the crystallographic heavy atoms. Cellulose II's
+HO2, HO3, and HO6. GLYCAM and OpenFF output place those hydrogens on an exact
+tetrahedral cone (0.96 A O--H, 108.5 degree C--O--H), class by class (HO3,
+HO2, HO6): HO3 takes the intrachain O3--H...O5 hydrogen bond, and the others
+take the clash-free torsion with the best geometric hydrogen bond. The result
+reproduces the published cellulose II hydrogen-bond network and does not alter
+the crystallographic heavy atoms; minimize before dynamics. Cellulose II's
 origin and center chains are mapped in opposite residue directions so their
 antiparallel beta(1->4) connectivity remains correct. The generated-coordinate
 method is included in `build_report.json`.
@@ -483,9 +486,9 @@ the layer-to-chain expansion and mapping from original chain ID to GROMACS
 molecule index and global atom range. The same selectors work with
 `--force-field charmm36`. The report's `atom_selection` field explicitly records
 the heavy-atom-only policy.
-Enable the restraints in an MDP file with
-`define = -DPOSRES_CELLULOSE` and supply the generated coordinates to
-`gmx grompp` with `-r structure.gro`. Without this define, the same topology
+Enable the restraints by uncommenting the `define = -DPOSRES_CELLULOSE` line
+in the generated `minim.mdp` or `nvt.mdp` (chitin uses `-DPOSRES_CHITIN`), and
+supply the generated coordinates to `gmx grompp` with `-r structure.gro`. Without this define, the same topology
 runs with the restraint section disabled.
 One-character PDB chain labels repeat after 62 chains, so use segment identifiers
 or mmCIF identifiers for larger systems.
@@ -694,7 +697,7 @@ Preprocess and minimize the finite slab:
 
 ```bash
 gmx grompp \
-  -f validation/finite_pme_minim.mdp \
+  -f cellulose_forge_tutorial/ibeta_110_finite_charmm36/minim.mdp \
   -c cellulose_forge_tutorial/ibeta_110_finite_charmm36/structure.gro \
   -p cellulose_forge_tutorial/ibeta_110_finite_charmm36/system.top \
   -o cellulose_forge_tutorial/ibeta_110_finite_charmm36/minim.tpr
@@ -703,9 +706,42 @@ gmx mdrun \
   -deffnm cellulose_forge_tutorial/ibeta_110_finite_charmm36/minim
 ```
 
-Use `validation/periodic_pme_minim.mdp` for periodic bulk crystals and
-periodic fibrils. Do not add chain-direction vacuum to a periodic chain because
+Every force-field build writes this `minim.mdp`, and a 1 ps `nvt.mdp` smoke
+test, matched to its chain boundary and dispersion policy. For CHARMM36 these
+use a plain 1.0 nm cut-off, labelled in the file as smoke-test settings;
+production CHARMM36 runs normally use `vdw-modifier = force-switch`,
+`rvdw-switch = 1.0` and `rvdw = rcoulomb = 1.2`, which needs every box height
+above 2.4 nm. Do not add chain-direction vacuum to a periodic chain because
 that would separate atoms joined by the final-to-first glycosidic bond.
+
+### Experimental OpenFF Sage systems
+
+The optional OpenFF Sage 2.3 backend builds cellulose slabs, fibrils, and
+periodic bulk crystals with NAGL charges, for GROMACS and OpenMM. It needs its
+own environment:
+
+```bash
+conda env create -f environment-openff.yml
+conda activate cellulose-forge-openff
+```
+
+Build a periodic 36-chain I-beta fibril:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta --shape fibril --fibril-model 36-chain \
+  --degree-polymerization 6 --chain-boundary periodic --vacuum 20 \
+  --force-field openff --md-engine gromacs --md-engine openmm \
+  --output cellulose_forge_tutorial/ibeta_fibril_openff
+```
+
+The output has the same layout as the GLYCAM and CHARMM36 builds: GROMACS
+files with `minim.mdp` and `nvt.mdp` (Sage's 0.8--0.9 nm potential switch, no
+dispersion correction for this vacuum-surrounded fibril) and the same
+configurable `run_openmm.py`. The build prints a warning that OpenFF support is
+experimental: model construction is validated, but Sage's accuracy for
+crystalline cellulose has not been assessed. Chitin, mannan, Amber, LAMMPS, and
+position restraints are not available for OpenFF. See `docs/openff.md`.
 
 ## 12. Preprocess and minimize with GROMACS
 
@@ -713,7 +749,7 @@ From the repository root, preprocess the periodic fibril:
 
 ```bash
 gmx grompp \
-  -f validation/periodic_pme_minim.mdp \
+  -f cellulose_forge_tutorial/ibeta_fibril_glycam/minim.mdp \
   -c cellulose_forge_tutorial/ibeta_fibril_glycam/structure.gro \
   -p cellulose_forge_tutorial/ibeta_fibril_glycam/system.top \
   -o cellulose_forge_tutorial/ibeta_fibril_glycam/minim.tpr
@@ -736,7 +772,7 @@ grep -E 'Potential Energy|Maximum force' \
   cellulose_forge_tutorial/ibeta_fibril_glycam/minim.log
 ```
 
-The included MDP files are validation and smoke-test protocols. They are not a
+The generated MDP files are smoke-test protocols. They are not a
 substitute for selecting and reporting an application-specific equilibration
 and production protocol.
 
@@ -839,6 +875,33 @@ Slab faces must be parallel to the cellulose chain axis: `h=0` for I-alpha and
 `l=0` for I-beta, II, and III-I. The zero index `(0,0,0)` is never a valid
 crystallographic plane.
 
+### `the periodic box must exceed twice the N angstrom nonbonded cutoff in every direction`
+
+The box is too small for the force field's cutoff in at least one direction:
+20 Å for GLYCAM06 and CHARMM36, 18 Å for OpenFF Sage. GROMACS and OpenMM would
+refuse such a box at run time. Increase `--cells` for bulk crystals, or
+`--chains-per-layer`, `--layers`, `--degree-polymerization`, the padding, or
+`--vacuum` for slabs and fibrils. A single unit cell is always too small for
+force-field output; use a periodic bulk crystal.
+
+### `finite force-field chains require at least 3 angstrom longitudinal padding`
+
+Finite chain ends need space from their periodic images. Add
+`--padding-longitudinal 12` or more; values between 3 and 12 Å are accepted
+with a warning.
+
+### Warning: less transverse vacuum than the interaction range
+
+Slabs and fibrils are run without dispersion correction on the premise that
+they are surrounded by vacuum. With less vacuum than the longest interaction
+range (10 Å GLYCAM06, 12 Å CHARMM36, 9 Å Sage), periodic images interact. Use
+`--vacuum 20` or more.
+
+### `OpenFF Sage support requires the optional OpenFF environment`
+
+Create and activate `environment-openff.yml` (see "Experimental OpenFF Sage
+systems" above).
+
 ### A fibril model is rejected for III-I
 
 The current literature reference does not provide a supported III-I 36-chain
@@ -848,6 +911,8 @@ preset. Use unit-cell or bulk geometry for III-I instead.
 
 Check the terminal message for a sibling `.cif` path. CelluloseForge switches
 to mmCIF rather than writing invalid wrapped PDB identifiers.
+
+The README's "Common errors" section lists every build error with its fix.
 
 ## 16. Use an external workflow manager or LLM agent
 

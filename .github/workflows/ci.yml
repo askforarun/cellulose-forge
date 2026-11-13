@@ -28,7 +28,12 @@ jobs:
         run: >-
           python validation/validate_openff_periodic_bulk.py
           --case i_beta --output openff-periodic-bulk-ci.json
-      - name: Validate exact shipped slab and bulk files
+      - name: Reduced fibril model-construction validator
+        shell: micromamba-shell {0}
+        run: >-
+          python validation/validate_openff_fibrils.py
+          --case i_beta_custom_finite --output openff-fibril-ci.json
+      - name: Validate exact shipped slab, bulk and fibril files
         shell: micromamba-shell {0}
         run: >-
           python validation/validate_openff_shipped_outputs.py

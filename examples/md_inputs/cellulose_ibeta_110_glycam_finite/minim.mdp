@@ -1,3 +1,4 @@
+; Steepest-descent minimization for chemically capped finite chains.
 integrator              = steep
 nsteps                  = 10000
 emtol                   = 1000.0
@@ -11,6 +12,7 @@ fourierspacing          = 0.12
 pme-order               = 4
 vdwtype                 = Cut-off
 rvdw                    = 1.0
-DispCorr                 = no
+DispCorr                = no
 pbc                     = xyz
+periodic-molecules      = no
 constraints             = none

@@ -27,6 +27,9 @@ from rdkit.Geometry import Point3D
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY / "src"))
+sys.path.insert(0, str(REPOSITORY / "validation"))
+
+from _provenance import provenance  # noqa: E402
 
 from cellulose_forge.crystallography import MillerIndex, load_allomorph  # noqa: E402
 from cellulose_forge.geometry import build_chain_parallel_slab  # noqa: E402
@@ -54,30 +57,73 @@ REQUIRED_ENERGY_TERMS = frozenset(
 ENERGY_RELATIVE_TOLERANCE = 1.0e-5
 
 
+# Empirical mixed-precision acceptance criterion, not a general floating-point
+# bound.  Mixed-precision GROMACS accumulates bonded energies in single
+# precision, so its rounding error grows with the number of interactions
+# summed (it also depends on term magnitudes, ordering and cancellation).
+# validation/measure_openff_mixed_precision.py records the evidence: for the
+# 36-chain I-alpha fibril, sequential single-precision summation errors are
+# 2.25--3.22 eps32 sqrt(N).  The criterion uses 4 eps32 sqrt(N) and never falls
+# below the fixed relative tolerance, which governs slab-sized systems.  If a
+# case exceeds it, compare against a double-precision GROMACS build.
+SINGLE_PRECISION_EPSILON = 2.0**-24
+ACCUMULATION_ERROR_FACTOR = 4.0
+
+
+def _tolerance(term: str, term_counts: dict[str, int] | None) -> float:
+    count = (term_counts or {}).get(term, 0)
+    return max(
+        ENERGY_RELATIVE_TOLERANCE,
+        ACCUMULATION_ERROR_FACTOR * SINGLE_PRECISION_EPSILON * float(np.sqrt(count)),
+    )
+
+
+def bonded_term_counts(system: openmm.System) -> dict[str, int]:
+    """Count the interactions summed into each bonded energy category."""
+    counts = {"Bond": 0, "Angle": 0, "Torsion": 0, "vdW 1-4": 0, "Electrostatics 1-4": 0}
+    for force in system.getForces():
+        if isinstance(force, openmm.HarmonicBondForce):
+            counts["Bond"] += force.getNumBonds()
+        elif isinstance(force, openmm.HarmonicAngleForce):
+            counts["Angle"] += force.getNumAngles()
+        elif isinstance(force, openmm.PeriodicTorsionForce):
+            counts["Torsion"] += force.getNumTorsions()
+        elif isinstance(force, openmm.CustomBondForce):
+            # Interchange writes separate 1-4 Lennard-Jones and Coulomb forces
+            # over the same pair list.
+            counts["vdW 1-4"] = max(counts["vdW 1-4"], force.getNumBonds())
+            counts["Electrostatics 1-4"] = counts["vdW 1-4"]
+    return counts
+
+
 def compare_energy_terms(
-    openmm_values: dict[str, float], gromacs_values: dict[str, float]
+    openmm_values: dict[str, float],
+    gromacs_values: dict[str, float],
+    term_counts: dict[str, int] | None = None,
 ) -> dict[str, dict[str, float | bool]]:
-    """Compare every required term with one documented relative tolerance."""
+    """Compare every required term with a documented relative tolerance."""
     missing_openmm = sorted(REQUIRED_ENERGY_TERMS - set(openmm_values))
     missing_gromacs = sorted(REQUIRED_ENERGY_TERMS - set(gromacs_values))
     if missing_openmm or missing_gromacs:
         raise RuntimeError(
             f"Missing required energy terms: OpenMM={missing_openmm}, GROMACS={missing_gromacs}"
         )
-    return {
-        term: {
+    comparison: dict[str, dict[str, float | bool]] = {}
+    for term in sorted(REQUIRED_ENERGY_TERMS):
+        relative = abs(openmm_values[term] - gromacs_values[term]) / max(
+            abs(openmm_values[term]), abs(gromacs_values[term]), 1.0
+        )
+        tolerance = _tolerance(term, term_counts)
+        comparison[term] = {
             "openmm_kj_mol": openmm_values[term],
             "gromacs_kj_mol": gromacs_values[term],
             "difference_kj_mol": openmm_values[term] - gromacs_values[term],
-            "relative_difference": abs(openmm_values[term] - gromacs_values[term])
-            / max(abs(openmm_values[term]), abs(gromacs_values[term]), 1.0),
-            "relative_tolerance": ENERGY_RELATIVE_TOLERANCE,
-            "passed": abs(openmm_values[term] - gromacs_values[term])
-            / max(abs(openmm_values[term]), abs(gromacs_values[term]), 1.0)
-            <= ENERGY_RELATIVE_TOLERANCE,
+            "relative_difference": relative,
+            "relative_tolerance": tolerance,
+            "summed_interactions": (term_counts or {}).get(term, 0),
+            "passed": relative <= tolerance,
         }
-        for term in sorted(REQUIRED_ENERGY_TERMS)
-    }
+    return comparison
 
 TIGHT_ENERGY_MDP = """integrator = md
 nsteps = 0
@@ -482,7 +528,13 @@ def validate_case(
 
     openmm_values = openmm_slab_energies(interchange)
     gromacs_values = gromacs_slab_energies(interchange)
-    comparison = compare_energy_terms(openmm_values, gromacs_values)
+    comparison = compare_energy_terms(
+        openmm_values,
+        gromacs_values,
+        bonded_term_counts(
+            interchange.to_openmm_system(combine_nonbonded_forces=False)  # type: ignore[attr-defined]
+        ),
+    )
     failed_energy_terms = [
         term for term, values in comparison.items() if not values["passed"]
     ]
@@ -494,6 +546,8 @@ def validate_case(
         1.0 / openmm.unit.picosecond,
         0.001 * openmm.unit.picoseconds,
     )
+    # Seed the thermostat noise so stored NVT results are reproducible.
+    integrator.setRandomNumberSeed(20261112)
     platform = openmm.Platform.getPlatformByName("CPU")
     platform_properties = {"Threads": "1"}
     context = openmm.Context(system, integrator, platform, platform_properties)
@@ -592,6 +646,9 @@ def main() -> None:
     }
     result = {
         "matrix": "finite DP6 cellulose reference slabs",
+        "provenance": provenance(
+            ("openff-toolkit", "openff-interchange", "openff-nagl", "openff-nagl-models", "openmm")
+        ),
         "charge_method": charge_method,
         "case_count": len(cases),
         "software_versions": {

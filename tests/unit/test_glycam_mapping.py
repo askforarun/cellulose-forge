@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from hydroxyl_contacts import modelled_hydroxyl_contacts
 
 from cellulose_forge.crystallography import MillerIndex, load_allomorph
 from cellulose_forge.geometry import build_bulk_crystal, build_chain_parallel_slab
@@ -212,31 +213,14 @@ def test_ii_mapping_generates_force_field_hydrogens_and_maps_antiparallel_chains
                 assert _angle(residue[f"C{suffix}"], residue[oxygen], residue[hydrogen]) == (
                     pytest.approx(108.5, abs=1.0e-6)
                 )
-    inverse = np.linalg.inv(mapped.basis_vectors)
-    closest_hydrogen = np.inf
-    closest_heavy = np.inf
-    for index, name in enumerate(mapped.atom_names):
-        if name not in {"H2O", "H3O", "H6O"}:
-            continue
-        for other, other_name in enumerate(mapped.atom_names):
-            if index == other:
-                continue
-            same_residue = (
-                mapped.chain_numbers[index] == mapped.chain_numbers[other]
-                and mapped.residue_numbers[index] == mapped.residue_numbers[other]
-            )
-            if same_residue and other_name == "O" + name[1]:
-                continue
-            delta = mapped.cartesian_coordinates[other] - mapped.cartesian_coordinates[index]
-            fractional = delta @ inverse
-            fractional -= np.round(fractional)
-            distance = float(np.linalg.norm(fractional @ mapped.basis_vectors))
-            if other_name.startswith("H"):
-                closest_hydrogen = min(closest_hydrogen, distance)
-            else:
-                closest_heavy = min(closest_heavy, distance)
-    assert closest_hydrogen >= 2.0
-    assert closest_heavy >= 1.8
+    contacts = modelled_hydroxyl_contacts(mapped, {"H2O": "O2", "H3O": "O3", "H6O": "O6"})
+    assert contacts["hydrogen"] >= 1.9
+    # Hydrogen-bond acceptors may approach to ~1.7 A, as in neutron structures.
+    assert contacts["oxygen"] >= 1.6
+    assert contacts["other_heavy"] >= 2.0
+    assert contacts["hydrogen_bonded_fraction"] >= 0.95
+    # The intrachain O3-H...O5 bond is present in every cellulose allomorph.
+    assert contacts["o3_to_intrachain_o5_fraction"] == 1.0
     for chain_number in (1, 2):
         chain_indices = [
             index for index, chain in enumerate(mapped.chain_numbers) if chain == chain_number

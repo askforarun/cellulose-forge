@@ -15,18 +15,36 @@ from openmm import app, unit
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "validation"))
+
+from _provenance import provenance  # noqa: E402
+
+OPENFF_PACKAGES = (
+    "openff-toolkit",
+    "openff-interchange",
+    "openff-nagl",
+    "openff-nagl-models",
+    "openmm",
+)
 
 from cellulose_forge.crystallography import MillerIndex, load_allomorph  # noqa: E402
 from cellulose_forge.geometry import (  # noqa: E402
+    build_36_chain_fibril,
     build_bulk_crystal,
     build_chain_parallel_slab,
 )
 from cellulose_forge.openff_sage import (  # noqa: E402
     build_sage_system,
+    dispersion_correction_for_shape,
     write_sage_outputs,
 )
 
+# GROMACS EnerPres and OpenMM's exact long-range correction for a switched
+# Lennard-Jones potential use different averaging, giving ~0.4% differences.
 LRC_RELATIVE_TOLERANCE = 5.0e-3
+# Shipped files use production PME accuracy (OpenMM error tolerance 5e-4,
+# GROMACS default PME order 4), so totals agree less tightly than the
+# term-by-term validators, which use 1e-6 Ewald tolerance and PME order 8.
 TOTAL_RELATIVE_TOLERANCE = 5.0e-4
 
 
@@ -61,16 +79,25 @@ def _openmm_energy(system: openmm.System, pdbx: app.PDBxFile) -> float:
     return float(energy)
 
 
-def _set_dispersion(system: openmm.System, enabled: bool) -> dict[str, bool]:
+def _dispersion_settings(system: openmm.System) -> dict[str, bool]:
+    """Read the long-range dispersion flags exactly as serialized."""
     settings: dict[str, bool] = {}
     for force in system.getForces():
         if isinstance(force, openmm.NonbondedForce):
-            force.setUseDispersionCorrection(enabled)
-            settings["NonbondedForce"] = force.getUseDispersionCorrection()
+            settings["NonbondedForce"] = bool(force.getUseDispersionCorrection())
         elif isinstance(force, openmm.CustomNonbondedForce):
-            force.setUseLongRangeCorrection(enabled)
-            settings["CustomNonbondedForce"] = force.getUseLongRangeCorrection()
+            settings["CustomNonbondedForce"] = bool(force.getUseLongRangeCorrection())
+    if set(settings) != {"NonbondedForce", "CustomNonbondedForce"}:
+        raise RuntimeError(f"unexpected shipped OpenMM nonbonded forces: {sorted(settings)}")
     return settings
+
+
+def _disable_dispersion(system: openmm.System) -> None:
+    for force in system.getForces():
+        if isinstance(force, openmm.NonbondedForce):
+            force.setUseDispersionCorrection(False)
+        elif isinstance(force, openmm.CustomNonbondedForce):
+            force.setUseLongRangeCorrection(False)
 
 
 def _xvg_values(path: Path) -> list[float]:
@@ -123,10 +150,17 @@ def _gromacs_shipped_checks(directory: Path, *, dispersion: bool) -> dict[str, o
         ),
         _run(["gmx", "mdrun", "-deffnm", "nvt", "-ntmpi", "1"], directory),
     ]
+    # Single point from the shipped minimization input: keep every nonbonded
+    # setting exactly as shipped and change only the run control.
     point = (directory / "minim.mdp").read_text(encoding="utf-8")
-    point = point.replace("integrator = steep", "integrator = md")
-    point = point.replace("nsteps = 5000", "nsteps = 0")
-    point = point.replace("constraints = h-bonds", "constraints = none")
+    overrides = {"integrator": "md", "nsteps": "0", "constraints": "none"}
+    for key, value in overrides.items():
+        point, count = re.subn(
+            rf"^{key}\s*=.*$", f"{key} = {value}", point, count=1, flags=re.MULTILINE
+        )
+        if count != 1:
+            raise RuntimeError(f"shipped minim.mdp has no {key} setting")
+    point = re.sub(r"^(emtol|emstep)\s*=.*\n", "", point, flags=re.MULTILINE)
     point += "continuation = yes\n"
     (directory / "point.mdp").write_text(point, encoding="utf-8")
     _run(
@@ -199,7 +233,7 @@ def _gromacs_shipped_checks(directory: Path, *, dispersion: bool) -> dict[str, o
 
 
 def _case(label: str, crystal: object, shape: str) -> dict[str, object]:
-    dispersion = shape == "bulk"
+    dispersion = dispersion_correction_for_shape(shape)
     build = build_sage_system(crystal, "periodic")
     with tempfile.TemporaryDirectory(prefix=f"openff_shipped_{label}_") as temporary:
         directory = Path(temporary)
@@ -211,9 +245,11 @@ def _case(label: str, crystal: object, shape: str) -> dict[str, object]:
         )
         system = openmm.XmlSerializer.deserialize((directory / "system.xml").read_text())
         pdbx = app.PDBxFile(str(directory / "topology.cif"))
-        shipped_settings = _set_dispersion(system, dispersion)
+        # Read the serialized flags and evaluate the shipped system before any
+        # modification; only then remove the correction to measure its size.
+        shipped_settings = _dispersion_settings(system)
         openmm_on = _openmm_energy(system, pdbx)
-        _set_dispersion(system, False)
+        _disable_dispersion(system)
         openmm_off = _openmm_energy(system, pdbx)
         openmm_correction = openmm_on - openmm_off
         gromacs = _gromacs_shipped_checks(directory, dispersion=dispersion)
@@ -277,9 +313,20 @@ def main() -> None:
             build_bulk_crystal(load_allomorph("i_beta"), (3, 3, 2)),
             "bulk",
         ),
+        "i_beta_36_chain_periodic_fibril": _case(
+            "fibril",
+            build_36_chain_fibril(
+                load_allomorph("i_beta"),
+                degree_polymerization=6,
+                vacuum=20.0,
+                chain_boundary="periodic",
+            ),
+            "fibril",
+        ),
     }
     result = {
         "validation": "exact shipped experimental OpenFF outputs",
+        "provenance": provenance(OPENFF_PACKAGES),
         "cases": cases,
         "passed": all(bool(case["passed"]) for case in cases.values()),
     }

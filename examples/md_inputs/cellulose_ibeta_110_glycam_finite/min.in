@@ -1,5 +1,5 @@
 Minimization (GLYCAM06j-1, finite chains)
 &cntrl
   imin=1, maxcyc=1000, ncyc=200,
-  ntb=1, cut=10.0,
+  ntb=1, cut=10.0, vdwmeth=0,
 /

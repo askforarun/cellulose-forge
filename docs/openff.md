@@ -16,10 +16,14 @@ every C1--C5 stereocentre has the independently recorded D-cellulose parity.
 
 ## Scope
 
-Supported geometries are finite and covalently periodic slabs and covalently
-periodic bulk crystals of cellulose I-alpha, I-beta, II and III-I. GROMACS and
-OpenMM outputs are supported. Fibrils, chitin, mannan, Amber, LAMMPS,
-restraints, and finite bulk crystals are intentionally rejected.
+Supported geometries are finite and covalently periodic slabs, finite and
+covalently periodic fibrils, and covalently periodic bulk crystals. Slabs and
+bulk crystals cover cellulose I-alpha, I-beta, II and III-I. Fibrils use the
+same builders as GLYCAM and CHARMM36: the literature 36-chain fibril for
+I-alpha, I-beta and II, and the I-beta 18- and 24-chain presets and custom
+`--fibril-profile` row profiles. GROMACS and OpenMM outputs are supported.
+Chitin, mannan, Amber, LAMMPS, restraints, and finite bulk crystals are
+intentionally rejected.
 
 ```bash
 cellulose-forge build \
@@ -28,14 +32,27 @@ cellulose-forge build \
   --chain-boundary periodic --vacuum 30 \
   --force-field openff --md-engine gromacs --md-engine openmm \
   --output openff_ibeta_slab
+
+cellulose-forge build \
+  --allomorph I-beta --shape fibril --fibril-model 36-chain \
+  --degree-polymerization 6 --chain-boundary periodic --vacuum 20 \
+  --force-field openff --md-engine gromacs --md-engine openmm \
+  --output openff_ibeta_fibril
 ```
 
+The outputs match the other force fields: `minim.mdp` and `nvt.mdp` for
+GROMACS (with Sage's 0.8--0.9 nm potential switch), and for OpenMM the same
+configurable `run_openmm.py`, `system.xml`, `state.xml` and `topology.cif` as
+GLYCAM and CHARMM36 builds.
+
 OpenFF Sage was fitted with a homogeneous-fluid dispersion correction. It is
-therefore enabled for bulk crystals and disabled for vacuum-containing slabs,
-consistently in the serialized OpenMM system and generated GROMACS inputs.
-Bulk boxes are accepted only when every perpendicular periodic-box height
-exceeds twice the 9 A nonbonded cutoff. The shortest non-zero lattice
-translation is also recorded by the validation matrix.
+therefore enabled for bulk crystals and disabled for slabs and fibrils, whose
+transverse vacuum violates its assumption, consistently in the serialized
+OpenMM system and generated GROMACS inputs. This is the same rule used for
+GLYCAM06; CHARMM36 never uses the correction. As for every force field, the
+periodic box must exceed twice the nonbonded cutoff (9 A for Sage) in every
+perpendicular direction, and a slab or fibril with less transverse vacuum than
+the cutoff triggers a warning.
 
 ## Validation boundary
 
