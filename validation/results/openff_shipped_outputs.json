@@ -1,0 +1,89 @@
+{
+  "validation": "exact shipped experimental OpenFF outputs",
+  "provenance": {
+    "cellulose_forge_commit": "acc37ee5421d669a9d292c229e68fbb4266c435f",
+    "tracked_tree_clean": false,
+    "software_versions": {
+      "openff-toolkit": "0.19.0",
+      "openff-interchange": "0.5.5",
+      "openff-nagl": "0.6.1",
+      "openff-nagl-models": "2026.9.0",
+      "openmm": "8.6.1"
+    }
+  },
+  "cases": {
+    "i_beta_110_periodic_slab": {
+      "shape": "slab",
+      "dispersion_correction": false,
+      "openmm_force_settings": {
+        "CustomNonbondedForce": false,
+        "NonbondedForce": false
+      },
+      "gromacs": {
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "point_potential_kj_mol": 15030.198242,
+        "dispersion_correction_kj_mol": 0.0,
+        "passed": true
+      },
+      "openmm_point_potential_kj_mol": 15028.9422092305,
+      "openmm_dispersion_correction_kj_mol": 0.0,
+      "correction_relative_difference": 0.0,
+      "correction_relative_tolerance": 0.005,
+      "total_potential_relative_difference": 8.356727897248462e-05,
+      "total_potential_relative_tolerance": 0.0005,
+      "passed": true
+    },
+    "i_beta_periodic_bulk": {
+      "shape": "bulk",
+      "dispersion_correction": true,
+      "openmm_force_settings": {
+        "CustomNonbondedForce": true,
+        "NonbondedForce": true
+      },
+      "gromacs": {
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "point_potential_kj_mol": 19388.552734,
+        "dispersion_correction_kj_mol": -518.135681,
+        "passed": true
+      },
+      "openmm_point_potential_kj_mol": 19384.162930714236,
+      "openmm_dispersion_correction_kj_mol": -519.9783542360819,
+      "correction_relative_difference": 0.003543749890875936,
+      "correction_relative_tolerance": 0.005,
+      "total_potential_relative_difference": 0.00022641211780944696,
+      "total_potential_relative_tolerance": 0.0005,
+      "passed": true
+    },
+    "i_beta_36_chain_periodic_fibril": {
+      "shape": "fibril",
+      "dispersion_correction": false,
+      "openmm_force_settings": {
+        "CustomNonbondedForce": false,
+        "NonbondedForce": false
+      },
+      "gromacs": {
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "point_potential_kj_mol": 63790.339844,
+        "dispersion_correction_kj_mol": 0.0,
+        "passed": true
+      },
+      "openmm_point_potential_kj_mol": 63787.21138136738,
+      "openmm_dispersion_correction_kj_mol": 0.0,
+      "correction_relative_difference": 0.0,
+      "correction_relative_tolerance": 0.005,
+      "total_potential_relative_difference": 4.904289019738661e-05,
+      "total_potential_relative_tolerance": 0.0005,
+      "passed": true
+    }
+  },
+  "passed": true
+}

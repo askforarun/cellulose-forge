@@ -1,0 +1,57 @@
+{
+  "case": "i_alpha_36_finite",
+  "provenance": {
+    "cellulose_forge_commit": "acc37ee5421d669a9d292c229e68fbb4266c435f",
+    "tracked_tree_clean": false,
+    "software_versions": {
+      "openff-toolkit": "0.19.0",
+      "openff-interchange": "0.5.5",
+      "openff-nagl": "0.6.1",
+      "openff-nagl-models": "2026.9.0",
+      "openmm": "8.6.1"
+    }
+  },
+  "atom_count": 4644,
+  "relative_differences": {
+    "Bond": {
+      "openmm_cpu_vs_reference": 0.0,
+      "openmm_reference_vs_gromacs": 1.4854670515472678e-06,
+      "openmm_reference_float32_coordinates_vs_gromacs": 6.268324342766153e-07
+    },
+    "Angle": {
+      "openmm_cpu_vs_reference": 1.0772074473158265e-14,
+      "openmm_reference_vs_gromacs": 1.4268839446053367e-05,
+      "openmm_reference_float32_coordinates_vs_gromacs": 1.3725077115063736e-05
+    },
+    "Torsion": {
+      "openmm_cpu_vs_reference": 7.27406258858969e-15,
+      "openmm_reference_vs_gromacs": 2.2176437103978503e-05,
+      "openmm_reference_float32_coordinates_vs_gromacs": 2.2063388044425215e-05
+    },
+    "vdW 1-4": {
+      "openmm_cpu_vs_reference": 0.0,
+      "openmm_reference_vs_gromacs": 6.647196453529302e-06,
+      "openmm_reference_float32_coordinates_vs_gromacs": 6.923015715443027e-06
+    },
+    "Electrostatics 1-4": {
+      "openmm_cpu_vs_reference": 0.0,
+      "openmm_reference_vs_gromacs": 7.499345577201243e-06,
+      "openmm_reference_float32_coordinates_vs_gromacs": 7.490567548755649e-06
+    }
+  },
+  "sequential_single_precision_accumulation": {
+    "Angle": {
+      "interactions": 8892,
+      "double_precision_sum_kj_mol": 8443.078480743861,
+      "sequential_single_precision_relative_error": 1.8085760331323872e-05,
+      "error_in_units_of_eps32_sqrt_n": 3.2177843882854558
+    },
+    "Torsion": {
+      "interactions": 22608,
+      "double_precision_sum_kj_mol": 23514.79183266239,
+      "sequential_single_precision_relative_error": 2.0135125616276227e-05,
+      "error_in_units_of_eps32_sqrt_n": 2.2466900764771807
+    }
+  },
+  "acceptance_criterion": "empirical: relative difference <= max(1e-5, 4 eps32 sqrt(N)); escalate to a double-precision GROMACS comparison if exceeded"
+}

@@ -1,0 +1,33 @@
+{
+  "atoms": 126,
+  "bonds": 132,
+  "charge_e": 0.0,
+  "stereochemistry_source": "PubChem-derived finite DP6 internal residue 3",
+  "stereochemistry_by_atom_name": {
+    "C1": "S",
+    "C2": "R",
+    "C3": "R",
+    "C4": "S",
+    "C5": "R"
+  },
+  "charge_provenance": {
+    "method": "openff-gnn-am1bcc-1.0.0.pt",
+    "openff_toolkit": "0.19.0",
+    "openff_nagl": "0.6.1",
+    "openff_nagl_models": "2026.9.0",
+    "template_sha256": "92a8d7303ef9f8be71bc087d01e3cf412a84d622c8c38adc97c284eb88e1c296"
+  },
+  "parameter_counts": {
+    "Constraints": 60,
+    "Bonds": 132,
+    "Angles": 246,
+    "ProperTorsions": 396,
+    "ImproperTorsions": 0,
+    "vdW": 126,
+    "Electrostatics": 0,
+    "LibraryCharges": 0,
+    "NAGLCharges": 0
+  },
+  "output": "validation/results/openff_cellodextrin_dp6_periodic_nagl_charged.json"
+}
+

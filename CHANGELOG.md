@@ -6,6 +6,48 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Added
 
+- Optional experimental OpenFF Sage 2.3 output for finite and periodic
+  cellulose slabs and periodic bulk crystals through GROMACS and OpenMM.
+- Direct OpenFF glucan graph construction without AmberTools, NAGL charges,
+  and build-time stereochemistry and periodic charge-equivalence checks.
+- Geometry-specific Sage dispersion policy: enabled for bulk crystals and
+  disabled for vacuum slabs and fibrils.
+- Experimental OpenFF Sage fibrils: the literature 36-chain fibril for
+  I-alpha, I-beta and II and the I-beta 18-chain, 24-chain and custom row
+  profiles, with finite or covalently periodic chains, validated in
+  `validation/validate_openff_fibrils.py`.
+- Every force-field build now writes starting run inputs for each selected
+  engine: `minim.mdp` and a 1 ps `nvt.mdp` for GROMACS, and `min.in` and a
+  1 ps `nvt.in` for Amber. OpenFF OpenMM output now uses the same configurable
+  `run_openmm.py` and `state.xml` as GLYCAM and CHARMM36. Generated inputs are
+  smoke-test protocols, not production settings.
+
+### Changed
+
+- One long-range dispersion policy for every force field and engine: GLYCAM06
+  and OpenFF Sage use it only for bulk crystals and unit cells; CHARMM36 never
+  uses it; slabs and fibrils never use it. **CHARMM36 OpenMM bulk-crystal and
+  unit-cell output previously enabled it** and now matches the LAMMPS output,
+  the cross-engine validators, and standard CHARMM36 practice. Amber inputs set
+  `vdwmeth` accordingly.
+- Every force-field build now rejects periodic boxes no wider than twice the
+  nonbonded cutoff in any perpendicular direction, and warns when a slab or
+  fibril has less transverse vacuum than the longest interaction range.
+
+- Cellulose II hydroxyl hydrogens (HO2, HO3, HO6), which are absent from the
+  diffraction data, are now placed on an exact tetrahedral cone (0.96 A O-H,
+  108.5 degree C-O-H) for GLYCAM and OpenFF output, class by class (HO3, HO2,
+  HO6) so equivalent hydroxyls are treated identically and the result does not
+  depend on atom order. HO3 takes the intrachain O3-H...O5 bond; the others take
+  the clash-free torsion with the best geometric hydrogen bond (linearity and
+  distance), otherwise the reference torsion. Placement uses a periodic cell
+  list and scales linearly (approximately 0.76 ms per hydroxyl; 4.36 s for 34,560 atoms). This
+  replaces copying the O-H direction from an aligned reference residue, which
+  gave C6-O6-H angles near 128 degrees. GLYCAM cellulose II coordinates
+  therefore differ from earlier development builds; topologies are unchanged.
+  The recorded GLYCAM II entries in `validation/results/slab_allomorph_matrix.json`
+  predate this change and are regenerated with the release validation set.
+
 - Coordinate-only alpha- and beta-chitin unit cells and periodic bulk crystals
   with `--polymer chitin`. Definitions are converted from the refined structures
   of Sikorski, Hori and Wada (2009) and Nishiyama, Noishiki and Wada (2011) by
@@ -91,6 +133,16 @@ All notable changes to CelluloseForge are documented in this file.
   slabs with GLYCAM06j-1 and CHARMM36. Short OpenMM NVT runs, and NPT runs with
   the chain axis fixed, keep every bonded distance within 0.026 nm of
   equilibrium.
+
+### Documentation
+
+- README reorganized: a consolidated "Validation" section gathers all
+  validation evidence and states what is not validated; a new "Common errors"
+  section lists every build error with its fix; a table records the cutoff and
+  dispersion settings of the generated inputs for each force field and engine;
+  the command reference covers every option.
+- Tutorial: experimental OpenFF Sage systems, generated run inputs and
+  restraint defines, the cellulose II hydrogen method, and new common errors.
 
 ## 1.1.2 - 2026-11-07
 

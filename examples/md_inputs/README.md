@@ -1,9 +1,13 @@
 # Simulation-ready example inputs
 
 Small systems for trying each MD engine. Every folder holds the files that
-`cellulose-forge build` wrote, plus starting run inputs (`minim.mdp`,
-`nvt.mdp`, and `min.in` for Amber). `build_report.json` in each folder records
-the exact build and its validation; machine-local paths are redacted.
+`cellulose-forge build` wrote, including its starting run inputs:
+`minim.mdp` and `nvt.mdp` for GROMACS, the configurable `run_openmm.py` for
+OpenMM, and `min.in` and `nvt.in` for Amber. Every force field follows the
+same rule for long-range dispersion correction: GLYCAM06 and OpenFF Sage use it
+only for bulk crystals and unit cells; CHARMM36 never uses it; slabs and
+fibrils never use it. `build_report.json` in each folder records the exact
+build and its validation; machine-local paths are redacted.
 
 | Folder | System | Atoms | Chains x DP | GROMACS | OpenMM | LAMMPS | Amber |
 |---|---|---|---|---|---|---|---|
@@ -11,6 +15,7 @@ the exact build and its validation; machine-local paths are redacted.
 | `chitin_beta_100_charmm36_periodic` | beta-chitin (1 0 0) slab, CHARMM36, periodic chains | 1296 | 8 x 6 | yes | yes | yes | - |
 | `chitin_alpha_100_charmm36_finite` | alpha-chitin (1 0 0) slab, CHARMM36, finite chains | 1320 | 8 x 6 | yes | yes | yes | - |
 | `cellulose_ibeta_110_glycam_finite` | I-beta (1 1 0) slab, GLYCAM06j-1, finite chains | 1548 | 12 x 6 | yes | yes | yes | yes |
+| `cellulose_ibeta_openff_sage_periodic_bulk` | I-beta bulk crystal, OpenFF Sage 2.3, periodic chains | 1512 | 18 x 4 | yes | yes | - | - |
 
 Amber output is written only for finite chains, because Amber does not apply
 minimum images to bonded terms across a periodic chain boundary.
@@ -18,6 +23,13 @@ minimum images to bonded terms across a periodic chain boundary.
 These are short demonstration systems, not production models: the slabs are
 two layers thick and DP 6, and the run inputs are smoke-test protocols. Choose
 system size, equilibration, and production settings for your own study.
+The OpenFF bulk folder additionally contains a 1 ns gently coupled
+Parrinello--Rahman anisotropic NPT
+equilibration template and a 100 ns Parrinello--Rahman anisotropic production
+template. These are starting protocols for the planned stability assessment;
+their presence is not a stability result. The isotropic compressibility of
+water (4.5e-5 bar^-1) is used only to set the barostat response, as is
+conventional; it is not a property of crystalline cellulose.
 
 ## Rebuilding
 
@@ -61,6 +73,17 @@ gmx grompp -f nvt.mdp -c minim.gro -p system.top -o nvt.tpr
 gmx mdrun -deffnm nvt
 ```
 
+For the OpenFF periodic-bulk NPT example, continue from the generated NVT
+checkpoint:
+
+```bash
+gmx grompp -f npt_equil.mdp -c nvt.gro -t nvt.cpt -p system.top -o npt_equil.tpr
+gmx mdrun -deffnm npt_equil
+gmx grompp -f npt_production.mdp -c npt_equil.gro -t npt_equil.cpt \
+  -p system.top -o npt_production.tpr
+gmx mdrun -deffnm npt_production
+```
+
 OpenMM (minimization, then Langevin dynamics):
 
 ```bash
@@ -76,10 +99,11 @@ lmp -in in.chitin      # chitin examples
 lmp -in in.cellulose   # cellulose examples
 ```
 
-Amber (GLYCAM folder only):
+Amber (GLYCAM folder only; minimization, then 1 ps NVT):
 
 ```bash
 sander -O -i min.in -p structure.prmtop -c structure.inpcrd -o min.out -r min.rst7
+sander -O -i nvt.in -p structure.prmtop -c min.rst7 -o nvt.out -r nvt.rst7 -x nvt.nc
 ```
 
 ## Checked

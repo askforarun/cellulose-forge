@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from hydroxyl_contacts import modelled_hydroxyl_contacts
 
 from cellulose_forge.crystallography import MillerIndex, load_allomorph
 from cellulose_forge.geometry import build_bulk_crystal, build_chain_parallel_slab
@@ -29,6 +30,13 @@ def _dp12_slab(chains: int = 2, *, periodic: bool = False):
         padding_z=0.0 if periodic else 12.0,
         chain_boundary="periodic" if periodic else "finite",
     )
+
+
+def _angle(left: np.ndarray, centre: np.ndarray, right: np.ndarray) -> float:
+    first = left - centre
+    second = right - centre
+    cosine = np.dot(first, second) / (np.linalg.norm(first) * np.linalg.norm(second))
+    return float(np.degrees(np.arccos(np.clip(cosine, -1.0, 1.0))))
 
 
 def test_dp12_mapping_matches_validated_glycam_atom_and_residue_order() -> None:
@@ -198,7 +206,21 @@ def test_ii_mapping_generates_force_field_hydrogens_and_maps_antiparallel_chains
                 if chain == chain_number and mapped_residue == residue_number
             }
             for oxygen, hydrogen in (("O2", "H2O"), ("O3", "H3O"), ("O6", "H6O")):
-                assert 0.8 < np.linalg.norm(residue[hydrogen] - residue[oxygen]) < 1.1
+                suffix = oxygen[1:]
+                assert np.linalg.norm(residue[hydrogen] - residue[oxygen]) == pytest.approx(
+                    0.96, abs=1.0e-6
+                )
+                assert _angle(residue[f"C{suffix}"], residue[oxygen], residue[hydrogen]) == (
+                    pytest.approx(108.5, abs=1.0e-6)
+                )
+    contacts = modelled_hydroxyl_contacts(mapped, {"H2O": "O2", "H3O": "O3", "H6O": "O6"})
+    assert contacts["hydrogen"] >= 1.9
+    # Hydrogen-bond acceptors may approach to ~1.7 A, as in neutron structures.
+    assert contacts["oxygen"] >= 1.6
+    assert contacts["other_heavy"] >= 2.0
+    assert contacts["hydrogen_bonded_fraction"] >= 0.95
+    # The intrachain O3-H...O5 bond is present in every cellulose allomorph.
+    assert contacts["o3_to_intrachain_o5_fraction"] == 1.0
     for chain_number in (1, 2):
         chain_indices = [
             index for index, chain in enumerate(mapped.chain_numbers) if chain == chain_number

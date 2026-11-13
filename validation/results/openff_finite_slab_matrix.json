@@ -1,0 +1,557 @@
+{
+  "matrix": "finite DP6 cellulose reference slabs",
+  "provenance": {
+    "cellulose_forge_commit": "acc37ee5421d669a9d292c229e68fbb4266c435f",
+    "tracked_tree_clean": false,
+    "software_versions": {
+      "openff-toolkit": "0.19.0",
+      "openff-interchange": "0.5.5",
+      "openff-nagl": "0.6.1",
+      "openff-nagl-models": "2026.9.0",
+      "openmm": "8.6.1"
+    }
+  },
+  "charge_method": "am1bcc",
+  "case_count": 4,
+  "software_versions": {
+    "openff-toolkit": "0.19.0",
+    "openff-interchange": "0.5.5",
+    "openmm": "8.6.1",
+    "gromacs": "2024.2-Homebrew"
+  },
+  "cases": {
+    "i_alpha": {
+      "system": "CelluloseForge I-alpha (010) finite DP6 slab",
+      "allomorph": "i_alpha",
+      "face": [
+        0,
+        1,
+        0
+      ],
+      "layers": 2,
+      "chains_per_layer": 4,
+      "chain_count": 8,
+      "atom_count": 1032,
+      "openff_force_field": "openff-2.3.0.offxml",
+      "charge_method": "cached am1bcc DP6 template",
+      "input_geometry_checks": {
+        "chains_checked": 8,
+        "bonds_checked": 1072,
+        "hydrogen_bond_length_range_angstrom": [
+          0.9603223417165709,
+          0.9916642858900893
+        ],
+        "heavy_bond_length_range_angstrom": [
+          1.3969615072195052,
+          1.545065635642487
+        ],
+        "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.09506563564248705,
+        "passed": true
+      },
+      "stereochemistry_checks": {
+        "chains_checked": 8,
+        "failed_chain_numbers": [],
+        "negative_control": "mirror first chain through its x centroid",
+        "mirrored_chain_rejected": true,
+        "passed": true
+      },
+      "cross_engine_single_point": {
+        "dispersion_correction": "disabled for vacuum slab in both engines",
+        "pme_accuracy": {
+          "openmm_ewald_error_tolerance": 1e-06,
+          "gromacs_ewald_rtol": 1e-06,
+          "gromacs_fourierspacing_nm": 0.05,
+          "gromacs_pme_order": 8
+        },
+        "comparison": {
+          "Angle": {
+            "openmm_kj_mol": 1875.9080440892262,
+            "gromacs_kj_mol": 1875.912109375,
+            "difference_kj_mol": -0.00406528577377685,
+            "relative_difference": 2.1670982096977274e-06,
+            "relative_tolerance": 1.0598235497900424e-05,
+            "summed_interactions": 1976,
+            "passed": true
+          },
+          "Bond": {
+            "openmm_kj_mol": 6481.478763447452,
+            "gromacs_kj_mol": 6481.4775390625,
+            "difference_kj_mol": 0.0012243849523656536,
+            "relative_difference": 1.8890518615452686e-07,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 576,
+            "passed": true
+          },
+          "Electrostatics": {
+            "openmm_kj_mol": -17731.852543007986,
+            "gromacs_kj_mol": -17731.871643066406,
+            "difference_kj_mol": 0.01910005842000828,
+            "relative_difference": 1.0771597496577226e-06,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 0,
+            "passed": true
+          },
+          "Electrostatics 1-4": {
+            "openmm_kj_mol": 22947.45079605818,
+            "gromacs_kj_mol": 22947.443359375,
+            "difference_kj_mol": 0.007436683179548709,
+            "relative_difference": 3.2407447980348874e-07,
+            "relative_tolerance": 1.311085422980072e-05,
+            "summed_interactions": 3024,
+            "passed": true
+          },
+          "Torsion": {
+            "openmm_kj_mol": 3889.931075221792,
+            "gromacs_kj_mol": 3889.93017578125,
+            "difference_kj_mol": 0.0008994405420708063,
+            "relative_difference": 2.3122274525635982e-07,
+            "relative_tolerance": 1.689915194193778e-05,
+            "summed_interactions": 5024,
+            "passed": true
+          },
+          "vdW": {
+            "openmm_kj_mol": -1672.1005870841977,
+            "gromacs_kj_mol": -1672.09912109375,
+            "difference_kj_mol": -0.0014659904477412056,
+            "relative_difference": 8.767358011024886e-07,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 0,
+            "passed": true
+          },
+          "vdW 1-4": {
+            "openmm_kj_mol": 1215.4931773739656,
+            "gromacs_kj_mol": 1215.4940185546875,
+            "difference_kj_mol": -0.0008411807218635659,
+            "relative_difference": 6.92048425597184e-07,
+            "relative_tolerance": 1.311085422980072e-05,
+            "summed_interactions": 3024,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "failed_terms": []
+      },
+      "initial_potential_energy_kj_mol": 10615.16646796158,
+      "minimized_potential_energy_kj_mol": 5735.536201186657,
+      "openmm_nvt_smoke_test": {
+        "duration_ps": 1.0,
+        "platform": "CPU",
+        "platform_properties": {
+          "Threads": "1"
+        },
+        "maximum_bond_length_change_angstrom": 0.09173794743409114,
+        "final_potential_energy_kj_mol": 8174.914416076687,
+        "passed": true
+      },
+      "gromacs_smoke_test": {
+        "gromacs_version": "2024.2-Homebrew",
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_duration_ps": 1.0,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "passed": true
+      }
+    },
+    "i_beta": {
+      "system": "CelluloseForge I-beta (110) finite DP6 slab",
+      "allomorph": "i_beta",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "layers": 2,
+      "chains_per_layer": 4,
+      "chain_count": 8,
+      "atom_count": 1032,
+      "openff_force_field": "openff-2.3.0.offxml",
+      "charge_method": "cached am1bcc DP6 template",
+      "input_geometry_checks": {
+        "chains_checked": 8,
+        "bonds_checked": 1072,
+        "hydrogen_bond_length_range_angstrom": [
+          0.9603223417165696,
+          0.9832730200099061
+        ],
+        "heavy_bond_length_range_angstrom": [
+          1.4052750771168758,
+          1.5581034616701583
+        ],
+        "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10810346167015839,
+        "passed": true
+      },
+      "stereochemistry_checks": {
+        "chains_checked": 8,
+        "failed_chain_numbers": [],
+        "negative_control": "mirror first chain through its x centroid",
+        "mirrored_chain_rejected": true,
+        "passed": true
+      },
+      "cross_engine_single_point": {
+        "dispersion_correction": "disabled for vacuum slab in both engines",
+        "pme_accuracy": {
+          "openmm_ewald_error_tolerance": 1e-06,
+          "gromacs_ewald_rtol": 1e-06,
+          "gromacs_fourierspacing_nm": 0.05,
+          "gromacs_pme_order": 8
+        },
+        "comparison": {
+          "Angle": {
+            "openmm_kj_mol": 605.3049639828531,
+            "gromacs_kj_mol": 605.3064575195312,
+            "difference_kj_mol": -0.0014935366781401171,
+            "relative_difference": 2.4674058232592466e-06,
+            "relative_tolerance": 1.0598235497900424e-05,
+            "summed_interactions": 1976,
+            "passed": true
+          },
+          "Bond": {
+            "openmm_kj_mol": 6547.4947411156245,
+            "gromacs_kj_mol": 6547.4921875,
+            "difference_kj_mol": 0.0025536156244925223,
+            "relative_difference": 3.9001415433858185e-07,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 576,
+            "passed": true
+          },
+          "Electrostatics": {
+            "openmm_kj_mol": -17423.740072887595,
+            "gromacs_kj_mol": -17423.747314453125,
+            "difference_kj_mol": 0.007241565530421212,
+            "relative_difference": 4.156147010014477e-07,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 0,
+            "passed": true
+          },
+          "Electrostatics 1-4": {
+            "openmm_kj_mol": 22453.057272621078,
+            "gromacs_kj_mol": 22453.0546875,
+            "difference_kj_mol": 0.002585121077572694,
+            "relative_difference": 1.1513448018167896e-07,
+            "relative_tolerance": 1.311085422980072e-05,
+            "summed_interactions": 3024,
+            "passed": true
+          },
+          "Torsion": {
+            "openmm_kj_mol": 3363.7043558145187,
+            "gromacs_kj_mol": 3363.704345703125,
+            "difference_kj_mol": 1.0111393748957198e-05,
+            "relative_difference": 3.006029269926349e-09,
+            "relative_tolerance": 1.689915194193778e-05,
+            "summed_interactions": 5024,
+            "passed": true
+          },
+          "vdW": {
+            "openmm_kj_mol": -2108.2171371211584,
+            "gromacs_kj_mol": -2108.2177734375,
+            "difference_kj_mol": 0.0006363163415699091,
+            "relative_difference": 3.0182666591050507e-07,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 0,
+            "passed": true
+          },
+          "vdW 1-4": {
+            "openmm_kj_mol": 1218.2086146253896,
+            "gromacs_kj_mol": 1218.2100830078125,
+            "difference_kj_mol": -0.0014683824228995945,
+            "relative_difference": 1.2053605887697923e-06,
+            "relative_tolerance": 1.311085422980072e-05,
+            "summed_interactions": 3024,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "failed_terms": []
+      },
+      "initial_potential_energy_kj_mol": 8225.686301276633,
+      "minimized_potential_energy_kj_mol": 5595.563732679817,
+      "openmm_nvt_smoke_test": {
+        "duration_ps": 1.0,
+        "platform": "CPU",
+        "platform_properties": {
+          "Threads": "1"
+        },
+        "maximum_bond_length_change_angstrom": 0.10324433664026156,
+        "final_potential_energy_kj_mol": 8102.763654211411,
+        "passed": true
+      },
+      "gromacs_smoke_test": {
+        "gromacs_version": "2024.2-Homebrew",
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_duration_ps": 1.0,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "passed": true
+      }
+    },
+    "ii": {
+      "system": "CelluloseForge II (110) finite DP6 slab",
+      "allomorph": "ii",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "layers": 2,
+      "chains_per_layer": 4,
+      "chain_count": 8,
+      "atom_count": 1032,
+      "openff_force_field": "openff-2.3.0.offxml",
+      "charge_method": "cached am1bcc DP6 template",
+      "input_geometry_checks": {
+        "chains_checked": 8,
+        "bonds_checked": 1072,
+        "hydrogen_bond_length_range_angstrom": [
+          0.9599999999999969,
+          0.9839000509527107
+        ],
+        "heavy_bond_length_range_angstrom": [
+          1.3933376085700329,
+          1.5300567302608652
+        ],
+        "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.08005673026086524,
+        "passed": true
+      },
+      "stereochemistry_checks": {
+        "chains_checked": 8,
+        "failed_chain_numbers": [],
+        "negative_control": "mirror first chain through its x centroid",
+        "mirrored_chain_rejected": true,
+        "passed": true
+      },
+      "cross_engine_single_point": {
+        "dispersion_correction": "disabled for vacuum slab in both engines",
+        "pme_accuracy": {
+          "openmm_ewald_error_tolerance": 1e-06,
+          "gromacs_ewald_rtol": 1e-06,
+          "gromacs_fourierspacing_nm": 0.05,
+          "gromacs_pme_order": 8
+        },
+        "comparison": {
+          "Angle": {
+            "openmm_kj_mol": 596.9036865337815,
+            "gromacs_kj_mol": 596.90380859375,
+            "difference_kj_mol": -0.00012205996847569622,
+            "relative_difference": 2.0448850672147358e-07,
+            "relative_tolerance": 1.0598235497900424e-05,
+            "summed_interactions": 1976,
+            "passed": true
+          },
+          "Bond": {
+            "openmm_kj_mol": 6648.525113520217,
+            "gromacs_kj_mol": 6648.53662109375,
+            "difference_kj_mol": -0.011507573532981041,
+            "relative_difference": 1.7308430695066145e-06,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 576,
+            "passed": true
+          },
+          "Electrostatics": {
+            "openmm_kj_mol": -18525.105700603483,
+            "gromacs_kj_mol": -18525.108276367188,
+            "difference_kj_mol": 0.002575763704953715,
+            "relative_difference": 1.3904176248403702e-07,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 0,
+            "passed": true
+          },
+          "Electrostatics 1-4": {
+            "openmm_kj_mol": 23705.86024372783,
+            "gromacs_kj_mol": 23705.853515625,
+            "difference_kj_mol": 0.0067281028314027935,
+            "relative_difference": 2.838160168932463e-07,
+            "relative_tolerance": 1.311085422980072e-05,
+            "summed_interactions": 3024,
+            "passed": true
+          },
+          "Torsion": {
+            "openmm_kj_mol": 3328.2902735049374,
+            "gromacs_kj_mol": 3328.29052734375,
+            "difference_kj_mol": -0.0002538388125685742,
+            "relative_difference": 7.626702371176668e-08,
+            "relative_tolerance": 1.689915194193778e-05,
+            "summed_interactions": 5024,
+            "passed": true
+          },
+          "vdW": {
+            "openmm_kj_mol": -1336.290220971467,
+            "gromacs_kj_mol": -1336.28857421875,
+            "difference_kj_mol": -0.0016467527170789253,
+            "relative_difference": 1.2323316381689569e-06,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 0,
+            "passed": true
+          },
+          "vdW 1-4": {
+            "openmm_kj_mol": 1390.3270997469563,
+            "gromacs_kj_mol": 1390.32763671875,
+            "difference_kj_mol": -0.0005369717937355745,
+            "relative_difference": 3.8621960720198123e-07,
+            "relative_tolerance": 1.311085422980072e-05,
+            "summed_interactions": 3024,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "failed_terms": []
+      },
+      "initial_potential_energy_kj_mol": 9368.467434335562,
+      "minimized_potential_energy_kj_mol": 6069.004456297656,
+      "openmm_nvt_smoke_test": {
+        "duration_ps": 1.0,
+        "platform": "CPU",
+        "platform_properties": {
+          "Threads": "1"
+        },
+        "maximum_bond_length_change_angstrom": 0.1028177866721145,
+        "final_potential_energy_kj_mol": 8690.193828873204,
+        "passed": true
+      },
+      "gromacs_smoke_test": {
+        "gromacs_version": "2024.2-Homebrew",
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_duration_ps": 1.0,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "passed": true
+      }
+    },
+    "iii_i": {
+      "system": "CelluloseForge III-I (110) finite DP6 slab",
+      "allomorph": "iii_i",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "layers": 2,
+      "chains_per_layer": 4,
+      "chain_count": 8,
+      "atom_count": 1032,
+      "openff_force_field": "openff-2.3.0.offxml",
+      "charge_method": "cached am1bcc DP6 template",
+      "input_geometry_checks": {
+        "chains_checked": 8,
+        "bonds_checked": 1072,
+        "hydrogen_bond_length_range_angstrom": [
+          0.9603223417165683,
+          0.9966266658039367
+        ],
+        "heavy_bond_length_range_angstrom": [
+          1.377588412446273,
+          1.5279086324148445
+        ],
+        "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.07790863241484458,
+        "passed": true
+      },
+      "stereochemistry_checks": {
+        "chains_checked": 8,
+        "failed_chain_numbers": [],
+        "negative_control": "mirror first chain through its x centroid",
+        "mirrored_chain_rejected": true,
+        "passed": true
+      },
+      "cross_engine_single_point": {
+        "dispersion_correction": "disabled for vacuum slab in both engines",
+        "pme_accuracy": {
+          "openmm_ewald_error_tolerance": 1e-06,
+          "gromacs_ewald_rtol": 1e-06,
+          "gromacs_fourierspacing_nm": 0.05,
+          "gromacs_pme_order": 8
+        },
+        "comparison": {
+          "Angle": {
+            "openmm_kj_mol": 636.3324280367331,
+            "gromacs_kj_mol": 636.3330078125,
+            "difference_kj_mol": -0.0005797757669370185,
+            "relative_difference": 9.111200579239062e-07,
+            "relative_tolerance": 1.0598235497900424e-05,
+            "summed_interactions": 1976,
+            "passed": true
+          },
+          "Bond": {
+            "openmm_kj_mol": 6807.4278516641625,
+            "gromacs_kj_mol": 6807.4130859375,
+            "difference_kj_mol": 0.014765726662517409,
+            "relative_difference": 2.169061058635787e-06,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 576,
+            "passed": true
+          },
+          "Electrostatics": {
+            "openmm_kj_mol": -18222.364689049587,
+            "gromacs_kj_mol": -18222.39227294922,
+            "difference_kj_mol": 0.027583899631281383,
+            "relative_difference": 1.5137364632540119e-06,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 0,
+            "passed": true
+          },
+          "Electrostatics 1-4": {
+            "openmm_kj_mol": 23697.840366939203,
+            "gromacs_kj_mol": 23697.828125,
+            "difference_kj_mol": 0.012241939202795038,
+            "relative_difference": 5.165845922345622e-07,
+            "relative_tolerance": 1.311085422980072e-05,
+            "summed_interactions": 3024,
+            "passed": true
+          },
+          "Torsion": {
+            "openmm_kj_mol": 3638.372017719785,
+            "gromacs_kj_mol": 3638.37109375,
+            "difference_kj_mol": 0.0009239697851626261,
+            "relative_difference": 2.5395143230616914e-07,
+            "relative_tolerance": 1.689915194193778e-05,
+            "summed_interactions": 5024,
+            "passed": true
+          },
+          "vdW": {
+            "openmm_kj_mol": -1611.2355431254548,
+            "gromacs_kj_mol": -1611.236083984375,
+            "difference_kj_mol": 0.0005408589202033909,
+            "relative_difference": 3.356794982308973e-07,
+            "relative_tolerance": 1e-05,
+            "summed_interactions": 0,
+            "passed": true
+          },
+          "vdW 1-4": {
+            "openmm_kj_mol": 1348.6846669827646,
+            "gromacs_kj_mol": 1348.6868896484375,
+            "difference_kj_mol": -0.0022226656728889793,
+            "relative_difference": 1.6480220056623832e-06,
+            "relative_tolerance": 1.311085422980072e-05,
+            "summed_interactions": 3024,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "failed_terms": []
+      },
+      "initial_potential_energy_kj_mol": 9841.913927743213,
+      "minimized_potential_energy_kj_mol": 6884.259643430645,
+      "openmm_nvt_smoke_test": {
+        "duration_ps": 1.0,
+        "platform": "CPU",
+        "platform_properties": {
+          "Threads": "1"
+        },
+        "maximum_bond_length_change_angstrom": 0.0991071423603147,
+        "final_potential_energy_kj_mol": 9335.990857538009,
+        "passed": true
+      },
+      "gromacs_smoke_test": {
+        "gromacs_version": "2024.2-Homebrew",
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_duration_ps": 1.0,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "passed": true
+      }
+    }
+  },
+  "passed": true
+}

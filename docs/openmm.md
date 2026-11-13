@@ -72,8 +72,10 @@ A ten-iteration minimization of the constrained system is also recorded.
 
 The serialized system uses PME with a 1 nm cutoff and OpenMM's default PME
 accuracy (`ewaldErrorTolerance` 5 × 10^-4). The isotropic long-range dispersion
-correction is enabled for bulk crystals and unit cells, and disabled for slabs
-and fibrils, whose vacuum regions violate its homogeneous-system assumption.
+correction follows the same rule in every engine: GLYCAM06 and OpenFF Sage
+enable it for bulk crystals and unit cells, CHARMM36 never enables it (the
+force field is parameterized without it), and slabs and fibrils never enable
+it, because their vacuum regions violate its homogeneous-system assumption.
 The build report records the cutoff, the dispersion setting, and both PME
 tolerances. Build-time energies are evaluated with a tighter tolerance
 (1 × 10^-5, GROMACS's default `ewald-rtol`) so that they can be compared with

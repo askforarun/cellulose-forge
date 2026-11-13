@@ -747,8 +747,9 @@ def test_cli_writes_finite_glycam_slab_system(
             "0",
             "--layers",
             "1",
+            # Four chains give a 23.9 A in-plane box, above twice the 10 A cutoff.
             "--chains-per-layer",
-            "2",
+            "4",
             "--degree-polymerization",
             "12",
             "--chain-boundary",
@@ -767,12 +768,12 @@ def test_cli_writes_finite_glycam_slab_system(
     assert result == 0
     report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
     assert report["chain_boundary"] == "finite"
-    assert report["chain_count"] == 2
-    assert report["force_field_atom_count"] == 510
+    assert report["chain_count"] == 4
+    assert report["force_field_atom_count"] == 1020
     assert report["closest_longitudinal_periodic_image_contact"][
         "distance_angstrom"
     ] >= 1.0
-    assert "CELLULOSE_CHAIN  2" in (output / "system.top").read_text(encoding="utf-8")
+    assert "CELLULOSE_CHAIN  4" in (output / "system.top").read_text(encoding="utf-8")
 
 
 def _record_openmm_writer(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
@@ -826,8 +827,9 @@ def test_cli_writes_periodic_restrained_openmm_system(
             "0",
             "--layers",
             "2",
+            # Four chains give a 23.9 A in-plane box, above twice the 10 A cutoff.
             "--chains-per-layer",
-            "2",
+            "4",
             "--degree-polymerization",
             "12",
             "--chain-boundary",
@@ -857,7 +859,7 @@ def test_cli_writes_periodic_restrained_openmm_system(
     restraints = calls["restraints"]
     assert isinstance(restraints, OpenMMPositionRestraints)
     assert restraints.force_constants_kj_mol_nm2 == (1000.0, 1000.0, 1000.0)
-    assert len(restraints.atom_indices) == 2 * 12 * 11
+    assert len(restraints.atom_indices) == 4 * 12 * 11
     report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
     assert report["md_engines"] == ["gromacs", "openmm"]
     assert report["openmm_validation"]["status"] == "passed"
@@ -890,8 +892,9 @@ def test_cli_openmm_only_build_keeps_gromacs_files_internal(
             "0",
             "--layers",
             "1",
+            # Four chains give a 23.9 A in-plane box, above twice the 10 A cutoff.
             "--chains-per-layer",
-            "2",
+            "4",
             "--degree-polymerization",
             "12",
             "--chain-boundary",

@@ -1,0 +1,534 @@
+{
+  "matrix": "periodic cellulose bulk crystals, OpenFF Sage 2.3/NAGL",
+  "provenance": {
+    "cellulose_forge_commit": "acc37ee5421d669a9d292c229e68fbb4266c435f",
+    "tracked_tree_clean": false,
+    "software_versions": {
+      "openff-toolkit": "0.19.0",
+      "openff-interchange": "0.5.5",
+      "openff-nagl": "0.6.1",
+      "openff-nagl-models": "2026.9.0",
+      "openmm": "8.6.1"
+    }
+  },
+  "validation_scope": "model construction validated; force-field accuracy for cellulose not assessed",
+  "software_versions": {
+    "openff-toolkit": "0.19.0",
+    "openff-interchange": "0.5.5",
+    "openff-nagl": "0.6.1",
+    "openff-nagl-models": "2026.9.0",
+    "openmm": "8.6.1"
+  },
+  "openmm_platform": {
+    "name": "CPU",
+    "threads": 1
+  },
+  "pme_settings": {
+    "ewald_rtol": 1e-06,
+    "pme_order": 8,
+    "fourierspacing_nm": 0.05
+  },
+  "cases": {
+    "i_alpha": {
+      "allomorph": "i_alpha",
+      "replication": [
+        3,
+        3,
+        4
+      ],
+      "box_edges_angstrom": [
+        31.200000000000003,
+        20.151,
+        23.848
+      ],
+      "shortest_lattice_vector_angstrom": 20.151,
+      "perpendicular_box_heights_angstrom": [
+        25.328024856014967,
+        18.279656022829112,
+        21.02596493543923
+      ],
+      "reduced_box_diagonal_angstrom": [
+        31.200000000000003,
+        18.29262396991664,
+        21.025964935439248
+      ],
+      "atom_count": 1512,
+      "stereochemistry": {
+        "reference": "independent PubChem finite DP6 internal-residue signed parity",
+        "centres_checked": 360,
+        "failures": [],
+        "passed": true
+      },
+      "charge_provenance": {
+        "method": "openff-gnn-am1bcc-1.0.0.pt",
+        "openff_toolkit": "0.19.0",
+        "openff_nagl": "0.6.1",
+        "openff_nagl_models": "2026.9.0",
+        "net_charge_e": -1.4432899320127035e-15,
+        "periodic_equivalent_atom_charges": true,
+        "charge_sha256": "49ba6b295ac83e4fbe02ac6657bb01f149b149a750050f4ba63a6eed4812b53c"
+      },
+      "dispersion_correction": true,
+      "energy_comparison_dispersion_correction": "disabled in both engines to isolate the shared base potential; generated production inputs enable it",
+      "energy_comparison": {
+        "Angle": {
+          "openmm_kj_mol": 2791.3622649073413,
+          "gromacs_kj_mol": 2791.3671875,
+          "difference_kj_mol": -0.0049225926586586866,
+          "relative_difference": 1.7635059553263042e-06,
+          "relative_tolerance": 1.2953832347112774e-05,
+          "summed_interactions": 2952,
+          "passed": true
+        },
+        "Bond": {
+          "openmm_kj_mol": 9709.271911447522,
+          "gromacs_kj_mol": 9709.2685546875,
+          "difference_kj_mol": 0.003356760022143135,
+          "relative_difference": 3.457272649028826e-07,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 864,
+          "passed": true
+        },
+        "Electrostatics": {
+          "openmm_kj_mol": -25290.97030956515,
+          "gromacs_kj_mol": -25290.9326171875,
+          "difference_kj_mol": -0.03769237764936406,
+          "relative_difference": 1.4903492111217515e-06,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 0,
+          "passed": true
+        },
+        "Electrostatics 1-4": {
+          "openmm_kj_mol": 32644.256665672914,
+          "gromacs_kj_mol": 32644.2734375,
+          "difference_kj_mol": -0.01677182708590408,
+          "relative_difference": 5.137754748322105e-07,
+          "relative_tolerance": 1.6057451477511154e-05,
+          "summed_interactions": 4536,
+          "passed": true
+        },
+        "Torsion": {
+          "openmm_kj_mol": 5825.326117212154,
+          "gromacs_kj_mol": 5825.3349609375,
+          "difference_kj_mol": -0.008843725346196152,
+          "relative_difference": 1.5181488112698823e-06,
+          "relative_tolerance": 2.073008071831146e-05,
+          "summed_interactions": 7560,
+          "passed": true
+        },
+        "vdW": {
+          "openmm_kj_mol": -3756.7882855534554,
+          "gromacs_kj_mol": -3756.79052734375,
+          "difference_kj_mol": 0.002241790294647217,
+          "relative_difference": 5.967301818747615e-07,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 0,
+          "passed": true
+        },
+        "vdW 1-4": {
+          "openmm_kj_mol": 1857.0950732358276,
+          "gromacs_kj_mol": 1857.0948486328125,
+          "difference_kj_mol": 0.00022460301511273428,
+          "relative_difference": 1.2094319690449825e-07,
+          "relative_tolerance": 1.6057451477511154e-05,
+          "summed_interactions": 4536,
+          "passed": true
+        }
+      },
+      "gromacs_smoke_test": {
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_duration_ps": 1.0,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "passed": true
+      },
+      "openmm_smoke_test": {
+        "platform": "CPU",
+        "threads": 1,
+        "duration_ps": 1.0,
+        "bonds_checked": 1584,
+        "maximum_bond_change_angstrom": 0.09988343734161109,
+        "all_finite": true,
+        "passed": true
+      },
+      "passed": true
+    },
+    "i_beta": {
+      "allomorph": "i_beta",
+      "replication": [
+        3,
+        3,
+        2
+      ],
+      "box_edges_angstrom": [
+        23.352,
+        24.603,
+        20.76
+      ],
+      "shortest_lattice_vector_angstrom": 20.76,
+      "perpendicular_box_heights_angstrom": [
+        23.20188997375966,
+        24.444848365211072,
+        20.75999999999999
+      ],
+      "reduced_box_diagonal_angstrom": [
+        23.352,
+        24.444848365211083,
+        20.76
+      ],
+      "atom_count": 1512,
+      "stereochemistry": {
+        "reference": "independent PubChem finite DP6 internal-residue signed parity",
+        "centres_checked": 360,
+        "failures": [],
+        "passed": true
+      },
+      "charge_provenance": {
+        "method": "openff-gnn-am1bcc-1.0.0.pt",
+        "openff_toolkit": "0.19.0",
+        "openff_nagl": "0.6.1",
+        "openff_nagl_models": "2026.9.0",
+        "net_charge_e": 1.4432899320127035e-15,
+        "periodic_equivalent_atom_charges": true,
+        "charge_sha256": "b94defc580a74888519cfece4553a220ae24e81f7559ed097ce8355474f1c006"
+      },
+      "dispersion_correction": true,
+      "energy_comparison_dispersion_correction": "disabled in both engines to isolate the shared base potential; generated production inputs enable it",
+      "energy_comparison": {
+        "Angle": {
+          "openmm_kj_mol": 877.0000557733574,
+          "gromacs_kj_mol": 876.9979858398438,
+          "difference_kj_mol": 0.0020699335136669106,
+          "relative_difference": 2.3602433090401563e-06,
+          "relative_tolerance": 1.2953832347112774e-05,
+          "summed_interactions": 2952,
+          "passed": true
+        },
+        "Bond": {
+          "openmm_kj_mol": 9802.18828435723,
+          "gromacs_kj_mol": 9802.17578125,
+          "difference_kj_mol": 0.012503107229349553,
+          "relative_difference": 1.2755424469148965e-06,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 864,
+          "passed": true
+        },
+        "Electrostatics": {
+          "openmm_kj_mol": -24904.046272064763,
+          "gromacs_kj_mol": -24904.010284423828,
+          "difference_kj_mol": -0.035987640934763476,
+          "relative_difference": 1.445051962304268e-06,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 0,
+          "passed": true
+        },
+        "Electrostatics 1-4": {
+          "openmm_kj_mol": 31892.343820710517,
+          "gromacs_kj_mol": 31892.33203125,
+          "difference_kj_mol": 0.011789460517320549,
+          "relative_difference": 3.696642863126482e-07,
+          "relative_tolerance": 1.6057451477511154e-05,
+          "summed_interactions": 4536,
+          "passed": true
+        },
+        "Torsion": {
+          "openmm_kj_mol": 5024.138326003298,
+          "gromacs_kj_mol": 5024.13720703125,
+          "difference_kj_mol": 0.0011189720480615506,
+          "relative_difference": 2.2271919590074123e-07,
+          "relative_tolerance": 2.073008071831146e-05,
+          "summed_interactions": 7560,
+          "passed": true
+        },
+        "vdW": {
+          "openmm_kj_mol": -4637.636452242732,
+          "gromacs_kj_mol": -4637.6357421875,
+          "difference_kj_mol": -0.0007100552320480347,
+          "relative_difference": 1.5310713536087038e-07,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 0,
+          "passed": true
+        },
+        "vdW 1-4": {
+          "openmm_kj_mol": 1853.787049703465,
+          "gromacs_kj_mol": 1853.7864990234375,
+          "difference_kj_mol": 0.0005506800275725254,
+          "relative_difference": 2.9705678851333715e-07,
+          "relative_tolerance": 1.6057451477511154e-05,
+          "summed_interactions": 4536,
+          "passed": true
+        }
+      },
+      "gromacs_smoke_test": {
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_duration_ps": 1.0,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "passed": true
+      },
+      "openmm_smoke_test": {
+        "platform": "CPU",
+        "threads": 1,
+        "duration_ps": 1.0,
+        "bonds_checked": 1584,
+        "maximum_bond_change_angstrom": 0.11016963753559805,
+        "all_finite": true,
+        "passed": true
+      },
+      "passed": true
+    },
+    "ii": {
+      "allomorph": "ii",
+      "replication": [
+        3,
+        3,
+        2
+      ],
+      "box_edges_angstrom": [
+        24.299999999999997,
+        27.09,
+        20.62
+      ],
+      "shortest_lattice_vector_angstrom": 20.62,
+      "perpendicular_box_heights_angstrom": [
+        21.632171152050343,
+        24.115864876915385,
+        20.61999999999997
+      ],
+      "reduced_box_diagonal_angstrom": [
+        24.299999999999997,
+        24.11586487691542,
+        20.62
+      ],
+      "atom_count": 1512,
+      "stereochemistry": {
+        "reference": "independent PubChem finite DP6 internal-residue signed parity",
+        "centres_checked": 360,
+        "failures": [],
+        "passed": true
+      },
+      "charge_provenance": {
+        "method": "openff-gnn-am1bcc-1.0.0.pt",
+        "openff_toolkit": "0.19.0",
+        "openff_nagl": "0.6.1",
+        "openff_nagl_models": "2026.9.0",
+        "net_charge_e": 1.4432899320127035e-15,
+        "periodic_equivalent_atom_charges": true,
+        "charge_sha256": "b94defc580a74888519cfece4553a220ae24e81f7559ed097ce8355474f1c006"
+      },
+      "dispersion_correction": true,
+      "energy_comparison_dispersion_correction": "disabled in both engines to isolate the shared base potential; generated production inputs enable it",
+      "energy_comparison": {
+        "Angle": {
+          "openmm_kj_mol": 881.0196472312297,
+          "gromacs_kj_mol": 881.020263671875,
+          "difference_kj_mol": -0.0006164406453308402,
+          "relative_difference": 6.996895199228083e-07,
+          "relative_tolerance": 1.2953832347112774e-05,
+          "summed_interactions": 2952,
+          "passed": true
+        },
+        "Bond": {
+          "openmm_kj_mol": 9970.335297300828,
+          "gromacs_kj_mol": 9970.3408203125,
+          "difference_kj_mol": -0.005523011672266875,
+          "relative_difference": 5.539441200460154e-07,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 864,
+          "passed": true
+        },
+        "Electrostatics": {
+          "openmm_kj_mol": -26896.792079198378,
+          "gromacs_kj_mol": -26896.790649414062,
+          "difference_kj_mol": -0.0014297843154054135,
+          "relative_difference": 5.315817258784514e-08,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 0,
+          "passed": true
+        },
+        "Electrostatics 1-4": {
+          "openmm_kj_mol": 33419.04666261572,
+          "gromacs_kj_mol": 33418.98828125,
+          "difference_kj_mol": 0.0583813657212886,
+          "relative_difference": 1.7469488675329875e-06,
+          "relative_tolerance": 1.6057451477511154e-05,
+          "summed_interactions": 4536,
+          "passed": true
+        },
+        "Torsion": {
+          "openmm_kj_mol": 5390.964351538832,
+          "gromacs_kj_mol": 5390.93017578125,
+          "difference_kj_mol": 0.03417575758157909,
+          "relative_difference": 6.339451599568404e-06,
+          "relative_tolerance": 2.073008071831146e-05,
+          "summed_interactions": 7560,
+          "passed": true
+        },
+        "vdW": {
+          "openmm_kj_mol": -4199.2926130741835,
+          "gromacs_kj_mol": -4199.29150390625,
+          "difference_kj_mol": -0.0011091679334640503,
+          "relative_difference": 2.6413208977405834e-07,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 0,
+          "passed": true
+        },
+        "vdW 1-4": {
+          "openmm_kj_mol": 2127.2118477324702,
+          "gromacs_kj_mol": 2127.220947265625,
+          "difference_kj_mol": -0.009099533154767414,
+          "relative_difference": 4.2776624433226585e-06,
+          "relative_tolerance": 1.6057451477511154e-05,
+          "summed_interactions": 4536,
+          "passed": true
+        }
+      },
+      "gromacs_smoke_test": {
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_duration_ps": 1.0,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "passed": true
+      },
+      "openmm_smoke_test": {
+        "platform": "CPU",
+        "threads": 1,
+        "duration_ps": 1.0,
+        "bonds_checked": 1584,
+        "maximum_bond_change_angstrom": 0.10071233793521661,
+        "all_finite": true,
+        "passed": true
+      },
+      "passed": true
+    },
+    "iii_i": {
+      "allomorph": "iii_i",
+      "replication": [
+        5,
+        3,
+        2
+      ],
+      "box_edges_angstrom": [
+        22.25,
+        23.55,
+        20.62
+      ],
+      "shortest_lattice_vector_angstrom": 20.62,
+      "perpendicular_box_heights_angstrom": [
+        21.481766037062734,
+        22.736880457205725,
+        20.619999999999976
+      ],
+      "reduced_box_diagonal_angstrom": [
+        22.25,
+        22.73688045720575,
+        20.62
+      ],
+      "atom_count": 1260,
+      "stereochemistry": {
+        "reference": "independent PubChem finite DP6 internal-residue signed parity",
+        "centres_checked": 300,
+        "failures": [],
+        "passed": true
+      },
+      "charge_provenance": {
+        "method": "openff-gnn-am1bcc-1.0.0.pt",
+        "openff_toolkit": "0.19.0",
+        "openff_nagl": "0.6.1",
+        "openff_nagl_models": "2026.9.0",
+        "net_charge_e": 1.4432899320127035e-15,
+        "periodic_equivalent_atom_charges": true,
+        "charge_sha256": "b94defc580a74888519cfece4553a220ae24e81f7559ed097ce8355474f1c006"
+      },
+      "dispersion_correction": true,
+      "energy_comparison_dispersion_correction": "disabled in both engines to isolate the shared base potential; generated production inputs enable it",
+      "energy_comparison": {
+        "Angle": {
+          "openmm_kj_mol": 812.1202993147865,
+          "gromacs_kj_mol": 812.12060546875,
+          "difference_kj_mol": -0.00030615396349276125,
+          "relative_difference": 3.769809082926192e-07,
+          "relative_tolerance": 1.1825176971089597e-05,
+          "summed_interactions": 2460,
+          "passed": true
+        },
+        "Bond": {
+          "openmm_kj_mol": 8530.127279740651,
+          "gromacs_kj_mol": 8530.11328125,
+          "difference_kj_mol": 0.013998490650919848,
+          "relative_difference": 1.6410646865922798e-06,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 720,
+          "passed": true
+        },
+        "Electrostatics": {
+          "openmm_kj_mol": -23457.158627382094,
+          "gromacs_kj_mol": -23457.22802734375,
+          "difference_kj_mol": 0.0693999616560177,
+          "relative_difference": 2.958574712029877e-06,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 0,
+          "passed": true
+        },
+        "Electrostatics 1-4": {
+          "openmm_kj_mol": 27854.42782605922,
+          "gromacs_kj_mol": 27854.37890625,
+          "difference_kj_mol": 0.048919809218205046,
+          "relative_difference": 1.7562668859576466e-06,
+          "relative_tolerance": 1.465838065046253e-05,
+          "summed_interactions": 3780,
+          "passed": true
+        },
+        "Torsion": {
+          "openmm_kj_mol": 4531.275382738417,
+          "gromacs_kj_mol": 4531.27197265625,
+          "difference_kj_mol": 0.0034100821667379932,
+          "relative_difference": 7.525656418341882e-07,
+          "relative_tolerance": 1.8923888047203473e-05,
+          "summed_interactions": 6300,
+          "passed": true
+        },
+        "vdW": {
+          "openmm_kj_mol": -3421.699809014797,
+          "gromacs_kj_mol": -3421.69970703125,
+          "difference_kj_mol": -0.00010198354721069336,
+          "relative_difference": 2.980493699126028e-08,
+          "relative_tolerance": 1e-05,
+          "summed_interactions": 0,
+          "passed": true
+        },
+        "vdW 1-4": {
+          "openmm_kj_mol": 1711.9857672166647,
+          "gromacs_kj_mol": 1711.991943359375,
+          "difference_kj_mol": -0.00617614271027378,
+          "relative_difference": 3.60757697150991e-06,
+          "relative_tolerance": 1.465838065046253e-05,
+          "summed_interactions": 3780,
+          "passed": true
+        }
+      },
+      "gromacs_smoke_test": {
+        "grompp_maxwarn": 0,
+        "minimization_completed": true,
+        "nvt_duration_ps": 1.0,
+        "nvt_reached_final_step": true,
+        "failure_markers": [],
+        "passed": true
+      },
+      "openmm_smoke_test": {
+        "platform": "CPU",
+        "threads": 1,
+        "duration_ps": 1.0,
+        "bonds_checked": 1320,
+        "maximum_bond_change_angstrom": 0.11966407954347225,
+        "all_finite": true,
+        "passed": true
+      },
+      "passed": true
+    }
+  },
+  "passed": true
+}
