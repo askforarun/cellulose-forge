@@ -1,7 +1,7 @@
 {
   "system": "cellulose II periodic bulk (2, 2, 6), GLYCAM mapping",
   "provenance": {
-    "cellulose_forge_commit": "1917ce79ea74ebca64b7ef1e972904f9404bdf27",
+    "cellulose_forge_commit": "9b5357945903c69f2d691eb7298856713e6e919e",
     "tracked_tree_clean": true,
     "software_versions": {
       "numpy": "2.2.6"
@@ -117,26 +117,26 @@
     {
       "atoms": 4320,
       "hydroxyls": 720,
-      "seconds": 0.5170254580007168,
-      "microseconds_per_hydroxyl": 718.0909138898844
+      "seconds": 0.5427546659993823,
+      "microseconds_per_hydroxyl": 753.825924999142
     },
     {
       "atoms": 8640,
       "hydroxyls": 1440,
-      "seconds": 1.046305209005368,
-      "microseconds_per_hydroxyl": 726.600839587061
+      "seconds": 1.0735741250027786,
+      "microseconds_per_hydroxyl": 745.5375868074851
     },
     {
       "atoms": 17280,
       "hydroxyls": 2880,
-      "seconds": 2.100929082997027,
-      "microseconds_per_hydroxyl": 729.4892649295232
+      "seconds": 2.1520189580041915,
+      "microseconds_per_hydroxyl": 747.2288048625664
     },
     {
       "atoms": 34560,
       "hydroxyls": 5760,
-      "seconds": 4.194842750002863,
-      "microseconds_per_hydroxyl": 728.2713107643859
+      "seconds": 4.370643916001427,
+      "microseconds_per_hydroxyl": 758.7923465280255
     }
   ]
 }
