@@ -1,8 +1,8 @@
 {
   "matrix": "periodic DP6 cellulose reference slabs",
   "provenance": {
-    "cellulose_forge_commit": "3dbf3a0a310861b2d26af1e80e26fad1421120b9",
-    "tracked_tree_clean": false,
+    "cellulose_forge_commit": "128c02ead4ccfbb969d0b6e7c53f991dea3d6e5e",
+    "tracked_tree_clean": true,
     "software_versions": {
       "openff-toolkit": "0.19.0",
       "openff-interchange": "0.5.5",
@@ -267,9 +267,9 @@
         },
         "Electrostatics 1-4": {
           "openmm_kj_mol": 21261.56246613848,
-          "gromacs_kj_mol": 21261.556640625,
-          "difference_kj_mol": 0.005825513479067013,
-          "relative_difference": 2.7399272693833407e-07,
+          "gromacs_kj_mol": 21261.55859375,
+          "difference_kj_mol": 0.0038723884790670127,
+          "relative_difference": 1.8213094570233226e-07,
           "relative_tolerance": 1.311085422980072e-05,
           "summed_interactions": 3024,
           "passed": true
@@ -466,9 +466,9 @@
         },
         "vdW 1-4": {
           "openmm_kj_mol": 1418.0387202979243,
-          "gromacs_kj_mol": 1418.0399169921875,
-          "difference_kj_mol": -0.0011966942631715938,
-          "relative_difference": 8.43907318004072e-07,
+          "gromacs_kj_mol": 1418.039794921875,
+          "difference_kj_mol": -0.0010746239506715938,
+          "relative_difference": 7.578235494659011e-07,
           "relative_tolerance": 1.311085422980072e-05,
           "summed_interactions": 3024,
           "passed": true
