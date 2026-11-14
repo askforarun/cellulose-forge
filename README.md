@@ -640,12 +640,13 @@ reference with ParmEd, maps the crystallographic coordinates into GLYCAM atom
 order, and repeats the topology for the generated chains.
 
 For cellulose II, the diffraction dataset does not contain hydroxyl-hydrogen
-coordinates. GLYCAM and OpenFF output construct HO2, HO3, and HO6 on an exact
+coordinates. Force-field output constructs HO2, HO3, and HO6 on an exact
 tetrahedral cone (0.96 A O-H, 108.5 degree C-O-H). Hydrogens are placed class
 by class (HO3, HO2, HO6) so that equivalent hydroxyls are treated identically:
 HO3 takes the intrachain O3-H...O5 bond present in every cellulose allomorph,
-and the others take the clash-free torsion with the best geometric hydrogen
-bond, otherwise the aligned force-field torsion. The experimental heavy-atom
+while HO2 and HO6 use the chain-specific acceptors identified by neutron
+diffraction: O2o-H...O6o, O6o-H...O6c, O2c-H...O2o and O6c-H...O2c. The
+experimental heavy-atom
 coordinates remain unchanged; minimize before dynamics. Origin and center
 chains are mapped in opposite residue directions to preserve the allomorph's
 antiparallel connectivity. This construction is recorded in
@@ -1051,9 +1052,8 @@ CelluloseForge commit and software versions used.
 - Cellulose II modelled hydrogens: `validate_cellulose_ii_hydroxyls.py`
   records the hydrogen-bond network per chain. Every modelled hydroxyl
   hydrogen-bonds, identically in equivalent residues, and the network matches
-  the published cellulose II scheme (intrachain O3-H...O5 in both chains;
-  intermolecular O2-H...O6, O6-H...O6 and intersheet O2-H...O2), apart from the
-  OH2/OH6 directions the literature reports as least certain.
+  Table 3 of Langan, Nishiyama and Chanzy (1999): O3-H...O5 in both chains,
+  O2o-H...O6o, O6o-H...O6c, O2c-H...O2o and O6c-H...O2c.
 
 ### Topology against reference tools
 

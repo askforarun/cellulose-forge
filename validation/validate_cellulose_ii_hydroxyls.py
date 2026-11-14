@@ -8,9 +8,9 @@ distributions, so the result can be compared with the published network:
 
 * intrachain O3-H...O5 to the next residue in both chains, the only
   intrachain hydrogen bond in cellulose II; and
-* intermolecular O2-H...O6, O6-H...O6 and O2-H...O2 bonds, including bonds
-  between sheets (Langan, Nishiyama and Chanzy, J. Am. Chem. Soc. 1999, 121,
-  9940; the OH2 and OH6 directions are reported to be the least certain).
+* origin O2-H...O6 and centre O6-H...O2 bonds within like-chain sheets; and
+* centre O2-H...O2 and origin O6-H...O6 bonds between unlike-chain sheets
+  (Langan, Nishiyama and Chanzy, J. Am. Chem. Soc. 1999, 121, 9940, Table 3).
 
 It uses the committed periodic GLYCAM reference chain and needs no external
 programs.  It is a measurement, not a pass/fail test of the literature
@@ -44,6 +44,10 @@ PERIODIC_REFERENCE_PDB = (
 )
 REPLICATION = (2, 2, 6)
 DONORS = {"H2O": "O2", "H3O": "O3", "H6O": "O6"}
+EXPECTED_ACCEPTORS = {
+    "origin": {"O2-H": "O6 (origin chain)", "O6-H": "O6 (center chain)"},
+    "center": {"O2-H": "O2 (origin chain)", "O6-H": "O2 (center chain)"},
+}
 MAXIMUM_HYDROGEN_ACCEPTOR_ANGSTROM = 2.6
 MINIMUM_ANGLE_DEGREES = 120.0
 # Origin chains sit at fractional (0, 0) of the unit cell, center chains at (1/2, 1/2).
@@ -174,6 +178,13 @@ def measure() -> dict[str, object]:
                     else None
                 ),
             }
+    for role, donors in EXPECTED_ACCEPTORS.items():
+        for donor, acceptor in donors.items():
+            observed = summary[role][donor]["acceptors"]  # type: ignore[index]
+            expected_count = summary[role][donor]["hydroxyls"]  # type: ignore[index]
+            if observed != {acceptor: expected_count}:
+                msg = f"cellulose-II {role} {donor} has {observed}, expected {acceptor}"
+                raise AssertionError(msg)
     return {
         "system": f"cellulose II periodic bulk {REPLICATION}, GLYCAM mapping",
         "provenance": provenance(("numpy",)),
@@ -184,8 +195,9 @@ def measure() -> dict[str, object]:
         "literature_network": {
             "source": "Langan, Nishiyama and Chanzy, J. Am. Chem. Soc. 1999, 121, 9940",
             "intrachain": "O3-H...O5 (next residue) in both chains",
-            "intermolecular": "O2-H...O6, O6-H...O6 and O2-H...O2, including intersheet",
-            "least_certain": "OH2 and OH6 directions",
+            "origin_sheet": "O2o-H...O6o",
+            "center_sheet": "O6c-H...O2c",
+            "mixed_sheet": "O2c-H...O2o and O6o-H...O6c (major component)",
         },
         "chains": summary,
         "closest_modelled_hydrogen_contacts_angstrom": contacts,

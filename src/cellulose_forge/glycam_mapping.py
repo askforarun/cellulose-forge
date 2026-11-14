@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
+from cellulose_forge.cellulose_ii import cellulose_ii_preferred_acceptor
 from cellulose_forge.clashes import validate_finite_periodic_image_contact
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
@@ -438,6 +439,12 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0912, PLR0915
                             aligned_hydrogen,
                             donor=oxygen_name,
                             preferred_acceptor="O5" if oxygen_name == "O3" else None,
+                            preferred_acceptor_coordinate=cellulose_ii_preferred_acceptor(
+                                crystal,
+                                chain_number=chain_number,
+                                residue_number=crystal_residue_number,
+                                donor=oxygen_name,
+                            ),
                         )
                         coordinate = np.zeros(3)
                     else:
@@ -564,6 +571,12 @@ def map_crystal_to_periodic_glycam(  # noqa: PLR0915
                         aligned_hydrogen,
                         donor=oxygen_name,
                         preferred_acceptor="O5" if oxygen_name == "O3" else None,
+                        preferred_acceptor_coordinate=cellulose_ii_preferred_acceptor(
+                            crystal,
+                            chain_number=chain_number,
+                            residue_number=crystal_residue_number,
+                            donor=oxygen_name,
+                        ),
                     )
                     output_coordinates.append(np.zeros(3))
                 else:

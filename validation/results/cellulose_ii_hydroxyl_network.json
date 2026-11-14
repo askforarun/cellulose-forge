@@ -1,7 +1,7 @@
 {
   "system": "cellulose II periodic bulk (2, 2, 6), GLYCAM mapping",
   "provenance": {
-    "cellulose_forge_commit": "acc37ee5421d669a9d292c229e68fbb4266c435f",
+    "cellulose_forge_commit": "b6d6a7148b91c794030def57014ed2cecf60b8ea",
     "tracked_tree_clean": false,
     "software_versions": {
       "numpy": "2.2.6"
@@ -22,15 +22,15 @@
       "O2-H": {
         "hydroxyls": 48,
         "acceptors": {
-          "O6 (center chain)": 48
+          "O2 (origin chain)": 48
         },
         "h_acceptor_angstrom_range": [
-          1.6009214501743092,
-          1.6009214501743123
+          2.19884575344335,
+          2.1988457534433543
         ],
         "angle_degrees_range": [
-          160.4011726863758,
-          160.40117268637638
+          130.61865402621885,
+          130.61865402621905
         ]
       },
       "O3-H": {
@@ -50,15 +50,15 @@
       "O6-H": {
         "hydroxyls": 48,
         "acceptors": {
-          "O6 (origin chain)": 48
+          "O2 (center chain)": 48
         },
         "h_acceptor_angstrom_range": [
-          1.853223437400494,
-          1.853223437400501
+          1.7010924024546688,
+          1.7010924024546743
         ],
         "angle_degrees_range": [
-          166.6896238155002,
-          166.68962381550062
+          141.75002276102825,
+          141.7500227610285
         ]
       }
     },
@@ -66,15 +66,15 @@
       "O2-H": {
         "hydroxyls": 48,
         "acceptors": {
-          "O2 (center chain)": 48
+          "O6 (origin chain)": 48
         },
         "h_acceptor_angstrom_range": [
-          1.9628115355448892,
-          1.9628115355448932
+          1.9488127414146328,
+          1.948812741414635
         ],
         "angle_degrees_range": [
-          171.87454839961035,
-          171.87454839961072
+          142.9146181974681,
+          142.9146181974685
         ]
       },
       "O3-H": {
@@ -94,48 +94,48 @@
       "O6-H": {
         "hydroxyls": 48,
         "acceptors": {
-          "O2 (origin chain)": 48
+          "O6 (center chain)": 48
         },
         "h_acceptor_angstrom_range": [
-          1.8323678145842492,
-          1.832367814584253
+          1.963247857224568,
+          1.963247857224574
         ],
         "angle_degrees_range": [
-          166.80130040894335,
-          166.80130040894366
+          143.82357771832295,
+          143.8235777183233
         ]
       }
     }
   },
   "closest_modelled_hydrogen_contacts_angstrom": {
-    "hydrogen": 2.031560310605767,
-    "oxygen": 1.6009214501743092,
-    "carbon": 2.4029663443802782
+    "hydrogen": 2.0357713302326994,
+    "oxygen": 1.7010924024546688,
+    "carbon": 2.313836048535722
   },
   "placement_scaling": [
     {
       "atoms": 4320,
       "hydroxyls": 720,
-      "seconds": 0.542988167000658,
-      "microseconds_per_hydroxyl": 754.1502319453583
+      "seconds": 0.5869002910003474,
+      "microseconds_per_hydroxyl": 815.139293056038
     },
     {
       "atoms": 8640,
       "hydroxyls": 1440,
-      "seconds": 1.1271479579991137,
-      "microseconds_per_hydroxyl": 782.7416374993845
+      "seconds": 1.1068689999992785,
+      "microseconds_per_hydroxyl": 768.6590277772767
     },
     {
       "atoms": 17280,
       "hydroxyls": 2880,
-      "seconds": 2.160361958000067,
-      "microseconds_per_hydroxyl": 750.1256798611342
+      "seconds": 2.229535541999212,
+      "microseconds_per_hydroxyl": 774.144285416393
     },
     {
       "atoms": 34560,
       "hydroxyls": 5760,
-      "seconds": 4.361157167000783,
-      "microseconds_per_hydroxyl": 757.1453414931916
+      "seconds": 4.319507457999862,
+      "microseconds_per_hydroxyl": 749.9144892360871
     }
   ]
 }

@@ -15,6 +15,12 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Changed
 
+- Corrected the modelled cellulose-II HO2 and HO6 orientations to follow the
+  chain-specific neutron-diffraction network in Langan, Nishiyama and Chanzy
+  (JACS 1999, Table 3): O2o-H...O6o, O6o-H...O6c, O2c-H...O2o and
+  O6c-H...O2c. GLYCAM06j-1, CHARMM36, OpenFF Sage and OPLS-AA/SEI now share
+  the same explicit acceptor assignments. Heavy-atom crystallographic
+  coordinates and bonded topologies are unchanged.
 - Native Amber smoke-test inputs now place `vdwmeth=0` in Amber's `&ewald`
   namelist. Version 1.2.0 incorrectly placed it in `&cntrl`, which AmberTools
   `sander` rejects. Native Amber output remains finite-chain-only and applies

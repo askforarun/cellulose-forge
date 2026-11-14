@@ -84,7 +84,9 @@ uv run python validation/validate_glycam_allomorphs.py \
 Compact evidence is stored in `results/glycam_allomorph_matrix/`. Cellulose II
 records its force-field construction of the missing hydroxyl hydrogens and
 uses opposite topology-to-crystal residue mappings for its antiparallel origin
-and center chains.
+and center chains. `validate_cellulose_ii_hydroxyls.py` requires the exact
+major donor/acceptor assignments reported in Table 3 of Langan, Nishiyama and
+Chanzy (1999) and records periodic contact distances and angles.
 
 ## CHARMM36 validation
 

@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import cellulose_forge.charmm36 as charmm36_module
+from cellulose_forge.cellulose_ii import cellulose_ii_chain_roles
 from cellulose_forge.charmm36 import (
     derive_periodic_charmm36_topology,
     finite_charmm36_interaction_counts,
@@ -301,6 +302,41 @@ def test_maps_periodic_charmm36_allomorphs(
     validation = validate_periodic_glycosidic_bonds(mapped)
     assert validation["bond_count"] == mapped.chain_count * topology.degree_polymerization
     assert validation["maximum_distance_angstrom"] < 2.0
+
+
+def test_periodic_charmm36_cellulose_ii_hydroxyls_follow_langan_network(
+    tmp_path: Path,
+) -> None:
+    template_path = tmp_path / "chain.itp"
+    _write_template(template_path)
+    topology = derive_periodic_charmm36_topology(template_path, degree_polymerization=4)
+    crystal = build_bulk_crystal(load_allomorph("ii"), (2, 2, 2))
+    mapped = map_periodic_charmm36(crystal, topology)
+    roles = cellulose_ii_chain_roles(crystal)
+    expected = {
+        ("origin", "HO2"): ("origin", "O6"),
+        ("origin", "HO6"): ("center", "O6"),
+        ("center", "HO2"): ("origin", "O2"),
+        ("center", "HO6"): ("center", "O2"),
+    }
+    names = np.asarray(mapped.atom_names)
+    chains = np.asarray(mapped.chain_numbers)
+    residues = np.asarray(mapped.residue_numbers)
+    xyz = np.asarray(mapped.cartesian_coordinates)
+    inverse = np.linalg.inv(mapped.basis_vectors)
+    for chain, role in roles.items():
+        residue = int(residues[chains == chain].min())
+        for hydrogen in ("HO2", "HO6"):
+            target_role, target_name = expected[role, hydrogen]
+            coordinate = xyz[(chains == chain) & (residues == residue) & (names == hydrogen)][0]
+            candidates = np.flatnonzero(
+                (names == target_name)
+                & np.asarray([roles[int(item)] == target_role for item in chains])
+            )
+            fractional = (xyz[candidates] - coordinate) @ inverse
+            fractional -= np.round(fractional)
+            distances = np.linalg.norm(fractional @ mapped.basis_vectors, axis=1)
+            assert float(distances.min()) < 2.3
 
 
 def test_maps_cellulose_ii_fibril_in_glycosidic_order(tmp_path: Path) -> None:

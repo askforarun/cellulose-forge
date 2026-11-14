@@ -9,11 +9,13 @@ from pathlib import Path
 
 import numpy as np
 
+from cellulose_forge.cellulose_ii import cellulose_ii_preferred_acceptor
 from cellulose_forge.clashes import validate_finite_periodic_image_contact
 from cellulose_forge.crystallography import FloatArray, load_allomorph
 from cellulose_forge.geometry import BulkCrystal, build_bulk_crystal
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
 from cellulose_forge.gromacs import write_gro
+from cellulose_forge.hydroxyl import HydroxylHydrogenPlacer
 from cellulose_forge.restraints import position_restraints_section
 
 _MINIMUM_ATOM_FIELDS = 8
@@ -789,6 +791,13 @@ def map_periodic_charmm36(
     output_coordinates: list[FloatArray] = []
     generated_names = _MISSING_CELLULOSE_II_HYDROGENS if crystal.allomorph == "II" else frozenset()
     hydrogen_reference = _hydrogen_reference() if generated_names else {}
+    placer = (
+        HydroxylHydrogenPlacer(
+            crystal.atom_labels, crystal.cartesian_coordinates, crystal.basis_vectors
+        )
+        if generated_names
+        else None
+    )
     for chain_number in chain_numbers:
         crystal_residue_order = _chain_residue_order(
             crystal,
@@ -825,16 +834,28 @@ def map_periodic_charmm36(
                     aligned_hydrogen = _transform(
                         hydrogen_reference[atom.atom_name], hydrogen_transform
                     )
-                    aligned_oxygen = _transform(hydrogen_reference[oxygen_name], hydrogen_transform)
-                    direction = aligned_hydrogen - aligned_oxygen
-                    direction /= np.linalg.norm(direction)
-                    bond_length = np.linalg.norm(
-                        hydrogen_reference[atom.atom_name] - hydrogen_reference[oxygen_name]
+                    assert placer is not None
+                    placer.request(
+                        len(output_coordinates),
+                        lookup["C" + oxygen_name[1:]],
+                        lookup[oxygen_name],
+                        aligned_hydrogen,
+                        donor=oxygen_name,
+                        preferred_acceptor="O5" if oxygen_name == "O3" else None,
+                        preferred_acceptor_coordinate=cellulose_ii_preferred_acceptor(
+                            crystal,
+                            chain_number=chain_number,
+                            residue_number=crystal_residue_number,
+                            donor=oxygen_name,
+                        ),
                     )
-                    output_coordinates.append(lookup[oxygen_name] + direction * bond_length)
+                    output_coordinates.append(np.zeros(3))
                 else:
                     output_coordinates.append(lookup[_crystal_name(atom.atom_name)])
 
+    if placer is not None:
+        for index, coordinate in placer.resolve().items():
+            output_coordinates[index] = coordinate
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)
     return GlycamMappedSystem(
@@ -886,6 +907,13 @@ def map_finite_charmm36(
         _MISSING_CELLULOSE_II_HYDROGENS if crystal.allomorph == "II" else frozenset()
     )
     hydrogen_reference = _hydrogen_reference() if generated_hydrogens else {}
+    placer = (
+        HydroxylHydrogenPlacer(
+            crystal.atom_labels, crystal.cartesian_coordinates, crystal.basis_vectors
+        )
+        if generated_hydrogens
+        else None
+    )
     for chain_number in chain_numbers:
         crystal_residue_order = _finite_chain_residue_order(
             crystal,
@@ -932,16 +960,28 @@ def map_finite_charmm36(
                     aligned_hydrogen = _transform(
                         hydrogen_reference[atom.atom_name], hydrogen_transform
                     )
-                    aligned_oxygen = _transform(hydrogen_reference[oxygen_name], hydrogen_transform)
-                    direction = aligned_hydrogen - aligned_oxygen
-                    direction /= np.linalg.norm(direction)
-                    bond_length = np.linalg.norm(
-                        hydrogen_reference[atom.atom_name] - hydrogen_reference[oxygen_name]
+                    assert placer is not None
+                    placer.request(
+                        len(output_coordinates),
+                        lookup["C" + oxygen_name[1:]],
+                        lookup[oxygen_name],
+                        aligned_hydrogen,
+                        donor=oxygen_name,
+                        preferred_acceptor="O5" if oxygen_name == "O3" else None,
+                        preferred_acceptor_coordinate=cellulose_ii_preferred_acceptor(
+                            crystal,
+                            chain_number=chain_number,
+                            residue_number=crystal_residue_number,
+                            donor=oxygen_name,
+                        ),
                     )
-                    coordinate = lookup[oxygen_name] + direction * bond_length
+                    coordinate = np.zeros(3)
                 else:
                     coordinate = lookup[_crystal_name(atom.atom_name)]
                 output_coordinates.append(coordinate)
+    if placer is not None:
+        for index, coordinate in placer.resolve().items():
+            output_coordinates[index] = coordinate
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)
     system = GlycamMappedSystem(

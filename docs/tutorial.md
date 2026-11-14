@@ -256,10 +256,11 @@ and should use at least 12 Å through `--padding-longitudinal`; the validated
 examples use 12--20 Å.
 
 Cellulose II is a separate documented case: its diffraction dataset omits
-HO2, HO3, and HO6. GLYCAM and OpenFF output place those hydrogens on an exact
+HO2, HO3, and HO6. Force-field output places those hydrogens on an exact
 tetrahedral cone (0.96 A O--H, 108.5 degree C--O--H), class by class (HO3,
-HO2, HO6): HO3 takes the intrachain O3--H...O5 hydrogen bond, and the others
-take the clash-free torsion with the best geometric hydrogen bond. The result
+HO2, HO6): HO3 takes the intrachain O3--H...O5 hydrogen bond; HO2 and HO6
+follow the chain-specific neutron assignments O2o--H...O6o, O6o--H...O6c,
+O2c--H...O2o and O6c--H...O2c. The result
 reproduces the published cellulose II hydrogen-bond network and does not alter
 the crystallographic heavy atoms; minimize before dynamics. Cellulose II's
 origin and center chains are mapped in opposite residue directions so their
