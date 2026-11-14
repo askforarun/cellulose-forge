@@ -54,8 +54,15 @@ them.
 
 ## Build-time checks
 
-Every build evaluates the unconstrained system on OpenMM's Reference platform
-and records the energy of each force, plus the 1--4 exception energy alone. The
+Every build evaluates the unconstrained system on OpenMM's double-precision
+Reference platform and records the energy of each force, plus the 1--4
+exception energy alone. Boxes whose third vector is tilted (cellulose I-alpha
+bulk crystals) are evaluated on the CPU platform instead: for such boxes the
+OpenMM 8.6.1 Reference Lennard-Jones energy disagreed with an exact
+nearest-image sum by 0.14--0.40 % in local measurements
+(`validation/measure_openmm_tilted_box.py`). The platform used is recorded as
+`validation_platform` in the build report; the serialized system is the same
+either way. The
 build fails if
 
 - any energy is non-finite;

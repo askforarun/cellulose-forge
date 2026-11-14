@@ -221,3 +221,12 @@ def test_write_openmm_system_reports_builder_failure(
             dispersion_correction=False,
             python_executable=sys.executable,
         )
+
+
+def test_validation_platform_avoids_reference_for_tilted_third_vector() -> None:
+    from cellulose_forge.openmm import validation_platform_for_box  # noqa: PLC0415
+
+    upright = [[31.2, 0.0, 0.0], [-11.27, 24.39, 0.0], [0.0, 0.0, 21.0]]
+    tilted = [[31.2, 0.0, 0.0], [-11.27, 24.39, 0.0], [-11.23, -0.79, 21.03]]
+    assert validation_platform_for_box(upright) == "Reference"
+    assert validation_platform_for_box(tilted) == "CPU"

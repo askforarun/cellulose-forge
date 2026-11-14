@@ -129,7 +129,7 @@ for group, force in enumerate(system.getForces()):
     force.setForceGroup(group)
     names.append(force.getName() or force.__class__.__name__)
 
-platform = openmm.Platform.getPlatformByName("Reference")
+platform = openmm.Platform.getPlatformByName(request["validation_platform"])
 context = openmm.Context(system, openmm.VerletIntegrator(0.001), platform)
 context.setPeriodicBoxVectors(*box_vectors)
 context.setPositions(gro.positions)
@@ -206,7 +206,7 @@ with open(request["topology_path"], "w", encoding="utf-8") as handle:
 
 print(json.dumps({
     "openmm_version": openmm.__version__,
-    "validation_platform": "Reference",
+    "validation_platform": request["validation_platform"],
     "particle_count": system.getNumParticles(),
     "constraint_count": constrained.getNumConstraints(),
     "validation_constraints": "none",
@@ -418,6 +418,26 @@ def render_openmm_runner(*, chain_axis: str, periodic_chains: bool, has_restrain
     )
 
 
+_BOX_TILT_TOLERANCE_ANGSTROM = 1.0e-6
+
+
+def validation_platform_for_box(basis_vectors: object) -> str:
+    """OpenMM platform for build-time energy checks of a periodic box.
+
+    The double-precision Reference platform is used unless the third box
+    vector is tilted (cellulose I-alpha bulk crystals).  For such boxes the
+    OpenMM 8.6.1 Reference Lennard-Jones energy disagreed with an exact
+    nearest-image sum by 0.14--0.40 % in local measurements, while the CPU
+    platform agreed within 1e-6 (validation/measure_openmm_tilted_box.py).
+    """
+    third = np.asarray(basis_vectors, dtype=np.float64)[2]
+    tilted = (
+        abs(float(third[0])) > _BOX_TILT_TOLERANCE_ANGSTROM
+        or abs(float(third[1])) > _BOX_TILT_TOLERANCE_ANGSTROM
+    )
+    return "CPU" if tilted else "Reference"
+
+
 def _check_box_supports_cutoff(system: GlycamMappedSystem, cutoff_nm: float) -> None:
     """Reject boxes whose perpendicular width is below twice the PME cutoff."""
     vectors = np.asarray(system.basis_vectors, dtype=np.float64) * _ANGSTROM_TO_NANOMETER
@@ -531,6 +551,7 @@ def write_openmm_system(  # noqa: PLR0913
         "ewald_error_tolerance": _SERIALIZED_EWALD_ERROR_TOLERANCE,
         "validation_ewald_error_tolerance": _VALIDATION_EWALD_ERROR_TOLERANCE,
         "minimization_iterations": minimization_iterations,
+        "validation_platform": validation_platform_for_box(system.basis_vectors),
         "system_path": str(files.system.resolve()),
         "state_path": str(files.state.resolve()),
         "topology_path": str(files.topology.resolve()),

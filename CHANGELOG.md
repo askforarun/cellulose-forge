@@ -32,6 +32,12 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Changed
 
+- OpenMM build-time energy checks for GLYCAM06j-1 and CHARMM36 now use the CPU
+  platform for boxes whose third vector is tilted (cellulose I-alpha bulk
+  crystals), as the OPLS builder already did; OpenMM 8.6.1 Reference
+  nonbonded energies disagreed with exact sums for such boxes. Only the
+  energies recorded in `build_report.json` change; serialized systems are
+  unchanged. The platform used is recorded as `validation_platform`.
 - One long-range dispersion policy for every force field and engine: GLYCAM06
   and OpenFF Sage use it only for bulk crystals and unit cells; CHARMM36 never
   uses it; slabs and fibrils never use it. **CHARMM36 OpenMM bulk-crystal and

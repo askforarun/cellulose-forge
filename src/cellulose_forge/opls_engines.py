@@ -44,6 +44,7 @@ from cellulose_forge.openmm import (
     _validated_metadata,
     chain_axis,
     render_openmm_runner,
+    validation_platform_for_box,
 )
 from cellulose_forge.opls import (
     _TORSIONS,
@@ -77,18 +78,8 @@ _BOX_TILT_TOLERANCE = 1.0e-6
 
 
 def validation_platform(build: OplsBuild) -> str:
-    """OpenMM platform for the build-time energy check.
-
-    The double-precision Reference platform is used unless the third box
-    vector is tilted (cellulose I-alpha bulk crystals).  For such boxes the
-    OpenMM 8.6.1 Reference Lennard-Jones energy disagreed with an exact
-    nearest-image sum by 0.14--0.40 % in local measurements, while the CPU
-    platform agreed within 1e-6 (validation/measure_openmm_tilted_box.py), so
-    the CPU platform is used instead.
-    """
-    box = reduced_box_angstrom(build)
-    tilted = abs(box[2][0]) > _BOX_TILT_TOLERANCE or abs(box[2][1]) > _BOX_TILT_TOLERANCE
-    return "CPU" if tilted else "Reference"
+    """OpenMM platform for the build-time energy check (see openmm.py)."""
+    return validation_platform_for_box(reduced_box_angstrom(build))
 
 
 def reduced_box_angstrom(build: OplsBuild) -> NDArray[np.float64]:
