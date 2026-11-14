@@ -21,6 +21,7 @@ PROVENANCED_RESULTS = (
     "openmm_tilted_box.json",
     "chitin_glycam_engines.json",
     "chitin_glycam_cross_engines.json",
+    "force_field_matrix.json",
 )
 
 
