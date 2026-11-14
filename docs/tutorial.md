@@ -718,8 +718,8 @@ that would separate atoms joined by the final-to-first glycosidic bond.
 ### Experimental OpenFF Sage systems
 
 The optional OpenFF Sage 2.3 backend builds cellulose slabs, fibrils, and
-periodic bulk crystals with NAGL charges, for GROMACS and OpenMM. It needs its
-own environment:
+periodic bulk crystals, plus anhydrous alpha/beta-chitin slabs and periodic
+bulk crystals, with NAGL charges for GROMACS and OpenMM. It needs its own environment:
 
 ```bash
 conda env create -f environment-openff.yml
@@ -741,8 +741,9 @@ files with `minim.mdp` and `nvt.mdp` (Sage's 0.8--0.9 nm potential switch, no
 dispersion correction for this vacuum-surrounded fibril) and the same
 configurable `run_openmm.py`. The build prints a warning that OpenFF support is
 experimental: model construction is validated, but Sage's accuracy for
-crystalline cellulose has not been assessed. Chitin, mannan, Amber, LAMMPS, and
-position restraints are not available for OpenFF. See `docs/openff.md`.
+crystalline cellulose or chitin has not been assessed. Chitin fibrils, mannan,
+Amber, LAMMPS, and position restraints are not available for OpenFF. See
+`docs/openff.md`.
 
 ## 12. Preprocess and minimize with GROMACS
 

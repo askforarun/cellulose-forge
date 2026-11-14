@@ -1,4 +1,4 @@
-"""Experimental OpenFF Sage construction for crystalline cellulose.
+"""Experimental OpenFF Sage construction for crystalline polysaccharides.
 
 OpenFF is imported lazily so the core CelluloseForge installation retains its
 NumPy-only coordinate path.  Molecular graphs are constructed directly from
@@ -27,13 +27,16 @@ from cellulose_forge.openmm import (
     OPENMM_STATE_FILE,
     chain_axis,
     render_openmm_runner,
+    validation_platform_for_box,
 )
 from cellulose_forge.run_inputs import dispersion_correction as _dispersion_policy
 from cellulose_forge.run_inputs import write_gromacs_run_inputs
 
 SAGE_FORCE_FIELD = "openff-2.3.0.offxml"
 NAGL_CHARGE_MODEL = "openff-gnn-am1bcc-1.0.0.pt"
-VALIDATION_SCOPE = "model construction validated; force-field accuracy for cellulose not assessed"
+VALIDATION_SCOPE = (
+    "model construction validated; force-field accuracy for the selected polymer not assessed"
+)
 
 _INTERNAL_ATOMS = (
     ("C1", 6),
@@ -81,6 +84,28 @@ _INTERNAL_BONDS = (
     ("C2", "O2"),
     ("O2", "HO2"),
 )
+_CHITIN_INTERNAL_ATOMS = (
+    *(atom for atom in _INTERNAL_ATOMS if atom[0] not in {"O2", "HO2"}),
+    ("N2", 7),
+    ("HN2", 1),
+    ("C7", 6),
+    ("O7", 8),
+    ("C8", 6),
+    ("H81", 1),
+    ("H82", 1),
+    ("H83", 1),
+)
+_CHITIN_INTERNAL_BONDS = (
+    *(bond for bond in _INTERNAL_BONDS if not ({"O2", "HO2"} & set(bond))),
+    ("C2", "N2"),
+    ("N2", "HN2"),
+    ("N2", "C7"),
+    ("C7", "O7"),
+    ("C7", "C8"),
+    ("C8", "H81"),
+    ("C8", "H82"),
+    ("C8", "H83"),
+)
 _STEREOCHEMISTRY = {"C1": "S", "C2": "R", "C3": "R", "C4": "S", "C5": "R"}
 _REFERENCE_PARITY = {"C1": 1, "C2": 1, "C3": -1, "C4": 1, "C5": 1}
 _STEREOCENTRES = frozenset(_STEREOCHEMISTRY)
@@ -89,6 +114,41 @@ _MINIMUM_DP = 2
 _CHARGE_TOLERANCE_E = 1.0e-6
 _BOX_DEGENERACY_TOLERANCE = 1.0e-12
 _MISSING_II_HYDROGENS = frozenset({"HO2", "HO3", "HO6"})
+
+
+@dataclass(frozen=True)
+class SagePolymerProfile:
+    """Residue graph and validation metadata for one Sage polymer."""
+
+    name: str
+    residue_name: str
+    internal_atoms: tuple[tuple[str, int], ...]
+    internal_bonds: tuple[tuple[str, str], ...]
+    double_bonds: frozenset[frozenset[str]]
+    stereochemistry: dict[str, str]
+    reference_parity: dict[str, int]
+
+
+_POLYMER_PROFILES = {
+    "cellulose": SagePolymerProfile(
+        "cellulose",
+        "BGC",
+        _INTERNAL_ATOMS,
+        _INTERNAL_BONDS,
+        frozenset(),
+        _STEREOCHEMISTRY,
+        _REFERENCE_PARITY,
+    ),
+    "chitin": SagePolymerProfile(
+        "chitin",
+        "NAG",
+        _CHITIN_INTERNAL_ATOMS,
+        _CHITIN_INTERNAL_BONDS,
+        frozenset({frozenset({"C7", "O7"})}),
+        _STEREOCHEMISTRY,
+        _REFERENCE_PARITY,
+    ),
+}
 
 _INTERNAL_REFERENCE = {
     "C1": (2.720, 11.610, 12.966),
@@ -148,10 +208,7 @@ def dispersion_correction_for_shape(shape: str) -> bool:
 def reduced_periodic_box(box: FloatArray) -> FloatArray:
     """Return an equivalent triclinic lattice in OpenMM reduced form."""
     a, b, c = np.asarray(box, dtype=np.float64).copy()
-    if (
-        abs(a[0]) < _BOX_DEGENERACY_TOLERANCE
-        or abs(b[1]) < _BOX_DEGENERACY_TOLERANCE
-    ):
+    if abs(a[0]) < _BOX_DEGENERACY_TOLERANCE or abs(b[1]) < _BOX_DEGENERACY_TOLERANCE:
         raise ValueError("OpenFF output requires a non-degenerate triclinic box")
     c -= b * round(float(c[1] / b[1]))
     c -= a * round(float(c[0] / a[0]))
@@ -297,21 +354,31 @@ def _transform(
     )
 
 
+def _polymer_profile(polymer: str) -> SagePolymerProfile:
+    try:
+        return _POLYMER_PROFILES[polymer]
+    except KeyError as error:
+        raise ValueError(f"OpenFF Sage does not support polymer {polymer!r}") from error
+
+
 def build_sage_molecule(  # noqa: PLR0912
-    degree_polymerization: int, chain_boundary: str
+    degree_polymerization: int,
+    chain_boundary: str,
+    polymer: str = "cellulose",
 ) -> Any:
-    """Construct a finite or cyclic beta-(1->4)-D-glucan graph directly."""
+    """Construct a finite or cyclic beta-(1->4) polysaccharide graph directly."""
+    profile = _polymer_profile(polymer)
     if degree_polymerization < _MINIMUM_DP:
-        raise ValueError("OpenFF cellulose chains require DP >= 2")
+        raise ValueError(f"OpenFF {polymer} chains require DP >= 2")
     if chain_boundary not in {"finite", "periodic"}:
         raise ValueError("OpenFF chain boundary must be finite or periodic")
     _, molecule_type, _ = require_openff()
     molecule = molecule_type()
-    molecule.name = f"cellulose_dp{degree_polymerization}_{chain_boundary}"
+    molecule.name = f"{polymer}_dp{degree_polymerization}_{chain_boundary}"
     indices: dict[tuple[int, str], int] = {}
     for residue in range(1, degree_polymerization + 1):
-        for name, atomic_number in _INTERNAL_ATOMS:
-            stereo = _STEREOCHEMISTRY.get(name)
+        for name, atomic_number in profile.internal_atoms:
+            stereo = profile.stereochemistry.get(name)
             if chain_boundary == "finite" and residue == 1 and name == "C1":
                 stereo = "R"
             if chain_boundary == "finite" and residue == degree_polymerization and name == "C3":
@@ -322,7 +389,11 @@ def build_sage_molecule(  # noqa: PLR0912
                 False,
                 stereo,
                 name,
-                {"residue_name": "BGC", "residue_number": residue, "chain_id": "A"},
+                {
+                    "residue_name": profile.residue_name,
+                    "residue_number": residue,
+                    "chain_id": "A",
+                },
             )
         if chain_boundary == "finite" and residue == 1:
             for name, atomic_number in (("O1", 8), ("HO1", 1)):
@@ -332,7 +403,11 @@ def build_sage_molecule(  # noqa: PLR0912
                     False,
                     None,
                     name,
-                    {"residue_name": "BGC", "residue_number": residue, "chain_id": "A"},
+                    {
+                        "residue_name": profile.residue_name,
+                        "residue_number": residue,
+                        "chain_id": "A",
+                    },
                 )
         if chain_boundary == "finite" and residue == degree_polymerization:
             indices[residue, "HO4"] = molecule.add_atom(
@@ -341,10 +416,15 @@ def build_sage_molecule(  # noqa: PLR0912
                 False,
                 None,
                 "HO4",
-                {"residue_name": "BGC", "residue_number": residue, "chain_id": "A"},
+                {
+                    "residue_name": profile.residue_name,
+                    "residue_number": residue,
+                    "chain_id": "A",
+                },
             )
-        for left, right in _INTERNAL_BONDS:
-            molecule.add_bond(indices[residue, left], indices[residue, right], 1, False)
+        for left, right in profile.internal_bonds:
+            order = 2 if frozenset({left, right}) in profile.double_bonds else 1
+            molecule.add_bond(indices[residue, left], indices[residue, right], order, False)
     for residue in range(1, degree_polymerization):
         molecule.add_bond(indices[residue, "O4"], indices[residue + 1, "C1"], 1, False)
     if chain_boundary == "periodic":
@@ -361,7 +441,13 @@ def build_sage_molecule(  # noqa: PLR0912
     return molecule
 
 
-def _mapped_coordinates(crystal: BulkCrystal, molecule: Any, boundary: str) -> GlycamMappedSystem:
+def _mapped_coordinates(
+    crystal: BulkCrystal,
+    molecule: Any,
+    boundary: str,
+    profile: SagePolymerProfile | None = None,
+) -> GlycamMappedSystem:
+    profile = profile or _polymer_profile("cellulose")
     periodic = boundary == "periodic"
     chain_numbers = tuple(dict.fromkeys(crystal.chain_numbers))
     output: list[FloatArray] = []
@@ -446,7 +532,7 @@ def _mapped_coordinates(crystal: BulkCrystal, molecule: Any, boundary: str) -> G
     coordinates.setflags(write=False)
     return GlycamMappedSystem(
         atom_names=tuple(names),
-        residue_names=tuple("BGC" for _ in names),
+        residue_names=tuple(profile.residue_name for _ in names),
         residue_numbers=tuple(residues),
         chain_numbers=tuple(chains),
         cartesian_coordinates=coordinates,
@@ -466,36 +552,51 @@ def _centre_parity(positions: FloatArray, atom: Any, box: FloatArray) -> int:
     return int(np.sign(value))
 
 
-def validate_sage_stereochemistry(molecule: Any, mapped: GlycamMappedSystem) -> dict[str, object]:
+def validate_sage_stereochemistry(
+    molecule: Any,
+    mapped: GlycamMappedSystem,
+    polymer: str = "cellulose",
+) -> dict[str, object]:
     """Check every mapped C1--C5 centre against an independent reference."""
+    profile = _polymer_profile(polymer)
     failures: list[tuple[int, int, str]] = []
     for chain_index, chain in enumerate(dict.fromkeys(mapped.chain_numbers)):
         start = chain_index * molecule.n_atoms
         positions = mapped.cartesian_coordinates[start : start + molecule.n_atoms]
         for atom in molecule.atoms:
             if (
-                atom.name in _STEREOCENTRES
+                atom.name in profile.reference_parity
                 and _centre_parity(positions, atom, mapped.basis_vectors)
-                != _REFERENCE_PARITY[atom.name]
+                != profile.reference_parity[atom.name]
             ):
                 failures.append(  # noqa: PERF401
                     (chain, int(atom.metadata["residue_number"]), atom.name)
                 )
-    result = {
-        "reference": "independent PubChem finite DP6 internal-residue signed parity",
+    result: dict[str, object] = {
+        "reference": (
+            "independent beta-D-glucopyranose signed parity"
+            if polymer == "cellulose"
+            else "experimental anhydrous alpha/beta-chitin crystal signed parity"
+        ),
         "centres_checked": mapped.chain_count
         * len({int(atom.metadata["residue_number"]) for atom in molecule.atoms})
-        * len(_STEREOCENTRES),
+        * len(profile.reference_parity),
         "failures": failures,
         "passed": not failures,
     }
     if failures:
-        raise ValueError(f"OpenFF cellulose stereochemistry check failed: {failures[:5]}")
+        raise ValueError(f"OpenFF {polymer} stereochemistry check failed: {failures[:5]}")
     return result
 
 
-def build_sage_system(crystal: BulkCrystal, chain_boundary: str) -> SageBuild:
-    """Build, map, charge, and validate one reusable Sage cellulose chain."""
+def build_sage_system(
+    crystal: BulkCrystal,
+    chain_boundary: str,
+    polymer: str | None = None,
+) -> SageBuild:
+    """Build, map, charge, and validate one reusable Sage polymer chain."""
+    selected_polymer = polymer or ("chitin" if crystal.residue_name == "NAG" else "cellulose")
+    profile = _polymer_profile(selected_polymer)
     if not crystal.chain_numbers or not crystal.residue_numbers:
         raise ValueError("OpenFF mapping requires explicit chain and residue numbers")
     first_chain = next(iter(crystal.chain_numbers))
@@ -506,15 +607,17 @@ def build_sage_system(crystal: BulkCrystal, chain_boundary: str) -> SageBuild:
             if chain == first_chain
         }
     )
-    molecule = build_sage_molecule(degree, chain_boundary)
-    mapped = _mapped_coordinates(crystal, molecule, chain_boundary)
+    molecule = build_sage_molecule(degree, chain_boundary, selected_polymer)
+    mapped = _mapped_coordinates(crystal, molecule, chain_boundary, profile)
     unit = importlib.import_module("openff.units").unit
 
     molecule.add_conformer(mapped.cartesian_coordinates[: molecule.n_atoms] * unit.angstrom)
     molecule.assign_partial_charges(NAGL_CHARGE_MODEL)
     charges = np.asarray(molecule.partial_charges.m, dtype=np.float64)
     if not np.isclose(charges.sum(), 0.0, atol=_CHARGE_TOLERANCE_E):
-        raise ValueError(f"OpenFF NAGL chain charge is not zero: {charges.sum():.8g} e")
+        raise ValueError(
+            f"OpenFF NAGL {selected_polymer} chain charge is not zero: {charges.sum():.8g} e"
+        )
     periodic_charge_check = True
     if chain_boundary == "periodic":
         by_name: dict[str, list[float]] = {}
@@ -525,7 +628,7 @@ def build_sage_system(crystal: BulkCrystal, chain_boundary: str) -> SageBuild:
         )
         if not periodic_charge_check:
             raise ValueError("periodic OpenFF charges differ between equivalent residues")
-    stereo = validate_sage_stereochemistry(molecule, mapped)
+    stereo = validate_sage_stereochemistry(molecule, mapped, selected_polymer)
     charge_hash = hashlib.sha256(charges.tobytes()).hexdigest()
     provenance = {
         "method": NAGL_CHARGE_MODEL,
@@ -535,6 +638,7 @@ def build_sage_system(crystal: BulkCrystal, chain_boundary: str) -> SageBuild:
         "net_charge_e": float(charges.sum()),
         "periodic_equivalent_atom_charges": periodic_charge_check,
         "charge_sha256": charge_hash,
+        "polymer": selected_polymer,
     }
     return SageBuild(molecule, mapped, degree, chain_boundary, provenance, stereo)
 
@@ -601,10 +705,11 @@ def write_sage_outputs(
             )
         # The starting state carries positions and box vectors; the runner is
         # the same configurable OpenMM runner used for GLYCAM and CHARMM36.
+        validation_platform = validation_platform_for_box(build.mapped.basis_vectors)
         context = openmm.Context(
             system,
             openmm.VerletIntegrator(0.001),
-            openmm.Platform.getPlatformByName("Reference"),
+            openmm.Platform.getPlatformByName(validation_platform),
         )
         context.setPeriodicBoxVectors(*interchange.box.to_openmm())
         context.setPositions(interchange.positions.to_openmm())
@@ -651,6 +756,7 @@ def write_sage_outputs(
         "openmm_written": "openmm" in engines,
         "periodic_forces": sorted(set(periodic_forces)),
         "dispersion_correction": dispersion_correction,
+        "validation_platform": validation_platform_for_box(build.mapped.basis_vectors),
     }
 
 

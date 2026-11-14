@@ -6,6 +6,11 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Added
 
+- Experimental OpenFF Sage 2.3 output for anhydrous alpha- and beta-chitin
+  periodic bulk crystals and finite or covalently periodic `(100)` slabs in
+  GROMACS and OpenMM. The independent GlcNAc graph, NAGL charges,
+  stereochemical negative controls, term-resolved cross-engine energies, and
+  one-ps smoke tests are validated without using third-party builder templates.
 - GLYCAM06j-1 topology for finite and covalently periodic alpha- and
   beta-chitin slabs, with GROMACS, OpenMM and LAMMPS output and native Amber
   output for finite chains. Mixed GlcNAc 1-4 scaling is represented explicitly

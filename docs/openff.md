@@ -8,22 +8,25 @@ conda env create -f environment-openff.yml
 conda activate cellulose-forge-openff
 ```
 
-The backend constructs the beta-(1->4)-D-glucan molecular graph directly from
-CelluloseForge atom names and connectivity. Charges are assigned at build time
+The backend constructs the beta-(1->4)-linked D-glucan or GlcNAc molecular
+graph directly from CelluloseForge atom names and connectivity. Charges are assigned at build time
 with NAGL model `openff-gnn-am1bcc-1.0.0.pt`. The build fails unless the chain
 is neutral, equivalent atoms in periodic residues have identical charges, and
-every C1--C5 stereocentre has the independently recorded D-cellulose parity.
+every C1--C5 stereocentre has the independently recorded parity for the
+selected polymer.
 
 ## Scope
 
-Supported geometries are finite and covalently periodic slabs, finite and
+For cellulose, supported geometries are finite and covalently periodic slabs, finite and
 covalently periodic fibrils, and covalently periodic bulk crystals. Slabs and
 bulk crystals cover cellulose I-alpha, I-beta, II and III-I. Fibrils use the
 same builders as GLYCAM and CHARMM36: the literature 36-chain fibril for
 I-alpha, I-beta and II, and the I-beta 18- and 24-chain presets and custom
 `--fibril-profile` row profiles. GROMACS and OpenMM outputs are supported.
-Chitin, mannan, Amber, LAMMPS, restraints, and finite bulk crystals are
-intentionally rejected.
+For anhydrous alpha- and beta-chitin, experimental support covers periodic
+bulk crystals and finite or covalently periodic chain-parallel slabs.
+Mannan, Amber, LAMMPS, restraints, chitin fibrils, and finite bulk crystals
+are intentionally rejected.
 
 ```bash
 cellulose-forge build \
@@ -38,6 +41,13 @@ cellulose-forge build \
   --degree-polymerization 6 --chain-boundary periodic --vacuum 20 \
   --force-field openff --md-engine gromacs --md-engine openmm \
   --output openff_ibeta_fibril
+
+cellulose-forge build \
+  --polymer chitin --allomorph beta --shape slab --face 1 0 0 \
+  --layers 2 --chains-per-layer 4 --degree-polymerization 6 \
+  --chain-boundary periodic --vacuum 30 \
+  --force-field openff --md-engine gromacs --md-engine openmm \
+  --output openff_beta_chitin_slab
 ```
 
 The outputs match the other force fields: `minim.mdp` and `nvt.mdp` for
@@ -62,5 +72,5 @@ periodic bonded terms, NAGL charge equivalence, and term-by-term GROMACS versus
 OpenMM energies. Generated systems also undergo minimization and short NVT
 smoke tests. The generated `run_openmm.py` is a smoke-test runner, not a
 production simulation protocol. These checks do **not** establish the physical accuracy or
-transferability of OpenFF Sage for crystalline cellulose; that scientific
+transferability of OpenFF Sage for crystalline cellulose or chitin; that scientific
 assessment is outside the software validation scope.

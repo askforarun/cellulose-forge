@@ -584,8 +584,9 @@ cellulose-forge build --polymer chitin --allomorph beta --shape slab \
   --output beta_chitin_glycam
 ```
 
-Native Amber output remains finite-chain-only. OpenFF Sage and fibrils remain
-unavailable for chitin.
+Native Amber output remains finite-chain-only. Experimental OpenFF Sage output
+is available for anhydrous alpha/beta periodic bulk crystals and finite or
+periodic slabs in GROMACS and OpenMM; chitin fibrils remain unavailable.
 
 ### Mannan
 
@@ -716,11 +717,12 @@ the implementation.
 ### Experimental OpenFF Sage
 
 CelluloseForge includes an optional, experimental OpenFF Sage 2.3 backend for
-finite and periodic cellulose slabs and fibrils and periodic bulk crystals,
+finite and periodic cellulose slabs and fibrils, periodic cellulose bulk
+crystals, and anhydrous alpha/beta-chitin slabs and periodic bulk crystals,
 with GROMACS and OpenMM output in the same layout as GLYCAM and CHARMM36. It
 constructs the molecular graph directly and assigns NAGL charges; AmberTools is
 not required. Model construction is validated, but force-field accuracy for
-cellulose has not been assessed.
+crystalline cellulose or chitin has not been assessed.
 
 ```bash
 conda activate cellulose-forge-openff
@@ -731,8 +733,8 @@ cellulose-forge build \
   --output openff_ibeta_fibril
 ```
 
-Chitin, mannan, Amber, LAMMPS, unit cells, finite bulk crystals, and position
-restraints are rejected for OpenFF. See [`docs/openff.md`](docs/openff.md) for
+Chitin fibrils, mannan, Amber, LAMMPS, unit cells, finite bulk crystals, and
+position restraints are rejected for OpenFF. See [`docs/openff.md`](docs/openff.md) for
 the precise scope.
 
 ### Experimental OPLS-AA and OPLS-AA-SEI
@@ -1131,7 +1133,7 @@ Model construction is validated in
 Energies are accepted within an empirical mixed-precision criterion,
 `max(1e-5, 4 eps32 sqrt(N))` relative, documented with its measured evidence
 (`measure_openff_mixed_precision.py`). These checks do not establish the
-accuracy of OpenFF Sage for crystalline cellulose.
+accuracy of OpenFF Sage for crystalline cellulose or chitin.
 
 ### Experimental OPLS-AA and OPLS-AA-SEI
 
@@ -1215,10 +1217,10 @@ crystalline cellulose.
 **`OpenFF Sage support requires the optional OpenFF environment`**
 : Create and activate `environment-openff.yml`.
 
-**`experimental OpenFF Sage support is limited to cellulose` / `experimental OpenFF supports --md-engine gromacs and openmm only`**
-: OpenFF currently covers cellulose slabs, fibrils, and periodic bulk crystals
-  with GROMACS or OpenMM output. Use GLYCAM06 or CHARMM36 for other
-  combinations.
+**`experimental OpenFF supports --md-engine gromacs and openmm only`**
+: OpenFF covers cellulose slabs, fibrils, and periodic bulk crystals plus
+  anhydrous alpha/beta-chitin slabs and periodic bulk crystals. Use GLYCAM06
+  or CHARMM36 for other combinations.
 
 **`experimental OPLS-AA support is limited to cellulose` / `experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps`**
 : OPLS-AA and OPLS-AA-SEI cover cellulose slabs, fibrils, and periodic bulk
@@ -1227,10 +1229,10 @@ crystalline cellulose.
 **`mannan force-field output is not implemented; use --force-field none`**
 : Mannan I is coordinate-only.
 
-**`chitin supports --force-field none, charmm36, or glycam`**
+**`chitin supports --force-field none, charmm36, glycam, or experimental openff`**
 : GLYCAM chitin supports GROMACS, OpenMM and LAMMPS, plus finite-chain Amber
-  output. CHARMM36 supports GROMACS, OpenMM and LAMMPS; OpenFF is not
-  implemented for chitin.
+  output. CHARMM36 supports GROMACS, OpenMM and LAMMPS. Experimental OpenFF
+  supports GROMACS and OpenMM for anhydrous bulk crystals and slabs.
 
 **`... requires an even degree of polymerization`**
 : Slabs and 36-chain fibrils are built from complete cellobiose repeats; use an

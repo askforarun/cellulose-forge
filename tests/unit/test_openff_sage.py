@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import time
 from collections import Counter
+from dataclasses import replace
 from importlib.util import find_spec
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from cellulose_forge.openff_sage import (
     dispersion_correction_for_shape,
     reduced_periodic_box,
     require_openff,
+    validate_sage_stereochemistry,
 )
 
 
@@ -90,6 +92,63 @@ def test_direct_graph_counts_and_periodic_scaling() -> None:
 
 
 @pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+@pytest.mark.parametrize("boundary", ["finite", "periodic"])
+def test_chitin_direct_graph_has_glcnac_chemistry(boundary: str) -> None:
+    molecule = build_sage_molecule(6, boundary, "chitin")
+    assert molecule.n_atoms == (165 if boundary == "finite" else 162)
+    assert molecule.n_bonds == (170 if boundary == "finite" else 168)
+    carbonyls = [
+        bond for bond in molecule.bonds if {bond.atom1.name, bond.atom2.name} == {"C7", "O7"}
+    ]
+    assert len(carbonyls) == 6
+    assert all(int(bond.bond_order) == 2 for bond in carbonyls)
+    assert {atom.metadata["residue_name"] for atom in molecule.atoms} == {"NAG"}
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+@pytest.mark.parametrize("allomorph", ["alpha", "beta"])
+def test_chitin_periodic_nagl_charges_and_stereochemistry(allomorph: str) -> None:
+    crystal = build_bulk_crystal(load_allomorph(allomorph, polymer="chitin"), (4, 2, 2))
+    build = build_sage_system(crystal, "periodic", "chitin")
+    assert build.charge_provenance["net_charge_e"] == pytest.approx(0.0, abs=1.0e-6)
+    assert build.charge_provenance["periodic_equivalent_atom_charges"] is True
+    assert build.charge_provenance["polymer"] == "chitin"
+    assert build.stereochemistry["passed"] is True
+    assert set(build.mapped.residue_names) == {"NAG"}
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+def test_chitin_stereochemistry_rejects_mirror_and_local_inversion() -> None:
+    crystal = build_bulk_crystal(load_allomorph("beta", polymer="chitin"), (4, 2, 2))
+    build = build_sage_system(crystal, "periodic", "chitin")
+    mirrored = build.mapped.cartesian_coordinates.copy()
+    mirrored[:, 0] *= -1
+    with pytest.raises(ValueError, match="OpenFF chitin stereochemistry check failed"):
+        validate_sage_stereochemistry(
+            build.molecule,
+            replace(build.mapped, cartesian_coordinates=mirrored),
+            "chitin",
+        )
+
+    inverted = build.mapped.cartesian_coordinates.copy()
+    centre = next(
+        atom
+        for atom in build.molecule.atoms
+        if atom.name == "C2" and int(atom.metadata["residue_number"]) == 1
+    )
+    first, second = sorted(centre.bonded_atoms, key=lambda atom: (atom.symbol, atom.name))[:2]
+    inverted[[first.molecule_atom_index, second.molecule_atom_index]] = inverted[
+        [second.molecule_atom_index, first.molecule_atom_index]
+    ]
+    with pytest.raises(ValueError, match="OpenFF chitin stereochemistry check failed"):
+        validate_sage_stereochemistry(
+            build.molecule,
+            replace(build.mapped, cartesian_coordinates=inverted),
+            "chitin",
+        )
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
 @pytest.mark.parametrize(
     ("degree", "pubchem_cid", "isomeric_smiles"),
     (
@@ -149,9 +208,7 @@ def test_cellulose_ii_modelled_hydrogens_are_tetrahedral() -> None:
                 assert _angle(
                     atoms[f"C{suffix}"], atoms[f"O{suffix}"], atoms[f"HO{suffix}"]
                 ) == pytest.approx(108.5, abs=1.0e-6)
-    contacts = modelled_hydroxyl_contacts(
-        build.mapped, {"HO2": "O2", "HO3": "O3", "HO6": "O6"}
-    )
+    contacts = modelled_hydroxyl_contacts(build.mapped, {"HO2": "O2", "HO3": "O3", "HO6": "O6"})
     assert contacts["hydrogen"] >= 1.9
     # Hydrogen-bond acceptors may approach to ~1.7 A, as in neutron structures.
     assert contacts["oxygen"] >= 1.6
@@ -167,9 +224,7 @@ def test_cellulose_ii_hydrogen_placement_scales_to_large_bulk() -> None:
     start = time.perf_counter()
     build = build_sage_system(crystal, "periodic")
     assert time.perf_counter() - start < 60.0
-    contacts = modelled_hydroxyl_contacts(
-        build.mapped, {"HO2": "O2", "HO3": "O3", "HO6": "O6"}
-    )
+    contacts = modelled_hydroxyl_contacts(build.mapped, {"HO2": "O2", "HO3": "O3", "HO6": "O6"})
     assert contacts["hydrogen_bonded_fraction"] >= 0.95
     # The intrachain O3-H...O5 bond is present in every cellulose allomorph.
     assert contacts["o3_to_intrachain_o5_fraction"] == 1.0
@@ -222,10 +277,22 @@ def test_openff_vacuum_shapes_warn_below_cutoff_vacuum(
         with pytest.raises(SystemExit):
             main(
                 [
-                    "build", "--allomorph", "I-beta", *arguments,
-                    "--degree-polymerization", "6", "--chain-boundary", "periodic",
-                    "--vacuum", "5", "--force-field", "openff", "--md-engine", "gromacs",
-                    "--output", str(tmp_path / "out"),
+                    "build",
+                    "--allomorph",
+                    "I-beta",
+                    *arguments,
+                    "--degree-polymerization",
+                    "6",
+                    "--chain-boundary",
+                    "periodic",
+                    "--vacuum",
+                    "5",
+                    "--force-field",
+                    "openff",
+                    "--md-engine",
+                    "gromacs",
+                    "--output",
+                    str(tmp_path / "out"),
                 ]
             )
 

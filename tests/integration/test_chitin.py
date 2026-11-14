@@ -24,9 +24,20 @@ from cellulose_forge.pdb import write_pdb
 DEFINITIONS = ("alpha", "alpha_o6_minor", "beta")
 RESIDUE_ATOMS = 27
 RESIDUE_BONDS = (
-    ("C1", "C2"), ("C2", "C3"), ("C3", "C4"), ("C4", "C5"), ("C5", "O5"), ("O5", "C1"),
-    ("C5", "C6"), ("C6", "O6"), ("C3", "O3"), ("C4", "O4"), ("C2", "N2"), ("N2", "C7"),
-    ("C7", "O7"), ("C7", "C8"),
+    ("C1", "C2"),
+    ("C2", "C3"),
+    ("C3", "C4"),
+    ("C4", "C5"),
+    ("C5", "O5"),
+    ("O5", "C1"),
+    ("C5", "C6"),
+    ("C6", "O6"),
+    ("C3", "O3"),
+    ("C4", "O4"),
+    ("C2", "N2"),
+    ("N2", "C7"),
+    ("C7", "O7"),
+    ("C7", "C8"),
 )
 
 
@@ -125,12 +136,26 @@ def test_definitions_record_primary_sources() -> None:
 def test_cli_writes_chitin_bulk_with_nag_residues(tmp_path: Path) -> None:
     output = tmp_path / "beta.pdb"
 
-    assert main(
-        [
-            "build", "--polymer", "chitin", "--allomorph", "beta",
-            "--shape", "bulk", "--cells", "2", "2", "2", "--output", str(output),
-        ]
-    ) == 0
+    assert (
+        main(
+            [
+                "build",
+                "--polymer",
+                "chitin",
+                "--allomorph",
+                "beta",
+                "--shape",
+                "bulk",
+                "--cells",
+                "2",
+                "2",
+                "2",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
 
     pdb = output.read_text(encoding="utf-8")
     report = json.loads(output.with_suffix(".build_report.json").read_text(encoding="utf-8"))
@@ -149,16 +174,55 @@ def test_cli_writes_chitin_bulk_with_nag_residues(tmp_path: Path) -> None:
 def test_default_alpha_report_records_major_o6(tmp_path: Path) -> None:
     output = tmp_path / "alpha.pdb"
 
-    assert main(
-        [
-            "build", "--polymer", "chitin", "--allomorph", "alpha",
-            "--shape", "unit-cell", "--output", str(output),
-        ]
-    ) == 0
+    assert (
+        main(
+            [
+                "build",
+                "--polymer",
+                "chitin",
+                "--allomorph",
+                "alpha",
+                "--shape",
+                "unit-cell",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
 
     report = json.loads(output.with_suffix(".build_report.json").read_text(encoding="utf-8"))
     assert report["o6_conformation"] == "major"
     assert report["crystallographic_source"]["definition"] == "chitin/alpha"
+
+
+@pytest.mark.parametrize("force_field", ["opls-aa", "opls-aa-sei"])
+def test_chitin_refuses_opls_without_published_glcnac_parameters(
+    tmp_path: Path, force_field: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "build",
+                "--polymer",
+                "chitin",
+                "--allomorph",
+                "beta",
+                "--shape",
+                "bulk",
+                "--cells",
+                "4",
+                "2",
+                "2",
+                "--chain-boundary",
+                "periodic",
+                "--force-field",
+                force_field,
+                "--output",
+                str(tmp_path / force_field),
+            ]
+        )
+    assert "no published OPLS GlcNAc parameters" in capsys.readouterr().err
 
 
 def test_python_api_writes_nag_residues(tmp_path: Path) -> None:
@@ -177,12 +241,24 @@ def test_python_api_writes_nag_residues(tmp_path: Path) -> None:
 def test_cli_selects_minor_alpha_o6_conformation(tmp_path: Path) -> None:
     output = tmp_path / "alpha_minor.pdb"
 
-    assert main(
-        [
-            "build", "--polymer", "chitin", "--allomorph", "alpha",
-            "--o6-conformation", "minor", "--shape", "unit-cell", "--output", str(output),
-        ]
-    ) == 0
+    assert (
+        main(
+            [
+                "build",
+                "--polymer",
+                "chitin",
+                "--allomorph",
+                "alpha",
+                "--o6-conformation",
+                "minor",
+                "--shape",
+                "unit-cell",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
 
     report = json.loads(output.with_suffix(".build_report.json").read_text(encoding="utf-8"))
     assert report["o6_conformation"] == "minor"
@@ -192,13 +268,32 @@ def test_cli_selects_minor_alpha_o6_conformation(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "arguments",
     [
-        ["--polymer", "chitin", "--allomorph", "beta", "--shape", "fibril",
-         "--fibril-model", "36-chain", "--degree-polymerization", "4",
-         "--chain-boundary", "periodic"],
+        [
+            "--polymer",
+            "chitin",
+            "--allomorph",
+            "beta",
+            "--shape",
+            "fibril",
+            "--fibril-model",
+            "36-chain",
+            "--degree-polymerization",
+            "4",
+            "--chain-boundary",
+            "periodic",
+        ],
         ["--polymer", "chitin", "--allomorph", "I-beta", "--shape", "unit-cell"],
         ["--allomorph", "alpha", "--shape", "unit-cell"],
-        ["--polymer", "chitin", "--allomorph", "beta", "--o6-conformation", "minor",
-         "--shape", "unit-cell"],
+        [
+            "--polymer",
+            "chitin",
+            "--allomorph",
+            "beta",
+            "--o6-conformation",
+            "minor",
+            "--shape",
+            "unit-cell",
+        ],
     ],
 )
 def test_cli_rejects_unsupported_chitin_requests(tmp_path: Path, arguments: list[str]) -> None:
@@ -304,14 +399,36 @@ def test_chitin_slab_is_deterministic_and_supports_finite_chains() -> None:
 def test_cli_writes_chitin_slab(tmp_path: Path) -> None:
     output = tmp_path / "beta_100.pdb"
 
-    assert main(
-        [
-            "build", "--polymer", "chitin", "--allomorph", "beta", "--shape", "slab",
-            "--face", "1", "0", "0", "--layers", "3", "--chains-per-layer", "4",
-            "--degree-polymerization", "6", "--chain-boundary", "periodic",
-            "--vacuum", "20", "--output", str(output),
-        ]
-    ) == 0
+    assert (
+        main(
+            [
+                "build",
+                "--polymer",
+                "chitin",
+                "--allomorph",
+                "beta",
+                "--shape",
+                "slab",
+                "--face",
+                "1",
+                "0",
+                "0",
+                "--layers",
+                "3",
+                "--chains-per-layer",
+                "4",
+                "--degree-polymerization",
+                "6",
+                "--chain-boundary",
+                "periodic",
+                "--vacuum",
+                "20",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
 
     report = json.loads(output.with_suffix(".build_report.json").read_text(encoding="utf-8"))
     assert report["chain_count"] == 12

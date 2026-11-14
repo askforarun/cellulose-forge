@@ -23,6 +23,11 @@ jobs:
           if grep -q "skipped" openff-tests.log; then
             echo "OpenFF Sage tests were skipped"; exit 1
           fi
+      - name: Reduced chitin OpenFF construction and engine validator
+        shell: micromamba-shell {0}
+        run: >-
+          python validation/validate_chitin_openff.py
+          --case beta_slab_periodic --output chitin-openff-ci.json
       - name: Reduced periodic-bulk model-construction validator
         shell: micromamba-shell {0}
         run: >-

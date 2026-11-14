@@ -373,6 +373,12 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         return 0 if all(check.ok for check in checks if check.name not in optional_engines) else 1
     if args.command == "build":
         _resolve_md_engines(args, build_parser())
+        if args.polymer == "chitin" and args.force_field in _OPLS_FORCE_FIELDS:
+            name = "OPLS-AA-SEI" if args.force_field == "opls-aa-sei" else "OPLS-AA"
+            build_parser().error(
+                f"experimental {name} chitin output is unavailable because no "
+                "published OPLS GlcNAc parameters have been adopted"
+            )
         if args.padding_longitudinal is not None and args.padding_z is not None:
             build_parser().error(
                 "--padding-longitudinal and deprecated --padding-z are mutually exclusive"
@@ -465,10 +471,15 @@ def _load_definition(  # noqa: PLR0912 - polymer-specific validation is kept tog
         parser.error("--o6-conformation applies only to alpha-chitin")
     if args.shape not in _CHITIN_SHAPES:
         parser.error("chitin currently supports --shape unit-cell, bulk, and slab")
-    if args.force_field not in {"none", "charmm36", "glycam"}:
-        parser.error(
-            "chitin supports --force-field none, charmm36, or glycam"
-        )
+    if args.force_field not in {
+        "none",
+        "charmm36",
+        "glycam",
+        "openff",
+        "opls-aa",
+        "opls-aa-sei",
+    }:
+        parser.error("chitin supports --force-field none, charmm36, glycam, or experimental openff")
     if args.force_field == "charmm36" and args.charmm_template is not None:
         parser.error("--charmm-template is not supported for chitin")
     name = _CHITIN_ALLOMORPHS[args.allomorph]
@@ -518,15 +529,19 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         parser.error("CHARMM36 supports --md-engine gromacs, openmm, and lammps")
     if args.force_field == "glycam" and not engines:
         parser.error("GLYCAM builds require at least one --md-engine")
-    if args.polymer == "chitin" and args.force_field == "glycam" and not set(engines) <= {
-        "gromacs",
-        "amber",
-        "openmm",
-        "lammps",
-    }:
+    if (
+        args.polymer == "chitin"
+        and args.force_field == "glycam"
+        and not set(engines)
+        <= {
+            "gromacs",
+            "amber",
+            "openmm",
+            "lammps",
+        }
+    ):
         parser.error(
-            "chitin GLYCAM supports --md-engine gromacs, openmm, lammps, and "
-            "finite-chain amber"
+            "chitin GLYCAM supports --md-engine gromacs, openmm, lammps, and finite-chain amber"
         )
     if args.force_field == "openff" and not set(engines) <= {"gromacs", "openmm"}:
         parser.error("experimental OpenFF supports --md-engine gromacs and openmm only")
@@ -534,8 +549,7 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         not engines or not set(engines) <= {"gromacs", "openmm", "lammps"}
     ):
         parser.error(
-            "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, "
-            "and lammps"
+            "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps"
         )
     args.md_engines = engines
 
@@ -836,11 +850,14 @@ def _write_opls_build(
     """Write the experimental OPLS-AA or OPLS-AA-SEI GROMACS/OpenMM/LAMMPS workflow."""
     name = "OPLS-AA-SEI" if args.force_field == "opls-aa-sei" else "OPLS-AA"
     if args.polymer != "cellulose":
+        if args.polymer == "chitin":
+            parser.error(
+                f"experimental {name} chitin output is unavailable because no "
+                "published OPLS GlcNAc parameters have been adopted"
+            )
         parser.error(f"experimental {name} support is limited to cellulose")
     if args.shape == "unit-cell":
-        parser.error(
-            f"experimental {name} supports slabs, fibrils, and periodic bulk crystals"
-        )
+        parser.error(f"experimental {name} supports slabs, fibrils, and periodic bulk crystals")
     if args.shape in {"bulk", "crystal"} and args.chain_boundary != "periodic":
         parser.error(f"experimental {name} bulk crystals require periodic chains")
     if args.shape in {"slab", "fibril"} and args.chain_boundary not in {"finite", "periodic"}:
@@ -913,13 +930,15 @@ def _write_openff_build(
     definition: AllomorphDefinition,
 ) -> None:
     """Write the deliberately bounded experimental OpenFF Sage workflow."""
-    if args.polymer != "cellulose":
-        parser.error("experimental OpenFF Sage support is limited to cellulose")
+    if args.polymer not in {"cellulose", "chitin"}:
+        parser.error("experimental OpenFF Sage support is limited to cellulose and chitin")
     if args.shape == "unit-cell":
         parser.error(
             "experimental OpenFF Sage supports finite and periodic slabs and "
             "fibrils, and periodic bulk crystals"
         )
+    if args.polymer == "chitin" and args.shape == "fibril":
+        parser.error("experimental OpenFF Sage chitin fibrils are not implemented")
     if args.shape in {"bulk", "crystal"} and args.chain_boundary != "periodic":
         parser.error("experimental OpenFF Sage bulk crystals require periodic chains")
     if args.shape in {"slab", "fibril"} and args.chain_boundary not in {"finite", "periodic"}:
@@ -935,12 +954,12 @@ def _write_openff_build(
         parser.error("--output must be a directory for --force-field openff")
     warnings.warn(
         "OpenFF Sage support is experimental: model construction is validated, "
-        "but force-field accuracy for cellulose has not been assessed",
+        f"but force-field accuracy for {args.polymer} has not been assessed",
         UserWarning,
         stacklevel=1,
     )
     try:
-        build = build_sage_system(crystal, args.chain_boundary)
+        build = build_sage_system(crystal, args.chain_boundary, args.polymer)
         dispersion = dispersion_correction("openff", args.shape)
         outputs = write_sage_outputs(
             build,
@@ -954,7 +973,8 @@ def _write_openff_build(
         "software": "CelluloseForge",
         "version": __version__,
         "experimental": True,
-        "polymer": "cellulose",
+        "polymer": args.polymer,
+        "residue_name": definition.residue_name,
         "allomorph": crystal.allomorph,
         "shape": args.shape,
         "force_field": {"file": SAGE_FORCE_FIELD, "version": "2.3.0"},
@@ -995,7 +1015,7 @@ def _write_openff_build(
     write_sage_report(args.output / "build_report.json", report)
     print(
         "Experimental OpenFF Sage files written; model construction validated, "
-        "force-field accuracy for cellulose not assessed."
+        f"force-field accuracy for {args.polymer} not assessed."
     )
 
 
@@ -1333,9 +1353,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                     force_field="glycam",
                     periodic_chains=chain_boundary == "periodic",
                     dispersion=dispersion,
-                    restraint_define=(
-                        f"POSRES_{args.polymer.upper()}" if restraints else None
-                    ),
+                    restraint_define=(f"POSRES_{args.polymer.upper()}" if restraints else None),
                 ),
             }
         )
