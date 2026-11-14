@@ -51,13 +51,14 @@ def write_gro(system: GlycamMappedSystem, path: str | Path) -> None:
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def write_repeated_chain_topology(
+def write_repeated_chain_topology(  # noqa: PLR0913
     template_topology: str | Path,
     output_path: str | Path,
     *,
     chain_count: int,
     restrained_chain_count: int = 0,
     restraint_force: tuple[float, float, float] | None = None,
+    restraint_define: str = "POSRES_CELLULOSE",
 ) -> None:
     """Write a standalone topology with the requested repeated-chain count."""
     if chain_count < 1:
@@ -72,9 +73,17 @@ def write_repeated_chain_topology(
         msg = "restraint force constants are required for restrained chains"
         raise ValueError(msg)
 
+    template_molecule_name = _template_molecule_name(lines)
+    restrained_molecule_name = f"{template_molecule_name}_RESTRAINED"
     if restrained_chain_count:
         assert restraint_force is not None
-        _insert_restrained_glycam_molecule(lines, restraint_force)
+        _insert_restrained_glycam_molecule(
+            lines,
+            restraint_force,
+            restraint_define,
+            template_molecule_name,
+            restrained_molecule_name,
+        )
     in_molecules = False
     replaced = False
     for index, line in enumerate(lines):
@@ -84,14 +93,16 @@ def write_repeated_chain_topology(
             continue
         if in_molecules and stripped and not stripped.startswith(";"):
             fields = stripped.split()
-            if fields[0] != "CELLULOSE_CHAIN":
+            if fields[0] != template_molecule_name:
                 msg = f"unexpected GLYCAM molecule name in template: {fields[0]}"
                 raise ValueError(msg)
             molecule_rows: list[str] = []
             if free_chain_count:
-                molecule_rows.append(f"CELLULOSE_CHAIN  {free_chain_count}")
+                molecule_rows.append(f"{template_molecule_name}  {free_chain_count}")
             if restrained_chain_count:
-                molecule_rows.append(f"CELLULOSE_CHAIN_RESTRAINED  {restrained_chain_count}")
+                molecule_rows.append(
+                    f"{restrained_molecule_name}  {restrained_chain_count}"
+                )
             lines[index : index + 1] = molecule_rows
             replaced = True
             break
@@ -101,9 +112,24 @@ def write_repeated_chain_topology(
     Path(output_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _template_molecule_name(lines: list[str]) -> str:
+    section = ""
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            section = stripped[1:-1].strip().lower()
+            continue
+        if section == "molecules" and stripped and not stripped.startswith(";"):
+            return stripped.split()[0]
+    raise ValueError("template topology has no [ molecules ] data row")
+
+
 def _insert_restrained_glycam_molecule(
     lines: list[str],
     restraint_force: tuple[float, float, float],
+    restraint_define: str,
+    free_molecule_name: str,
+    restrained_molecule_name: str,
 ) -> None:
     """Duplicate the one-chain molecule definition and attach position restraints."""
     molecule_start = next(
@@ -125,7 +151,10 @@ def _insert_restrained_glycam_molecule(
             continue
         if current_section == "moleculetype" and not molecule_name_replaced:
             fields = stripped.split()
-            fields[0] = "CELLULOSE_CHAIN_RESTRAINED"
+            if fields[0] != free_molecule_name:
+                msg = f"unexpected GLYCAM molecule name in template: {fields[0]}"
+                raise ValueError(msg)
+            fields[0] = restrained_molecule_name
             restrained_block[index] = "  ".join(fields)
             molecule_name_replaced = True
         elif current_section == "atoms" and not stripped.startswith("#"):
@@ -136,16 +165,23 @@ def _insert_restrained_glycam_molecule(
                 msg = "malformed GROMACS [ atoms ] row in GLYCAM topology"
                 raise ValueError(msg) from error
             atom_names.append(atom_name)
-    restrained_block.extend(position_restraints_section(atom_names, restraint_force).splitlines())
+    restrained_block.extend(
+        position_restraints_section(
+            atom_names,
+            restraint_force,
+            define=restraint_define,
+        ).splitlines()
+    )
     lines[system_index:system_index] = restrained_block
 
 
-def write_glycam_gromacs_system(
+def write_glycam_gromacs_system(  # noqa: PLR0913, PLR0917
     system: GlycamMappedSystem,
     template_topology: str | Path,
     output_directory: str | Path,
     restrained_chain_count: int = 0,
     restraint_force: tuple[float, float, float] | None = None,
+    restraint_define: str = "POSRES_CELLULOSE",
 ) -> tuple[Path, Path]:
     """Write a mapped multi-chain GLYCAM system as GRO and standalone TOP."""
     directory = Path(output_directory)
@@ -159,5 +195,6 @@ def write_glycam_gromacs_system(
         chain_count=system.chain_count,
         restrained_chain_count=restrained_chain_count,
         restraint_force=restraint_force,
+        restraint_define=restraint_define,
     )
     return gro_path, topology_path

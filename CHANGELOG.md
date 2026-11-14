@@ -2,6 +2,24 @@
 
 All notable changes to CelluloseForge are documented in this file.
 
+## Unreleased
+
+### Added
+
+- GLYCAM06j-1 topology for finite and covalently periodic alpha- and
+  beta-chitin slabs, with GROMACS, OpenMM and LAMMPS output and native Amber
+  output for finite chains. Mixed GlcNAc 1-4 scaling is represented explicitly
+  in GROMACS, as native OpenMM exceptions, and as pair-specific tabulated 1-4
+  corrections in LAMMPS. Alpha/beta finite/periodic cross-engine energies are
+  validated term by term against double-precision GROMACS.
+
+### Changed
+
+- Native Amber smoke-test inputs now place `vdwmeth=0` in Amber's `&ewald`
+  namelist. Version 1.2.0 incorrectly placed it in `&cntrl`, which AmberTools
+  `sander` rejects. Native Amber output remains finite-chain-only and applies
+  to slabs and fibrils, where the isotropic dispersion correction is disabled.
+
 ## 1.2.0 - 2026-11-14
 
 ### Added

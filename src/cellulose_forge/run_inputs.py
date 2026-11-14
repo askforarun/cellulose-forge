@@ -179,24 +179,32 @@ nstcomm                 = 100
 def write_amber_run_inputs(directory: Path, *, dispersion: bool) -> dict[str, str]:
     """Write GLYCAM ``min.in`` and ``nvt.in`` smoke-test inputs for Amber.
 
-    ``vdwmeth`` selects Amber's continuum long-range dispersion correction, so
-    it follows the same geometry policy as the other engines.
+    Native Amber output is finite-chain-only and therefore applies only to
+    slabs and fibrils, for which an isotropic dispersion correction is invalid.
+    The inputs intentionally use only controls accepted by AmberTools sander.
     """
-    vdwmeth = 1 if dispersion else 0
-    minim = f"""Minimization (GLYCAM06j-1, finite chains)
+    if dispersion:
+        raise ValueError("native Amber finite-chain inputs cannot enable dispersion correction")
+    minim = """Minimization (GLYCAM06j-1, finite chains)
 &cntrl
   imin=1, maxcyc=1000, ncyc=200,
-  ntb=1, cut=10.0, vdwmeth={vdwmeth},
+  ntb=1, cut=10.0,
+/
+&ewald
+  vdwmeth=0,
 /
 """
-    nvt = f"""One-ps NVT smoke test (GLYCAM06j-1, finite chains); not a production protocol
+    nvt = """One-ps NVT smoke test (GLYCAM06j-1, finite chains); not a production protocol
 &cntrl
   imin=0, irest=0, ntx=1,
   nstlim=1000, dt=0.001,
   ntc=2, ntf=2,
-  ntb=1, cut=10.0, vdwmeth={vdwmeth},
+  ntb=1, cut=10.0,
   ntt=3, gamma_ln=1.0, temp0=300.0, tempi=300.0, ig=-1,
   ntpr=100, ntwx=100, ntwe=100,
+/
+&ewald
+  vdwmeth=0,
 /
 """
     directory.mkdir(parents=True, exist_ok=True)

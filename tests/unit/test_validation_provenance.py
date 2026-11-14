@@ -19,6 +19,8 @@ PROVENANCED_RESULTS = (
     "cellulose_ii_hydroxyl_network.json",
     "opls_cellulose_matrix.json",
     "openmm_tilted_box.json",
+    "chitin_glycam_engines.json",
+    "chitin_glycam_cross_engines.json",
 )
 
 

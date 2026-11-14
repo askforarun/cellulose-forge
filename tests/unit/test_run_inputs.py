@@ -94,14 +94,19 @@ def test_restraint_define_is_offered_but_not_enabled(tmp_path: Path) -> None:
     assert re.search(r"^define", text, flags=re.MULTILINE) is None
 
 
-@pytest.mark.parametrize(("dispersion", "vdwmeth"), [(False, "0"), (True, "1")])
-def test_amber_inputs_follow_the_same_dispersion_policy(
-    tmp_path: Path, dispersion: bool, vdwmeth: str
+def test_amber_inputs_disable_dispersion_in_the_ewald_namelist(
+    tmp_path: Path,
 ) -> None:
-    files = write_amber_run_inputs(tmp_path, dispersion=dispersion)
+    files = write_amber_run_inputs(tmp_path, dispersion=False)
     assert files == {"amber_minimization_input": "min.in", "amber_nvt_input": "nvt.in"}
     for name in ("min.in", "nvt.in"):
         text = (tmp_path / name).read_text()
-        assert f"vdwmeth={vdwmeth}" in text
+        assert "&ewald\n  vdwmeth=0,\n/" in text
+        assert text.index("vdwmeth=0") > text.index("&ewald")
         assert "cut=10.0" in text
     assert "nstlim=1000, dt=0.001" in (tmp_path / "nvt.in").read_text()
+
+
+def test_amber_inputs_reject_dispersion_for_finite_chain_outputs(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="cannot enable dispersion correction"):
+        write_amber_run_inputs(tmp_path, dispersion=True)

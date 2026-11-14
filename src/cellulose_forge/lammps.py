@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
+from cellulose_forge.gromacs_pairs import prepare_explicit_pairs
 
 LAMMPS_DATA_FILE = "system.data"
 LAMMPS_INPUT_FILE = "in.cellulose"
@@ -28,6 +29,7 @@ class LammpsSystemFiles:
 
     data: Path
     input: Path
+    pair_table: Path | None = None
 
 
 _CONVERTER = r"""
@@ -56,6 +58,24 @@ if system.getNumParticles() != len(request["molecule_ids"]):
 nonbonded = next(
     force for force in system.getForces() if isinstance(force, openmm.NonbondedForce)
 )
+explicit_pair_parameters = {
+    tuple(sorted((pair["first"], pair["second"]))): pair
+    for pair in request["explicit_pair_overrides"]
+}
+if explicit_pair_parameters:
+    exception_indices = {}
+    for index in range(nonbonded.getNumExceptions()):
+        first, second, *_ = nonbonded.getExceptionParameters(index)
+        exception_indices[tuple(sorted((int(first), int(second))))] = index
+    for pair_indices, pair in explicit_pair_parameters.items():
+        if pair_indices not in exception_indices:
+            raise SystemExit(f"LAMMPS topology omitted explicit 1-4 pair {pair_indices}")
+        nonbonded.setExceptionParameters(
+            exception_indices[pair_indices], pair["first"], pair["second"],
+            pair["charge_product_e2"] * unit.elementary_charge**2,
+            pair["sigma_nm"] * unit.nanometer,
+            pair["epsilon_kj_mol"] * unit.kilojoule_per_mole,
+        )
 particles = [nonbonded.getParticleParameters(i) for i in range(system.getNumParticles())]
 
 def type_id(table, value):
@@ -86,7 +106,9 @@ for index in range(nonbonded.getNumExceptions()):
     qi, si, ei = particles[first]
     qj, sj, ej = particles[second]
     expected_charge = (qi*qj).value_in_unit(unit.elementary_charge**2)
-    if abs(charge_value-expected_charge) > 1e-6*max(1.0, abs(expected_charge)):
+    pair_indices = tuple(sorted((int(first), int(second))))
+    explicit = pair_indices in explicit_pair_parameters
+    if not explicit and abs(charge_value-expected_charge) > 1e-6*max(1.0, abs(expected_charge)):
         raise SystemExit(f"unsupported scaled Coulomb 1-4 exception {first+1}-{second+1}")
     expected_sigma = 0.5*(si+sj).value_in_unit(unit.angstrom)
     expected_epsilon = math.sqrt(
@@ -94,7 +116,7 @@ for index in range(nonbonded.getNumExceptions()):
         * ej.value_in_unit(unit.kilocalorie_per_mole)
     )
     sigma_value = sigma.value_in_unit(unit.angstrom)
-    if not charmm and (
+    if not charmm and not explicit and (
         abs(sigma_value-expected_sigma) > 1e-6*max(1.0, abs(expected_sigma))
         or abs(epsilon_value-expected_epsilon) > 1e-6*max(1.0, abs(expected_epsilon))
     ):
@@ -102,7 +124,7 @@ for index in range(nonbonded.getNumExceptions()):
             f"1-4 exception {first+1}-{second+1} requires pair-specific parameters "
             "that the GLYCAM LAMMPS representation cannot express"
         )
-    exception_pairs.add(tuple(sorted((int(first), int(second)))))
+    exception_pairs.add(pair_indices)
     type_pair = tuple(sorted((atom_type_ids[first], atom_type_ids[second])))
     value = (epsilon_value, sigma_value)
     previous = exception_by_type.get(type_pair)
@@ -221,11 +243,18 @@ for a, b, c, d, periodicity, phase, k in raw_dihedrals:
         phase.value_in_unit(unit.degree),
     ]
     phase_degrees = params[2]
-    if abs(phase_degrees-round(phase_degrees)) > 1e-8:
+    # ParmEd's degree/radian round trip can write nominal integer phases as
+    # 180.000077 degrees. LAMMPS accepts integer CHARMM phases, so tolerate
+    # sub-millidegree serialization noise but reject genuinely noninteger data.
+    if abs(phase_degrees-round(phase_degrees)) > 1e-3:
         raise SystemExit(
             f"torsion phase {phase_degrees} degrees is not an integer "
             "and cannot be represented by the LAMMPS CHARMM dihedral styles"
         )
+    # Store the representable integer phase in the type key.  Using int()
+    # directly would silently turn harmless negative serialization noise such
+    # as 179.99992 degrees into a physically different 179-degree torsion.
+    params[2] = int(round(phase_degrees))
     # Both CHARMM styles use K, n, d, weight coefficients.  GLYCAM's 1-4
     # interactions are supplied by special_bonds, so a zero dihedral weight
     # avoids double-counting while requiring only standard LAMMPS packages.
@@ -318,11 +347,24 @@ for root in range(system.getNumParticles()):
                 # minimum image for forces; retain the first spanning-tree flag.
                 pass
 
+pseudo_pair_types = {}
+pseudo_bonds = []
+for (first, second), pair in sorted(explicit_pair_parameters.items()):
+    parameters = (
+        pair["charge_product_e2"],
+        pair["sigma_nm"] * 10.0,
+        pair["epsilon_kj_mol"] / 4.184,
+    )
+    pseudo_bonds.append((type_id(pseudo_pair_types, parameters), first + 1, second + 1))
+ordinary_bond_type_count = len(bond_types)
+for index, record in enumerate(pseudo_bonds):
+    pseudo_bonds[index] = (ordinary_bond_type_count + record[0], record[1], record[2])
+
 lines = [
     "CelluloseForge LAMMPS data", "",
-    f"{system.getNumParticles()} atoms", f"{len(bonds)} bonds",
+    f"{system.getNumParticles()} atoms", f"{len(bonds) + len(pseudo_bonds)} bonds",
     f"{len(angles)} angles", f"{len(dihedrals)} dihedrals", f"{len(impropers)} impropers", "",
-    f"{len(atom_types)} atom types", f"{len(bond_types)} bond types",
+    f"{len(atom_types)} atom types", f"{len(bond_types) + len(pseudo_pair_types)} bond types",
     f"{len(angle_types)} angle types", f"{len(dihedral_types)} dihedral types",
     *([f"{len(improper_types)} improper types"] if improper_types else []), "",
     f"0.0 {a[0]:.12g} xlo xhi", f"0.0 {b[1]:.12g} ylo yhi",
@@ -352,15 +394,20 @@ else:
         lines.append(f"{index} {params[1]:.12g} {params[2]:.12g}")
 lines += ["", "Bond Coeffs", ""]
 for params, index in sorted(bond_types.items(), key=lambda item: item[1]):
-    lines.append(f"{index} {params[0]:.12g} {params[1]:.12g}")
+    prefix = "harmonic " if pseudo_pair_types else ""
+    lines.append(f"{index} {prefix}{params[0]:.12g} {params[1]:.12g}")
+for params, index in sorted(pseudo_pair_types.items(), key=lambda item: item[1]):
+    lines.append(
+        f"{ordinary_bond_type_count + index} table explicit_pairs.table PAIR_{index}"
+    )
 lines += ["", "Angle Coeffs", ""]
 for params, index in sorted(angle_types.items(), key=lambda item: item[1]):
     lines.append(f"{index} " + " ".join(f"{value:.12g}" for value in params))
 lines += ["", "Dihedral Coeffs", ""]
 for params, index in sorted(dihedral_types.items(), key=lambda item: item[1]):
     lines.append(
-        f"{index} {params[0]:.12g} {int(params[1])} "
-        f"{int(params[2])} {params[3]:.1f}"
+        f"{index} {params[0]:.12g} {int(round(params[1]))} "
+        f"{int(round(params[2]))} {params[3]:.1f}"
     )
 if improper_types:
     lines += ["", "Improper Coeffs", ""]
@@ -376,7 +423,7 @@ for index, ((charge, _, _), atom_type, molecule, xyz, image) in enumerate(zip(
         f"{xyz[0]:.12g} {xyz[1]:.12g} {xyz[2]:.12g} "
         f"{image[0]} {image[1]} {image[2]}"
     )
-sections = [("Bonds", bonds), ("Angles", angles), ("Dihedrals", dihedrals)]
+sections = [("Bonds", bonds + pseudo_bonds), ("Angles", angles), ("Dihedrals", dihedrals)]
 if impropers:
     sections.append(("Impropers", impropers))
 for title, records in sections:
@@ -384,15 +431,35 @@ for title, records in sections:
     for index, record in enumerate(records, start=1):
         lines.append(f"{index} " + " ".join(str(value) for value in record))
 open(request["data_path"], "w", encoding="utf-8").write("\n".join(lines) + "\n")
+if pseudo_pair_types:
+    table_lines = ["# Pair-specific GLYCAM 1-4 energies", ""]
+    qqr2e = 332.06371
+    points = 9901
+    for params, index in sorted(pseudo_pair_types.items(), key=lambda item: item[1]):
+        charge_product, sigma, epsilon = params
+        table_lines += [f"PAIR_{index}", f"N {points} EQ 4.0", ""]
+        for point in range(points):
+            distance = 0.1 + point * 9.9 / (points - 1)
+            sr6 = (sigma / distance) ** 6
+            energy = 4.0 * epsilon * (sr6 * sr6 - sr6) + qqr2e * charge_product / distance
+            force = 24.0 * epsilon * (2.0 * sr6 * sr6 - sr6) / distance
+            force += qqr2e * charge_product / distance**2
+            table_lines.append(f"{point + 1} {distance:.12g} {energy:.12g} {force:.12g}")
+        table_lines.append("")
+    open(request["pair_table_path"], "w", encoding="utf-8").write("\n".join(table_lines))
 print(json.dumps({
-    "atom_count": system.getNumParticles(), "bond_count": len(bonds),
+    "atom_count": system.getNumParticles(), "bond_count": len(bonds) + len(pseudo_bonds),
     "angle_count": len(angles), "dihedral_count": len(dihedrals),
     "improper_count": len(impropers),
     "zero_force_constant_one_four_dihedrals": len(zero_dihedral_pairs),
     "atom_type_count": len(atom_types),
-    "special_bonds": "charmm" if charmm else "lj/coul 0 0 1",
+    "special_bonds": (
+        "charmm" if charmm else
+        "lj/coul 0 0 1 angle yes dihedral yes" if pseudo_bonds else "lj/coul 0 0 1"
+    ),
     "urey_bradley_count": len(urey_bradley),
     "weighted_one_four_count": len(weighted_pairs),
+    "explicit_pair_override_count": len(pseudo_bonds),
 }))
 """
 
@@ -420,19 +487,34 @@ def write_lammps_system(  # noqa: PLR0913
     directory = Path(output_directory)
     directory.mkdir(parents=True, exist_ok=True)
     input_name = LAMMPS_INPUT_FILE if polymer == "cellulose" else f"in.{polymer}"
-    files = LammpsSystemFiles(directory / LAMMPS_DATA_FILE, directory / input_name)
+    pair_table = directory / "explicit_pairs.table"
+    files = LammpsSystemFiles(directory / LAMMPS_DATA_FILE, directory / input_name, pair_table)
     molecule_ids = [int(value) for value in system.chain_numbers]
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_lammps_") as temporary:
+        parser_topology, explicit_pairs = prepare_explicit_pairs(
+            gromacs_topology, Path(temporary) / "parser.top"
+        )
         request_path = Path(temporary) / "request.json"
         request_path.write_text(
             json.dumps(
                 {
-                    "topology": str(Path(gromacs_topology).resolve()),
+                    "topology": str(parser_topology.resolve()),
                     "coordinates": str(Path(gromacs_coordinates).resolve()),
                     "include_directory": str(Path(gromacs_topology).resolve().parent),
                     "data_path": str(files.data.resolve()),
                     "molecule_ids": molecule_ids,
                     "force_field": force_field.lower(),
+                    "pair_table_path": str(pair_table.resolve()),
+                    "explicit_pair_overrides": [
+                        {
+                            "first": pair.first,
+                            "second": pair.second,
+                            "charge_product_e2": pair.charge_product_e2,
+                            "sigma_nm": pair.sigma_nm,
+                            "epsilon_kj_mol": pair.epsilon_kj_mol,
+                        }
+                        for pair in explicit_pairs
+                    ],
                 }
             ),
             encoding="utf-8",
@@ -448,6 +530,7 @@ def write_lammps_system(  # noqa: PLR0913
     if not files.data.is_file():
         raise RuntimeError("LAMMPS conversion did not create system.data")
     metadata = json.loads(result.stdout.strip().splitlines()[-1])
+    explicit_pair_count = int(metadata.get("explicit_pair_override_count", 0))
     if force_field.lower() == "charmm36":
         angle_style = "charmm"
         dihedral_style = "charmmfsw"
@@ -458,6 +541,13 @@ def write_lammps_system(  # noqa: PLR0913
         dihedral_style = "charmm"
         pair_style = "lj/cut/coul/long 10.0"
         special_bonds = "lj/coul 0.0 0.0 1.0"
+        if explicit_pair_count:
+            # The tabulated 1-4 correction is carried as a pseudo-bond. Restrict
+            # higher-order special-neighbor recognition to interactions that
+            # actually occur in the angle/dihedral lists, preventing the
+            # pseudo-bond from creating unrelated exclusions.
+            special_bonds += " angle yes dihedral yes"
+    bond_style = "hybrid harmonic table linear 9901" if explicit_pair_count else "harmonic"
     has_impropers = int(metadata.get("improper_count", 0)) > 0
     improper_line = "improper_style harmonic\n" if has_impropers else ""
     improper_thermo = " eimp" if has_impropers else ""
@@ -466,7 +556,7 @@ def write_lammps_system(  # noqa: PLR0913
         f"""units real
 atom_style full
 boundary p p p
-bond_style harmonic
+bond_style {bond_style}
 angle_style {angle_style}
 dihedral_style {dihedral_style}
 {improper_line}pair_style {pair_style}
@@ -475,7 +565,7 @@ special_bonds {special_bonds}
 read_data system.data
 kspace_style pppm 1.0e-5
 thermo 100
-thermo_style custom step temp pe ebond eangle edihed evdwl ecoul elong{improper_thermo}
+thermo_style custom step temp pe ebond eangle edihed evdwl ecoul elong etail{improper_thermo}
 timestep 1.0
 # This file is an initial-energy validation input, not a dynamics protocol.
 run 0
@@ -492,4 +582,7 @@ quit 0
             "input_scope": "single-point run 0 validation; not a dynamics protocol",
         }
     )
+    if not explicit_pair_count:
+        pair_table.unlink(missing_ok=True)
+        files = LammpsSystemFiles(files.data, files.input, None)
     return files, metadata

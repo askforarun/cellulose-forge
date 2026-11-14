@@ -195,8 +195,6 @@ def test_cli_selects_minor_alpha_o6_conformation(tmp_path: Path) -> None:
         ["--polymer", "chitin", "--allomorph", "beta", "--shape", "fibril",
          "--fibril-model", "36-chain", "--degree-polymerization", "4",
          "--chain-boundary", "periodic"],
-        ["--polymer", "chitin", "--allomorph", "beta", "--shape", "bulk", "--cells", "1", "1",
-         "1", "--force-field", "glycam", "--chain-boundary", "periodic"],
         ["--polymer", "chitin", "--allomorph", "I-beta", "--shape", "unit-cell"],
         ["--allomorph", "alpha", "--shape", "unit-cell"],
         ["--polymer", "chitin", "--allomorph", "beta", "--o6-conformation", "minor",

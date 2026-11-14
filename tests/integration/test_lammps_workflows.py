@@ -150,23 +150,47 @@ def _lammps_energies(directory: Path) -> dict[str, float]:
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
     log = (directory / "log.lammps").read_text(encoding="utf-8")
-    headings = re.search(
-        r"^\s*Step\s+Temp\s+PotEng\s+E_bond\s+E_angle\s+E_dihed\s+E_vdwl\s+"
-        r"E_coul\s+E_long\s*$",
-        log,
-        flags=re.MULTILINE,
+    lines = log.splitlines()
+    header_index = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if line.split()[:9]
+            == [
+                "Step",
+                "Temp",
+                "PotEng",
+                "E_bond",
+                "E_angle",
+                "E_dihed",
+                "E_vdwl",
+                "E_coul",
+                "E_long",
+            ]
+        ),
+        None,
     )
-    assert headings is not None
-    row = re.search(
-        r"^\s*0\s+" + r"\s+".join([r"([-+0-9.eE]+)"] * 8) + r"\s*$",
-        log[headings.end() :],
-        flags=re.MULTILINE,
+    assert header_index is not None
+    headings = lines[header_index].split()
+    row = next(
+        (line.split() for line in lines[header_index + 1 :] if line.split()[:1] == ["0"]),
+        None,
     )
     assert row is not None
-    names = ("temperature", "potential", "bond", "angle", "dihedral", "vdw", "coulomb", "long")
+    values = dict(zip(headings, row, strict=True))
+    names = {
+        "temperature": "Temp",
+        "potential": "PotEng",
+        "bond": "E_bond",
+        "angle": "E_angle",
+        "dihedral": "E_dihed",
+        "vdw": "E_vdwl",
+        "coulomb": "E_coul",
+        "long": "E_long",
+    }
     return {
-        name: float(value) * (1.0 if name == "temperature" else 4.184)
-        for name, value in zip(names, row.groups(), strict=True)
+        name: float(values[column]) * (1.0 if name == "temperature" else 4.184)
+        for name, column in names.items()
     }
 
 

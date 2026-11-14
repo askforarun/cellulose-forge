@@ -19,6 +19,31 @@ This is a coordinate-construction benchmark, not a force-field or molecular-
 dynamics performance benchmark. Its purpose is to demonstrate reproducible
 batch generation without requiring AmberTools or GROMACS.
 
+## Chitin GLYCAM06j-1 validation
+
+`validate_chitin_glycam.py` builds alpha- and beta-chitin periodic bulk
+crystals and finite/periodic (100) slabs. All six cases run through GROMACS
+preprocessing with zero warnings, minimization, and a one-ps NVT smoke test.
+The validator also minimizes and runs a finite beta-chitin slab for one ps
+with AmberTools `sander`. It checks the written periodic O4--C1 topology and
+records the explicit amide 1--4 scaling pairs. On identical coordinates, it
+also compares bonds, angles, proper plus improper dihedrals, 1--4 Lennard-Jones,
+and 1--4 electrostatic energies between double-precision GROMACS and `sander`.
+The largest difference after correcting for their documented Coulomb constants
+is 0.000124 kcal/mol. Compact evidence is stored in
+`results/chitin_glycam_engines.json`. These are topology and runtime tests, not an
+assessment of GLYCAM force-field accuracy for crystalline chitin.
+
+`validate_chitin_glycam_cross_engines.py` independently compares alpha- and
+beta-chitin periodic bulk crystals and `(100)` slabs with finite and covalently
+periodic chains in double-precision GROMACS, OpenMM, and LAMMPS. Bonds, angles,
+torsions, ordinary
+1--4 terms, and the amide-specific scaled 1--4 terms are compared separately.
+The largest bonded or explicit-pair relative difference is 8.4 × 10^-6; the
+largest combined nonbonded difference is 1.6 × 10^-4, within the recorded
+PME--PPPM tolerance. All six OpenMM systems also complete a two-ps NVT smoke
+test. Results are in `results/chitin_glycam_cross_engines.json`.
+
 ## GROMACS protocols
 
 - `periodic_pme_minim.mdp`: energy minimization for cellulose chains bonded

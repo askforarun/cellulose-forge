@@ -42,6 +42,20 @@ def test_dp12_glycam_sequence_has_correct_terminals_and_internal_residues() -> N
     assert spec.chemical_residues == ("0GB", *("4GB",) * 11, "ROH")
 
 
+def test_dp6_chitin_glycam_sequence_uses_glcnac_residues() -> None:
+    spec = GlycamChainSpec(6, residue_code="Y")
+
+    assert spec.tleap_residues == ("ROH", *("4YB",) * 5, "0YB")
+    assert spec.chemical_residues == ("0YB", *("4YB",) * 5, "ROH")
+
+
+def test_periodic_dp6_chitin_uses_neutral_internal_glcnac() -> None:
+    spec = GlycamPeriodicChainSpec(6, residue_code="Y")
+
+    assert spec.tleap_residues == ("4YB",) * 6
+    assert spec.internal_atom_count == 27
+
+
 @pytest.mark.parametrize("degree_polymerization", [0, -1, 1.5, True])
 def test_glycam_sequence_rejects_invalid_dp(degree_polymerization: object) -> None:
     with pytest.raises(ValueError, match="positive integer"):
