@@ -7,22 +7,11 @@ from pathlib import Path
 
 import pytest
 
-RESULTS = Path(__file__).resolve().parents[2] / "validation" / "results"
-PROVENANCED_RESULTS = (
-    "openff_fibril_nagl_matrix.json",
-    "openff_finite_slab_matrix.json",
-    "openff_finite_slab_nagl_matrix.json",
-    "openff_periodic_slab_nagl_matrix.json",
-    "openff_periodic_bulk_nagl_matrix.json",
-    "openff_shipped_outputs.json",
-    "openff_mixed_precision_accumulation.json",
-    "cellulose_ii_hydroxyl_network.json",
-    "opls_cellulose_matrix.json",
-    "openmm_tilted_box.json",
-    "chitin_glycam_engines.json",
-    "chitin_glycam_cross_engines.json",
-    "chitin_openff_matrix.json",
-    "force_field_matrix.json",
+VALIDATION = Path(__file__).resolve().parents[2] / "validation"
+RESULTS = VALIDATION / "results"
+MANIFEST = json.loads((VALIDATION / "release_manifest.json").read_text(encoding="utf-8"))
+PROVENANCED_RESULTS = tuple(
+    sorted(name for name, entry in MANIFEST["results"].items() if entry["role"] == "evidence")
 )
 
 
@@ -34,3 +23,8 @@ def test_result_records_commit_tree_state_and_versions(name: str) -> None:
     assert isinstance(provenance["tracked_tree_clean"], bool)
     assert provenance["software_versions"]
     assert "not installed" not in provenance["software_versions"].values()
+
+
+def test_manifest_declares_every_stored_result() -> None:
+    stored = {path.name for path in RESULTS.glob("*.json")}
+    assert stored == set(MANIFEST["results"])

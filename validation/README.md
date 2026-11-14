@@ -2,6 +2,37 @@
 
 This directory will contain reproducible comparisons with the legacy builders and GROMACS preprocessing, minimization, and simulation checks. Generated binary or large reference artifacts should be archived externally and identified here by version and checksum.
 
+## Release manifest and gate
+
+`release_manifest.json` declares every file in `results/` with one role:
+`evidence` (cited, records provenance), `unprovenanced-evidence` (cited, but
+its validator does not yet record provenance), or `reference` (a fixture or
+probe consumed by other validators). A result file that is not declared, or a
+cited result that is missing, fails the gate in every mode.
+
+`release_gate.py` runs in development mode in CI and reports, without failing,
+evidence that is stale or lacks provenance. Before tagging a release, run it in
+release mode from the final commit, with the JUnit reports of the core and
+optional-environment test runs:
+
+```bash
+uv run pytest --junitxml=core-tests.xml
+pytest --junitxml=openff-tests.xml   # inside the OpenFF environment
+uv run python validation/release_gate.py --release --tag v1.3.0 \
+  --junit core-tests.xml --junit openff-tests.xml
+```
+
+Pass `--allow-skip REGEX` once per skip that is expected for the release (the
+pattern is matched against the test id and skip reason).
+
+Release mode also fails on a dirty tracked tree; on evidence generated from a
+dirty tree or whose source (`src/cellulose_forge`, the shared provenance
+helper, or its own validator) has changed since the recorded commit; on
+unprovenanced evidence; on entries left under `## Unreleased`; on a tag that
+does not match the package version or that points elsewhere; and on skipped
+tests that `--allow-skip` does not name. Freshness is deliberately coarse: any
+source change, including formatting, means the evidence is regenerated.
+
 ## High-throughput coordinate benchmark
 
 `benchmark_coordinate_matrix.py` exercises the public CLI over a matrix of all

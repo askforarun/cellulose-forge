@@ -16,6 +16,12 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Added
 
+- `validation/release_gate.py` and `validation/release_manifest.json`: every
+  stored validation result is declared with a role, and the gate checks tree
+  state, cited results, evidence provenance and freshness, version and tag
+  consistency, changelog state, and test reports (including unexpected skips).
+  CI runs it in development mode; release mode is run before tagging.
+
 - Experimental OpenFF Sage 2.3 output for anhydrous alpha- and beta-chitin
   periodic bulk crystals and finite or covalently periodic `(100)` slabs in
   GROMACS and OpenMM. The directly constructed GlcNAc graph, NAGL charges,
