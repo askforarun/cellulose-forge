@@ -68,8 +68,12 @@ def test_openff_periodic_bulk_outputs(tmp_path: Path) -> None:
     (
         ["--fibril-model", "36-chain", "--chain-boundary", "periodic"],
         [
-            "--fibril-profile", "2,3,3,2", "--chain-boundary", "finite",
-            "--padding-longitudinal", "12",
+            "--fibril-profile",
+            "2,3,3,2",
+            "--chain-boundary",
+            "finite",
+            "--padding-longitudinal",
+            "12",
         ],
     ),
 )
@@ -78,10 +82,24 @@ def test_openff_fibril_cli_outputs(tmp_path: Path, arguments: list[str]) -> None
     assert (
         main(
             [
-                "build", "--allomorph", "I-beta", "--shape", "fibril", *arguments,
-                "--degree-polymerization", "6", "--vacuum", "20",
-                "--force-field", "openff", "--md-engine", "gromacs", "--md-engine", "openmm",
-                "--output", str(output),
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "fibril",
+                *arguments,
+                "--degree-polymerization",
+                "6",
+                "--vacuum",
+                "20",
+                "--force-field",
+                "openff",
+                "--md-engine",
+                "gromacs",
+                "--md-engine",
+                "openmm",
+                "--output",
+                str(output),
             ]
         )
         == 0
@@ -105,9 +123,23 @@ def test_openff_openmm_only_build_writes_no_gromacs_files(tmp_path: Path) -> Non
     assert (
         main(
             [
-                "build", "--allomorph", "I-beta", "--shape", "bulk", "--cells", "3", "3", "2",
-                "--chain-boundary", "periodic", "--force-field", "openff",
-                "--md-engine", "openmm", "--output", str(output),
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "bulk",
+                "--cells",
+                "3",
+                "3",
+                "2",
+                "--chain-boundary",
+                "periodic",
+                "--force-field",
+                "openff",
+                "--md-engine",
+                "openmm",
+                "--output",
+                str(output),
             ]
         )
         == 0
@@ -118,3 +150,55 @@ def test_openff_openmm_only_build_writes_no_gromacs_files(tmp_path: Path) -> Non
         assert (output / name).is_file(), name
     report = json.loads((output / "build_report.json").read_text())
     assert not any(key.startswith("gromacs") for key in report["outputs"])
+
+
+@pytest.mark.parametrize(
+    ("allomorph", "boundary", "padding"),
+    (("alpha", "finite", "12"), ("beta", "periodic", "0")),
+)
+def test_chitin_openff_slab_cli_outputs(
+    tmp_path: Path, allomorph: str, boundary: str, padding: str
+) -> None:
+    output = tmp_path / f"chitin_{allomorph}_{boundary}"
+    arguments = [
+        "build",
+        "--polymer",
+        "chitin",
+        "--allomorph",
+        allomorph,
+        "--shape",
+        "slab",
+        "--face",
+        "1",
+        "0",
+        "0",
+        "--layers",
+        "2",
+        "--chains-per-layer",
+        "4",
+        "--degree-polymerization",
+        "6",
+        "--chain-boundary",
+        boundary,
+        "--vacuum",
+        "30",
+        "--force-field",
+        "openff",
+        "--md-engine",
+        "gromacs",
+        "--md-engine",
+        "openmm",
+        "--output",
+        str(output),
+    ]
+    if boundary == "finite":
+        arguments.extend(["--padding-longitudinal", padding])
+    assert main(arguments) == 0
+    report = json.loads((output / "build_report.json").read_text())
+    assert report["polymer"] == "chitin"
+    assert report["residue_name"] == "NAG"
+    assert report["stereochemistry"]["passed"] is True
+    assert report["charge_method"]["periodic_equivalent_atom_charges"] is True
+    assert report["outputs"]["validation_platform"] in {"CPU", "Reference"}
+    for name in ("structure.gro", "system.top", "system.xml", "state.xml", "topology.cif"):
+        assert (output / name).is_file()
