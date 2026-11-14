@@ -26,6 +26,7 @@ from cellulose_forge.openff_sage import (
     dispersion_correction_for_shape,
     reduced_periodic_box,
     require_openff,
+    validate_declared_stereochemistry,
     validate_sage_stereochemistry,
 )
 
@@ -199,6 +200,32 @@ def test_declared_stereochemistry_matches_mapped_3d_coordinates(
                 (int(atom.metadata["residue_number"]), atom.name, atom.stereochemistry, actual)
             )
     assert mismatches == []
+    declared = build.stereochemistry["declared_labels"]
+    assert declared["passed"] is True
+    assert declared["distinct_chain_types_checked"] >= 1
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+def test_build_time_stereochemistry_guard_rejects_wrong_graph_label() -> None:
+    crystal = build_chain_parallel_slab(
+        load_allomorph("beta", polymer="chitin"),
+        MillerIndex(1, 0, 0),
+        layers=2,
+        chains_per_layer=2,
+        degree_polymerization=4,
+        vacuum=30.0,
+        padding_z=12.0,
+        chain_boundary="finite",
+    )
+    build = build_sage_system(crystal, "finite", "chitin")
+    terminal_c3 = next(
+        atom
+        for atom in build.molecule.atoms
+        if atom.name == "C3" and int(atom.metadata["residue_number"]) == 4
+    )
+    terminal_c3.stereochemistry = "S"
+    with pytest.raises(ValueError, match="declared stereochemistry disagrees"):
+        validate_declared_stereochemistry(build.molecule, build.mapped, "chitin")
 
 
 @pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")

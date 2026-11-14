@@ -320,7 +320,7 @@ def validate_sage_stereochemistry(
     mapped: GlycamMappedSystem,
     polymer: str = "cellulose",
 ) -> dict[str, object]:
-    """Check every mapped C1--C5 centre against an independent reference."""
+    """Check mapped C1--C5 centres against the polymer's coordinate reference."""
     profile = _polymer_profile(polymer)
     failures: list[tuple[int, int, str]] = []
     for chain_index, chain in enumerate(dict.fromkeys(mapped.chain_numbers)):
@@ -352,6 +352,69 @@ def validate_sage_stereochemistry(
     return result
 
 
+def validate_declared_stereochemistry(
+    molecule: Any,
+    mapped: GlycamMappedSystem,
+    polymer: str = "cellulose",
+) -> dict[str, object]:
+    """Confirm graph stereochemical labels using coordinates perceived by RDKit.
+
+    RDKit remains an optional dependency imported only inside the OpenFF path.
+    Equivalent chains are reduced to their perceived stereochemical signature,
+    so each distinct chain type is checked once.
+    """
+    chem = importlib.import_module("rdkit.Chem")
+    point_type = importlib.import_module("rdkit.Geometry").Point3D
+    signatures: set[tuple[tuple[int, str, str | None], ...]] = set()
+    failures: list[tuple[int, int, str, str, str | None]] = []
+    for chain_index, chain in enumerate(dict.fromkeys(mapped.chain_numbers)):
+        start = chain_index * molecule.n_atoms
+        coordinates = mapped.cartesian_coordinates[start : start + molecule.n_atoms]
+        perceived_molecule = molecule.to_rdkit()
+        conformer = chem.Conformer(perceived_molecule.GetNumAtoms())
+        for atom_index, coordinate in enumerate(coordinates):
+            conformer.SetAtomPosition(atom_index, point_type(*map(float, coordinate)))
+        perceived_molecule.RemoveAllConformers()
+        perceived_molecule.AddConformer(conformer)
+        for atom in perceived_molecule.GetAtoms():
+            atom.SetChiralTag(chem.ChiralType.CHI_UNSPECIFIED)
+            if atom.HasProp("_CIPCode"):
+                atom.ClearProp("_CIPCode")
+        chem.AssignStereochemistryFrom3D(
+            perceived_molecule,
+            confId=0,
+            replaceExistingTags=True,
+        )
+        signature: list[tuple[int, str, str | None]] = []
+        for atom_index, atom in enumerate(molecule.atoms):
+            if atom.stereochemistry is None:
+                continue
+            perceived_atom = perceived_molecule.GetAtomWithIdx(atom_index)
+            actual = (
+                perceived_atom.GetProp("_CIPCode") if perceived_atom.HasProp("_CIPCode") else None
+            )
+            residue = int(atom.metadata["residue_number"])
+            signature.append((residue, atom.name, actual))
+            if actual != atom.stereochemistry:
+                failures.append((chain, residue, atom.name, atom.stereochemistry, actual))
+        signatures.add(tuple(signature))
+    if failures:
+        raise ValueError(
+            f"OpenFF {polymer} declared stereochemistry disagrees with mapped "
+            f"coordinates: {failures[:5]}"
+        )
+    return {
+        "method": "RDKit AssignStereochemistryFrom3D after clearing declared chiral tags",
+        "chains_examined": mapped.chain_count,
+        "distinct_chain_types_checked": len(signatures),
+        "labelled_centres_per_chain": sum(
+            atom.stereochemistry is not None for atom in molecule.atoms
+        ),
+        "failures": failures,
+        "passed": True,
+    }
+
+
 def build_sage_system(
     crystal: BulkCrystal,
     chain_boundary: str,
@@ -379,6 +442,7 @@ def build_sage_system(
         chain_boundary,
         profile.residue_name,
     )
+    declared_stereo = validate_declared_stereochemistry(molecule, mapped, selected_polymer)
     unit = importlib.import_module("openff.units").unit
 
     molecule.add_conformer(mapped.cartesian_coordinates[: molecule.n_atoms] * unit.angstrom)
@@ -399,6 +463,7 @@ def build_sage_system(
         if not periodic_charge_check:
             raise ValueError("periodic OpenFF charges differ between equivalent residues")
     stereo = validate_sage_stereochemistry(molecule, mapped, selected_polymer)
+    stereo["declared_labels"] = declared_stereo
     charge_hash = hashlib.sha256(charges.tobytes()).hexdigest()
     provenance = {
         "method": NAGL_CHARGE_MODEL,
