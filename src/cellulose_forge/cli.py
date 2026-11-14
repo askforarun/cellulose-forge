@@ -465,10 +465,9 @@ def _load_definition(  # noqa: PLR0912 - polymer-specific validation is kept tog
         parser.error("--o6-conformation applies only to alpha-chitin")
     if args.shape not in _CHITIN_SHAPES:
         parser.error("chitin currently supports --shape unit-cell, bulk, and slab")
-    if args.force_field not in {"none", "charmm36"}:
+    if args.force_field not in {"none", "charmm36", "glycam"}:
         parser.error(
-            "chitin supports --force-field none or charmm36; "
-            "GLYCAM/Amber chitin topologies are not implemented"
+            "chitin supports --force-field none, charmm36, or glycam"
         )
     if args.force_field == "charmm36" and args.charmm_template is not None:
         parser.error("--charmm-template is not supported for chitin")
@@ -519,6 +518,16 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         parser.error("CHARMM36 supports --md-engine gromacs, openmm, and lammps")
     if args.force_field == "glycam" and not engines:
         parser.error("GLYCAM builds require at least one --md-engine")
+    if args.polymer == "chitin" and args.force_field == "glycam" and not set(engines) <= {
+        "gromacs",
+        "amber",
+        "openmm",
+        "lammps",
+    }:
+        parser.error(
+            "chitin GLYCAM supports --md-engine gromacs, openmm, lammps, and "
+            "finite-chain amber"
+        )
     if args.force_field == "openff" and not set(engines) <= {"gromacs", "openmm"}:
         parser.error("experimental OpenFF supports --md-engine gromacs and openmm only")
     if args.force_field in _OPLS_FORCE_FIELDS and (
@@ -711,6 +720,8 @@ def _engine_outputs(
                 "lammps_input": lammps_files.input.name,
             }
         )
+        if lammps_files.pair_table is not None:
+            outputs["lammps_explicit_pair_table"] = lammps_files.pair_table.name
     return outputs
 
 
@@ -1236,6 +1247,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             directory=temporary,
             tleap_executable=args.tleap_executable,
             parmed_python=args.parmed_python,
+            polymer=args.polymer,
         )
         if chain_boundary == "periodic":
             mapped = map_crystal_to_periodic_glycam(crystal, files.pdb)
@@ -1257,7 +1269,13 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
         restraints = _resolve_restraints(args, crystal, parser)
         chain_mapping = None
         if restraints is not None:
-            mapped, chain_mapping = group_mapped_chains(mapped, restraints.chain_ids)
+            molecule_name = f"{args.polymer.upper()}_CHAIN"
+            mapped, chain_mapping = group_mapped_chains(
+                mapped,
+                restraints.chain_ids,
+                free_molecule_type=molecule_name,
+                restrained_molecule_type=f"{molecule_name}_RESTRAINED",
+            )
         output_directory.mkdir(parents=True, exist_ok=True)
         coordinate_path = write_coordinates(crystal, output_directory / "structure.pdb")
         if write_gromacs or write_openmm or write_lammps:
@@ -1268,6 +1286,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                 gromacs_directory,
                 restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
                 restraint_force=restraints.force_constants if restraints else None,
+                restraint_define=f"POSRES_{args.polymer.upper()}",
             )
             if write_gromacs:
                 gro_path, topology_path = written_gro, written_topology
@@ -1314,7 +1333,9 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                     force_field="glycam",
                     periodic_chains=chain_boundary == "periodic",
                     dispersion=dispersion,
-                    restraint_define="POSRES_CELLULOSE" if restraints else None,
+                    restraint_define=(
+                        f"POSRES_{args.polymer.upper()}" if restraints else None
+                    ),
                 ),
             }
         )
@@ -1329,6 +1350,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
     outputs = _engine_outputs(coordinate_path, engine_files, openmm_files, lammps_files)
     report = {
         "cellulose_forge_version": __version__,
+        "polymer": args.polymer,
         "allomorph": crystal.allomorph,
         "shape": args.shape,
         "force_field": "GLYCAM",
@@ -1341,7 +1363,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
         "md_engines": list(args.md_engines),
         "outputs": outputs,
         "geometry_annotations": list(crystal.annotations),
-        "chirality_validation": validate_cellulose_chirality(crystal),
+        "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),
         "reference_generation": reference_metadata,
     }
     if amber_metadata is not None:
@@ -1359,7 +1381,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
         }
     if restraints is not None:
         report["position_restraints"] = {
-            "define": "POSRES_CELLULOSE",
+            "define": f"POSRES_{args.polymer.upper()}",
             "selected_chain_ids": list(restraints.chain_ids),
             "selected_layer_ids": list(restraints.layer_ids),
             "layer_mapping": [

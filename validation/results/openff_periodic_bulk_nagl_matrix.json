@@ -1,8 +1,8 @@
 {
   "matrix": "periodic cellulose bulk crystals, OpenFF Sage 2.3/NAGL",
   "provenance": {
-    "cellulose_forge_commit": "acc37ee5421d669a9d292c229e68fbb4266c435f",
-    "tracked_tree_clean": false,
+    "cellulose_forge_commit": "3dbf3a0a310861b2d26af1e80e26fad1421120b9",
+    "tracked_tree_clean": true,
     "software_versions": {
       "openff-toolkit": "0.19.0",
       "openff-interchange": "0.5.5",
@@ -72,10 +72,10 @@
       "energy_comparison_dispersion_correction": "disabled in both engines to isolate the shared base potential; generated production inputs enable it",
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 2791.3622649073413,
+          "openmm_kj_mol": 2791.36226490735,
           "gromacs_kj_mol": 2791.3671875,
-          "difference_kj_mol": -0.0049225926586586866,
-          "relative_difference": 1.7635059553263042e-06,
+          "difference_kj_mol": -0.004922592650018487,
+          "relative_difference": 1.7635059522309752e-06,
           "relative_tolerance": 1.2953832347112774e-05,
           "summed_interactions": 2952,
           "passed": true
@@ -108,10 +108,10 @@
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 5825.326117212154,
+          "openmm_kj_mol": 5825.326117212233,
           "gromacs_kj_mol": 5825.3349609375,
-          "difference_kj_mol": -0.008843725346196152,
-          "relative_difference": 1.5181488112698823e-06,
+          "difference_kj_mol": -0.008843725267070113,
+          "relative_difference": 1.518148797686794e-06,
           "relative_tolerance": 2.073008071831146e-05,
           "summed_interactions": 7560,
           "passed": true
@@ -127,9 +127,9 @@
         },
         "vdW 1-4": {
           "openmm_kj_mol": 1857.0950732358276,
-          "gromacs_kj_mol": 1857.0948486328125,
-          "difference_kj_mol": 0.00022460301511273428,
-          "relative_difference": 1.2094319690449825e-07,
+          "gromacs_kj_mol": 1857.0947265625,
+          "difference_kj_mol": 0.0003466733276127343,
+          "relative_difference": 1.866750564410717e-07,
           "relative_tolerance": 1.6057451477511154e-05,
           "summed_interactions": 4536,
           "passed": true
@@ -197,10 +197,10 @@
       "energy_comparison_dispersion_correction": "disabled in both engines to isolate the shared base potential; generated production inputs enable it",
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 877.0000557733574,
+          "openmm_kj_mol": 877.000055773359,
           "gromacs_kj_mol": 876.9979858398438,
-          "difference_kj_mol": 0.0020699335136669106,
-          "relative_difference": 2.3602433090401563e-06,
+          "difference_kj_mol": 0.0020699335152585263,
+          "relative_difference": 2.360243310854993e-06,
           "relative_tolerance": 1.2953832347112774e-05,
           "summed_interactions": 2952,
           "passed": true
@@ -225,18 +225,18 @@
         },
         "Electrostatics 1-4": {
           "openmm_kj_mol": 31892.343820710517,
-          "gromacs_kj_mol": 31892.33203125,
-          "difference_kj_mol": 0.011789460517320549,
-          "relative_difference": 3.696642863126482e-07,
+          "gromacs_kj_mol": 31892.3359375,
+          "difference_kj_mol": 0.007883210517320549,
+          "relative_difference": 2.471819117979433e-07,
           "relative_tolerance": 1.6057451477511154e-05,
           "summed_interactions": 4536,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 5024.138326003298,
+          "openmm_kj_mol": 5024.138326003331,
           "gromacs_kj_mol": 5024.13720703125,
-          "difference_kj_mol": 0.0011189720480615506,
-          "relative_difference": 2.2271919590074123e-07,
+          "difference_kj_mol": 0.0011189720808033599,
+          "relative_difference": 2.227192024176402e-07,
           "relative_tolerance": 2.073008071831146e-05,
           "summed_interactions": 7560,
           "passed": true
@@ -322,64 +322,64 @@
       "energy_comparison_dispersion_correction": "disabled in both engines to isolate the shared base potential; generated production inputs enable it",
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 881.0196472312297,
-          "gromacs_kj_mol": 881.020263671875,
-          "difference_kj_mol": -0.0006164406453308402,
-          "relative_difference": 6.996895199228083e-07,
+          "openmm_kj_mol": 881.0196472312304,
+          "gromacs_kj_mol": 881.0203247070312,
+          "difference_kj_mol": -0.0006774758008987192,
+          "relative_difference": 7.68967277938795e-07,
           "relative_tolerance": 1.2953832347112774e-05,
           "summed_interactions": 2952,
           "passed": true
         },
         "Bond": {
-          "openmm_kj_mol": 9970.335297300828,
-          "gromacs_kj_mol": 9970.3408203125,
-          "difference_kj_mol": -0.005523011672266875,
-          "relative_difference": 5.539441200460154e-07,
+          "openmm_kj_mol": 9970.335297300826,
+          "gromacs_kj_mol": 9970.33984375,
+          "difference_kj_mol": -0.004546449174085865,
+          "relative_difference": 4.559974128600891e-07,
           "relative_tolerance": 1e-05,
           "summed_interactions": 864,
           "passed": true
         },
         "Electrostatics": {
-          "openmm_kj_mol": -26896.792079198378,
-          "gromacs_kj_mol": -26896.790649414062,
-          "difference_kj_mol": -0.0014297843154054135,
-          "relative_difference": 5.315817258784514e-08,
+          "openmm_kj_mol": -26395.68542783262,
+          "gromacs_kj_mol": -26395.657165527344,
+          "difference_kj_mol": -0.028262305277166888,
+          "relative_difference": 1.0707168546328422e-06,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "Electrostatics 1-4": {
-          "openmm_kj_mol": 33419.04666261572,
-          "gromacs_kj_mol": 33418.98828125,
-          "difference_kj_mol": 0.0583813657212886,
-          "relative_difference": 1.7469488675329875e-06,
+          "openmm_kj_mol": 33947.15293397236,
+          "gromacs_kj_mol": 33947.08984375,
+          "difference_kj_mol": 0.06309022235654993,
+          "relative_difference": 1.8584834633779513e-06,
           "relative_tolerance": 1.6057451477511154e-05,
           "summed_interactions": 4536,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 5390.964351538832,
-          "gromacs_kj_mol": 5390.93017578125,
-          "difference_kj_mol": 0.03417575758157909,
-          "relative_difference": 6.339451599568404e-06,
+          "openmm_kj_mol": 5294.410132848212,
+          "gromacs_kj_mol": 5294.373046875,
+          "difference_kj_mol": 0.03708597321201523,
+          "relative_difference": 7.004741280227236e-06,
           "relative_tolerance": 2.073008071831146e-05,
           "summed_interactions": 7560,
           "passed": true
         },
         "vdW": {
-          "openmm_kj_mol": -4199.2926130741835,
-          "gromacs_kj_mol": -4199.29150390625,
-          "difference_kj_mol": -0.0011091679334640503,
-          "relative_difference": 2.6413208977405834e-07,
+          "openmm_kj_mol": -4200.557950809598,
+          "gromacs_kj_mol": -4200.55517578125,
+          "difference_kj_mol": -0.002775028347969055,
+          "relative_difference": 6.606332731189217e-07,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "vdW 1-4": {
-          "openmm_kj_mol": 2127.2118477324702,
-          "gromacs_kj_mol": 2127.220947265625,
-          "difference_kj_mol": -0.009099533154767414,
-          "relative_difference": 4.2776624433226585e-06,
+          "openmm_kj_mol": 2127.0752677943833,
+          "gromacs_kj_mol": 2127.085205078125,
+          "difference_kj_mol": -0.009937283741692227,
+          "relative_difference": 4.671784523707993e-06,
           "relative_tolerance": 1.6057451477511154e-05,
           "summed_interactions": 4536,
           "passed": true
@@ -398,7 +398,7 @@
         "threads": 1,
         "duration_ps": 1.0,
         "bonds_checked": 1584,
-        "maximum_bond_change_angstrom": 0.10071233793521661,
+        "maximum_bond_change_angstrom": 0.11958343033592533,
         "all_finite": true,
         "passed": true
       },
@@ -447,10 +447,10 @@
       "energy_comparison_dispersion_correction": "disabled in both engines to isolate the shared base potential; generated production inputs enable it",
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 812.1202993147865,
+          "openmm_kj_mol": 812.1202993147834,
           "gromacs_kj_mol": 812.12060546875,
-          "difference_kj_mol": -0.00030615396349276125,
-          "relative_difference": 3.769809082926192e-07,
+          "difference_kj_mol": -0.00030615396656230587,
+          "relative_difference": 3.769809120722852e-07,
           "relative_tolerance": 1.1825176971089597e-05,
           "summed_interactions": 2460,
           "passed": true
@@ -475,18 +475,18 @@
         },
         "Electrostatics 1-4": {
           "openmm_kj_mol": 27854.42782605922,
-          "gromacs_kj_mol": 27854.37890625,
-          "difference_kj_mol": 0.048919809218205046,
-          "relative_difference": 1.7562668859576466e-06,
+          "gromacs_kj_mol": 27854.380859375,
+          "difference_kj_mol": 0.046966684218205046,
+          "relative_difference": 1.6861478724852985e-06,
           "relative_tolerance": 1.465838065046253e-05,
           "summed_interactions": 3780,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 4531.275382738417,
+          "openmm_kj_mol": 4531.275382738424,
           "gromacs_kj_mol": 4531.27197265625,
-          "difference_kj_mol": 0.0034100821667379932,
-          "relative_difference": 7.525656418341882e-07,
+          "difference_kj_mol": 0.003410082174013951,
+          "relative_difference": 7.525656434399066e-07,
           "relative_tolerance": 1.8923888047203473e-05,
           "summed_interactions": 6300,
           "passed": true

@@ -1,8 +1,8 @@
 {
   "matrix": "cellulose fibrils, OpenFF Sage 2.3/NAGL",
   "provenance": {
-    "cellulose_forge_commit": "acc37ee5421d669a9d292c229e68fbb4266c435f",
-    "tracked_tree_clean": false,
+    "cellulose_forge_commit": "77203b66bbf69bd8c8f7f8016cb3f316836db707",
+    "tracked_tree_clean": true,
     "software_versions": {
       "openff-toolkit": "0.19.0",
       "openff-interchange": "0.5.5",
@@ -66,10 +66,10 @@
       "dispersion_correction": false,
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 8443.078480743863,
+          "openmm_kj_mol": 8443.078480743772,
           "gromacs_kj_mol": 8442.9580078125,
-          "difference_kj_mol": 0.12047293136311055,
-          "relative_difference": 1.4268839456825288e-05,
+          "difference_kj_mol": 0.12047293127216108,
+          "relative_difference": 1.4268839446053367e-05,
           "relative_tolerance": 2.2482252567532128e-05,
           "summed_interactions": 8892,
           "passed": true
@@ -85,27 +85,27 @@
         },
         "Electrostatics": {
           "openmm_kj_mol": -74766.00753121075,
-          "gromacs_kj_mol": -74766.142578125,
-          "difference_kj_mol": 0.1350469142489601,
-          "relative_difference": 1.8062576133019866e-06,
+          "gromacs_kj_mol": -74766.14184570312,
+          "difference_kj_mol": 0.1343144923739601,
+          "relative_difference": 1.7964614604716193e-06,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "Electrostatics 1-4": {
           "openmm_kj_mol": 99965.92155399168,
-          "gromacs_kj_mol": 99965.1796875,
-          "difference_kj_mol": 0.7418664916767739,
-          "relative_difference": 7.4211939443392336e-06,
+          "gromacs_kj_mol": 99965.171875,
+          "difference_kj_mol": 0.7496789916767739,
+          "relative_difference": 7.499345577201243e-06,
           "relative_tolerance": 2.7812321799121256e-05,
           "summed_interactions": 13608,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 17504.559068262828,
+          "openmm_kj_mol": 17504.559068262955,
           "gromacs_kj_mol": 17504.947265625,
-          "difference_kj_mol": -0.3881973621719226,
-          "relative_difference": 2.2176437111252405e-05,
+          "difference_kj_mol": -0.3881973620445933,
+          "relative_difference": 2.2176437103978503e-05,
           "relative_tolerance": 3.5848514803338054e-05,
           "summed_interactions": 22608,
           "passed": true
@@ -184,10 +184,10 @@
       "dispersion_correction": false,
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 8374.086794722038,
+          "openmm_kj_mol": 8374.086794721967,
           "gromacs_kj_mol": 8373.9287109375,
-          "difference_kj_mol": 0.15808378453766636,
-          "relative_difference": 1.8877734183183093e-05,
+          "difference_kj_mol": 0.15808378446672577,
+          "relative_difference": 1.887773417471181e-05,
           "relative_tolerance": 2.2436695777928528e-05,
           "summed_interactions": 8856,
           "passed": true
@@ -212,18 +212,18 @@
         },
         "Electrostatics 1-4": {
           "openmm_kj_mol": 97932.76999701986,
-          "gromacs_kj_mol": 97932.078125,
-          "difference_kj_mol": 0.6918720198591473,
-          "relative_difference": 7.064765143273301e-06,
+          "gromacs_kj_mol": 97932.0625,
+          "difference_kj_mol": 0.7074970198591473,
+          "relative_difference": 7.224313372129439e-06,
           "relative_tolerance": 2.7812321799121256e-05,
           "summed_interactions": 13608,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 17475.978351636484,
+          "openmm_kj_mol": 17475.97835163665,
           "gromacs_kj_mol": 17476.328125,
-          "difference_kj_mol": -0.3497733635158511,
-          "relative_difference": 2.0014122017742276e-05,
+          "difference_kj_mol": -0.34977336334850406,
+          "relative_difference": 2.0014122008166637e-05,
           "relative_tolerance": 3.5905553049119375e-05,
           "summed_interactions": 22680,
           "passed": true
@@ -239,9 +239,9 @@
         },
         "vdW 1-4": {
           "openmm_kj_mol": 5571.285219707391,
-          "gromacs_kj_mol": 5571.255859375,
-          "difference_kj_mol": 0.029360332390751864,
-          "relative_difference": 5.269938844074096e-06,
+          "gromacs_kj_mol": 5571.2548828125,
+          "difference_kj_mol": 0.030336894890751864,
+          "relative_difference": 5.445223802838295e-06,
           "relative_tolerance": 2.7812321799121256e-05,
           "summed_interactions": 13608,
           "passed": true
@@ -302,10 +302,10 @@
       "dispersion_correction": false,
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 2725.884027446221,
+          "openmm_kj_mol": 2725.8840274461522,
           "gromacs_kj_mol": 2725.8740234375,
-          "difference_kj_mol": 0.010004008720898128,
-          "relative_difference": 3.6700052607412322e-06,
+          "difference_kj_mol": 0.010004008652231278,
+          "relative_difference": 3.6700052355506528e-06,
           "relative_tolerance": 2.2482252567532128e-05,
           "summed_interactions": 8892,
           "passed": true
@@ -330,18 +330,18 @@
         },
         "Electrostatics 1-4": {
           "openmm_kj_mol": 97755.16593644346,
-          "gromacs_kj_mol": 97754.9453125,
-          "difference_kj_mol": 0.22062394345994107,
-          "relative_difference": 2.2569031656432566e-06,
+          "gromacs_kj_mol": 97754.953125,
+          "difference_kj_mol": 0.21281144345994107,
+          "relative_difference": 2.1769841155842615e-06,
           "relative_tolerance": 2.7812321799121256e-05,
           "summed_interactions": 13608,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 15136.593354505887,
+          "openmm_kj_mol": 15136.59335450577,
           "gromacs_kj_mol": 15136.5009765625,
-          "difference_kj_mol": 0.09237794338696403,
-          "relative_difference": 6.102954688907251e-06,
+          "difference_kj_mol": 0.09237794327054871,
+          "relative_difference": 6.102954681216312e-06,
           "relative_tolerance": 3.5848514803338054e-05,
           "summed_interactions": 22608,
           "passed": true
@@ -357,9 +357,9 @@
         },
         "vdW 1-4": {
           "openmm_kj_mol": 5482.429378238884,
-          "gromacs_kj_mol": 5482.4443359375,
-          "difference_kj_mol": -0.014957698615944537,
-          "relative_difference": 2.7282901018979093e-06,
+          "gromacs_kj_mol": 5482.44384765625,
+          "difference_kj_mol": -0.014469417365944537,
+          "relative_difference": 2.639227645191519e-06,
           "relative_tolerance": 2.7812321799121256e-05,
           "summed_interactions": 13608,
           "passed": true
@@ -420,10 +420,10 @@
       "dispersion_correction": false,
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 2631.000167320057,
+          "openmm_kj_mol": 2631.0001673199963,
           "gromacs_kj_mol": 2630.995361328125,
-          "difference_kj_mol": 0.004805991931789322,
-          "relative_difference": 1.8266786872479438e-06,
+          "difference_kj_mol": 0.004805991871307924,
+          "relative_difference": 1.8266786642599988e-06,
           "relative_tolerance": 2.2436695777928528e-05,
           "summed_interactions": 8856,
           "passed": true
@@ -448,18 +448,18 @@
         },
         "Electrostatics 1-4": {
           "openmm_kj_mol": 95677.03145607916,
-          "gromacs_kj_mol": 95675.984375,
-          "difference_kj_mol": 1.0470810791593976,
-          "relative_difference": 1.0943912694867247e-05,
+          "gromacs_kj_mol": 95675.9921875,
+          "difference_kj_mol": 1.0392685791593976,
+          "relative_difference": 1.0862257778518944e-05,
           "relative_tolerance": 2.7812321799121256e-05,
           "summed_interactions": 13608,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 15072.414978009852,
+          "openmm_kj_mol": 15072.414978009803,
           "gromacs_kj_mol": 15072.3388671875,
-          "difference_kj_mol": 0.0761108223523479,
-          "relative_difference": 5.049676675130763e-06,
+          "difference_kj_mol": 0.07611082230323518,
+          "relative_difference": 5.049676671872329e-06,
           "relative_tolerance": 3.5905553049119375e-05,
           "summed_interactions": 22680,
           "passed": true
@@ -538,64 +538,64 @@
       "dispersion_correction": false,
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 2687.5888599084237,
-          "gromacs_kj_mol": 2687.602783203125,
-          "difference_kj_mol": -0.013923294701271516,
-          "relative_difference": 5.180562688909529e-06,
+          "openmm_kj_mol": 2687.588859908449,
+          "gromacs_kj_mol": 2687.60302734375,
+          "difference_kj_mol": -0.014167435300805664,
+          "relative_difference": 5.271401749687648e-06,
           "relative_tolerance": 2.2482252567532128e-05,
           "summed_interactions": 8892,
           "passed": true
         },
         "Bond": {
-          "openmm_kj_mol": 29918.03399431943,
+          "openmm_kj_mol": 29918.033994319416,
           "gromacs_kj_mol": 29917.83984375,
-          "difference_kj_mol": 0.1941505694303487,
-          "relative_difference": 6.4894160313880346e-06,
+          "difference_kj_mol": 0.19415056941579678,
+          "relative_difference": 6.4894160309016445e-06,
           "relative_tolerance": 1.2138292371137481e-05,
           "summed_interactions": 2592,
           "passed": true
         },
         "Electrostatics": {
-          "openmm_kj_mol": -75595.41679070992,
-          "gromacs_kj_mol": -75595.6767578125,
-          "difference_kj_mol": 0.25996710258186795,
-          "relative_difference": 3.438914945026951e-06,
+          "openmm_kj_mol": -75589.6603423557,
+          "gromacs_kj_mol": -75589.79638671875,
+          "difference_kj_mol": 0.1360443630546797,
+          "relative_difference": 1.7997715241707268e-06,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "Electrostatics 1-4": {
-          "openmm_kj_mol": 102684.10902591074,
-          "gromacs_kj_mol": 102684.125,
-          "difference_kj_mol": -0.01597408925590571,
-          "relative_difference": 1.5556532478516724e-07,
+          "openmm_kj_mol": 103649.81124049619,
+          "gromacs_kj_mol": 103650.09375,
+          "difference_kj_mol": -0.28250950381334405,
+          "relative_difference": 2.7256077982403565e-06,
           "relative_tolerance": 2.7812321799121256e-05,
           "summed_interactions": 13608,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 15642.7622591677,
-          "gromacs_kj_mol": 15642.5263671875,
-          "difference_kj_mol": 0.23589198020090407,
-          "relative_difference": 1.5079944084853406e-05,
+          "openmm_kj_mol": 15349.33331236189,
+          "gromacs_kj_mol": 15349.1298828125,
+          "difference_kj_mol": 0.20342954939042102,
+          "relative_difference": 1.3253314997504483e-05,
           "relative_tolerance": 3.5848514803338054e-05,
           "summed_interactions": 22608,
           "passed": true
         },
         "vdW": {
-          "openmm_kj_mol": -7354.595716003119,
-          "gromacs_kj_mol": -7354.595703125,
-          "difference_kj_mol": -1.2878119378001429e-05,
-          "relative_difference": 1.7510302231813346e-09,
+          "openmm_kj_mol": -7357.140580773843,
+          "gromacs_kj_mol": -7357.13525390625,
+          "difference_kj_mol": -0.00532686759288481,
+          "relative_difference": 7.240404793684826e-07,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "vdW 1-4": {
-          "openmm_kj_mol": 6256.89400875203,
-          "gromacs_kj_mol": 6256.91259765625,
-          "difference_kj_mol": -0.018588904220450786,
-          "relative_difference": 2.970938770570956e-06,
+          "openmm_kj_mol": 6256.798367340669,
+          "gromacs_kj_mol": 6256.7958984375,
+          "difference_kj_mol": 0.0024689031688467367,
+          "relative_difference": 3.9459529041785254e-07,
           "relative_tolerance": 2.7812321799121256e-05,
           "summed_interactions": 13608,
           "passed": true
@@ -614,7 +614,7 @@
         "threads": 1,
         "duration_ps": 1.0,
         "bonds_checked": 4824,
-        "maximum_bond_change_angstrom": 0.11809596706698144,
+        "maximum_bond_change_angstrom": 0.1400057856879473,
         "all_finite": true,
         "passed": true
       },
@@ -656,64 +656,64 @@
       "dispersion_correction": false,
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 2643.0589416936828,
-          "gromacs_kj_mol": 2643.07666015625,
-          "difference_kj_mol": -0.017718462567245297,
-          "relative_difference": 6.703726318024328e-06,
+          "openmm_kj_mol": 2643.058941693709,
+          "gromacs_kj_mol": 2643.076416015625,
+          "difference_kj_mol": -0.01747432191586995,
+          "relative_difference": 6.611357057247734e-06,
           "relative_tolerance": 2.2436695777928528e-05,
           "summed_interactions": 8856,
           "passed": true
         },
         "Bond": {
-          "openmm_kj_mol": 29911.005891902263,
-          "gromacs_kj_mol": 29910.7734375,
-          "difference_kj_mol": 0.23245440226310166,
-          "relative_difference": 7.771534100296958e-06,
+          "openmm_kj_mol": 29911.005891902256,
+          "gromacs_kj_mol": 29910.775390625,
+          "difference_kj_mol": 0.2305012772558257,
+          "relative_difference": 7.706236229194447e-06,
           "relative_tolerance": 1.2138292371137481e-05,
           "summed_interactions": 2592,
           "passed": true
         },
         "Electrostatics": {
-          "openmm_kj_mol": -75850.96767513276,
-          "gromacs_kj_mol": -75851.060546875,
-          "difference_kj_mol": 0.09287174223572947,
-          "relative_difference": 1.2243960936885768e-06,
+          "openmm_kj_mol": -76023.85411092461,
+          "gromacs_kj_mol": -76024.04541015625,
+          "difference_kj_mol": 0.19129923163563944,
+          "relative_difference": 2.51629902886072e-06,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "Electrostatics 1-4": {
-          "openmm_kj_mol": 100460.5573850583,
-          "gromacs_kj_mol": 100459.921875,
-          "difference_kj_mol": 0.6355100583023159,
-          "relative_difference": 6.325965879986612e-06,
+          "openmm_kj_mol": 101900.25997176167,
+          "gromacs_kj_mol": 101899.4296875,
+          "difference_kj_mol": 0.8302842616685666,
+          "relative_difference": 8.1480092582556e-06,
           "relative_tolerance": 2.7812321799121256e-05,
           "summed_interactions": 13608,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 15475.86556698885,
-          "gromacs_kj_mol": 15475.58203125,
-          "difference_kj_mol": 0.28353573885033256,
-          "relative_difference": 1.8321155454796337e-05,
+          "openmm_kj_mol": 15564.803121248293,
+          "gromacs_kj_mol": 15564.6064453125,
+          "difference_kj_mol": 0.19667593579288223,
+          "relative_difference": 1.2635941120539459e-05,
           "relative_tolerance": 3.5905553049119375e-05,
           "summed_interactions": 22680,
           "passed": true
         },
         "vdW": {
-          "openmm_kj_mol": -10808.357812263072,
-          "gromacs_kj_mol": -10808.353515625,
-          "difference_kj_mol": -0.004296638071537018,
-          "relative_difference": 3.975292219380532e-07,
+          "openmm_kj_mol": -10810.980885185301,
+          "gromacs_kj_mol": -10810.9794921875,
+          "difference_kj_mol": -0.0013929978013038635,
+          "relative_difference": 1.2885026956367498e-07,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "vdW 1-4": {
-          "openmm_kj_mol": 6381.574633603579,
-          "gromacs_kj_mol": 6381.59375,
-          "difference_kj_mol": -0.019116396420940873,
-          "relative_difference": 2.9955520783410686e-06,
+          "openmm_kj_mol": 6381.281102535234,
+          "gromacs_kj_mol": 6381.27001953125,
+          "difference_kj_mol": 0.011083003983912931,
+          "relative_difference": 1.7367992109781434e-06,
           "relative_tolerance": 2.7812321799121256e-05,
           "summed_interactions": 13608,
           "passed": true
@@ -732,7 +732,7 @@
         "threads": 1,
         "duration_ps": 1.0,
         "bonds_checked": 4752,
-        "maximum_bond_change_angstrom": 0.12080373606031625,
+        "maximum_bond_change_angstrom": 0.11162091874942748,
         "all_finite": true,
         "passed": true
       },
@@ -781,10 +781,10 @@
       "dispersion_correction": false,
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 1362.9420137231082,
+          "openmm_kj_mol": 1362.9420137231023,
           "gromacs_kj_mol": 1362.941162109375,
-          "difference_kj_mol": 0.0008516137331753271,
-          "relative_difference": 6.248348973035171e-07,
+          "difference_kj_mol": 0.0008516137272636115,
+          "relative_difference": 6.248348929660531e-07,
           "relative_tolerance": 1.5897353246850635e-05,
           "summed_interactions": 4446,
           "passed": true
@@ -800,27 +800,27 @@
         },
         "Electrostatics": {
           "openmm_kj_mol": -36343.47078513492,
-          "gromacs_kj_mol": -36343.59631347656,
-          "difference_kj_mol": 0.1255283416394377,
-          "relative_difference": 3.4539328622492586e-06,
+          "gromacs_kj_mol": -36343.595947265625,
+          "difference_kj_mol": 0.1251621307019377,
+          "relative_difference": 3.443856543077007e-06,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "Electrostatics 1-4": {
           "openmm_kj_mol": 48877.58296822186,
-          "gromacs_kj_mol": 48877.79296875,
-          "difference_kj_mol": -0.21000052813906223,
-          "relative_difference": 4.296440477034755e-06,
+          "gromacs_kj_mol": 48877.796875,
+          "difference_kj_mol": -0.21390677813906223,
+          "relative_difference": 4.37635883397337e-06,
           "relative_tolerance": 1.966628134470108e-05,
           "summed_interactions": 6804,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 7568.2966772529635,
+          "openmm_kj_mol": 7568.296677253073,
           "gromacs_kj_mol": 7568.30078125,
-          "difference_kj_mol": -0.004103997036509099,
-          "relative_difference": 5.422613549763376e-07,
+          "difference_kj_mol": -0.004103996927369735,
+          "relative_difference": 5.422613405557473e-07,
           "relative_tolerance": 2.534872791290667e-05,
           "summed_interactions": 11304,
           "passed": true
@@ -836,9 +836,9 @@
         },
         "vdW 1-4": {
           "openmm_kj_mol": 2741.2146891194693,
-          "gromacs_kj_mol": 2741.22705078125,
-          "difference_kj_mol": -0.012361661780687427,
-          "relative_difference": 4.509535894578434e-06,
+          "gromacs_kj_mol": 2741.226806640625,
+          "difference_kj_mol": -0.012117521155687427,
+          "relative_difference": 4.420473755156895e-06,
           "relative_tolerance": 1.966628134470108e-05,
           "summed_interactions": 6804,
           "passed": true
@@ -906,10 +906,10 @@
       "dispersion_correction": false,
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 1817.256018297467,
+          "openmm_kj_mol": 1817.2560182974573,
           "gromacs_kj_mol": 1817.2515869140625,
-          "difference_kj_mol": 0.004431383404607914,
-          "relative_difference": 2.438502533484272e-06,
+          "difference_kj_mol": 0.004431383394830846,
+          "relative_difference": 2.438502528104158e-06,
           "relative_tolerance": 1.835668235294357e-05,
           "summed_interactions": 5928,
           "passed": true
@@ -942,10 +942,10 @@
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 10091.062236337282,
+          "openmm_kj_mol": 10091.06223633732,
           "gromacs_kj_mol": 10091.1708984375,
-          "difference_kj_mol": -0.10866210021777079,
-          "relative_difference": 1.0768036862263014e-05,
+          "difference_kj_mol": -0.10866210017957201,
+          "relative_difference": 1.076803685847765e-05,
           "relative_tolerance": 2.9270189768262495e-05,
           "summed_interactions": 15072,
           "passed": true
@@ -1031,10 +1031,10 @@
       "dispersion_correction": false,
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 1754.0001115466912,
+          "openmm_kj_mol": 1754.0001115466816,
           "gromacs_kj_mol": 1753.998291015625,
-          "difference_kj_mol": 0.001820531066186959,
-          "relative_difference": 1.0379309865502803e-06,
+          "difference_kj_mol": 0.0018205310566372646,
+          "relative_difference": 1.0379309811057627e-06,
           "relative_tolerance": 1.8319485389994188e-05,
           "summed_interactions": 5904,
           "passed": true
@@ -1067,10 +1067,10 @@
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 10048.276652006596,
+          "openmm_kj_mol": 10048.276652006642,
           "gromacs_kj_mol": 10048.3662109375,
-          "difference_kj_mol": -0.0895589309038769,
-          "relative_difference": 8.912785324881304e-06,
+          "difference_kj_mol": -0.08955893085840216,
+          "relative_difference": 8.912785320355719e-06,
           "relative_tolerance": 2.931676130092506e-05,
           "summed_interactions": 15120,
           "passed": true
@@ -1154,10 +1154,10 @@
       "dispersion_correction": false,
       "energy_comparison": {
         "Angle": {
-          "openmm_kj_mol": 757.1900076239464,
+          "openmm_kj_mol": 757.1900076239466,
           "gromacs_kj_mol": 757.1878051757812,
-          "difference_kj_mol": 0.0022024481651214955,
-          "relative_difference": 2.9087126651773347e-06,
+          "difference_kj_mol": 0.0022024481653488692,
+          "relative_difference": 2.90871266547762e-06,
           "relative_tolerance": 1.1849187507428339e-05,
           "summed_interactions": 2470,
           "passed": true
@@ -1173,27 +1173,27 @@
         },
         "Electrostatics": {
           "openmm_kj_mol": -19980.170120330382,
-          "gromacs_kj_mol": -19980.219482421875,
-          "difference_kj_mol": 0.04936209149309434,
-          "relative_difference": 2.470548010572253e-06,
+          "gromacs_kj_mol": -19980.21942138672,
+          "difference_kj_mol": 0.04930105633684434,
+          "relative_difference": 2.4674932390418475e-06,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "Electrostatics 1-4": {
           "openmm_kj_mol": 27154.212760122922,
-          "gromacs_kj_mol": 27154.095703125,
-          "difference_kj_mol": 0.11705699792219093,
-          "relative_difference": 4.310822742543063e-06,
+          "gromacs_kj_mol": 27154.091796875,
+          "difference_kj_mol": 0.12096324792219093,
+          "relative_difference": 4.454677032649255e-06,
           "relative_tolerance": 1.465838065046253e-05,
           "summed_interactions": 3780,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 4204.609265140532,
+          "openmm_kj_mol": 4204.609265140556,
           "gromacs_kj_mol": 4204.62255859375,
-          "difference_kj_mol": -0.013293453217556817,
-          "relative_difference": 3.161628191901928e-06,
+          "difference_kj_mol": -0.013293453193909954,
+          "relative_difference": 3.1616281862779127e-06,
           "relative_tolerance": 1.889382625213523e-05,
           "summed_interactions": 6280,
           "passed": true
@@ -1209,9 +1209,9 @@
         },
         "vdW 1-4": {
           "openmm_kj_mol": 1522.8970495108115,
-          "gromacs_kj_mol": 1522.8958740234375,
-          "difference_kj_mol": 0.0011754873739846516,
-          "relative_difference": 7.718757970949149e-07,
+          "gromacs_kj_mol": 1522.895751953125,
+          "difference_kj_mol": 0.0012975576864846516,
+          "relative_difference": 8.520324383722827e-07,
           "relative_tolerance": 1.465838065046253e-05,
           "summed_interactions": 3780,
           "passed": true

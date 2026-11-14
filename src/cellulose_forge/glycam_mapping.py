@@ -3,16 +3,32 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import permutations
 from pathlib import Path
 
 import numpy as np
 
+from cellulose_forge.cellulose_ii import cellulose_ii_preferred_acceptor
 from cellulose_forge.clashes import validate_finite_periodic_image_contact
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
 from cellulose_forge.hydroxyl import HydroxylHydrogenPlacer
 
-_GLYCAM_TO_CRYSTAL_NAME = {"H2O": "HO2", "H3O": "HO3", "H6O": "HO6"}
+_GLYCAM_TO_CRYSTAL_NAME = {
+    "H2O": "HO2",
+    "H3O": "HO3",
+    "H6O": "HO6",
+    "H2N": "HN2",
+    "C2N": "C7",
+    "O2N": "O7",
+    "CME": "C8",
+    "H3M": "H81",
+    "H2M": "H82",
+    "H1M": "H83",
+}
+_GLYCAM_METHYL_HYDROGENS = ("H3M", "H2M", "H1M")
+_CRYSTAL_METHYL_HYDROGENS = ("H81", "H82", "H83")
+_ACETYL_ALIGNMENT_ATOMS = ("N2", "C2N", "CME")
 _REDUCING_ALIGNMENT_ATOMS = ("C1", "H1", "O5")
 _NONREDUCING_ALIGNMENT_ATOMS = ("O4", "C4", "H4")
 _RING_ALIGNMENT_ATOMS = ("C1", "C3", "C5")
@@ -116,6 +132,46 @@ def _require_crystallographic_atoms(
     if missing:
         msg = "missing crystallographic atom coordinates required by GLYCAM: " + ", ".join(missing)
         raise ValueError(msg)
+
+
+def _atom_name_mapping(
+    reference: tuple[_ReferenceAtom, ...],
+    target: dict[str, FloatArray],
+) -> dict[str, str]:
+    """Map GLYCAM atom names to crystal labels, including methyl H permutations."""
+    mapping = {
+        atom.name: _GLYCAM_TO_CRYSTAL_NAME.get(atom.name, atom.name)
+        for atom in reference
+        if atom.name not in _GLYCAM_METHYL_HYDROGENS
+    }
+    methyl_names = tuple(atom.name for atom in reference if atom.name in _GLYCAM_METHYL_HYDROGENS)
+    if not methyl_names:
+        return mapping
+    if set(methyl_names) != set(_GLYCAM_METHYL_HYDROGENS):
+        msg = "GLYCAM GlcNAc reference has an incomplete acetyl methyl group"
+        raise ValueError(msg)
+    reference_lookup = {atom.name: atom.coordinates for atom in reference}
+    acetyl_target = {
+        glycam_name: target[_GLYCAM_TO_CRYSTAL_NAME.get(glycam_name, glycam_name)]
+        for glycam_name in _ACETYL_ALIGNMENT_ATOMS
+    }
+    transform = _rigid_transform(reference_lookup, acetyl_target, _ACETYL_ALIGNMENT_ATOMS)
+    aligned = {
+        name: _transform_coordinate(reference_lookup[name], transform) for name in methyl_names
+    }
+    available = tuple(name for name in _CRYSTAL_METHYL_HYDROGENS if name in target)
+    if len(available) != len(_CRYSTAL_METHYL_HYDROGENS):
+        msg = "chitin crystal is missing one or more acetyl methyl hydrogens"
+        raise ValueError(msg)
+    assignment = min(
+        permutations(available),
+        key=lambda names: sum(
+            float(np.linalg.norm(aligned[glycam] - target[crystal])) ** 2
+            for glycam, crystal in zip(methyl_names, names, strict=True)
+        ),
+    )
+    mapping.update(dict(zip(methyl_names, assignment, strict=True)))
+    return mapping
 
 
 def _rigid_transform(
@@ -280,7 +336,7 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0912, PLR0915
         for chain in chain_numbers
     }
     if len(set(degrees.values())) != 1:
-        msg = "all cellulose chains must have the same degree of polymerization"
+        msg = "all polymer chains must have the same degree of polymerization"
         raise ValueError(msg)
     degree_polymerization = next(iter(degrees.values()))
     if len(reference_residues) != degree_polymerization + 1:
@@ -351,6 +407,7 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0912, PLR0915
                 chain_number=chain_number,
                 residue_number=crystal_residue_number,
             )
+            atom_name_mapping = _atom_name_mapping(reference_atoms, target)
             reference_lookup = {atom.name: atom.coordinates for atom in reference_atoms}
             hydrogen_transform = (
                 _rigid_transform(reference_lookup, target, _RING_ALIGNMENT_ATOMS)
@@ -365,7 +422,7 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0912, PLR0915
                 if atom.name == "H4O":
                     coordinate = _transform_coordinate(atom.coordinates, nonreducing_transform)
                 else:
-                    crystal_name = _GLYCAM_TO_CRYSTAL_NAME.get(atom.name, atom.name)
+                    crystal_name = atom_name_mapping[atom.name]
                     if crystal_name in generated_names:
                         assert hydrogen_transform is not None
                         oxygen_name = _HYDROXYL_OXYGEN_BY_GLYCAM_HYDROGEN[atom.name]
@@ -382,6 +439,12 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0912, PLR0915
                             aligned_hydrogen,
                             donor=oxygen_name,
                             preferred_acceptor="O5" if oxygen_name == "O3" else None,
+                            preferred_acceptor_coordinate=cellulose_ii_preferred_acceptor(
+                                crystal,
+                                chain_number=chain_number,
+                                residue_number=crystal_residue_number,
+                                donor=oxygen_name,
+                            ),
                         )
                         coordinate = np.zeros(3)
                     else:
@@ -405,7 +468,7 @@ def map_crystal_to_finite_glycam(  # noqa: PLR0912, PLR0915
     return system
 
 
-def map_crystal_to_periodic_glycam(
+def map_crystal_to_periodic_glycam(  # noqa: PLR0915
     crystal: BulkCrystal,
     reference_pdb: str | Path,
 ) -> GlycamMappedSystem:
@@ -439,14 +502,22 @@ def map_crystal_to_periodic_glycam(
         for chain in chain_numbers
     }
     if len(set(degree_by_chain.values())) != 1:
-        msg = "all periodic cellulose chains must have the same degree of polymerization"
+        msg = "all periodic polymer chains must have the same degree of polymerization"
         raise ValueError(msg)
     degree_polymerization = next(iter(degree_by_chain.values()))
     if len(reference_residues) != degree_polymerization:
         msg = "periodic GLYCAM reference degree of polymerization does not match the crystal"
         raise ValueError(msg)
-    if any(atom.residue_name != "4GB" for atoms in reference_residues.values() for atom in atoms):
-        msg = "periodic GLYCAM reference must contain only internal 4GB residues"
+    expected_residue_name = "4YB" if crystal.residue_name == "NAG" else "4GB"
+    if any(
+        atom.residue_name != expected_residue_name
+        for atoms in reference_residues.values()
+        for atom in atoms
+    ):
+        msg = (
+            "periodic GLYCAM reference must contain only internal "
+            f"{expected_residue_name} residues"
+        )
         raise ValueError(msg)
 
     output_names: list[str] = []
@@ -474,6 +545,7 @@ def map_crystal_to_periodic_glycam(
                 chain_number=chain_number,
                 residue_number=crystal_residue_number,
             )
+            atom_name_mapping = _atom_name_mapping(reference_atoms, target)
             reference_lookup = {atom.name: atom.coordinates for atom in reference_atoms}
             hydrogen_transform = (
                 _rigid_transform(reference_lookup, target, _RING_ALIGNMENT_ATOMS)
@@ -481,9 +553,9 @@ def map_crystal_to_periodic_glycam(
                 else None
             )
             for atom in reference_atoms:
-                crystal_name = _GLYCAM_TO_CRYSTAL_NAME.get(atom.name, atom.name)
+                crystal_name = atom_name_mapping[atom.name]
                 output_names.append(atom.name)
-                output_residue_names.append("4GB")
+                output_residue_names.append(atom.residue_name)
                 output_residue_numbers.append(reference_residue_number)
                 output_chain_numbers.append(chain_number)
                 if crystal_name in generated_names:
@@ -499,6 +571,12 @@ def map_crystal_to_periodic_glycam(
                         aligned_hydrogen,
                         donor=oxygen_name,
                         preferred_acceptor="O5" if oxygen_name == "O3" else None,
+                        preferred_acceptor_coordinate=cellulose_ii_preferred_acceptor(
+                            crystal,
+                            chain_number=chain_number,
+                            residue_number=crystal_residue_number,
+                            donor=oxygen_name,
+                        ),
                     )
                     output_coordinates.append(np.zeros(3))
                 else:

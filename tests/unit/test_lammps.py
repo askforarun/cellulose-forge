@@ -67,6 +67,8 @@ def test_writer_records_molecules_and_emits_safe_input(
 
 
 def test_writer_surfaces_converter_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "a.top").write_text("[ pairs ]\n1 2 1\n", encoding="utf-8")
+
     def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(
             args=command, returncode=1, stdout="", stderr="unsupported exception"

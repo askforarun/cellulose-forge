@@ -1,8 +1,8 @@
 {
   "matrix": "periodic DP6 cellulose reference slabs",
   "provenance": {
-    "cellulose_forge_commit": "acc37ee5421d669a9d292c229e68fbb4266c435f",
-    "tracked_tree_clean": false,
+    "cellulose_forge_commit": "128c02ead4ccfbb969d0b6e7c53f991dea3d6e5e",
+    "tracked_tree_clean": true,
     "software_versions": {
       "openff-toolkit": "0.19.0",
       "openff-interchange": "0.5.5",
@@ -130,8 +130,8 @@
           "passed": true
         }
       },
-      "initial_energy_kj_mol": 17467.547056276497,
-      "minimized_energy_kj_mol": 6677.530018824105,
+      "initial_energy_kj_mol": 17467.54699524134,
+      "minimized_energy_kj_mol": 6678.841447617439,
       "openmm_nvt": {
         "duration_ps": 1.0,
         "platform": "CPU",
@@ -141,8 +141,8 @@
         "minimized_boundary_bonds": {
           "boundary_bonds_checked": 8,
           "length_range_angstrom": [
-            1.4147844567114016,
-            1.419813922467137
+            1.4145924613478276,
+            1.420036425647794
           ],
           "passed": true
         },
@@ -150,21 +150,21 @@
           "chains_checked": 8,
           "bonds_checked": 1056,
           "hydrogen_bond_length_range_angstrom": [
-            0.9711625420183031,
-            1.092445873695081
+            0.9711625420178456,
+            1.0924458638730177
           ],
           "heavy_bond_length_range_angstrom": [
-            1.4147844567114016,
-            1.5522246250005087
+            1.4145924613478276,
+            1.5526603820806049
           ],
-          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10222462500050877,
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.1026603820806049,
           "passed": true
         },
         "final_boundary_bonds": {
           "boundary_bonds_checked": 8,
           "length_range_angstrom": [
-            1.3804765786987283,
-            1.4613250883134588
+            1.3801278592552388,
+            1.4596753532052376
           ],
           "passed": true
         },
@@ -172,22 +172,22 @@
           "chains_checked": 8,
           "bonds_checked": 1056,
           "hydrogen_bond_length_range_angstrom": [
-            0.971162541824496,
-            1.0924460073643725
+            0.9711625418244928,
+            1.0924460058461638
           ],
           "heavy_bond_length_range_angstrom": [
-            1.3466566517150231,
-            1.6263314108595865
+            1.3471402015747727,
+            1.6259488112855065
           ],
-          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.1763314108595866
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.17594881128550655
         },
         "all_bond_stability": {
           "bonds_checked": 1056,
-          "maximum_change_angstrom": 0.08880679146373249,
+          "maximum_change_angstrom": 0.0887866489253688,
           "all_finite": true,
           "passed": true
         },
-        "final_energy_kj_mol": 9245.447934441703,
+        "final_energy_kj_mol": 9242.667128241124,
         "passed": true
       },
       "gromacs_smoke_test": {
@@ -303,7 +303,7 @@
         }
       },
       "initial_energy_kj_mol": 15032.359200842606,
-      "minimized_energy_kj_mol": 6759.887447864215,
+      "minimized_energy_kj_mol": 6760.054818575099,
       "openmm_nvt": {
         "duration_ps": 1.0,
         "platform": "CPU",
@@ -313,8 +313,8 @@
         "minimized_boundary_bonds": {
           "boundary_bonds_checked": 8,
           "length_range_angstrom": [
-            1.4146186965655898,
-            1.420010106942786
+            1.4149730201164443,
+            1.4208495312845488
           ],
           "passed": true
         },
@@ -322,21 +322,21 @@
           "chains_checked": 8,
           "bonds_checked": 1056,
           "hydrogen_bond_length_range_angstrom": [
-            0.9711625418269589,
-            1.0924458111658153
+            0.9711625418270258,
+            1.0924458109242867
           ],
           "heavy_bond_length_range_angstrom": [
-            1.4146186357282344,
-            1.5510921586684947
+            1.4149730041483224,
+            1.551587944050587
           ],
-          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10109215866849475,
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10158794405058713,
           "passed": true
         },
         "final_boundary_bonds": {
           "boundary_bonds_checked": 8,
           "length_range_angstrom": [
-            1.3666979195278135,
-            1.4830604784082693
+            1.3730335378114056,
+            1.4826016485389673
           ],
           "passed": true
         },
@@ -344,22 +344,22 @@
           "chains_checked": 8,
           "bonds_checked": 1056,
           "hydrogen_bond_length_range_angstrom": [
-            0.9711625418976554,
-            1.0924521788748032
+            0.9711625419193024,
+            1.0924522741916252
           ],
           "heavy_bond_length_range_angstrom": [
-            1.3524736796058088,
-            1.632907859382968
+            1.3481886269237675,
+            1.6291245353604193
           ],
-          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.18290785938296805
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.1791245353604194
         },
         "all_bond_stability": {
           "bonds_checked": 1056,
-          "maximum_change_angstrom": 0.09737723633568329,
+          "maximum_change_angstrom": 0.09704137948908587,
           "all_finite": true,
           "passed": true
         },
-        "final_energy_kj_mol": 9354.550869716379,
+        "final_energy_kj_mol": 9330.538424177428,
         "passed": true
       },
       "gromacs_smoke_test": {
@@ -420,62 +420,62 @@
           "passed": true
         },
         "Bond": {
-          "openmm_kj_mol": 6646.890198200606,
-          "gromacs_kj_mol": 6646.8857421875,
-          "difference_kj_mol": 0.004456013106391765,
-          "relative_difference": 6.703906599206441e-07,
+          "openmm_kj_mol": 6646.89019820061,
+          "gromacs_kj_mol": 6646.88623046875,
+          "difference_kj_mol": 0.003967731860029744,
+          "relative_difference": 5.969305557512978e-07,
           "relative_tolerance": 1e-05,
           "summed_interactions": 1056,
           "passed": true
         },
         "Electrostatics": {
-          "openmm_kj_mol": -15326.715133095906,
-          "gromacs_kj_mol": -15326.734191894531,
-          "difference_kj_mol": 0.01905879862533766,
-          "relative_difference": 1.2435003038949297e-06,
+          "openmm_kj_mol": -16446.74842356383,
+          "gromacs_kj_mol": -16446.7685546875,
+          "difference_kj_mol": 0.020131123670580564,
+          "relative_difference": 1.2240169613649112e-06,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "Electrostatics 1-4": {
-          "openmm_kj_mol": 22408.36594034697,
-          "gromacs_kj_mol": 22408.357421875,
-          "difference_kj_mol": 0.008518471968272934,
-          "relative_difference": 3.801469500698914e-07,
+          "openmm_kj_mol": 22786.73614240748,
+          "gromacs_kj_mol": 22786.73046875,
+          "difference_kj_mol": 0.005673657480656402,
+          "relative_difference": 2.4898947550884155e-07,
           "relative_tolerance": 1.311085422980072e-05,
           "summed_interactions": 3024,
           "passed": true
         },
         "Torsion": {
-          "openmm_kj_mol": 3451.850924181065,
-          "gromacs_kj_mol": 3451.850830078125,
-          "difference_kj_mol": 9.41029397836246e-05,
-          "relative_difference": 2.726158859422647e-08,
+          "openmm_kj_mol": 3541.1106911288293,
+          "gromacs_kj_mol": 3541.110595703125,
+          "difference_kj_mol": 9.542570433040964e-05,
+          "relative_difference": 2.694795860786549e-08,
           "relative_tolerance": 1.6926040028857087e-05,
           "summed_interactions": 5040,
           "passed": true
         },
         "vdW": {
-          "openmm_kj_mol": -1973.4840245252076,
-          "gromacs_kj_mol": -1973.483642578125,
-          "difference_kj_mol": -0.0003819470825874305,
-          "relative_difference": 1.9353948541809026e-07,
+          "openmm_kj_mol": -1973.7781426793395,
+          "gromacs_kj_mol": -1973.7774658203125,
+          "difference_kj_mol": -0.000676859026953025,
+          "relative_difference": 3.4292558637528074e-07,
           "relative_tolerance": 1e-05,
           "summed_interactions": 0,
           "passed": true
         },
         "vdW 1-4": {
-          "openmm_kj_mol": 1418.109412154374,
-          "gromacs_kj_mol": 1418.110595703125,
-          "difference_kj_mol": -0.001183548750987029,
-          "relative_difference": 8.345955206689673e-07,
+          "openmm_kj_mol": 1418.0387202979243,
+          "gromacs_kj_mol": 1418.039794921875,
+          "difference_kj_mol": -0.0010746239506715938,
+          "relative_difference": 7.578235494659011e-07,
           "relative_tolerance": 1.311085422980072e-05,
           "summed_interactions": 3024,
           "passed": true
         }
       },
-      "initial_energy_kj_mol": 17212.358140541422,
-      "minimized_energy_kj_mol": 6639.2870789178705,
+      "initial_energy_kj_mol": 16559.59191751045,
+      "minimized_energy_kj_mol": 6661.077396285621,
       "openmm_nvt": {
         "duration_ps": 1.0,
         "platform": "CPU",
@@ -485,8 +485,8 @@
         "minimized_boundary_bonds": {
           "boundary_bonds_checked": 8,
           "length_range_angstrom": [
-            1.4160343485294777,
-            1.4237573826124543
+            1.4174894813265662,
+            1.422766164374468
           ],
           "passed": true
         },
@@ -494,21 +494,21 @@
           "chains_checked": 8,
           "bonds_checked": 1056,
           "hydrogen_bond_length_range_angstrom": [
-            0.9711625418266631,
-            1.0924458100185896
+            0.9711625418283372,
+            1.0924458099905194
           ],
           "heavy_bond_length_range_angstrom": [
-            1.416034305722189,
-            1.557891451988327
+            1.4174893008459912,
+            1.5561528481668638
           ],
-          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10789145198832695,
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10615284816686388,
           "passed": true
         },
         "final_boundary_bonds": {
           "boundary_bonds_checked": 8,
           "length_range_angstrom": [
-            1.3527293297789873,
-            1.4557361643883229
+            1.4022892788085537,
+            1.4708384534715868
           ],
           "passed": true
         },
@@ -516,22 +516,22 @@
           "chains_checked": 8,
           "bonds_checked": 1056,
           "hydrogen_bond_length_range_angstrom": [
-            0.9711625418244939,
-            1.092446268868887
+            0.9711625418250045,
+            1.0924543879479554
           ],
           "heavy_bond_length_range_angstrom": [
-            1.3454142621563652,
-            1.6433735849257953
+            1.3488792423743459,
+            1.6521018713311029
           ],
-          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.19337358492579537
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.2021018713311029
         },
         "all_bond_stability": {
           "bonds_checked": 1056,
-          "maximum_change_angstrom": 0.10142926016468112,
+          "maximum_change_angstrom": 0.11347878961954927,
           "all_finite": true,
           "passed": true
         },
-        "final_energy_kj_mol": 9074.139894728807,
+        "final_energy_kj_mol": 9278.671130230823,
         "passed": true
       },
       "gromacs_smoke_test": {
@@ -638,16 +638,16 @@
         },
         "vdW 1-4": {
           "openmm_kj_mol": 1369.5886137733282,
-          "gromacs_kj_mol": 1369.5909423828125,
-          "difference_kj_mol": -0.002328609484266053,
-          "relative_difference": 1.7002226082298277e-06,
+          "gromacs_kj_mol": 1369.5908203125,
+          "difference_kj_mol": -0.002206539171766053,
+          "relative_difference": 1.6110937215997011e-06,
           "relative_tolerance": 1.311085422980072e-05,
           "summed_interactions": 3024,
           "passed": true
         }
       },
       "initial_energy_kj_mol": 16650.700267185224,
-      "minimized_energy_kj_mol": 7777.00939401351,
+      "minimized_energy_kj_mol": 7776.60273851109,
       "openmm_nvt": {
         "duration_ps": 1.0,
         "platform": "CPU",
@@ -657,8 +657,8 @@
         "minimized_boundary_bonds": {
           "boundary_bonds_checked": 8,
           "length_range_angstrom": [
-            1.4188717616634634,
-            1.419096375128076
+            1.4186801494718073,
+            1.418714947354657
           ],
           "passed": true
         },
@@ -666,21 +666,21 @@
           "chains_checked": 8,
           "bonds_checked": 1056,
           "hydrogen_bond_length_range_angstrom": [
-            0.9711625418567021,
-            1.092445810300596
+            0.9711625418593635,
+            1.092445809825178
           ],
           "heavy_bond_length_range_angstrom": [
-            1.4188717616634634,
-            1.554333150427717
+            1.4186798619509886,
+            1.5539042048748775
           ],
-          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.10433315042771696,
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.1039042048748775,
           "passed": true
         },
         "final_boundary_bonds": {
           "boundary_bonds_checked": 8,
           "length_range_angstrom": [
-            1.4090831832016664,
-            1.5122729967730235
+            1.408612839589851,
+            1.51285286162385
           ],
           "passed": true
         },
@@ -688,22 +688,22 @@
           "chains_checked": 8,
           "bonds_checked": 1056,
           "hydrogen_bond_length_range_angstrom": [
-            0.9711625418244966,
-            1.0924460063868098
+            0.9711625418244939,
+            1.0924459971555678
           ],
           "heavy_bond_length_range_angstrom": [
-            1.3567786734409033,
-            1.6400299223313264
+            1.3559828378899474,
+            1.6401496184860058
           ],
-          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.19002992233132643
+          "maximum_heavy_bond_deviation_from_1_45_angstrom": 0.19014961848600587
         },
         "all_bond_stability": {
           "bonds_checked": 1056,
-          "maximum_change_angstrom": 0.09873196876424895,
+          "maximum_change_angstrom": 0.09965557199665631,
           "all_finite": true,
           "passed": true
         },
-        "final_energy_kj_mol": 10319.519685963985,
+        "final_energy_kj_mol": 10330.866725094294,
         "passed": true
       },
       "gromacs_smoke_test": {

@@ -1,0 +1,875 @@
+{
+  "validation": "GLYCAM06j-1 and CHARMM36 cellulose force-field matrix",
+  "provenance": {
+    "cellulose_forge_commit": "38f36bcff228c54cc9b19babd38e60c4fcbcedb4",
+    "tracked_tree_clean": true,
+    "software_versions": {
+      "cellulose-forge": "1.2.0",
+      "numpy": "2.2.6",
+      "parmed": "4.3.1"
+    }
+  },
+  "gromacs_version": ":-) GROMACS - gmx, 2024.2-Homebrew (-:",
+  "protocol": {
+    "bulk": "four periodic allomorphs with each force field",
+    "slabs": "four faces, finite and periodic chains, with each force field",
+    "preprocessing": "grompp -maxwarn 0",
+    "minimization": "generated force-field-consistent minim.mdp",
+    "dynamics": "generated 1 ps PME/NVT smoke test at 300 K",
+    "periodic_bond_limit_angstrom": 2.0
+  },
+  "case_count": 24,
+  "passed_count": 24,
+  "cases": [
+    {
+      "id": "glycam_i_alpha_bulk_periodic",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "I-alpha",
+      "shape": "bulk",
+      "chain_boundary": "periodic",
+      "face": null,
+      "cells": [
+        4,
+        4,
+        4
+      ],
+      "atom_count": 2688,
+      "chain_count": 16,
+      "degree_polymerization": 8,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 128,
+          "maximum_distance_angstrom": 1.4093681566052145
+        },
+        "written_topology": {
+          "bond_count": 128,
+          "maximum_distance_angstrom": 1.4093681566052145,
+          "molecule_count": 16,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 18,
+        "maximum_force_kj_mol_nm": 737.77295,
+        "potential_energy_kj_mol": 50933.859
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_i_beta_bulk_periodic",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "I-beta",
+      "shape": "bulk",
+      "chain_boundary": "periodic",
+      "face": null,
+      "cells": [
+        4,
+        4,
+        4
+      ],
+      "atom_count": 5376,
+      "chain_count": 32,
+      "degree_polymerization": 8,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 256,
+          "maximum_distance_angstrom": 1.4289763208431352
+        },
+        "written_topology": {
+          "bond_count": 256,
+          "maximum_distance_angstrom": 1.4289763208431352,
+          "molecule_count": 32,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 8,
+        "maximum_force_kj_mol_nm": 628.02155,
+        "potential_energy_kj_mol": 101714.07
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_ii_bulk_periodic",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "II",
+      "shape": "bulk",
+      "chain_boundary": "periodic",
+      "face": null,
+      "cells": [
+        4,
+        4,
+        4
+      ],
+      "atom_count": 5376,
+      "chain_count": 32,
+      "degree_polymerization": 8,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 256,
+          "maximum_distance_angstrom": 1.3940861632979498
+        },
+        "written_topology": {
+          "bond_count": 256,
+          "maximum_distance_angstrom": 1.3940861632979498,
+          "molecule_count": 32,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 10,
+        "maximum_force_kj_mol_nm": 706.4071,
+        "potential_energy_kj_mol": 106417.91
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_iii_i_bulk_periodic",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "III-I",
+      "shape": "bulk",
+      "chain_boundary": "periodic",
+      "face": null,
+      "cells": [
+        6,
+        4,
+        4
+      ],
+      "atom_count": 4032,
+      "chain_count": 24,
+      "degree_polymerization": 8,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 192,
+          "maximum_distance_angstrom": 1.377588412446282
+        },
+        "written_topology": {
+          "bond_count": 192,
+          "maximum_distance_angstrom": 1.377588412446282,
+          "molecule_count": 24,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 9,
+        "maximum_force_kj_mol_nm": 887.3382,
+        "potential_energy_kj_mol": 75652.594
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_i_alpha_bulk_periodic",
+      "force_field": "CHARMM36",
+      "allomorph": "I-alpha",
+      "shape": "bulk",
+      "chain_boundary": "periodic",
+      "face": null,
+      "cells": [
+        4,
+        4,
+        4
+      ],
+      "atom_count": 2688,
+      "chain_count": 16,
+      "degree_polymerization": 8,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 128,
+          "maximum_distance_angstrom": 1.4093681566052145
+        },
+        "written_topology": {
+          "bond_count": 128,
+          "maximum_distance_angstrom": 1.4093681566052145,
+          "molecule_count": 16,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 14,
+        "maximum_force_kj_mol_nm": 738.35596,
+        "potential_energy_kj_mol": 47072.465
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_i_beta_bulk_periodic",
+      "force_field": "CHARMM36",
+      "allomorph": "I-beta",
+      "shape": "bulk",
+      "chain_boundary": "periodic",
+      "face": null,
+      "cells": [
+        4,
+        4,
+        4
+      ],
+      "atom_count": 5376,
+      "chain_count": 32,
+      "degree_polymerization": 8,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 256,
+          "maximum_distance_angstrom": 1.4289763208431352
+        },
+        "written_topology": {
+          "bond_count": 256,
+          "maximum_distance_angstrom": 1.4289763208431352,
+          "molecule_count": 32,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 9,
+        "maximum_force_kj_mol_nm": 652.24799,
+        "potential_energy_kj_mol": 93024.766
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_ii_bulk_periodic",
+      "force_field": "CHARMM36",
+      "allomorph": "II",
+      "shape": "bulk",
+      "chain_boundary": "periodic",
+      "face": null,
+      "cells": [
+        4,
+        4,
+        4
+      ],
+      "atom_count": 5376,
+      "chain_count": 32,
+      "degree_polymerization": 8,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 256,
+          "maximum_distance_angstrom": 1.3940861632979498
+        },
+        "written_topology": {
+          "bond_count": 256,
+          "maximum_distance_angstrom": 1.3940861632979498,
+          "molecule_count": 32,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 23,
+        "maximum_force_kj_mol_nm": 685.84094,
+        "potential_energy_kj_mol": 92406.828
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_iii_i_bulk_periodic",
+      "force_field": "CHARMM36",
+      "allomorph": "III-I",
+      "shape": "bulk",
+      "chain_boundary": "periodic",
+      "face": null,
+      "cells": [
+        6,
+        4,
+        4
+      ],
+      "atom_count": 4032,
+      "chain_count": 24,
+      "degree_polymerization": 8,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 192,
+          "maximum_distance_angstrom": 1.377588412446282
+        },
+        "written_topology": {
+          "bond_count": 192,
+          "maximum_distance_angstrom": 1.377588412446282,
+          "molecule_count": 24,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 8,
+        "maximum_force_kj_mol_nm": 474.49643,
+        "potential_energy_kj_mol": 68000.695
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_i_alpha_slab_finite",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "I-alpha",
+      "shape": "slab",
+      "chain_boundary": "finite",
+      "face": [
+        0,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2322,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": null,
+      "minimization": {
+        "steps": 56,
+        "maximum_force_kj_mol_nm": 907.17596,
+        "potential_energy_kj_mol": 46816.91
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_i_alpha_slab_periodic",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "I-alpha",
+      "shape": "slab",
+      "chain_boundary": "periodic",
+      "face": [
+        0,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2268,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.4093681566052145
+        },
+        "written_topology": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.4093681566052145,
+          "molecule_count": 18,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 16,
+        "maximum_force_kj_mol_nm": 991.77844,
+        "potential_energy_kj_mol": 47814.242
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_i_beta_slab_finite",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "I-beta",
+      "shape": "slab",
+      "chain_boundary": "finite",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2322,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": null,
+      "minimization": {
+        "steps": 8,
+        "maximum_force_kj_mol_nm": 810.46924,
+        "potential_energy_kj_mol": 48873.098
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_i_beta_slab_periodic",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "I-beta",
+      "shape": "slab",
+      "chain_boundary": "periodic",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2268,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.4289763208431352
+        },
+        "written_topology": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.4289763208431352,
+          "molecule_count": 18,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 9,
+        "maximum_force_kj_mol_nm": 774.07556,
+        "potential_energy_kj_mol": 46520.316
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_ii_slab_finite",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "II",
+      "shape": "slab",
+      "chain_boundary": "finite",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2322,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": null,
+      "minimization": {
+        "steps": 10,
+        "maximum_force_kj_mol_nm": 975.47174,
+        "potential_energy_kj_mol": 51949.152
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_ii_slab_periodic",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "II",
+      "shape": "slab",
+      "chain_boundary": "periodic",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2268,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.394086163297945
+        },
+        "written_topology": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.394086163297945,
+          "molecule_count": 18,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 15,
+        "maximum_force_kj_mol_nm": 752.91577,
+        "potential_energy_kj_mol": 48382.918
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_iii_i_slab_finite",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "III-I",
+      "shape": "slab",
+      "chain_boundary": "finite",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2322,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": null,
+      "minimization": {
+        "steps": 11,
+        "maximum_force_kj_mol_nm": 694.57013,
+        "potential_energy_kj_mol": 49898.039
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "glycam_iii_i_slab_periodic",
+      "force_field": "GLYCAM06j-1",
+      "allomorph": "III-I",
+      "shape": "slab",
+      "chain_boundary": "periodic",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2268,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.3775884124462787
+        },
+        "written_topology": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.3775884124462787,
+          "molecule_count": 18,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 9,
+        "maximum_force_kj_mol_nm": 788.27368,
+        "potential_energy_kj_mol": 48549.117
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_i_alpha_slab_finite",
+      "force_field": "CHARMM36",
+      "allomorph": "I-alpha",
+      "shape": "slab",
+      "chain_boundary": "finite",
+      "face": [
+        0,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2322,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": null,
+      "minimization": {
+        "steps": 24,
+        "maximum_force_kj_mol_nm": 921.82855,
+        "potential_energy_kj_mol": 44152.652
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_i_alpha_slab_periodic",
+      "force_field": "CHARMM36",
+      "allomorph": "I-alpha",
+      "shape": "slab",
+      "chain_boundary": "periodic",
+      "face": [
+        0,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2268,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.4093681566052145
+        },
+        "written_topology": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.4093681566052145,
+          "molecule_count": 18,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 25,
+        "maximum_force_kj_mol_nm": 952.6543,
+        "potential_energy_kj_mol": 41596.195
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_i_beta_slab_finite",
+      "force_field": "CHARMM36",
+      "allomorph": "I-beta",
+      "shape": "slab",
+      "chain_boundary": "finite",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2322,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": null,
+      "minimization": {
+        "steps": 13,
+        "maximum_force_kj_mol_nm": 700.19513,
+        "potential_energy_kj_mol": 43723.844
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_i_beta_slab_periodic",
+      "force_field": "CHARMM36",
+      "allomorph": "I-beta",
+      "shape": "slab",
+      "chain_boundary": "periodic",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2268,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.4289763208431352
+        },
+        "written_topology": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.4289763208431352,
+          "molecule_count": 18,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 9,
+        "maximum_force_kj_mol_nm": 827.0506,
+        "potential_energy_kj_mol": 41679.77
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_ii_slab_finite",
+      "force_field": "CHARMM36",
+      "allomorph": "II",
+      "shape": "slab",
+      "chain_boundary": "finite",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2322,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": null,
+      "minimization": {
+        "steps": 9,
+        "maximum_force_kj_mol_nm": 813.59882,
+        "potential_energy_kj_mol": 46583.008
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_ii_slab_periodic",
+      "force_field": "CHARMM36",
+      "allomorph": "II",
+      "shape": "slab",
+      "chain_boundary": "periodic",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2268,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.394086163297945
+        },
+        "written_topology": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.394086163297945,
+          "molecule_count": 18,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 11,
+        "maximum_force_kj_mol_nm": 488.9986,
+        "potential_energy_kj_mol": 42673.398
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_iii_i_slab_finite",
+      "force_field": "CHARMM36",
+      "allomorph": "III-I",
+      "shape": "slab",
+      "chain_boundary": "finite",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2322,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": null,
+      "minimization": {
+        "steps": 12,
+        "maximum_force_kj_mol_nm": 877.49774,
+        "potential_energy_kj_mol": 43805.043
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "charmm36_iii_i_slab_periodic",
+      "force_field": "CHARMM36",
+      "allomorph": "III-I",
+      "shape": "slab",
+      "chain_boundary": "periodic",
+      "face": [
+        1,
+        1,
+        0
+      ],
+      "cells": null,
+      "atom_count": 2268,
+      "chain_count": 18,
+      "degree_polymerization": 6,
+      "periodic_glycosidic_bonds": {
+        "mapped_geometry": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.3775884124462787
+        },
+        "written_topology": {
+          "bond_count": 108,
+          "maximum_distance_angstrom": 1.3775884124462787,
+          "molecule_count": 18,
+          "molecule_type_count": 1
+        }
+      },
+      "minimization": {
+        "steps": 13,
+        "maximum_force_kj_mol_nm": 853.28741,
+        "potential_energy_kj_mol": 41731.566
+      },
+      "nvt": {
+        "duration_ps": 1.0,
+        "steps": 1000,
+        "status": "completed"
+      },
+      "status": "passed"
+    }
+  ],
+  "status": "passed",
+  "interpretation_limit": "These runs validate construction, preprocessing, topology integrity, and short-run numerical stability; they do not establish equilibrated material properties or force-field accuracy."
+}

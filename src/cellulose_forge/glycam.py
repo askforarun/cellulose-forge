@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -16,6 +17,18 @@ _SCALE_TOLERANCE = 1.0e-8
 _GROMACS_MOLECULE_NAME = "CELLULOSE_CHAIN"
 _MINIMUM_PERIODIC_DEGREE = 2
 _TLEAP_ERROR_COUNT = re.compile(r"\bErrors\s*=\s*(\d+)\b", re.IGNORECASE)
+_GLYCAM_RESIDUE_CODES = {"cellulose": "G", "chitin": "Y"}
+_GLYCAM_INTERNAL_ATOM_COUNTS = {"G": 21, "Y": 27}
+_GLYCAM_SCALING = {
+    "G": {"SCEE_SCALE_FACTOR": {1.0}, "SCNB_SCALE_FACTOR": {1.0}},
+    # GlcNAc contains an Amber amide term H-N-C-O.  Its proper torsions use
+    # the Amber scaling carried by GLYCAM_06j-1; zero-valued entries belong to
+    # impropers and do not generate 1-4 nonbonded interactions.
+    "Y": {
+        "SCEE_SCALE_FACTOR": {0.0, 1.0, 1.2},
+        "SCNB_SCALE_FACTOR": {0.0, 1.0, 2.0},
+    },
+}
 
 
 def _tleap_output_failed(output: str) -> bool:
@@ -28,9 +41,10 @@ def _tleap_output_failed(output: str) -> bool:
 
 @dataclass(frozen=True)
 class GlycamChainSpec:
-    """GLYCAM residue sequence for one finite beta(1->4) cellulose chain."""
+    """GLYCAM residue sequence for one finite beta(1->4) polysaccharide chain."""
 
     degree_polymerization: int
+    residue_code: str = "G"
     leaprc: str = GLYCAM_LEAPRC
 
     def __post_init__(self) -> None:
@@ -41,11 +55,16 @@ class GlycamChainSpec:
         ):
             msg = "degree of polymerization must be a positive integer"
             raise ValueError(msg)
+        if self.residue_code not in _GLYCAM_INTERNAL_ATOM_COUNTS:
+            msg = f"unsupported GLYCAM beta-D residue code: {self.residue_code!r}"
+            raise ValueError(msg)
 
     @property
     def tleap_residues(self) -> tuple[str, ...]:
         """Return residues in tleap's reducing-to-nonreducing build order."""
-        return ("ROH", *("4GB",) * (self.degree_polymerization - 1), "0GB")
+        internal = f"4{self.residue_code}B"
+        terminal = f"0{self.residue_code}B"
+        return ("ROH", *(internal,) * (self.degree_polymerization - 1), terminal)
 
     @property
     def chemical_residues(self) -> tuple[str, ...]:
@@ -55,9 +74,10 @@ class GlycamChainSpec:
 
 @dataclass(frozen=True)
 class GlycamPeriodicChainSpec:
-    """GLYCAM residue sequence for one covalently periodic cellulose chain."""
+    """GLYCAM residue sequence for one covalently periodic polysaccharide chain."""
 
     degree_polymerization: int
+    residue_code: str = "G"
     leaprc: str = GLYCAM_LEAPRC
 
     def __post_init__(self) -> None:
@@ -68,11 +88,19 @@ class GlycamPeriodicChainSpec:
         ):
             msg = "periodic degree of polymerization must be an integer of at least two"
             raise ValueError(msg)
+        if self.residue_code not in _GLYCAM_INTERNAL_ATOM_COUNTS:
+            msg = f"unsupported GLYCAM beta-D residue code: {self.residue_code!r}"
+            raise ValueError(msg)
 
     @property
     def tleap_residues(self) -> tuple[str, ...]:
         """Return the neutral internal residues used for a periodic chain."""
-        return ("4GB",) * self.degree_polymerization
+        return (f"4{self.residue_code}B",) * self.degree_polymerization
+
+    @property
+    def internal_atom_count(self) -> int:
+        """Number of atoms in the linked GLYCAM residue template."""
+        return _GLYCAM_INTERNAL_ATOM_COUNTS[self.residue_code]
 
 
 @dataclass(frozen=True)
@@ -202,25 +230,32 @@ def validate_glycam_prmtop(
     charges = [float(value) / GLYCAM_CHARGE_SCALE for value in _prmtop_flag_tokens(path, "CHARGE")]
     total_charge = sum(charges)
     if abs(total_charge) > _SCALE_TOLERANCE:
-        msg = f"finite GLYCAM cellulose chain is not neutral: charge={total_charge:.12f}"
+        msg = f"finite GLYCAM chain is not neutral: charge={total_charge:.12f}"
         raise ValueError(msg)
 
     scaling: dict[str, list[float]] = {}
     for flag_name in ("SCEE_SCALE_FACTOR", "SCNB_SCALE_FACTOR"):
         values = sorted({float(value) for value in _prmtop_flag_tokens(path, flag_name)})
-        if any(abs(value - 1.0) > _SCALE_TOLERANCE for value in values):
+        expected = _GLYCAM_SCALING[spec.residue_code][flag_name]
+        if len(values) != len(expected) or any(
+            all(abs(value - reference) > _SCALE_TOLERANCE for reference in expected)
+            for value in values
+        ):
             msg = f"unexpected GLYCAM {flag_name}: {values}"
             raise ValueError(msg)
         scaling[flag_name] = values
 
-    return {
+    validation: dict[str, object] = {
         "atom_count": atom_count,
         "topology_residue_count": len(residue_labels),
-        "glucose_residue_count": spec.degree_polymerization,
+        "sugar_residue_count": spec.degree_polymerization,
         "cap_residue_count": 1,
         "total_charge": total_charge,
         "scaling": scaling,
     }
+    if spec.residue_code == "G":
+        validation["glucose_residue_count"] = spec.degree_polymerization
+    return validation
 
 
 def validate_periodic_glycam_prmtop(
@@ -230,23 +265,27 @@ def validate_periodic_glycam_prmtop(
     """Validate atom counts, residue types, charge, and scaling of a periodic chain."""
     pointer_values = [int(value) for value in _prmtop_flag_tokens(path, "POINTERS")]
     atom_count = pointer_values[0]
-    expected_atom_count = 21 * spec.degree_polymerization
+    expected_atom_count = spec.internal_atom_count * spec.degree_polymerization
     if atom_count != expected_atom_count:
         msg = f"periodic GLYCAM atom count mismatch: {atom_count} != {expected_atom_count}"
         raise ValueError(msg)
     residue_labels = _prmtop_flag_tokens(path, "RESIDUE_LABEL")
     if residue_labels != list(spec.tleap_residues):
-        msg = "periodic GLYCAM chain must contain only internal 4GB residues"
+        msg = "periodic GLYCAM chain contains unexpected residue templates"
         raise ValueError(msg)
     charges = [float(value) / GLYCAM_CHARGE_SCALE for value in _prmtop_flag_tokens(path, "CHARGE")]
     total_charge = sum(charges)
     if abs(total_charge) > _SCALE_TOLERANCE:
-        msg = f"periodic GLYCAM cellulose chain is not neutral: charge={total_charge:.12f}"
+        msg = f"periodic GLYCAM chain is not neutral: charge={total_charge:.12f}"
         raise ValueError(msg)
     scaling: dict[str, list[float]] = {}
     for flag_name in ("SCEE_SCALE_FACTOR", "SCNB_SCALE_FACTOR"):
         values = sorted({float(value) for value in _prmtop_flag_tokens(path, flag_name)})
-        if any(abs(value - 1.0) > _SCALE_TOLERANCE for value in values):
+        expected = _GLYCAM_SCALING[spec.residue_code][flag_name]
+        if len(values) != len(expected) or any(
+            all(abs(value - reference) > _SCALE_TOLERANCE for reference in expected)
+            for value in values
+        ):
             msg = f"unexpected periodic GLYCAM {flag_name}: {values}"
             raise ValueError(msg)
         scaling[flag_name] = values
@@ -364,6 +403,7 @@ def convert_chain_reference_to_gromacs(
     files: GlycamChainFiles,
     *,
     python_executable: str | Path,
+    molecule_name: str = _GROMACS_MOLECULE_NAME,
 ) -> dict[str, object]:
     """Convert a validated AMBER chain reference to standalone GROMACS files."""
     executable_text = str(python_executable)
@@ -380,23 +420,25 @@ def convert_chain_reference_to_gromacs(
             msg = f"required AMBER chain file was not found: {required_path}"
             raise FileNotFoundError(msg)
 
-    conversion_code = (
-        "import parmed as pmd, sys; "
-        "structure = pmd.load_file(sys.argv[1], xyz=sys.argv[2]); "
-        "structure.save(sys.argv[3], overwrite=True); "
-        "structure.save(sys.argv[4], overwrite=True)"
+    environment = dict(os.environ)
+    source_root = str(Path(__file__).resolve().parents[1])
+    environment["PYTHONPATH"] = os.pathsep.join(
+        value for value in (source_root, environment.get("PYTHONPATH", "")) if value
     )
+
     result = subprocess.run(
         [
             resolved_executable,
-            "-c",
-            conversion_code,
+            "-m",
+            "cellulose_forge.glycam_convert",
             files.prmtop.name,
             files.inpcrd.name,
             files.gromacs_topology.name,
             files.gromacs_coordinates.name,
+            molecule_name,
         ],
         cwd=files.directory,
+        env=environment,
         check=False,
         capture_output=True,
         text=True,
@@ -413,11 +455,6 @@ def convert_chain_reference_to_gromacs(
         raise RuntimeError(msg)
 
     topology_text = files.gromacs_topology.read_text(encoding="utf-8")
-    topology_text = _replace_gromacs_molecule_name(
-        topology_text,
-        molecule_name=_GROMACS_MOLECULE_NAME,
-    )
-    files.gromacs_topology.write_text(topology_text, encoding="utf-8")
     defaults = _gromacs_section_rows(topology_text, "defaults")
     molecules = _gromacs_section_rows(topology_text, "molecules")
     if not defaults or defaults[0].split()[-2:] != ["1", "1"]:
@@ -466,18 +503,24 @@ def find_parmed_python() -> str:
     raise FileNotFoundError(msg)
 
 
-def generate_glycam_gromacs_reference(
+def generate_glycam_gromacs_reference(  # noqa: PLR0913
     *,
     degree_polymerization: int,
     chain_boundary: str,
     directory: str | Path,
     tleap_executable: str | Path = "tleap",
     parmed_python: str | Path | None = None,
+    polymer: str = "cellulose",
 ) -> tuple[GlycamChainFiles, dict[str, object]]:
     """Generate and validate a one-chain GLYCAM/GROMACS reference."""
+    try:
+        residue_code = _GLYCAM_RESIDUE_CODES[polymer]
+    except KeyError as error:
+        msg = f"GLYCAM reference generation does not support polymer {polymer!r}"
+        raise ValueError(msg) from error
     if chain_boundary == "finite":
-        finite_spec = GlycamChainSpec(degree_polymerization)
-        prefix = "cellulose_chain"
+        finite_spec = GlycamChainSpec(degree_polymerization, residue_code=residue_code)
+        prefix = f"{polymer}_chain"
         metadata = run_tleap_chain_reference(
             finite_spec,
             directory,
@@ -485,8 +528,11 @@ def generate_glycam_gromacs_reference(
             executable=tleap_executable,
         )
     elif chain_boundary == "periodic":
-        periodic_spec = GlycamPeriodicChainSpec(degree_polymerization)
-        prefix = "cellulose_periodic_chain"
+        periodic_spec = GlycamPeriodicChainSpec(
+            degree_polymerization,
+            residue_code=residue_code,
+        )
+        prefix = f"{polymer}_periodic_chain"
         metadata = run_tleap_periodic_chain_reference(
             periodic_spec,
             directory,
@@ -500,6 +546,7 @@ def generate_glycam_gromacs_reference(
     conversion = convert_chain_reference_to_gromacs(
         files,
         python_executable=parmed_python or find_parmed_python(),
+        molecule_name=f"{polymer.upper()}_CHAIN",
     )
     return files, {**metadata, "gromacs_conversion": conversion}
 

@@ -105,7 +105,9 @@ class HydroxylHydrogenPlacer:
         for index, key in enumerate(self._bin_keys(self._coordinates)):
             self._crystal_bins.setdefault(key, []).append(index)
         self._placed_bins: dict[tuple[int, int, int], list[FloatArray]] = {}
-        self._requests: list[tuple[int, str, FloatArray, FloatArray, FloatArray, str | None]] = []
+        self._requests: list[
+            tuple[int, str, FloatArray, FloatArray, FloatArray, str | None, FloatArray | None]
+        ] = []
 
     def _bin_shape(self) -> tuple[int, int, int]:
         if self._box is None:
@@ -145,13 +147,14 @@ class HydroxylHydrogenPlacer:
         fractional -= np.round(fractional)
         return np.asarray(fractional @ self._box, dtype=np.float64)
 
-    def place(  # noqa: PLR0915 - one geometric selection kept in one place
+    def place(  # noqa: PLR0913, PLR0915 - geometric selection kept in one place
         self,
         carbon: FloatArray,
         oxygen: FloatArray,
         preferred_hydrogen: FloatArray,
         *,
         preferred_acceptor: str | None = None,
+        preferred_acceptor_coordinate: FloatArray | None = None,
         record: bool = True,
     ) -> FloatArray:
         """Return one hydrogen position and add it to the placed environment.
@@ -160,7 +163,10 @@ class HydroxylHydrogenPlacer:
         bond, when any clash-free torsion can form one, takes priority over
         the purely geometric choice.  Cellulose builders pass ``"O5"`` for
         HO3, encoding the intrachain O3-H...O5 bond present in every cellulose
-        allomorph.
+        allomorph. ``preferred_acceptor_coordinate`` identifies one exact
+        periodic acceptor site and takes precedence over a label. It is used
+        for the chain-specific cellulose-II network determined by neutron
+        diffraction.
         """
         oxygen = np.asarray(oxygen, dtype=np.float64)
         candidates, alignment = _cone_candidates(
@@ -241,6 +247,31 @@ class HydroxylHydrogenPlacer:
                 preferred = labels[acceptors] == preferred_acceptor.upper()
                 if preferred.any():
                     preferred_quality = per_acceptor[:, preferred].max(axis=1)
+        if preferred_acceptor_coordinate is not None:
+            preferred_delta = self._minimum_image(
+                np.asarray(preferred_acceptor_coordinate, dtype=np.float64) - oxygen
+            )
+            preferred_position = oxygen + preferred_delta
+            to_donor = oxygen - candidates
+            to_acceptor = preferred_position - candidates
+            acceptor_distance = np.linalg.norm(to_acceptor, axis=1)
+            cosine = np.einsum("ij,ij->i", to_donor, to_acceptor) / (
+                np.linalg.norm(to_donor, axis=1) * acceptor_distance
+            )
+            angle = np.degrees(np.arccos(np.clip(cosine, -1.0, 1.0)))
+            linearity = np.clip(
+                (angle - MINIMUM_HYDROGEN_BOND_ANGLE_DEGREES)
+                / (180.0 - MINIMUM_HYDROGEN_BOND_ANGLE_DEGREES),
+                0.0,
+                1.0,
+            )
+            closeness = np.clip(
+                (MAXIMUM_HYDROGEN_ACCEPTOR_ANGSTROM - acceptor_distance)
+                / (MAXIMUM_HYDROGEN_ACCEPTOR_ANGSTROM - IDEAL_HYDROGEN_ACCEPTOR_ANGSTROM),
+                0.0,
+                1.0,
+            )
+            preferred_quality = linearity * closeness
         bonded = feasible & (quality > 0.0)
         preferred_bonded = feasible & (preferred_quality > 0.0)
 
@@ -286,43 +317,70 @@ class HydroxylHydrogenPlacer:
         *,
         donor: str,
         preferred_acceptor: str | None = None,
+        preferred_acceptor_coordinate: FloatArray | None = None,
     ) -> None:
         """Queue one hydroxyl hydrogen for order-independent placement."""
         self._requests.append(
-            (key, donor.upper(), carbon, oxygen, preferred_hydrogen, preferred_acceptor)
+            (
+                key,
+                donor.upper(),
+                carbon,
+                oxygen,
+                preferred_hydrogen,
+                preferred_acceptor,
+                preferred_acceptor_coordinate,
+            )
         )
 
     def resolve(self) -> dict[int, FloatArray]:
-        """Place every queued hydrogen class by class and return them by key.
+        """Place queued hydrogens in crystallographic and fallback passes.
 
-        Classes are placed in ``PLACEMENT_ORDER`` (O3, then O2, then O6). A
-        hydrogen sees the crystal and every hydrogen of earlier classes, but
-        not other members of its own class, so symmetry-equivalent hydroxyls
-        always see identical environments and the result does not depend on
-        the order in which a builder visits atoms.
+        Hydrogens whose exact preferred acceptor is present within the
+        donor--acceptor cutoff are placed first. Remaining surface hydroxyls
+        are then placed by geometric fallback. This prevents a fallback donor
+        from occupying an acceptor needed by a crystallographically assigned
+        hydrogen. Within each pass, classes follow ``PLACEMENT_ORDER`` (O3,
+        then O2, then O6), and symmetry-equivalent members of one class are
+        evaluated before any of them is recorded.
         """
         rank = {name: index for index, name in enumerate(PLACEMENT_ORDER)}
-        donors = sorted(
-            {request[1] for request in self._requests}, key=lambda d: (rank.get(d, len(rank)), d)
-        )
         results: dict[int, FloatArray] = {}
-        for donor in donors:
-            batch = [
-                (
-                    request[0],
-                    self.place(
-                        request[2],
-                        request[3],
-                        request[4],
-                        preferred_acceptor=request[5],
-                        record=False,
-                    ),
-                )
-                for request in self._requests
-                if request[1] == donor
-            ]
-            for key, coordinate in batch:
-                self._record(coordinate)
-                results[key] = coordinate
+
+        def exact_acceptor_is_present(request: tuple[Any, ...]) -> bool:
+            coordinate = request[6]
+            if coordinate is None:
+                return False
+            delta = self._minimum_image(
+                np.asarray(coordinate, dtype=np.float64)
+                - np.asarray(request[3], dtype=np.float64)
+            )
+            return float(np.linalg.norm(delta)) <= MAXIMUM_DONOR_ACCEPTOR_ANGSTROM
+
+        preferred = [request for request in self._requests if exact_acceptor_is_present(request)]
+        fallback = [request for request in self._requests if not exact_acceptor_is_present(request)]
+        for requests in (preferred, fallback):
+            donors = sorted(
+                {request[1] for request in requests},
+                key=lambda donor: (rank.get(donor, len(rank)), donor),
+            )
+            for donor in donors:
+                batch = [
+                    (
+                        request[0],
+                        self.place(
+                            request[2],
+                            request[3],
+                            request[4],
+                            preferred_acceptor=request[5],
+                            preferred_acceptor_coordinate=request[6],
+                            record=False,
+                        ),
+                    )
+                    for request in requests
+                    if request[1] == donor
+                ]
+                for key, coordinate in batch:
+                    self._record(coordinate)
+                    results[key] = coordinate
         self._requests.clear()
         return results

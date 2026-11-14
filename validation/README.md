@@ -19,6 +19,31 @@ This is a coordinate-construction benchmark, not a force-field or molecular-
 dynamics performance benchmark. Its purpose is to demonstrate reproducible
 batch generation without requiring AmberTools or GROMACS.
 
+## Chitin GLYCAM06j-1 validation
+
+`validate_chitin_glycam.py` builds alpha- and beta-chitin periodic bulk
+crystals and finite/periodic (100) slabs. All six cases run through GROMACS
+preprocessing with zero warnings, minimization, and a one-ps NVT smoke test.
+The validator also minimizes and runs a finite beta-chitin slab for one ps
+with AmberTools `sander`. It checks the written periodic O4--C1 topology and
+records the explicit amide 1--4 scaling pairs. On identical coordinates, it
+also compares bonds, angles, proper plus improper dihedrals, 1--4 Lennard-Jones,
+and 1--4 electrostatic energies between double-precision GROMACS and `sander`.
+The largest difference after correcting for their documented Coulomb constants
+is 0.000124 kcal/mol. Compact evidence is stored in
+`results/chitin_glycam_engines.json`. These are topology and runtime tests, not an
+assessment of GLYCAM force-field accuracy for crystalline chitin.
+
+`validate_chitin_glycam_cross_engines.py` independently compares alpha- and
+beta-chitin periodic bulk crystals and `(100)` slabs with finite and covalently
+periodic chains in double-precision GROMACS, OpenMM, and LAMMPS. Bonds, angles,
+torsions, ordinary
+1--4 terms, and the amide-specific scaled 1--4 terms are compared separately.
+The largest bonded or explicit-pair relative difference is 8.4 × 10^-6; the
+largest combined nonbonded difference is 1.6 × 10^-4, within the recorded
+PME--PPPM tolerance. All six OpenMM systems also complete a two-ps NVT smoke
+test. Results are in `results/chitin_glycam_cross_engines.json`.
+
 ## GROMACS protocols
 
 - `periodic_pme_minim.mdp`: energy minimization for cellulose chains bonded
@@ -42,24 +67,30 @@ batch generation without requiring AmberTools or GROMACS.
 - `position_restraint_pme_nvt_1ps.mdp`: deterministic 1 ps, 300 K PME/NVT
   integration test for selectively restrained cellulose chains.
 
-## Periodic GLYCAM allomorph matrix
+## GLYCAM06j-1 and CHARMM36 force-field matrix
 
-`validate_glycam_allomorphs.py` builds periodic bulk crystals for I-alpha,
-I-beta, II, and III-I, then runs `gmx grompp`, PME minimization, and a
-configurable NVT stability test. The default is 1 ps. III-I uses 6x4x4 cells
-because its short `a` lattice vector requires six repeats for compatibility
-with the validation cutoff.
+`validate_force_field_matrix.py` provides one reproducible validation matrix
+for the two production force fields. It covers periodic bulk crystals of all
+four cellulose allomorphs and the documented I-alpha (010), I-beta (110), II
+(110), and III-I (110) slabs with finite and covalently periodic chains. The
+matrix therefore contains 8 bulk systems and 16 slab systems. Every case must
+pass `gmx grompp -maxwarn 0`, minimization, and a 1 ps PME/NVT smoke test;
+periodic builds must also pass the mapped-geometry and independently parsed
+written-topology O4--C1 bond checks.
 
 ```bash
-uv run python validation/validate_glycam_allomorphs.py \
+uv run python validation/validate_force_field_matrix.py \
   --tleap-executable /path/to/ambertools/bin/tleap \
-  --parmed-python /path/to/ambertools/bin/python
+  --parmed-python /path/to/ambertools/bin/python \
+  --charmm-force-field-directory /path/to/charmm36.ff
 ```
 
-Compact evidence is stored in `results/glycam_allomorph_matrix/`. Cellulose II
-records its force-field construction of the missing hydroxyl hydrogens and
-uses opposite topology-to-crystal residue mappings for its antiparallel origin
-and center chains.
+The compact, provenance-bearing result is
+`results/force_field_matrix.json`. Cellulose II records its construction of
+the missing hydroxyl hydrogens. `validate_cellulose_ii_hydroxyls.py` separately
+requires the exact major donor/acceptor assignments reported in Table 3 of
+Langan, Nishiyama and Chanzy (1999) and records periodic contact distances and
+angles.
 
 ## CHARMM36 validation
 
@@ -95,11 +126,8 @@ minimized below the configured force threshold without `-maxwarn`. Compact
 results are stored in `results/charmm36_ibeta_shapes.json`; generated GROMACS
 run files remain under the ignored `validation/work/` directory.
 
-The periodic CHARMM36 bulk matrix covers I-alpha, I-beta, II, and III-I at
-DP8. Every system passes preprocessing, PME minimization, and 1-ps NVT without
-LINCS or non-finite-energy failures. Cellulose II records its constructed
-hydroxyl hydrogens and antiparallel residue mapping. Compact evidence is stored
-in `results/charmm36_allomorph_matrix.json`.
+The current periodic CHARMM36 bulk and slab validation is part of the unified
+24-system matrix in `results/force_field_matrix.json`.
 
 The periodic 36-chain CHARMM36 fibril matrix covers the I-alpha, I-beta, and II
 presets at DP8 (6,048 atoms each). Every fibril passes preprocessing, PME
@@ -132,22 +160,10 @@ output without making `psfgen` a runtime dependency.
 
 ## Slab allomorph matrix
 
-Chain-parallel slab construction is exercised for I-alpha `(010)`, I-beta
-`(110)`, II `(110)`, and III-I `(110)`. For each allomorph, finite and periodic
-DP6 systems containing three layers and six chains per layer were generated
-with both GLYCAM06j-1 and CHARMM36. Finite chains used 12 angstrom of total
-chain-end padding. All 16 systems passed PME preprocessing without `-maxwarn`.
-Finite systems minimized below 100 kJ mol-1 nm-1 and periodic systems below
-1000 kJ mol-1 nm-1; every system then completed 1 ps NVT without LINCS
-warnings or non-finite energies. Periodic O4--C1 linkages were checked before
-output and were shorter than 2 angstrom. Compact results are stored in
-`results/slab_allomorph_matrix.json`. These are topology and runtime smoke
-tests, not equilibrated material-property predictions. The original complete
-matrix was initially run at commit `73f6543`; the four I-beta finite/periodic
-GLYCAM and CHARMM36 entries were regenerated and rerun with the final 1.1.2
-implementation committed as `63675a2`, after the alternating lattice-site
-validation was added. The remaining allomorph results exercise code paths not
-changed by that I-beta-specific correction.
+The 16 finite/periodic slab cases are now generated by the unified validator
+described above and stored with the bulk cases in
+`results/force_field_matrix.json`. These are construction, topology, and
+runtime smoke tests, not equilibrated material-property predictions.
 
 The I-beta `(110)` lattice construction additionally has a site-assignment
 regression requiring origin and center conformations to alternate within each

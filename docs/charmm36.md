@@ -86,8 +86,9 @@ integration without LINCS or non-finite-energy failures. Cellulose II maps its
 antiparallel chain class in the opposite residue direction and constructs the
 HO2, HO3, and HO6 coordinates missing from its diffraction dataset by aligning
 an I-beta O--H reference geometry on C1/C3/C5. These generated coordinates are
-reported explicitly in `build_report.json`. Compact matrix results are stored
-in `validation/results/charmm36_allomorph_matrix.json`.
+reported explicitly in `build_report.json`. Compact, reproducible bulk and
+slab matrix results are stored in
+`validation/results/force_field_matrix.json`.
 
 The literature-defined 36-chain periodic fibrils are also exercised for every
 allomorph for which that preset exists: I-alpha, I-beta, and II. Each DP8

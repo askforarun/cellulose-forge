@@ -23,6 +23,7 @@ from typing import cast
 import numpy as np
 
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
+from cellulose_forge.gromacs_pairs import prepare_explicit_pairs
 
 OPENMM_SYSTEM_FILE = "system.xml"
 OPENMM_STATE_FILE = "state.xml"
@@ -93,6 +94,26 @@ def make_system(constraints, ewald_error_tolerance):
             f"OpenMM read {created.getNumParticles()} particles; "
             f"expected {request['expected_atom_count']}"
         )
+    explicit_pairs = request["explicit_pair_overrides"]
+    if explicit_pairs:
+        nonbonded = next(
+            force for force in created.getForces()
+            if isinstance(force, openmm.NonbondedForce)
+        )
+        exception_indices = {}
+        for index in range(nonbonded.getNumExceptions()):
+            first, second, *_ = nonbonded.getExceptionParameters(index)
+            exception_indices[tuple(sorted((int(first), int(second))))] = index
+        for pair in explicit_pairs:
+            key = tuple(sorted((pair["first"], pair["second"])))
+            if key not in exception_indices:
+                raise SystemExit(f"OpenMM topology omitted explicit 1-4 pair {key}")
+            nonbonded.setExceptionParameters(
+                exception_indices[key], pair["first"], pair["second"],
+                pair["charge_product_e2"] * unit.elementary_charge**2,
+                pair["sigma_nm"] * unit.nanometer,
+                pair["epsilon_kj_mol"] * unit.kilojoule_per_mole,
+            )
     enabled = []
     for force in created.getForces():
         if isinstance(force, openmm.NonbondedForce):
@@ -557,6 +578,20 @@ def write_openmm_system(  # noqa: PLR0913
         "topology_path": str(files.topology.resolve()),
     }
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_openmm_") as temporary:
+        parser_topology, explicit_pairs = prepare_explicit_pairs(
+            topology_path, Path(temporary) / "parser.top"
+        )
+        request["gromacs_topology"] = str(parser_topology.resolve())
+        request["explicit_pair_overrides"] = [
+            {
+                "first": pair.first,
+                "second": pair.second,
+                "charge_product_e2": pair.charge_product_e2,
+                "sigma_nm": pair.sigma_nm,
+                "epsilon_kj_mol": pair.epsilon_kj_mol,
+            }
+            for pair in explicit_pairs
+        ]
         request_path = Path(temporary) / "request.json"
         request_path.write_text(json.dumps(request), encoding="utf-8")
         result = subprocess.run(

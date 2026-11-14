@@ -17,6 +17,7 @@ from typing import Any
 
 import numpy as np
 
+from cellulose_forge.cellulose_ii import cellulose_ii_preferred_acceptor
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
@@ -424,6 +425,12 @@ def _mapped_coordinates(crystal: BulkCrystal, molecule: Any, boundary: str) -> G
                     aligned_h,
                     donor=oxygen,
                     preferred_acceptor="O5" if oxygen == "O3" else None,
+                    preferred_acceptor_coordinate=cellulose_ii_preferred_acceptor(
+                        crystal,
+                        chain_number=chain,
+                        residue_number=order[residue - 1],
+                        donor=oxygen,
+                    ),
                 )
                 coordinate = np.zeros(3)
             else:
