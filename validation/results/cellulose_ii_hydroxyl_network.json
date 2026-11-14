@@ -1,8 +1,8 @@
 {
   "system": "cellulose II periodic bulk (2, 2, 6), GLYCAM mapping",
   "provenance": {
-    "cellulose_forge_commit": "b6d6a7148b91c794030def57014ed2cecf60b8ea",
-    "tracked_tree_clean": false,
+    "cellulose_forge_commit": "1917ce79ea74ebca64b7ef1e972904f9404bdf27",
+    "tracked_tree_clean": true,
     "software_versions": {
       "numpy": "2.2.6"
     }
@@ -14,8 +14,9 @@
   "literature_network": {
     "source": "Langan, Nishiyama and Chanzy, J. Am. Chem. Soc. 1999, 121, 9940",
     "intrachain": "O3-H...O5 (next residue) in both chains",
-    "intermolecular": "O2-H...O6, O6-H...O6 and O2-H...O2, including intersheet",
-    "least_certain": "OH2 and OH6 directions"
+    "origin_sheet": "O2o-H...O6o",
+    "center_sheet": "O6c-H...O2c",
+    "mixed_sheet": "O2c-H...O2o and O6o-H...O6c (major component)"
   },
   "chains": {
     "center": {
@@ -116,26 +117,26 @@
     {
       "atoms": 4320,
       "hydroxyls": 720,
-      "seconds": 0.5869002910003474,
-      "microseconds_per_hydroxyl": 815.139293056038
+      "seconds": 0.5170254580007168,
+      "microseconds_per_hydroxyl": 718.0909138898844
     },
     {
       "atoms": 8640,
       "hydroxyls": 1440,
-      "seconds": 1.1068689999992785,
-      "microseconds_per_hydroxyl": 768.6590277772767
+      "seconds": 1.046305209005368,
+      "microseconds_per_hydroxyl": 726.600839587061
     },
     {
       "atoms": 17280,
       "hydroxyls": 2880,
-      "seconds": 2.229535541999212,
-      "microseconds_per_hydroxyl": 774.144285416393
+      "seconds": 2.100929082997027,
+      "microseconds_per_hydroxyl": 729.4892649295232
     },
     {
       "atoms": 34560,
       "hydroxyls": 5760,
-      "seconds": 4.319507457999862,
-      "microseconds_per_hydroxyl": 749.9144892360871
+      "seconds": 4.194842750002863,
+      "microseconds_per_hydroxyl": 728.2713107643859
     }
   ]
 }
