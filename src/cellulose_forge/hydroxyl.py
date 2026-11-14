@@ -333,37 +333,54 @@ class HydroxylHydrogenPlacer:
         )
 
     def resolve(self) -> dict[int, FloatArray]:
-        """Place every queued hydrogen class by class and return them by key.
+        """Place queued hydrogens in crystallographic and fallback passes.
 
-        Classes are placed in ``PLACEMENT_ORDER`` (O3, then O2, then O6). A
-        hydrogen sees the crystal and every hydrogen of earlier classes, but
-        not other members of its own class, so symmetry-equivalent hydroxyls
-        always see identical environments and the result does not depend on
-        the order in which a builder visits atoms.
+        Hydrogens whose exact preferred acceptor is present within the
+        donor--acceptor cutoff are placed first. Remaining surface hydroxyls
+        are then placed by geometric fallback. This prevents a fallback donor
+        from occupying an acceptor needed by a crystallographically assigned
+        hydrogen. Within each pass, classes follow ``PLACEMENT_ORDER`` (O3,
+        then O2, then O6), and symmetry-equivalent members of one class are
+        evaluated before any of them is recorded.
         """
         rank = {name: index for index, name in enumerate(PLACEMENT_ORDER)}
-        donors = sorted(
-            {request[1] for request in self._requests}, key=lambda d: (rank.get(d, len(rank)), d)
-        )
         results: dict[int, FloatArray] = {}
-        for donor in donors:
-            batch = [
-                (
-                    request[0],
-                    self.place(
-                        request[2],
-                        request[3],
-                        request[4],
-                        preferred_acceptor=request[5],
-                        preferred_acceptor_coordinate=request[6],
-                        record=False,
-                    ),
-                )
-                for request in self._requests
-                if request[1] == donor
-            ]
-            for key, coordinate in batch:
-                self._record(coordinate)
-                results[key] = coordinate
+
+        def exact_acceptor_is_present(request: tuple[Any, ...]) -> bool:
+            coordinate = request[6]
+            if coordinate is None:
+                return False
+            delta = self._minimum_image(
+                np.asarray(coordinate, dtype=np.float64)
+                - np.asarray(request[3], dtype=np.float64)
+            )
+            return float(np.linalg.norm(delta)) <= MAXIMUM_DONOR_ACCEPTOR_ANGSTROM
+
+        preferred = [request for request in self._requests if exact_acceptor_is_present(request)]
+        fallback = [request for request in self._requests if not exact_acceptor_is_present(request)]
+        for requests in (preferred, fallback):
+            donors = sorted(
+                {request[1] for request in requests},
+                key=lambda donor: (rank.get(donor, len(rank)), donor),
+            )
+            for donor in donors:
+                batch = [
+                    (
+                        request[0],
+                        self.place(
+                            request[2],
+                            request[3],
+                            request[4],
+                            preferred_acceptor=request[5],
+                            preferred_acceptor_coordinate=request[6],
+                            record=False,
+                        ),
+                    )
+                    for request in requests
+                    if request[1] == donor
+                ]
+                for key, coordinate in batch:
+                    self._record(coordinate)
+                    results[key] = coordinate
         self._requests.clear()
         return results

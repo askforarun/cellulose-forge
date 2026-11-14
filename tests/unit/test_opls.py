@@ -12,9 +12,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from cellulose_forge.cellulose_ii import cellulose_ii_preferred_acceptor
 from cellulose_forge.cli import main
-from cellulose_forge.crystallography import load_allomorph
-from cellulose_forge.geometry import build_bulk_crystal
+from cellulose_forge.crystallography import MillerIndex, load_allomorph
+from cellulose_forge.geometry import (
+    build_36_chain_fibril,
+    build_bulk_crystal,
+    build_chain_parallel_slab,
+)
 from cellulose_forge.opls import (
     _TORSIONS,
     KCAL_TO_KJ,
@@ -136,6 +141,97 @@ def test_sei_table_is_full_lennard_jones_plus_scaled_coulomb() -> None:
 def _bulk_build(variant: str):  # type: ignore[no-untyped-def]
     crystal = build_bulk_crystal(load_allomorph("ii"), (3, 3, 3))
     return build_opls_system(crystal, variant, "periodic")
+
+
+@pytest.mark.parametrize("shape", ["slab", "fibril"])
+def test_cellulose_ii_surface_table_3_acceptors_take_priority(shape: str) -> None:
+    """A surface fallback must not occupy an available Table-3 acceptor."""
+    definition = load_allomorph("ii")
+    if shape == "slab":
+        crystal = build_chain_parallel_slab(
+            definition,
+            MillerIndex(1, 1, 0),
+            layers=3,
+            chains_per_layer=4,
+            degree_polymerization=4,
+            vacuum=30.0,
+            chain_boundary="periodic",
+        )
+    else:
+        crystal = build_36_chain_fibril(
+            definition,
+            degree_polymerization=4,
+            vacuum=30.0,
+            chain_boundary="periodic",
+        )
+    mapped = build_opls_system(crystal, "opls-aa", "periodic").mapped
+    labels = np.asarray(crystal.atom_labels)
+    crystal_chains = np.asarray(crystal.chain_numbers)
+    crystal_residues = np.asarray(crystal.residue_numbers)
+    crystal_xyz = np.asarray(crystal.cartesian_coordinates)
+    names = np.asarray(mapped.atom_names)
+    chains = np.asarray(mapped.chain_numbers)
+    residues = np.asarray(mapped.residue_numbers)
+    xyz = np.asarray(mapped.cartesian_coordinates)
+    inverse = np.linalg.inv(mapped.basis_vectors)
+
+    def minimum_image(delta: np.ndarray) -> np.ndarray:
+        fractional = delta @ inverse
+        fractional -= np.round(fractional)
+        return fractional @ mapped.basis_vectors
+
+    checked = 0
+    for chain in sorted(set(crystal.chain_numbers)):
+        for residue in sorted(set(crystal_residues[crystal_chains == chain])):
+            for donor, hydrogen in (("O2", "HO2"), ("O6", "HO6")):
+                donor_coordinate = crystal_xyz[
+                    (crystal_chains == chain)
+                    & (crystal_residues == residue)
+                    & (labels == donor)
+                ][0]
+                acceptor = cellulose_ii_preferred_acceptor(
+                    crystal,
+                    chain_number=chain,
+                    residue_number=residue,
+                    donor=donor,
+                )
+                if np.linalg.norm(minimum_image(acceptor - donor_coordinate)) > 3.2:
+                    continue
+                # Origin-chain residue numbering differs between the crystal
+                # and mapped force-field system. Locate the mapped donor by
+                # position rather than assuming those residue IDs coincide.
+                donor_candidates = np.flatnonzero((chains == chain) & (names == donor))
+                offsets = np.linalg.norm(
+                    np.vstack(
+                        [
+                            minimum_image(xyz[index] - donor_coordinate)
+                            for index in donor_candidates
+                        ]
+                    ),
+                    axis=1,
+                )
+                mapped_donor = donor_candidates[int(np.argmin(offsets))]
+                assert offsets.min() < 1.0e-3
+                mapped_residue = residues[mapped_donor]
+                hydrogen_coordinate = xyz[
+                    (chains == chain) & (residues == mapped_residue) & (names == hydrogen)
+                ][0]
+                delta = minimum_image(acceptor - hydrogen_coordinate)
+                assert np.linalg.norm(delta) < 2.6
+                to_donor = minimum_image(donor_coordinate - hydrogen_coordinate)
+                angle = np.degrees(
+                    np.arccos(
+                        np.clip(
+                            np.dot(to_donor, delta)
+                            / (np.linalg.norm(to_donor) * np.linalg.norm(delta)),
+                            -1.0,
+                            1.0,
+                        )
+                    )
+                )
+                assert angle > 120.0
+                checked += 1
+    assert checked > 0
 
 
 @pytest.mark.parametrize("variant", ["opls-aa", "opls-aa-sei"])
