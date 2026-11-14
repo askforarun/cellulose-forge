@@ -875,11 +875,15 @@ Slab faces must be parallel to the cellulose chain axis: `h=0` for I-alpha and
 `l=0` for I-beta, II, and III-I. The zero index `(0,0,0)` is never a valid
 crystallographic plane.
 
-### `the periodic box must exceed twice the N angstrom nonbonded cutoff in every direction`
+### `the periodic box must exceed N angstrom (twice the ... cutoff plus a 0.5 angstrom pair-list buffer on each side) in every direction`
 
 The box is too small for the force field's cutoff in at least one direction:
-20 Å for GLYCAM06 and CHARMM36, 18 Å for OpenFF Sage. GROMACS and OpenMM would
-refuse such a box at run time. Increase `--cells` for bulk crystals, or
+21 Å for GLYCAM06, CHARMM36, OPLS-AA and OPLS-AA-SEI (1.0 nm cutoff) and 19 Å
+for OpenFF Sage (0.9 nm), that is, twice the cutoff plus a 0.5 Å pair-list
+margin on each side, a conservative CelluloseForge policy. GROMACS adds a
+Verlet buffer, which depends on the MD settings, before its own box check, so a
+box only just above twice the cutoff can still be refused by `grompp`.
+Increase `--cells` for bulk crystals, or
 `--chains-per-layer`, `--layers`, `--degree-polymerization`, the padding, or
 `--vacuum` for slabs and fibrils. A single unit cell is always too small for
 force-field output; use a periodic bulk crystal.

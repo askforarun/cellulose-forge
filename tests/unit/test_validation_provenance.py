@@ -17,6 +17,8 @@ PROVENANCED_RESULTS = (
     "openff_shipped_outputs.json",
     "openff_mixed_precision_accumulation.json",
     "cellulose_ii_hydroxyl_network.json",
+    "opls_cellulose_matrix.json",
+    "openmm_tilted_box.json",
 )
 
 

@@ -1,0 +1,207 @@
+{
+  "purpose": "evidence for using the OpenMM CPU platform for tilted-third-vector boxes",
+  "provenance": {
+    "cellulose_forge_commit": "0ed8c34eff9cdf29dc8ac6e100fa3f00838f1ac7",
+    "tracked_tree_clean": true,
+    "software_versions": {
+      "numpy": "2.5.4",
+      "openmm": "8.6.1"
+    }
+  },
+  "openmm_version": "8.6.1",
+  "cutoff_nm": 1.0,
+  "discrepancy_relative_threshold": 0.0001,
+  "cases": {
+    "i_alpha_3x4x4": {
+      "box_nm": [
+        [
+          3.12,
+          0.0,
+          0.0
+        ],
+        [
+          -1.1269838551163889,
+          2.4390165293222186,
+          0.0
+        ],
+        [
+          -1.1225347374278853,
+          -0.0792135632609736,
+          2.102596493543925
+        ]
+      ],
+      "third_vector_tilted": true,
+      "atoms": 2016,
+      "lennard_jones_kj_mol": {
+        "reference": -3664.920156257568,
+        "reference_wrapped": -3664.920156257566,
+        "cpu": -3679.464216798544,
+        "exact_nearest_image": -3679.466980082571
+      },
+      "lennard_jones_relative_to_exact": {
+        "reference": 0.0039535138931118576,
+        "reference_wrapped": 0.003953513893112476,
+        "cpu": 7.510011754221241e-07
+      },
+      "pme_coulomb_kj_mol": {
+        "reference": -37372.224367270515,
+        "cpu": -37378.57378084106
+      },
+      "pme_coulomb_reference_vs_cpu_relative": 0.00016986773245484965,
+      "reference_discrepancy": true
+    },
+    "i_alpha_3x4x5": {
+      "box_nm": [
+        [
+          3.12,
+          0.0,
+          0.0
+        ],
+        [
+          -1.1269838551163889,
+          2.4390165293222186,
+          0.0
+        ],
+        [
+          -1.4031684217848566,
+          -0.09901695407621701,
+          2.628245616929906
+        ]
+      ],
+      "third_vector_tilted": true,
+      "atoms": 2520,
+      "lennard_jones_kj_mol": {
+        "reference": -4592.727999719003,
+        "reference_wrapped": -4592.727999719002,
+        "cpu": -4599.329877644777,
+        "exact_nearest_image": -4599.333725103196
+      },
+      "lennard_jones_relative_to_exact": {
+        "reference": 0.0014362352851543586,
+        "reference_wrapped": 0.0014362352851545563,
+        "cpu": 8.365251684025845e-07
+      },
+      "pme_coulomb_kj_mol": {
+        "reference": -46722.821549899505,
+        "cpu": -46723.216009663665
+      },
+      "pme_coulomb_reference_vs_cpu_relative": 8.442478875569883e-06,
+      "reference_discrepancy": true
+    },
+    "i_beta_3x3x3": {
+      "box_nm": [
+        [
+          2.3352,
+          0.0,
+          0.0
+        ],
+        [
+          -0.2785138668331809,
+          2.4444848365211085,
+          0.0
+        ],
+        [
+          1.906775066272429e-16,
+          2.1363609683383657e-16,
+          3.114
+        ]
+      ],
+      "third_vector_tilted": false,
+      "atoms": 2268,
+      "lennard_jones_kj_mol": {
+        "reference": -6151.171019377075,
+        "reference_wrapped": -6151.171019377077,
+        "cpu": -6151.170483708382,
+        "exact_nearest_image": -6151.1710193761855
+      },
+      "lennard_jones_relative_to_exact": {
+        "reference": 1.4460430632346978e-13,
+        "reference_wrapped": 1.4490002065132965e-13,
+        "cpu": 8.708387430630116e-08
+      },
+      "pme_coulomb_kj_mol": {
+        "reference": -41655.66260645348,
+        "cpu": -41655.6766818208
+      },
+      "pme_coulomb_reference_vs_cpu_relative": 3.378979394836103e-07,
+      "reference_discrepancy": false
+    },
+    "ii_3x3x3": {
+      "box_nm": [
+        [
+          2.4299999999999997,
+          0.0,
+          0.0
+        ],
+        [
+          1.1959288463044067,
+          2.411586487691542,
+          0.0
+        ],
+        [
+          1.8939162748813818e-16,
+          3.096653041105684e-16,
+          3.093
+        ]
+      ],
+      "third_vector_tilted": false,
+      "atoms": 2268,
+      "lennard_jones_kj_mol": {
+        "reference": -5221.271721764515,
+        "reference_wrapped": -5221.271721764519,
+        "cpu": -5221.268202275038,
+        "exact_nearest_image": -5221.271721764257
+      },
+      "lennard_jones_relative_to_exact": {
+        "reference": 4.947003509256817e-14,
+        "reference_wrapped": 5.0166796150209976e-14,
+        "cpu": 6.740674315450319e-07
+      },
+      "pme_coulomb_kj_mol": {
+        "reference": -45387.98090692587,
+        "cpu": -45387.97872206991
+      },
+      "pme_coulomb_reference_vs_cpu_relative": 4.813732675946711e-08,
+      "reference_discrepancy": false
+    },
+    "iii_i_5x3x3": {
+      "box_nm": [
+        [
+          2.225,
+          0.0,
+          0.0
+        ],
+        [
+          -0.6134881178534366,
+          2.273688045720575,
+          0.0
+        ],
+        [
+          1.8939162748813818e-16,
+          2.4726646070802053e-16,
+          3.093
+        ]
+      ],
+      "third_vector_tilted": false,
+      "atoms": 1890,
+      "lennard_jones_kj_mol": {
+        "reference": -4126.483428687234,
+        "reference_wrapped": -4126.4834286872265,
+        "cpu": -4126.4800499379635,
+        "exact_nearest_image": -4126.483428687552
+      },
+      "lennard_jones_relative_to_exact": {
+        "reference": 7.714150586611446e-14,
+        "reference_wrapped": 7.890474028591135e-14,
+        "cpu": 8.187963545673011e-07
+      },
+      "pme_coulomb_kj_mol": {
+        "reference": -39613.80178967978,
+        "cpu": -39613.79607854076
+      },
+      "pme_coulomb_reference_vs_cpu_relative": 1.4417045537296786e-07,
+      "reference_discrepancy": false
+    }
+  },
+  "reference_discrepancy_only_in_tilted_boxes": true
+}

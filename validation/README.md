@@ -236,3 +236,54 @@ CelluloseForge commit (`c0574c3`, clean working tree), OpenMM 8.5, and GROMACS
 material-property validation. GitHub Actions installs OpenMM and GROMACS in a
 dedicated Linux job and runs the four finite/periodic, GLYCAM/CHARMM36
 cross-engine integration tests for every push and pull request.
+
+## Experimental OPLS-AA and OPLS-AA-SEI matrix
+
+`validate_opls_cellulose.py` covers both variants for finite and periodic
+slabs of I-alpha `(010)`, I-beta, II and III-I `(110)`, periodic bulk crystals
+of all four allomorphs, and finite and periodic 36-chain fibrils of I-alpha,
+I-beta and II (36 systems in total):
+
+```bash
+python validation/validate_opls_cellulose.py \
+  --openmm-python /path/to/python-with-openmm \
+  --gmx-double /path/to/gmx_d
+```
+
+It requires mixed-precision `gmx`, double-precision `gmx_d`, `lmp_serial` and
+an OpenMM interpreter, and checks:
+
+- transcription of the Kony et al. (2002) Table 3 OPLS-AA torsions and every
+  explicit bond and angle parameter against the installed GROMACS `oplsaa.ff`;
+- torsion, 1-4 and SEI-pair energies recomputed in NumPy against
+  double-precision GROMACS, and the OPLS-AA-SEI minus OPLS-AA nonbonded energy
+  against the analytic effect of the 1-5/1-6 scaling;
+- bond, angle, torsion, 1-4/SEI-pair, Lennard-Jones and total energies of
+  double-precision GROMACS, OpenMM and LAMMPS on identical, unrounded
+  coordinates (GROMACS reads a full-precision `.g96`; a GRO file would place
+  pairs exactly on the cutoff) with unshifted cutoffs, no dispersion
+  correction and tight Ewald settings: terms within 10^-6 and totals within
+  10^-5 relative;
+- `gmx grompp -maxwarn 0`, minimization and 1 ps NVT of the shipped GROMACS
+  files, minimization and 1 ps with the shipped `run_openmm.py`, and the
+  shipped LAMMPS input.
+
+I-alpha bulk boxes have a tilted third vector. For these boxes the OpenMM 8.6.1
+Reference platform disagreed with an exact nearest-image Lennard-Jones sum by
+0.14--0.40 % in local measurements, while the CPU platform agreed within
+10^-6 and untilted controls agreed on Reference within 10^-13
+(`measure_openmm_tilted_box.py`, `results/openmm_tilted_box.json`). Those
+cases are evaluated on the CPU platform with a 10^-5 tolerance for the OpenMM
+comparison.
+
+LAMMPS is compared in every category it reports: harmonic bonds and the SEI
+pseudo-bond tables (separated with `compute bond`), angles, torsions, pair-style
+Lennard-Jones (ordinary pairs plus 0.5-scaled 1-4 pairs), pair-style plus
+long-range Coulomb, and the total. Its references are the GROMACS terms minus
+the SEI pair contributions, which are recomputed independently in NumPy and
+checked against GROMACS LJ-14/Coulomb-14. Ewald-dependent categories (Coulomb
+and total) are normalized by the magnitude of the total potential, because
+Ewald errors are absolute and a net Coulomb energy can be a small difference
+of large terms. Results: `results/opls_cellulose_matrix.json`, with provenance.
+These checks validate topology construction and engine translation, not
+force-field accuracy.
