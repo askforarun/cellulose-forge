@@ -77,6 +77,7 @@ from cellulose_forge.opls import (
     write_opls_system,
 )
 from cellulose_forge.opls_engines import write_opls_lammps, write_opls_openmm
+from cellulose_forge.polymer_profiles import capability_error
 from cellulose_forge.restraints import (
     ChainRestraints,
     group_mapped_chains,
@@ -99,9 +100,7 @@ _CELLULOSE_ALLOMORPHS = {
     "III-I": "iii_i",
 }
 _CHITIN_ALLOMORPHS = {"alpha": "alpha", "beta": "beta"}
-_CHITIN_SHAPES = {"unit-cell", "bulk", "crystal", "slab"}
 _MANNAN_ALLOMORPHS = {"I": "i"}
-_MANNAN_SHAPES = {"unit-cell", "bulk", "crystal"}
 _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 3.0
 _RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 12.0
 _OPLS_FORCE_FIELDS = frozenset({"opls-aa", "opls-aa-sei"})
@@ -373,12 +372,15 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         return 0 if all(check.ok for check in checks if check.name not in optional_engines) else 1
     if args.command == "build":
         _resolve_md_engines(args, build_parser())
-        if args.polymer == "chitin" and args.force_field in _OPLS_FORCE_FIELDS:
-            name = "OPLS-AA-SEI" if args.force_field == "opls-aa-sei" else "OPLS-AA"
-            build_parser().error(
-                f"experimental {name} chitin output is unavailable because no "
-                "published OPLS GlcNAc parameters have been adopted"
-            )
+        unsupported = capability_error(
+            args.polymer,
+            args.force_field,
+            args.shape,
+            args.md_engines,
+            args.chain_boundary,
+        )
+        if unsupported is not None:
+            build_parser().error(unsupported)
         if args.padding_longitudinal is not None and args.padding_z is not None:
             build_parser().error(
                 "--padding-longitudinal and deprecated --padding-z are mutually exclusive"
@@ -445,7 +447,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
     return 0
 
 
-def _load_definition(  # noqa: PLR0912 - polymer-specific validation is kept together
+def _load_definition(
     args: argparse.Namespace, parser: argparse.ArgumentParser
 ) -> AllomorphDefinition:
     """Resolve the polymer and allomorph options to a crystal definition."""
@@ -460,26 +462,11 @@ def _load_definition(  # noqa: PLR0912 - polymer-specific validation is kept tog
             parser.error(f"mannan allomorphs are {', '.join(_MANNAN_ALLOMORPHS)}")
         if args.o6_conformation is not None:
             parser.error("--o6-conformation applies only to alpha-chitin")
-        if args.shape not in _MANNAN_SHAPES:
-            parser.error("mannan currently supports --shape unit-cell and bulk")
-        if args.force_field != "none":
-            parser.error("mannan force-field output is not implemented; use --force-field none")
         return load_allomorph(_MANNAN_ALLOMORPHS[args.allomorph], polymer="mannan")
     if args.allomorph not in _CHITIN_ALLOMORPHS:
         parser.error(f"chitin allomorphs are {', '.join(_CHITIN_ALLOMORPHS)}")
     if args.o6_conformation is not None and args.allomorph != "alpha":
         parser.error("--o6-conformation applies only to alpha-chitin")
-    if args.shape not in _CHITIN_SHAPES:
-        parser.error("chitin currently supports --shape unit-cell, bulk, and slab")
-    if args.force_field not in {
-        "none",
-        "charmm36",
-        "glycam",
-        "openff",
-        "opls-aa",
-        "opls-aa-sei",
-    }:
-        parser.error("chitin supports --force-field none, charmm36, glycam, or experimental openff")
     if args.force_field == "charmm36" and args.charmm_template is not None:
         parser.error("--charmm-template is not supported for chitin")
     name = _CHITIN_ALLOMORPHS[args.allomorph]
@@ -519,38 +506,6 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
     else:
         engines = ("gromacs",)
 
-    if args.force_field == "none" and engines:
-        parser.error("--md-engine requires a supported force-field build")
-    if args.force_field == "charmm36" and not set(engines) <= {
-        "gromacs",
-        "openmm",
-        "lammps",
-    }:
-        parser.error("CHARMM36 supports --md-engine gromacs, openmm, and lammps")
-    if args.force_field == "glycam" and not engines:
-        parser.error("GLYCAM builds require at least one --md-engine")
-    if (
-        args.polymer == "chitin"
-        and args.force_field == "glycam"
-        and not set(engines)
-        <= {
-            "gromacs",
-            "amber",
-            "openmm",
-            "lammps",
-        }
-    ):
-        parser.error(
-            "chitin GLYCAM supports --md-engine gromacs, openmm, lammps, and finite-chain amber"
-        )
-    if args.force_field == "openff" and not set(engines) <= {"gromacs", "openmm"}:
-        parser.error("experimental OpenFF supports --md-engine gromacs and openmm only")
-    if args.force_field in _OPLS_FORCE_FIELDS and (
-        not engines or not set(engines) <= {"gromacs", "openmm", "lammps"}
-    ):
-        parser.error(
-            "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps"
-        )
     args.md_engines = engines
 
 

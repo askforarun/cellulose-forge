@@ -12,6 +12,7 @@ import hashlib
 import importlib
 import importlib.metadata
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,7 @@ from cellulose_forge.polymer_mapping import (
     minimum_image,
     reduced_periodic_box,
 )
+from cellulose_forge.polymer_profiles import polymer_profile
 from cellulose_forge.run_inputs import dispersion_correction as _dispersion_policy
 from cellulose_forge.run_inputs import write_gromacs_run_inputs
 
@@ -124,35 +126,37 @@ class SagePolymerProfile:
     """Residue graph and validation metadata for one Sage polymer."""
 
     name: str
-    residue_name: str
     internal_atoms: tuple[tuple[str, int], ...]
     internal_bonds: tuple[tuple[str, str], ...]
-    double_bonds: frozenset[frozenset[str]]
+    bond_orders: Mapping[frozenset[str], int]
     stereochemistry: dict[str, str]
-    finite_nonreducing_c3_stereochemistry: str
+    terminal_stereochemistry: Mapping[tuple[str, str], str]
     reference_parity: dict[str, int]
+
+    @property
+    def residue_name(self) -> str:
+        """Return the canonical residue name from the shared polymer profile."""
+        return polymer_profile(self.name).residue_name
 
 
 _POLYMER_PROFILES = {
     "cellulose": SagePolymerProfile(
-        "cellulose",
-        "BGC",
-        _INTERNAL_ATOMS,
-        _INTERNAL_BONDS,
-        frozenset(),
-        _STEREOCHEMISTRY,
-        "S",
-        _REFERENCE_PARITY,
+        name="cellulose",
+        internal_atoms=_INTERNAL_ATOMS,
+        internal_bonds=_INTERNAL_BONDS,
+        bond_orders={},
+        stereochemistry=_STEREOCHEMISTRY,
+        terminal_stereochemistry={("reducing", "C1"): "R", ("nonreducing", "C3"): "S"},
+        reference_parity=_REFERENCE_PARITY,
     ),
     "chitin": SagePolymerProfile(
-        "chitin",
-        "NAG",
-        _CHITIN_INTERNAL_ATOMS,
-        _CHITIN_INTERNAL_BONDS,
-        frozenset({frozenset({"C7", "O7"})}),
-        _STEREOCHEMISTRY,
-        "R",
-        _REFERENCE_PARITY,
+        name="chitin",
+        internal_atoms=_CHITIN_INTERNAL_ATOMS,
+        internal_bonds=_CHITIN_INTERNAL_BONDS,
+        bond_orders={frozenset({"C7", "O7"}): 2},
+        stereochemistry=_STEREOCHEMISTRY,
+        terminal_stereochemistry={("reducing", "C1"): "R", ("nonreducing", "C3"): "R"},
+        reference_parity=_REFERENCE_PARITY,
     ),
 }
 
@@ -243,9 +247,9 @@ def build_sage_molecule(  # noqa: PLR0912
         for name, atomic_number in profile.internal_atoms:
             stereo = profile.stereochemistry.get(name)
             if chain_boundary == "finite" and residue == 1 and name == "C1":
-                stereo = "R"
+                stereo = profile.terminal_stereochemistry["reducing", "C1"]
             if chain_boundary == "finite" and residue == degree_polymerization and name == "C3":
-                stereo = profile.finite_nonreducing_c3_stereochemistry
+                stereo = profile.terminal_stereochemistry["nonreducing", "C3"]
             indices[residue, name] = molecule.add_atom(
                 atomic_number,
                 0,
@@ -286,7 +290,7 @@ def build_sage_molecule(  # noqa: PLR0912
                 },
             )
         for left, right in profile.internal_bonds:
-            order = 2 if frozenset({left, right}) in profile.double_bonds else 1
+            order = profile.bond_orders.get(frozenset({left, right}), 1)
             molecule.add_bond(indices[residue, left], indices[residue, right], order, False)
     for residue in range(1, degree_polymerization):
         molecule.add_bond(indices[residue, "O4"], indices[residue + 1, "C1"], 1, False)
@@ -337,11 +341,7 @@ def validate_sage_stereochemistry(
                     (chain, int(atom.metadata["residue_number"]), atom.name)
                 )
     result: dict[str, object] = {
-        "reference": (
-            "independent beta-D-glucopyranose signed parity"
-            if polymer == "cellulose"
-            else "experimental anhydrous alpha/beta-chitin crystal signed parity"
-        ),
+        "reference": polymer_profile(polymer).validation_reference,
         "centres_checked": mapped.chain_count
         * len({int(atom.metadata["residue_number"]) for atom in molecule.atoms})
         * len(profile.reference_parity),
