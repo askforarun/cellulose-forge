@@ -17,17 +17,21 @@ from typing import Any
 
 import numpy as np
 
-from cellulose_forge.cellulose_ii import cellulose_ii_preferred_acceptor
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
-from cellulose_forge.hydroxyl import HydroxylHydrogenPlacer
 from cellulose_forge.openmm import (
     OPENMM_RUNNER_FILE,
     OPENMM_STATE_FILE,
     chain_axis,
     render_openmm_runner,
     validation_platform_for_box,
+)
+from cellulose_forge.polymer_mapping import (
+    chain_template,
+    map_crystal_to_chain_template,
+    minimum_image,
+    reduced_periodic_box,
 )
 from cellulose_forge.run_inputs import dispersion_correction as _dispersion_policy
 from cellulose_forge.run_inputs import write_gromacs_run_inputs
@@ -109,11 +113,9 @@ _CHITIN_INTERNAL_BONDS = (
 _STEREOCHEMISTRY = {"C1": "S", "C2": "R", "C3": "R", "C4": "S", "C5": "R"}
 _REFERENCE_PARITY = {"C1": 1, "C2": 1, "C3": -1, "C4": 1, "C5": 1}
 _STEREOCENTRES = frozenset(_STEREOCHEMISTRY)
-_MAX_LINK_ANGSTROM = 2.0
 _MINIMUM_DP = 2
 _CHARGE_TOLERANCE_E = 1.0e-6
 _BOX_DEGENERACY_TOLERANCE = 1.0e-12
-_MISSING_II_HYDROGENS = frozenset({"HO2", "HO3", "HO6"})
 
 
 @dataclass(frozen=True)
@@ -153,43 +155,6 @@ _POLYMER_PROFILES = {
     ),
 }
 
-_INTERNAL_REFERENCE = {
-    "C1": (2.720, 11.610, 12.966),
-    "H1": (2.053, 11.447, 12.268),
-    "O5": (3.942, 12.030, 12.413),
-    "C5": (3.939, 13.328, 11.848),
-    "H5": (3.382, 13.347, 11.042),
-    "C6": (5.429, 13.601, 11.483),
-    "H62": (5.837, 12.780, 11.164),
-    "H61": (5.907, 13.890, 12.273),
-    "O6": (5.535, 14.593, 10.478),
-    "HO6": (6.378, 14.431, 10.000),
-    "C4": (3.454, 14.380, 12.860),
-    "H4": (4.094, 14.469, 13.594),
-    "C3": (2.078, 13.975, 13.392),
-    "H3": (1.435, 13.946, 12.653),
-    "O3": (1.602, 14.853, 14.397),
-    "HO3": (1.714, 15.767, 14.053),
-    "C2": (2.194, 12.595, 14.004),
-    "H2": (2.841, 12.639, 14.743),
-    "O2": (0.944, 12.153, 14.530),
-    "HO2": (1.042, 11.190, 14.695),
-    "O4": (3.368, 15.606, 12.110),
-}
-_REDUCING_REFERENCE = {
-    "HO1": (3.163, 4.521, 12.573),
-    "O1": (3.479, 5.230, 12.007),
-    "C1": (3.658, 6.420, 12.839),
-    "H1": (4.325, 6.257, 13.537),
-    "O5": (2.436, 6.840, 13.392),
-}
-_NONREDUCING_REFERENCE = {
-    "O4": (3.368, 36.366, 12.110),
-    "C4": (3.454, 35.140, 12.860),
-    "H4": (4.094, 35.229, 13.594),
-    "HO4": (2.949, 37.032, 12.679),
-}
-
 
 @dataclass(frozen=True)
 class SageBuild:
@@ -206,19 +171,6 @@ class SageBuild:
 def dispersion_correction_for_shape(shape: str) -> bool:
     """Return the shared dispersion policy for an OpenFF Sage build."""
     return _dispersion_policy("openff", shape)
-
-
-def reduced_periodic_box(box: FloatArray) -> FloatArray:
-    """Return an equivalent triclinic lattice in OpenMM reduced form."""
-    a, b, c = np.asarray(box, dtype=np.float64).copy()
-    if abs(a[0]) < _BOX_DEGENERACY_TOLERANCE or abs(b[1]) < _BOX_DEGENERACY_TOLERANCE:
-        raise ValueError("OpenFF output requires a non-degenerate triclinic box")
-    c -= b * round(float(c[1] / b[1]))
-    c -= a * round(float(c[0] / a[0]))
-    b -= a * round(float(b[0] / a[0]))
-    reduced = np.vstack((a, b, c))
-    reduced.setflags(write=False)
-    return reduced
 
 
 def periodic_box_heights(box: FloatArray) -> tuple[float, float, float]:
@@ -262,99 +214,6 @@ def require_openff() -> tuple[Any, Any, Any]:
             "install it with 'conda env create -f environment-openff.yml'"
         ) from error
     return toolkit.ForceField, toolkit.Molecule, toolkit.Topology
-
-
-def _lookup(crystal: BulkCrystal, chain: int, residue: int) -> dict[str, FloatArray]:
-    return {
-        name: xyz
-        for name, xyz, atom_chain, atom_residue in zip(
-            crystal.atom_labels,
-            crystal.cartesian_coordinates,
-            crystal.chain_numbers,
-            crystal.residue_numbers,
-            strict=True,
-        )
-        if atom_chain == chain and atom_residue == residue
-    }
-
-
-def _minimum_image(delta: FloatArray, box: FloatArray) -> FloatArray:
-    fractional = delta @ np.linalg.inv(box)
-    fractional -= np.round(fractional)
-    return np.asarray(fractional @ box, dtype=np.float64)
-
-
-def _residue_order(crystal: BulkCrystal, chain: int, periodic: bool) -> tuple[int, ...]:
-    residues = tuple(
-        dict.fromkeys(
-            residue
-            for atom_chain, residue in zip(
-                crystal.chain_numbers, crystal.residue_numbers, strict=True
-            )
-            if atom_chain == chain
-        )
-    )
-    lookups = {residue: _lookup(crystal, chain, residue) for residue in residues}
-    successors: dict[int, int] = {}
-    for residue in residues:
-        candidates = []
-        for other in residues:
-            if other == residue:
-                continue
-            delta = lookups[other]["C1"] - lookups[residue]["O4"]
-            if periodic:
-                delta = _minimum_image(delta, crystal.basis_vectors)
-            candidates.append((float(np.linalg.norm(delta)), other))
-        distance, other = min(candidates)
-        if distance <= _MAX_LINK_ANGSTROM:
-            successors[residue] = other
-    if periodic:
-        start = residues[0]
-    else:
-        predecessors = set(successors.values())
-        starts = [residue for residue in residues if residue not in predecessors]
-        if len(starts) != 1:
-            raise ValueError(f"chain {chain} does not form one finite cellulose path")
-        start = starts[0]
-    order = [start]
-    while len(order) < len(residues) and order[-1] in successors:
-        following = successors[order[-1]]
-        if following in order:
-            break
-        order.append(following)
-    if len(order) != len(residues):
-        raise ValueError(f"chain {chain} cellulose connectivity is incomplete")
-    if periodic and successors.get(order[-1]) != order[0]:
-        raise ValueError(f"chain {chain} cellulose connectivity is not cyclic")
-    return tuple(order)
-
-
-def _rigid_transform(
-    reference: dict[str, tuple[float, float, float]],
-    target: dict[str, FloatArray],
-    anchors: tuple[str, str, str],
-) -> tuple[FloatArray, FloatArray, FloatArray]:
-    source = np.vstack([reference[name] for name in anchors])
-    destination = np.vstack([target[name] for name in anchors])
-    source_center = source.mean(axis=0)
-    destination_center = destination.mean(axis=0)
-    left, _, right = np.linalg.svd((source - source_center).T @ (destination - destination_center))
-    rotation = left @ right
-    if np.linalg.det(rotation) < 0:
-        left[:, -1] *= -1
-        rotation = left @ right
-    return rotation, source_center, destination_center
-
-
-def _transform(
-    coordinate: tuple[float, float, float],
-    transform: tuple[FloatArray, FloatArray, FloatArray],
-) -> FloatArray:
-    rotation, source, destination = transform
-    return np.asarray(
-        (np.asarray(coordinate) - source) @ rotation + destination,
-        dtype=np.float64,
-    )
 
 
 def _polymer_profile(polymer: str) -> SagePolymerProfile:
@@ -444,110 +303,11 @@ def build_sage_molecule(  # noqa: PLR0912
     return molecule
 
 
-def _mapped_coordinates(
-    crystal: BulkCrystal,
-    molecule: Any,
-    boundary: str,
-    profile: SagePolymerProfile | None = None,
-) -> GlycamMappedSystem:
-    profile = profile or _polymer_profile("cellulose")
-    periodic = boundary == "periodic"
-    chain_numbers = tuple(dict.fromkeys(crystal.chain_numbers))
-    output: list[FloatArray] = []
-    names: list[str] = []
-    residues: list[int] = []
-    chains: list[int] = []
-    placer = (
-        HydroxylHydrogenPlacer(
-            crystal.atom_labels, crystal.cartesian_coordinates, crystal.basis_vectors
-        )
-        if crystal.allomorph == "II"
-        else None
-    )
-    for chain in chain_numbers:
-        order = _residue_order(crystal, chain, periodic)
-        targets = {
-            index + 1: _lookup(crystal, chain, residue) for index, residue in enumerate(order)
-        }
-        reducing = (
-            _rigid_transform(_REDUCING_REFERENCE, targets[1], ("C1", "H1", "O5"))
-            if not periodic
-            else None
-        )
-        nonreducing = (
-            _rigid_transform(
-                _NONREDUCING_REFERENCE,
-                targets[len(order)],
-                ("O4", "C4", "H4"),
-            )
-            if not periodic
-            else None
-        )
-        hydrogen_transforms = (
-            {
-                residue: _rigid_transform(_INTERNAL_REFERENCE, target, ("C1", "C3", "C5"))
-                for residue, target in targets.items()
-            }
-            if crystal.allomorph == "II"
-            else {}
-        )
-        for atom in molecule.atoms:
-            residue = int(atom.metadata["residue_number"])
-            name = atom.name
-            target = targets[residue]
-            if name in {"O1", "HO1"}:
-                assert reducing is not None
-                coordinate = _transform(_REDUCING_REFERENCE[name], reducing)
-            elif name == "HO4":
-                assert nonreducing is not None
-                coordinate = _transform(_NONREDUCING_REFERENCE[name], nonreducing)
-            elif crystal.allomorph == "II" and name in _MISSING_II_HYDROGENS:
-                oxygen = "O" + name[2]
-                carbon = "C" + name[2]
-                transform = hydrogen_transforms[residue]
-                aligned_h = _transform(_INTERNAL_REFERENCE[name], transform)
-                assert placer is not None
-                placer.request(
-                    len(output),
-                    target[carbon],
-                    target[oxygen],
-                    aligned_h,
-                    donor=oxygen,
-                    preferred_acceptor="O5" if oxygen == "O3" else None,
-                    preferred_acceptor_coordinate=cellulose_ii_preferred_acceptor(
-                        crystal,
-                        chain_number=chain,
-                        residue_number=order[residue - 1],
-                        donor=oxygen,
-                    ),
-                )
-                coordinate = np.zeros(3)
-            else:
-                coordinate = target[name]
-            output.append(coordinate)
-            names.append(name)
-            residues.append(residue)
-            chains.append(chain)
-    if placer is not None:
-        for index, coordinate in placer.resolve().items():
-            output[index] = coordinate
-    coordinates = np.vstack(output)
-    coordinates.setflags(write=False)
-    return GlycamMappedSystem(
-        atom_names=tuple(names),
-        residue_names=tuple(profile.residue_name for _ in names),
-        residue_numbers=tuple(residues),
-        chain_numbers=tuple(chains),
-        cartesian_coordinates=coordinates,
-        basis_vectors=crystal.basis_vectors,
-    )
-
-
 def _centre_parity(positions: FloatArray, atom: Any, box: FloatArray) -> int:
     neighbours = sorted(atom.bonded_atoms, key=lambda item: (item.symbol, item.name))[:3]
     centre = positions[atom.molecule_atom_index]
     vectors = [
-        _minimum_image(positions[item.molecule_atom_index] - centre, box) for item in neighbours
+        minimum_image(positions[item.molecule_atom_index] - centre, box) for item in neighbours
     ]
     value = float(np.dot(vectors[0], np.cross(vectors[1], vectors[2])))
     if not np.isfinite(value) or value == 0.0:
@@ -611,7 +371,14 @@ def build_sage_system(
         }
     )
     molecule = build_sage_molecule(degree, chain_boundary, selected_polymer)
-    mapped = _mapped_coordinates(crystal, molecule, chain_boundary, profile)
+    mapped = map_crystal_to_chain_template(
+        crystal,
+        chain_template(
+            (atom.name, int(atom.metadata["residue_number"])) for atom in molecule.atoms
+        ),
+        chain_boundary,
+        profile.residue_name,
+    )
     unit = importlib.import_module("openff.units").unit
 
     molecule.add_conformer(mapped.cartesian_coordinates[: molecule.n_atoms] * unit.angstrom)

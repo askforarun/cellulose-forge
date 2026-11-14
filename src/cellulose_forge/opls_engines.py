@@ -58,6 +58,7 @@ from cellulose_forge.opls import (
     nonbonded_exceptions,
     rb_coefficients,
 )
+from cellulose_forge.polymer_mapping import reduced_periodic_box
 
 _ANGSTROM_PER_NM = 10.0
 # Coulomb constant of LAMMPS real units (force->qqr2e), kcal mol-1 angstrom e-2.
@@ -84,8 +85,6 @@ def validation_platform(build: OplsBuild) -> str:
 
 def reduced_box_angstrom(build: OplsBuild) -> NDArray[np.float64]:
     """Return the box in the reduced form required by OpenMM and LAMMPS."""
-    from cellulose_forge.openff_sage import reduced_periodic_box  # noqa: PLC0415
-
     return np.asarray(reduced_periodic_box(build.mapped.basis_vectors), dtype=np.float64)
 
 

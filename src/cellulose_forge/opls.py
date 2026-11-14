@@ -37,6 +37,7 @@ import numpy as np
 from cellulose_forge.geometry import BulkCrystal
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
 from cellulose_forge.gromacs import write_gro
+from cellulose_forge.polymer_mapping import chain_template, map_crystal_to_chain_template
 
 KCAL_TO_KJ = 4.184
 VARIANTS = ("opls-aa", "opls-aa-sei")
@@ -221,7 +222,7 @@ class _Atom:
 
 @dataclass(frozen=True)
 class _Chain:
-    """Lightweight chain graph accepted by the shared coordinate mapper."""
+    """Lightweight OPLS chain graph (atoms in topology order plus bonds)."""
 
     atoms: tuple[_Atom, ...]
     bonds: tuple[tuple[int, int], ...]
@@ -565,10 +566,6 @@ def rb_coefficients(fourier_kcal: tuple[float, float, float]) -> tuple[float, ..
     return (v2 + (v1 + v3) / 2.0, (-v1 + 3.0 * v3) / 2.0, -v2, -2.0 * v3, 0.0, 0.0)
 
 
-def _chain_stand_in(topology: OplsTopology) -> _Chain:
-    return _Chain(topology.atoms, topology.bonds)
-
-
 @dataclass(frozen=True)
 class OplsBuild:
     topology: OplsTopology
@@ -576,9 +573,7 @@ class OplsBuild:
 
 
 def build_opls_system(crystal: BulkCrystal, variant: str, chain_boundary: str) -> OplsBuild:
-    """Map a crystal onto repeated OPLS chains with the shared cellulose mapper."""
-    from cellulose_forge.openff_sage import _mapped_coordinates  # noqa: PLC0415
-
+    """Map a crystal onto repeated OPLS chains with the shared polymer mapper."""
     first_chain = next(iter(crystal.chain_numbers))
     degree = len(
         {
@@ -588,7 +583,12 @@ def build_opls_system(crystal: BulkCrystal, variant: str, chain_boundary: str) -
         }
     )
     topology = build_opls_topology(variant, degree, chain_boundary)
-    mapped = _mapped_coordinates(crystal, _chain_stand_in(topology), chain_boundary)
+    mapped = map_crystal_to_chain_template(
+        crystal,
+        chain_template((atom.name, atom.residue) for atom in topology.atoms),
+        chain_boundary,
+        "BGC",
+    )
     return OplsBuild(topology, mapped)
 
 
