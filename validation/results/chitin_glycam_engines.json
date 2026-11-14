@@ -1,7 +1,7 @@
 {
   "provenance": {
-    "cellulose_forge_commit": "652ff761f08a0f8a715d0ae360f65eaad3c964df",
-    "tracked_tree_clean": false,
+    "cellulose_forge_commit": "222b89b45bc7b8bfd4afd9e08fad5d5d0dd8e0af",
+    "tracked_tree_clean": true,
     "software_versions": {
       "numpy": "2.2.6"
     }
@@ -23,7 +23,7 @@
       "explicit_mixed_scaling_pairs_per_chain": 6,
       "grompp_maxwarn": 0,
       "minimization_completed": true,
-      "nvt_completed_ps": 1,
+      "nvt_completed_ps": 1.0,
       "periodic_bond_validation": {
         "mapped_geometry": {
           "bond_count": 144,
@@ -47,7 +47,7 @@
       "explicit_mixed_scaling_pairs_per_chain": 6,
       "grompp_maxwarn": 0,
       "minimization_completed": true,
-      "nvt_completed_ps": 1,
+      "nvt_completed_ps": 1.0,
       "periodic_bond_validation": {
         "mapped_geometry": {
           "bond_count": 48,
@@ -71,7 +71,7 @@
       "explicit_mixed_scaling_pairs_per_chain": 6,
       "grompp_maxwarn": 0,
       "minimization_completed": true,
-      "nvt_completed_ps": 1,
+      "nvt_completed_ps": 1.0,
       "periodic_bond_validation": null,
       "status": "passed"
     },
@@ -84,7 +84,7 @@
       "explicit_mixed_scaling_pairs_per_chain": 6,
       "grompp_maxwarn": 0,
       "minimization_completed": true,
-      "nvt_completed_ps": 1,
+      "nvt_completed_ps": 1.0,
       "periodic_bond_validation": {
         "mapped_geometry": {
           "bond_count": 90,
@@ -108,7 +108,7 @@
       "explicit_mixed_scaling_pairs_per_chain": 6,
       "grompp_maxwarn": 0,
       "minimization_completed": true,
-      "nvt_completed_ps": 1,
+      "nvt_completed_ps": 1.0,
       "periodic_bond_validation": {
         "mapped_geometry": {
           "bond_count": 48,
@@ -132,7 +132,7 @@
       "explicit_mixed_scaling_pairs_per_chain": 6,
       "grompp_maxwarn": 0,
       "minimization_completed": true,
-      "nvt_completed_ps": 1,
+      "nvt_completed_ps": 1.0,
       "periodic_bond_validation": null,
       "status": "passed"
     }
@@ -144,7 +144,7 @@
     "atom_count": 1320,
     "chain_count": 8,
     "minimization_completed": true,
-    "nvt_completed_ps": 1,
+    "nvt_completed_ps": 1.0,
     "status": "passed"
   },
   "amber_gromacs_energy_comparison": {

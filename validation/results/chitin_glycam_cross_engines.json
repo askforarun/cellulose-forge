@@ -1,7 +1,7 @@
 {
   "provenance": {
-    "cellulose_forge_commit": "652ff761f08a0f8a715d0ae360f65eaad3c964df",
-    "tracked_tree_clean": false,
+    "cellulose_forge_commit": "222b89b45bc7b8bfd4afd9e08fad5d5d0dd8e0af",
+    "tracked_tree_clean": true,
     "software_versions": {
       "numpy": "2.2.6"
     }
