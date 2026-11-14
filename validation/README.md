@@ -22,7 +22,7 @@ batch generation without requiring AmberTools or GROMACS.
 ## Experimental OpenFF Sage chitin validation
 
 `validate_chitin_openff.py` covers anhydrous alpha- and beta-chitin periodic
-bulk crystals and finite/periodic `(100)` slabs. It checks the independently
+bulk crystals and finite/periodic `(100)` slabs. It checks the directly
 constructed GlcNAc graph, neutral and translationally equivalent NAGL charges,
 C1--C5 stereochemistry with mirror and local-inversion negative controls,
 term-resolved OpenMM/GROMACS energies, `grompp -maxwarn 0`, minimization, and

@@ -126,6 +126,7 @@ class SagePolymerProfile:
     internal_bonds: tuple[tuple[str, str], ...]
     double_bonds: frozenset[frozenset[str]]
     stereochemistry: dict[str, str]
+    finite_nonreducing_c3_stereochemistry: str
     reference_parity: dict[str, int]
 
 
@@ -137,6 +138,7 @@ _POLYMER_PROFILES = {
         _INTERNAL_BONDS,
         frozenset(),
         _STEREOCHEMISTRY,
+        "S",
         _REFERENCE_PARITY,
     ),
     "chitin": SagePolymerProfile(
@@ -146,6 +148,7 @@ _POLYMER_PROFILES = {
         _CHITIN_INTERNAL_BONDS,
         frozenset({frozenset({"C7", "O7"})}),
         _STEREOCHEMISTRY,
+        "R",
         _REFERENCE_PARITY,
     ),
 }
@@ -382,7 +385,7 @@ def build_sage_molecule(  # noqa: PLR0912
             if chain_boundary == "finite" and residue == 1 and name == "C1":
                 stereo = "R"
             if chain_boundary == "finite" and residue == degree_polymerization and name == "C3":
-                stereo = "S"
+                stereo = profile.finite_nonreducing_c3_stereochemistry
             indices[residue, name] = molecule.add_atom(
                 atomic_number,
                 0,

@@ -15,8 +15,8 @@ from hydroxyl_contacts import modelled_hydroxyl_contacts
 
 from cellulose_forge import cli
 from cellulose_forge.cli import main
-from cellulose_forge.crystallography import load_allomorph
-from cellulose_forge.geometry import build_bulk_crystal
+from cellulose_forge.crystallography import MillerIndex, load_allomorph
+from cellulose_forge.geometry import build_bulk_crystal, build_chain_parallel_slab
 from cellulose_forge.glycam_mapping import map_crystal_to_periodic_glycam
 from cellulose_forge.openff_sage import (
     _REFERENCE_PARITY,
@@ -146,6 +146,59 @@ def test_chitin_stereochemistry_rejects_mirror_and_local_inversion() -> None:
             replace(build.mapped, cartesian_coordinates=inverted),
             "chitin",
         )
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+@pytest.mark.parametrize("polymer", ["cellulose", "chitin"])
+@pytest.mark.parametrize("boundary", ["finite", "periodic"])
+def test_declared_stereochemistry_matches_mapped_3d_coordinates(
+    polymer: str, boundary: str
+) -> None:
+    """Every graph label must agree with stereochemistry perceived from its coordinates."""
+    chem = importlib.import_module("rdkit.Chem")
+    point_type = importlib.import_module("rdkit.Geometry").Point3D
+    if polymer == "cellulose":
+        definition = load_allomorph("i_beta")
+        face = MillerIndex(1, 1, 0)
+    else:
+        definition = load_allomorph("beta", polymer="chitin")
+        face = MillerIndex(1, 0, 0)
+    crystal = build_chain_parallel_slab(
+        definition,
+        face,
+        layers=2,
+        chains_per_layer=2,
+        degree_polymerization=4,
+        vacuum=30.0,
+        padding_z=12.0 if boundary == "finite" else 0.0,
+        chain_boundary=boundary,
+    )
+    build = build_sage_system(crystal, boundary, polymer)
+    rdkit_molecule = build.molecule.to_rdkit()
+    conformer = chem.Conformer(rdkit_molecule.GetNumAtoms())
+    for index, coordinate in enumerate(
+        build.mapped.cartesian_coordinates[: rdkit_molecule.GetNumAtoms()]
+    ):
+        conformer.SetAtomPosition(index, point_type(*map(float, coordinate)))
+    rdkit_molecule.RemoveAllConformers()
+    rdkit_molecule.AddConformer(conformer)
+    for atom in rdkit_molecule.GetAtoms():
+        atom.SetChiralTag(chem.ChiralType.CHI_UNSPECIFIED)
+        if atom.HasProp("_CIPCode"):
+            atom.ClearProp("_CIPCode")
+    chem.AssignStereochemistryFrom3D(rdkit_molecule, confId=0, replaceExistingTags=True)
+
+    mismatches = []
+    for index, atom in enumerate(build.molecule.atoms):
+        if atom.stereochemistry is None:
+            continue
+        perceived = rdkit_molecule.GetAtomWithIdx(index)
+        actual = perceived.GetProp("_CIPCode") if perceived.HasProp("_CIPCode") else None
+        if actual != atom.stereochemistry:
+            mismatches.append(
+                (int(atom.metadata["residue_number"]), atom.name, atom.stereochemistry, actual)
+            )
+    assert mismatches == []
 
 
 @pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")

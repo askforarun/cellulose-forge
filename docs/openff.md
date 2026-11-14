@@ -12,8 +12,8 @@ The backend constructs the beta-(1->4)-linked D-glucan or GlcNAc molecular
 graph directly from CelluloseForge atom names and connectivity. Charges are assigned at build time
 with NAGL model `openff-gnn-am1bcc-1.0.0.pt`. The build fails unless the chain
 is neutral, equivalent atoms in periodic residues have identical charges, and
-every C1--C5 stereocentre has the independently recorded parity for the
-selected polymer.
+every C1--C5 stereocentre agrees with the independent cellulose reference or,
+for chitin, with parity derived from the experimental crystal coordinates.
 
 ## Scope
 
