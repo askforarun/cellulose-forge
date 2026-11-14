@@ -2,7 +2,7 @@
 
 All notable changes to CelluloseForge are documented in this file.
 
-## Unreleased
+## 1.2.0 - 2026-11-14
 
 ### Added
 

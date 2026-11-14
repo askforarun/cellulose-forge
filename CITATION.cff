@@ -2,7 +2,8 @@ cff-version: 1.2.0
 message: "If you use this software, please cite the software release and the underlying Cellulose-Builder publication."
 title: "CelluloseForge"
 type: software
-version: 1.1.2
+version: 1.2.0
+date-released: 2026-11-14
 license: GPL-3.0-or-later
 identifiers:
   - type: doi

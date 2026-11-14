@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cellulose-forge"
-version = "1.1.2"
-description = "Build crystalline cellulose structures for molecular simulation."
+version = "1.2.0"
+description = "Crystallography-first builder for simulation-ready cellulose and chitin crystals with cross-engine validated GROMACS, OpenMM, LAMMPS and Amber output."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "GPL-3.0-or-later" }
@@ -14,9 +14,13 @@ authors = [
 ]
 keywords = [
   "cellulose",
+  "chitin",
   "crystallography",
-  "gromacs",
   "molecular-dynamics",
+  "gromacs",
+  "openmm",
+  "lammps",
+  "force-field",
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -58,6 +62,18 @@ Changelog = "https://github.com/askforarun/cellulose-forge/blob/main/CHANGELOG.m
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cellulose_forge"]
+
+# The source distribution is an explicit allowlist: the working tree also holds
+# literature, manuscripts and local outputs that must never be published.
+[tool.hatch.build.targets.sdist]
+only-include = [
+  "src/cellulose_forge",
+  "README.md",
+  "LICENSE",
+  "CHANGELOG.md",
+  "CITATION.cff",
+  "pyproject.toml",
+]
 
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers"

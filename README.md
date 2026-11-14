@@ -18,7 +18,7 @@
 
 </div>
 
-![CelluloseForge overview showing supported cellulose structures and GROMACS force-field outputs](docs/assets/celluloseforge-overview.png)
+![CelluloseForge overview showing supported cellulose structures and GROMACS force-field outputs](https://raw.githubusercontent.com/askforarun/cellulose-forge/main/docs/assets/celluloseforge-overview.png)
 
 CelluloseForge builds atomistic crystalline polysaccharide structures directly
 from primary diffraction data: cellulose and chitin crystals, coordinate-only
@@ -29,20 +29,20 @@ GROMACS, OpenMM, LAMMPS and (for finite GLYCAM chains) Amber, and checks that
 every engine evaluates the **same energy** for the same model.
 
 > [!IMPORTANT]
-> ## 🚧 New on `main`, not yet released
+> ## 🚀 New in 1.2.0, now on PyPI
 >
-> The development version adds **OpenMM output** for GLYCAM06j-1 and CHARMM36
+> `pip install cellulose-forge`. This release adds **OpenMM output** for GLYCAM06j-1 and CHARMM36
 > with finite or covalently periodic chains; **native Amber output** for finite
 > GLYCAM chains; experimental **LAMMPS output**; **CHARMM36 chitin**;
 > coordinate-only **Mannan I**; I-beta **18- and 24-chain fibril presets** and
 > **custom I-beta fibril profiles**; an experimental **OpenFF Sage 2.3**
 > backend; experimental **OPLS-AA and OPLS-AA-SEI** for GROMACS, OpenMM and
-> LAMMPS; and starting **run inputs for every engine**. These will be part of
-> the next release; until then, install from `main` to use them.
-> **CHARMM/PSF output** and **odd-DP chains** remain planned. Feedback and
+> LAMMPS; **cross-engine energy validation** for every force field; and
+> starting **run inputs for every engine**. **CHARMM/PSF output** and
+> **odd-DP chains** remain planned. Feedback and
 > contributions are welcome.
 
-> **Release status:** CelluloseForge 1.1.2 is the current stable release. Its
+> **Release status:** CelluloseForge 1.2.0 is the current stable release. Its
 > supported and validated boundaries are intentionally narrower than the
 > long-term project plan. Every supported combination is validated as
 > described in [Validation](#validation).
@@ -124,10 +124,10 @@ Simulation engines by force field and chain boundary:
 
 | Engine | GLYCAM06j-1 | CHARMM36 | OpenFF Sage (experimental) | OPLS-AA, OPLS-AA-SEI (experimental) | Status |
 |---|---|---|---|---|---|
-| GROMACS | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | Released (1.1.2) for GLYCAM and CHARMM36 |
-| OpenMM | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | On `main` |
-| LAMMPS | Finite and periodic | Finite and periodic | Not available | Finite and periodic | Experimental on `main` |
-| Amber | Finite only | Not available | Not available | Not available | On `main` |
+| GROMACS | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | Released |
+| OpenMM | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | Released (1.2.0) |
+| LAMMPS | Finite and periodic | Finite and periodic | Not available | Finite and periodic | Experimental (1.2.0) |
+| Amber | Finite only | Not available | Not available | Not available | Released (1.2.0) |
 
 Native Amber output cannot represent covalently periodic chains because Amber
 does not minimum-image bonded terms across the box boundary; use GROMACS or
@@ -198,8 +198,20 @@ CelluloseForge reads the official GROMACS CHARMM36 files directly.
 
 ## Installation
 
-CelluloseForge is not yet released on PyPI. Install it from the GitHub
-repository.
+### Install from PyPI
+
+```bash
+python -m pip install cellulose-forge
+cellulose-forge --help
+```
+
+This installs the coordinate builder and the CHARMM36, OPLS-AA and
+OPLS-AA-SEI backends, which need only NumPy (CHARMM36 also needs a one-time
+`cellulose-forge forcefield install charmm36`). GLYCAM06j-1 additionally needs
+AmberTools and ParmEd, OpenMM output needs `openmm`
+(`pip install "cellulose-forge[openmm]"`), and OpenFF Sage needs the conda
+environment described below. To work from the source repository instead, use
+one of the following.
 
 ### Coordinate-only installation with uv
 
