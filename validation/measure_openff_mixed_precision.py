@@ -91,9 +91,7 @@ def _angle_terms(system: openmm.System, xyz: np.ndarray) -> np.ndarray:
     per_radian2 = openmm.unit.kilojoule_per_mole / openmm.unit.radian**2
     constant = np.array([row[4].value_in_unit(per_radian2) for row in rows])
     left, right = xyz[i] - xyz[j], xyz[k] - xyz[j]
-    theta = np.arctan2(
-        np.linalg.norm(np.cross(left, right), axis=1), np.sum(left * right, axis=1)
-    )
+    theta = np.arctan2(np.linalg.norm(np.cross(left, right), axis=1), np.sum(left * right, axis=1))
     return np.asarray(0.5 * constant * (theta - theta0) ** 2)
 
 

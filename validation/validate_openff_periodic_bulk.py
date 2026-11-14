@@ -106,12 +106,7 @@ def _with_policy(mdp: str, *, periodic: bool, dispersion: bool) -> str:
 
 def _replication(allomorph: str) -> tuple[int, int, int]:
     vectors = load_allomorph(allomorph).unit_cell.vectors()
-    candidates = (
-        (i, j, k)
-        for i in range(1, 9)
-        for j in range(1, 9)
-        for k in range(1, 9)
-    )
+    candidates = ((i, j, k) for i in range(1, 9) for j in range(1, 9) for k in range(1, 9))
     valid = [
         replication
         for replication in candidates
@@ -360,10 +355,7 @@ def _run_openmm(
 def validate_case(allomorph: str) -> dict[str, object]:
     replication = _replication(allomorph)
     crystal = build_bulk_crystal(load_allomorph(allomorph), replication)
-    if (
-        min(periodic_box_heights(crystal.basis_vectors))
-        <= MINIMUM_ALLOWED_EDGE_ANGSTROM
-    ):
+    if min(periodic_box_heights(crystal.basis_vectors)) <= MINIMUM_ALLOWED_EDGE_ANGSTROM:
         raise RuntimeError("bulk box does not exceed twice the 9 A cutoff")
     build = build_sage_system(crystal, "periodic")
     interchange = _interchange(build)
@@ -385,9 +377,7 @@ def validate_case(allomorph: str) -> dict[str, object]:
         "replication": list(replication),
         "box_edges_angstrom": [float(np.linalg.norm(vector)) for vector in crystal.basis_vectors],
         "shortest_lattice_vector_angstrom": shortest_lattice_vector(crystal.basis_vectors),
-        "perpendicular_box_heights_angstrom": list(
-            periodic_box_heights(crystal.basis_vectors)
-        ),
+        "perpendicular_box_heights_angstrom": list(periodic_box_heights(crystal.basis_vectors)),
         "reduced_box_diagonal_angstrom": list(np.diag(reduced_periodic_box(crystal.basis_vectors))),
         "atom_count": build.mapped.atom_count,
         "stereochemistry": build.stereochemistry,

@@ -19,9 +19,7 @@ _ZERO_BOX_COMPONENT_TOLERANCE = 1.0e-12
 def _gro_box_line(basis_vectors: FloatArray) -> str:
     vectors = basis_vectors * _ANGSTROM_TO_NANOMETER
     a, b, c = vectors
-    values: Sequence[np.float64] = (
-        a[0], b[1], c[2], a[1], a[2], b[0], b[2], c[0], c[1]
-    )
+    values: Sequence[np.float64] = (a[0], b[1], c[2], a[1], a[2], b[0], b[2], c[0], c[1])
     if all(abs(value) < _ZERO_BOX_COMPONENT_TOLERANCE for value in values[3:]):
         values = values[:3]
     return "".join(f"{value:10.5f}" for value in values)
@@ -100,9 +98,7 @@ def write_repeated_chain_topology(  # noqa: PLR0913
             if free_chain_count:
                 molecule_rows.append(f"{template_molecule_name}  {free_chain_count}")
             if restrained_chain_count:
-                molecule_rows.append(
-                    f"{restrained_molecule_name}  {restrained_chain_count}"
-                )
+                molecule_rows.append(f"{restrained_molecule_name}  {restrained_chain_count}")
             lines[index : index + 1] = molecule_rows
             replaced = True
             break

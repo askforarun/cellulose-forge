@@ -50,35 +50,69 @@ VALIDATION_SCOPE = (
 
 # (name, element) in the same per-residue order as the OpenFF builder.
 _RESIDUE_ATOMS = (
-    ("C1", "C"), ("H1", "H"), ("O5", "O"), ("C5", "C"), ("H5", "H"), ("C6", "C"),
-    ("H62", "H"), ("H61", "H"), ("O6", "O"), ("HO6", "H"), ("C4", "C"), ("H4", "H"),
-    ("C3", "C"), ("H3", "H"), ("O3", "O"), ("HO3", "H"), ("C2", "C"), ("H2", "H"),
-    ("O2", "O"), ("HO2", "H"), ("O4", "O"),
+    ("C1", "C"),
+    ("H1", "H"),
+    ("O5", "O"),
+    ("C5", "C"),
+    ("H5", "H"),
+    ("C6", "C"),
+    ("H62", "H"),
+    ("H61", "H"),
+    ("O6", "O"),
+    ("HO6", "H"),
+    ("C4", "C"),
+    ("H4", "H"),
+    ("C3", "C"),
+    ("H3", "H"),
+    ("O3", "O"),
+    ("HO3", "H"),
+    ("C2", "C"),
+    ("H2", "H"),
+    ("O2", "O"),
+    ("HO2", "H"),
+    ("O4", "O"),
 )
 _RESIDUE_BONDS = (
-    ("C1", "H1"), ("C1", "O5"), ("C1", "C2"), ("O5", "C5"), ("C5", "H5"), ("C5", "C6"),
-    ("C5", "C4"), ("C6", "H62"), ("C6", "H61"), ("C6", "O6"), ("O6", "HO6"),
-    ("C4", "H4"), ("C4", "C3"), ("C4", "O4"), ("C3", "H3"), ("C3", "O3"), ("C3", "C2"),
-    ("O3", "HO3"), ("C2", "H2"), ("C2", "O2"), ("O2", "HO2"),
+    ("C1", "H1"),
+    ("C1", "O5"),
+    ("C1", "C2"),
+    ("O5", "C5"),
+    ("C5", "H5"),
+    ("C5", "C6"),
+    ("C5", "C4"),
+    ("C6", "H62"),
+    ("C6", "H61"),
+    ("C6", "O6"),
+    ("O6", "HO6"),
+    ("C4", "H4"),
+    ("C4", "C3"),
+    ("C4", "O4"),
+    ("C3", "H3"),
+    ("C3", "O3"),
+    ("C3", "C2"),
+    ("O3", "HO3"),
+    ("C2", "H2"),
+    ("C2", "O2"),
+    ("O2", "HO2"),
 )
 
 # OPLS-AA atom types (GROMACS oplsaa.ff ffnonbonded.itp); charge in e.
 _OPLS_TYPES: dict[str, tuple[str, float, float]] = {
     # OPLS type -> (bond_type, charge, mass)
-    "opls_140": ("HC", 0.060, 1.008),    # H on hydroxyl-bearing / CH2OH carbon
-    "opls_157": ("CT", 0.145, 12.011),   # C6 (CH2OH)
-    "opls_158": ("CT", 0.205, 12.011),   # CH bearing OH (C2, C3, terminal C4)
-    "opls_169": ("OH", -0.700, 15.9994), # hydroxyl O (diol)
-    "opls_170": ("HO", 0.435, 1.008),    # hydroxyl H (diol)
-    "opls_183": ("CT", 0.170, 12.011),   # CH bonded to ether O (C5, internal C4)
-    "opls_185": ("HC", 0.030, 1.008),    # H on ether CH
-    "opls_186": ("OS", -0.400, 15.9994), # acetal ether O (O5, glycosidic O4)
-    "opls_187": ("OH", -0.700, 15.9994), # hemiacetal hydroxyl O (O1)
-    "opls_188": ("HO", 0.435, 1.008),    # hemiacetal hydroxyl H (HO1)
-    "opls_193": ("CO", 0.300, 12.011),   # acetal CH (internal C1)
-    "opls_194": ("HC", 0.100, 1.008),    # H on acetal CH
-    "opls_195": ("CO", 0.365, 12.011),   # hemiacetal CH (reducing-end C1)
-    "opls_196": ("HC", 0.100, 1.008),    # H on hemiacetal CH
+    "opls_140": ("HC", 0.060, 1.008),  # H on hydroxyl-bearing / CH2OH carbon
+    "opls_157": ("CT", 0.145, 12.011),  # C6 (CH2OH)
+    "opls_158": ("CT", 0.205, 12.011),  # CH bearing OH (C2, C3, terminal C4)
+    "opls_169": ("OH", -0.700, 15.9994),  # hydroxyl O (diol)
+    "opls_170": ("HO", 0.435, 1.008),  # hydroxyl H (diol)
+    "opls_183": ("CT", 0.170, 12.011),  # CH bonded to ether O (C5, internal C4)
+    "opls_185": ("HC", 0.030, 1.008),  # H on ether CH
+    "opls_186": ("OS", -0.400, 15.9994),  # acetal ether O (O5, glycosidic O4)
+    "opls_187": ("OH", -0.700, 15.9994),  # hemiacetal hydroxyl O (O1)
+    "opls_188": ("HO", 0.435, 1.008),  # hemiacetal hydroxyl H (HO1)
+    "opls_193": ("CO", 0.300, 12.011),  # acetal CH (internal C1)
+    "opls_194": ("HC", 0.100, 1.008),  # H on acetal CH
+    "opls_195": ("CO", 0.365, 12.011),  # hemiacetal CH (reducing-end C1)
+    "opls_196": ("HC", 0.100, 1.008),  # H on hemiacetal CH
 }
 
 # Kony et al. 2002 Table 3 (and the OS-C-C-OS polyether term), kcal/mol
@@ -117,13 +151,20 @@ _TORSIONS["opls-aa-sei"] = {
 
 # Lennard-Jones parameters (sigma nm, epsilon kJ/mol) from GROMACS oplsaa.ff.
 _LJ = {
-    "opls_140": (0.250, 0.125520), "opls_157": (0.350, 0.276144),
-    "opls_158": (0.350, 0.276144), "opls_169": (0.307, 0.711280),
-    "opls_170": (0.000, 0.000000), "opls_183": (0.350, 0.276144),
-    "opls_185": (0.250, 0.125520), "opls_186": (0.290, 0.585760),
-    "opls_187": (0.307, 0.711280), "opls_188": (0.000, 0.000000),
-    "opls_193": (0.350, 0.276144), "opls_194": (0.250, 0.125520),
-    "opls_195": (0.350, 0.276144), "opls_196": (0.250, 0.125520),
+    "opls_140": (0.250, 0.125520),
+    "opls_157": (0.350, 0.276144),
+    "opls_158": (0.350, 0.276144),
+    "opls_169": (0.307, 0.711280),
+    "opls_170": (0.000, 0.000000),
+    "opls_183": (0.350, 0.276144),
+    "opls_185": (0.250, 0.125520),
+    "opls_186": (0.290, 0.585760),
+    "opls_187": (0.307, 0.711280),
+    "opls_188": (0.000, 0.000000),
+    "opls_193": (0.350, 0.276144),
+    "opls_194": (0.250, 0.125520),
+    "opls_195": (0.350, 0.276144),
+    "opls_196": (0.250, 0.125520),
 }
 
 # Harmonic bonds (b0 nm, kb kJ mol-1 nm-2; E = kb/2 (b - b0)^2) and angles
@@ -132,24 +173,38 @@ _LJ = {
 # explicitly so that the GROMACS, OpenMM and LAMMPS outputs share one source;
 # validate_opls_cellulose.py checks them against the installed oplsaa.ff.
 _BOND_PARAMETERS: dict[tuple[str, str], tuple[float, float]] = {
-    ("CO", "CT"): (0.1529, 224262.4), ("CO", "HC"): (0.109, 284512.0),
-    ("CO", "OH"): (0.138, 267776.0), ("CO", "OS"): (0.138, 267776.0),
-    ("CT", "CT"): (0.1529, 224262.4), ("CT", "HC"): (0.109, 284512.0),
-    ("CT", "OH"): (0.141, 267776.0), ("CT", "OS"): (0.141, 267776.0),
+    ("CO", "CT"): (0.1529, 224262.4),
+    ("CO", "HC"): (0.109, 284512.0),
+    ("CO", "OH"): (0.138, 267776.0),
+    ("CO", "OS"): (0.138, 267776.0),
+    ("CT", "CT"): (0.1529, 224262.4),
+    ("CT", "HC"): (0.109, 284512.0),
+    ("CT", "OH"): (0.141, 267776.0),
+    ("CT", "OS"): (0.141, 267776.0),
     ("HO", "OH"): (0.0945, 462750.4),
 }
 # Keyed by (outer, centre, outer) with the outer types in sorted order.
 _ANGLE_PARAMETERS: dict[tuple[str, str, str], tuple[float, float]] = {
-    ("CT", "CT", "CO"): (112.7, 488.273), ("CO", "CT", "HC"): (110.7, 313.8),
-    ("CO", "CT", "OH"): (109.5, 418.4), ("CO", "OH", "HO"): (108.5, 460.24),
-    ("CO", "OS", "CT"): (109.5, 502.08), ("CT", "CO", "HC"): (110.7, 313.8),
-    ("CT", "CO", "OH"): (109.5, 418.4), ("CT", "CO", "OS"): (109.5, 418.4),
-    ("CT", "CT", "CT"): (112.7, 488.273), ("CT", "CT", "HC"): (110.7, 313.8),
-    ("CT", "CT", "OH"): (109.5, 418.4), ("CT", "CT", "OS"): (109.5, 418.4),
-    ("CT", "OH", "HO"): (108.5, 460.24), ("HC", "CO", "OH"): (109.5, 292.88),
-    ("HC", "CO", "OS"): (109.5, 292.88), ("HC", "CT", "HC"): (107.8, 276.144),
-    ("HC", "CT", "OH"): (109.5, 292.88), ("HC", "CT", "OS"): (109.5, 292.88),
-    ("OH", "CO", "OS"): (111.55, 774.876), ("OS", "CO", "OS"): (111.55, 774.876),
+    ("CT", "CT", "CO"): (112.7, 488.273),
+    ("CO", "CT", "HC"): (110.7, 313.8),
+    ("CO", "CT", "OH"): (109.5, 418.4),
+    ("CO", "OH", "HO"): (108.5, 460.24),
+    ("CO", "OS", "CT"): (109.5, 502.08),
+    ("CT", "CO", "HC"): (110.7, 313.8),
+    ("CT", "CO", "OH"): (109.5, 418.4),
+    ("CT", "CO", "OS"): (109.5, 418.4),
+    ("CT", "CT", "CT"): (112.7, 488.273),
+    ("CT", "CT", "HC"): (110.7, 313.8),
+    ("CT", "CT", "OH"): (109.5, 418.4),
+    ("CT", "CT", "OS"): (109.5, 418.4),
+    ("CT", "OH", "HO"): (108.5, 460.24),
+    ("HC", "CO", "OH"): (109.5, 292.88),
+    ("HC", "CO", "OS"): (109.5, 292.88),
+    ("HC", "CT", "HC"): (107.8, 276.144),
+    ("HC", "CT", "OH"): (109.5, 292.88),
+    ("HC", "CT", "OS"): (109.5, 292.88),
+    ("OH", "CO", "OS"): (111.55, 774.876),
+    ("OS", "CO", "OS"): (111.55, 774.876),
 }
 # Fudge factors of the OPLS-AA [ defaults ] directive.
 OPLS_FUDGE_QQ = 0.5
@@ -249,16 +304,32 @@ def _neighbours(chain: _Chain) -> list[list[int]]:
 
 
 _FIXED_TYPES = {
-    "O5": "opls_186", "C5": "opls_183", "H5": "opls_185", "C6": "opls_157",
-    "H61": "opls_140", "H62": "opls_140", "H2": "opls_140", "H3": "opls_140",
-    "C2": "opls_158", "C3": "opls_158", "O2": "opls_169", "O3": "opls_169",
-    "O6": "opls_169", "HO2": "opls_170", "HO3": "opls_170", "HO6": "opls_170",
-    "HO4": "opls_170", "O1": "opls_187", "HO1": "opls_188",
+    "O5": "opls_186",
+    "C5": "opls_183",
+    "H5": "opls_185",
+    "C6": "opls_157",
+    "H61": "opls_140",
+    "H62": "opls_140",
+    "H2": "opls_140",
+    "H3": "opls_140",
+    "C2": "opls_158",
+    "C3": "opls_158",
+    "O2": "opls_169",
+    "O3": "opls_169",
+    "O6": "opls_169",
+    "HO2": "opls_170",
+    "HO3": "opls_170",
+    "HO6": "opls_170",
+    "HO4": "opls_170",
+    "O1": "opls_187",
+    "HO1": "opls_188",
 }
 # (type in a reducing-end or hydroxyl-terminated residue, type otherwise)
 _ROLE_TYPES = {
-    "C1": ("opls_195", "opls_193"), "H1": ("opls_196", "opls_194"),
-    "C4": ("opls_158", "opls_183"), "H4": ("opls_140", "opls_185"),
+    "C1": ("opls_195", "opls_193"),
+    "H1": ("opls_196", "opls_194"),
+    "C4": ("opls_158", "opls_183"),
+    "H4": ("opls_140", "opls_185"),
     "O4": ("opls_169", "opls_186"),
 }
 
@@ -301,15 +372,11 @@ def _distances(neighbours: list[list[int]], source: int, limit: int) -> dict[int
 def _oxygen_class(atom_index: int, neighbours: list[list[int]], chain: _Chain) -> str:
     """Return OH for a hydroxyl oxygen and OS for an ether or acetal oxygen."""
     return (
-        "OH"
-        if any(chain.atoms[other].element == "H" for other in neighbours[atom_index])
-        else "OS"
+        "OH" if any(chain.atoms[other].element == "H" for other in neighbours[atom_index]) else "OS"
     )
 
 
-def _classify(
-    quad: tuple[int, int, int, int], neighbours: list[list[int]], chain: _Chain
-) -> str:
+def _classify(quad: tuple[int, int, int, int], neighbours: list[list[int]], chain: _Chain) -> str:
     """Return the Kony Table 3 torsion class of one dihedral."""
     atoms = [chain.atoms[index] for index in quad]
     detailed = [
@@ -340,8 +407,16 @@ def _classify(
             exocyclic = chain.atoms[oxygen].name != "O5"
             return "C-C-C-OS_ace" if anomeric and exocyclic else "C-C-C-OS"
     for pattern in (
-        "O-C-O-C", "O-C-O-H", "C-C-O-H", "H-C-O-H", "H-C-O-C", "C-O-C-C",
-        "C-C-C-C", "C-C-C-H", "H-C-C-O", "H-C-C-H",
+        "O-C-O-C",
+        "O-C-O-H",
+        "C-C-O-H",
+        "H-C-O-H",
+        "H-C-O-C",
+        "C-O-C-C",
+        "C-C-C-C",
+        "C-C-C-H",
+        "H-C-C-O",
+        "H-C-C-H",
     ):
         if matches(pattern, generic):
             return pattern
@@ -378,9 +453,7 @@ def build_opls_topology(  # noqa: PLR0912 - explicit topology enumeration
                 if len({a, b, c, d}) == 4:  # noqa: PLR2004
                     quad = (a, b, c, d) if a < d else (d, c, b, a)
                     dihedrals.add(quad)
-    classified = tuple(
-        (*quad, _classify(quad, neighbours, chain)) for quad in sorted(dihedrals)
-    )
+    classified = tuple((*quad, _classify(quad, neighbours, chain)) for quad in sorted(dihedrals))
 
     pairs_14: list[tuple[int, int]] = []
     scaled: list[tuple[int, int, float, str]] = []

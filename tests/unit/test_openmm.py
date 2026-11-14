@@ -24,17 +24,13 @@ from cellulose_forge.openmm import (
 def _two_chain_system() -> GlycamMappedSystem:
     """Return two two-residue chains running along Cartesian y."""
     names = ("C1", "H1", "O4", "C1", "H1", "O4")
-    coordinates = np.asarray(
-        [[0.0, y, 0.0] for y in (0.0, 0.5, 1.0, 5.2, 5.7, 6.2)]
-    )
+    coordinates = np.asarray([[0.0, y, 0.0] for y in (0.0, 0.5, 1.0, 5.2, 5.7, 6.2)])
     return GlycamMappedSystem(
         atom_names=names * 2,
         residue_names=("4GB",) * 12,
         residue_numbers=(1, 1, 1, 2, 2, 2) * 2,
         chain_numbers=(1,) * 6 + (2,) * 6,
-        cartesian_coordinates=np.vstack(
-            [coordinates, coordinates + np.asarray([8.0, 0.0, 0.0])]
-        ),
+        cartesian_coordinates=np.vstack([coordinates, coordinates + np.asarray([8.0, 0.0, 0.0])]),
         basis_vectors=np.diag([24.0, 25.0, 30.0]),
     )
 
@@ -98,7 +94,7 @@ def test_runner_embeds_axis_periodicity_and_restraint_parameter() -> None:
     assert "HAS_RESTRAINTS = True" in text
     assert POSITION_RESTRAINT_SCALE_PARAMETER in text
     assert "add --no-restraints for pressure coupling" in text
-    assert 'XmlSerializer.deserialize' in text
+    assert "XmlSerializer.deserialize" in text
     assert "__" not in text.replace("__name__", "").replace("__main__", "").replace(
         "__doc__", ""
     ).replace("__future__", "")

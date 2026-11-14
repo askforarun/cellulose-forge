@@ -399,9 +399,7 @@ def test_cli_writes_named_i_beta_fibril_profiles(
 
     assert result == 0
     lines = output.read_text(encoding="utf-8").splitlines()
-    assert len([line for line in lines if line.startswith("HETATM")]) == (
-        chain_count * 4 * 21
-    )
+    assert len([line for line in lines if line.startswith("HETATM")]) == (chain_count * 4 * 21)
     assert any(f"fibril_model={model}" in line for line in lines)
 
 
@@ -770,9 +768,7 @@ def test_cli_writes_finite_glycam_slab_system(
     assert report["chain_boundary"] == "finite"
     assert report["chain_count"] == 4
     assert report["force_field_atom_count"] == 1020
-    assert report["closest_longitudinal_periodic_image_contact"][
-        "distance_angstrom"
-    ] >= 1.0
+    assert report["closest_longitudinal_periodic_image_contact"]["distance_angstrom"] >= 1.0
     assert "CELLULOSE_CHAIN  4" in (output / "system.top").read_text(encoding="utf-8")
 
 

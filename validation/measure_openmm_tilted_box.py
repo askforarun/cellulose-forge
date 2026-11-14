@@ -60,13 +60,18 @@ TILT_NM = 1.0e-9
 
 def _system(case: tuple[str, tuple[int, int, int]]) -> dict[str, object]:
     allomorph, cells = case
-    build = build_opls_system(build_bulk_crystal(load_allomorph(allomorph), cells), "opls-aa",
-                              "periodic")
+    build = build_opls_system(
+        build_bulk_crystal(load_allomorph(allomorph), cells), "opls-aa", "periodic"
+    )
     template = chain_template(build)
     box = reduced_box_angstrom(build) / 10.0
     positions = np.asarray(build.mapped.cartesian_coordinates, dtype=np.float64) / 10.0
-    return {"template": template, "chains": build.mapped.chain_count, "box": box,
-            "positions": positions}
+    return {
+        "template": template,
+        "chains": build.mapped.chain_count,
+        "box": box,
+        "positions": positions,
+    }
 
 
 def _forces(data: dict[str, object]) -> tuple[openmm.System, openmm.System]:
@@ -90,7 +95,9 @@ def _forces(data: dict[str, object]) -> tuple[openmm.System, openmm.System]:
         for chain in range(data["chains"]):  # type: ignore[call-overload]
             offset = chain * per_chain
             for mass, charge, (sigma, epsilon) in zip(
-                template["masses"], template["charges"], template["lj"],  # type: ignore[index]
+                template["masses"],
+                template["charges"],
+                template["lj"],  # type: ignore[index]
                 strict=True,
             ):
                 system.addParticle(mass)
@@ -109,8 +116,9 @@ def _forces(data: dict[str, object]) -> tuple[openmm.System, openmm.System]:
 
 
 def _energy(system: openmm.System, platform: str, positions: np.ndarray) -> float:
-    context = openmm.Context(system, openmm.VerletIntegrator(0.001),
-                             openmm.Platform.getPlatformByName(platform))
+    context = openmm.Context(
+        system, openmm.VerletIntegrator(0.001), openmm.Platform.getPlatformByName(platform)
+    )
     context.setPositions([openmm.Vec3(*row) for row in positions])
     energy = context.getState(getEnergy=True).getPotentialEnergy()
     del context
@@ -125,12 +133,16 @@ def _exact_lj(data: dict[str, object]) -> float:
     lj = np.asarray(template["lj"] * data["chains"])  # type: ignore[index, operator]
     positions = data["positions"]
     box = data["box"]
-    shifts = np.array([i * box[0] + j * box[1] + k * box[2]  # type: ignore[index]
-                       for i, j, k in itertools.product((-2, -1, 0, 1, 2), repeat=3)])
+    shifts = np.array(
+        [
+            i * box[0] + j * box[1] + k * box[2]  # type: ignore[index]
+            for i, j, k in itertools.product((-2, -1, 0, 1, 2), repeat=3)
+        ]
+    )
     count = len(positions)  # type: ignore[arg-type]
     total = 0.0
     for i in range(count - 1):
-        delta = positions[i + 1:] - positions[i]  # type: ignore[index]
+        delta = positions[i + 1 :] - positions[i]  # type: ignore[index]
         distance = np.linalg.norm(delta[:, None, :] + shifts[None, :, :], axis=2).min(axis=1)
         partners = np.arange(i + 1, count)
         keep = distance < CUTOFF_NM
@@ -147,8 +159,9 @@ def _exact_lj(data: dict[str, object]) -> float:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path,
-                        default=ROOT / "validation/results/openmm_tilted_box.json")
+    parser.add_argument(
+        "--output", type=Path, default=ROOT / "validation/results/openmm_tilted_box.json"
+    )
     args = parser.parse_args()
     cases = {}
     for name, case in CASES.items():
@@ -193,8 +206,7 @@ def main() -> None:
         "discrepancy_relative_threshold": DISCREPANCY_RELATIVE,
         "cases": cases,
         "reference_discrepancy_only_in_tilted_boxes": all(
-            case["reference_discrepancy"] == case["third_vector_tilted"]
-            for case in cases.values()
+            case["reference_discrepancy"] == case["third_vector_tilted"] for case in cases.values()
         ),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

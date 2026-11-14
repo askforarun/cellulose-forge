@@ -106,9 +106,7 @@ def run_benchmark(repeats: int) -> dict[str, Any]:
         "build_count": len(results) * repeats,
         "all_deterministic": all(result["deterministic"] for result in results),
         "total_atoms_per_matrix": sum(result["atom_count"] for result in results),
-        "total_measured_seconds": sum(
-            sum(result["timings_seconds"]) for result in results
-        ),
+        "total_measured_seconds": sum(sum(result["timings_seconds"]) for result in results),
         "results": results,
     }
 

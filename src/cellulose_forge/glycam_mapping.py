@@ -515,8 +515,7 @@ def map_crystal_to_periodic_glycam(  # noqa: PLR0915
         for atom in atoms
     ):
         msg = (
-            "periodic GLYCAM reference must contain only internal "
-            f"{expected_residue_name} residues"
+            f"periodic GLYCAM reference must contain only internal {expected_residue_name} residues"
         )
         raise ValueError(msg)
 

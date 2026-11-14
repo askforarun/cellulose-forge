@@ -11,9 +11,9 @@ from cellulose_forge.geometry import build_bulk_crystal
 from cellulose_forge.hydroxyl import HydroxylHydrogenPlacer
 
 
-def _place_all(replication: tuple[int, int, int], *, reverse: bool = False) -> tuple[
-    dict[tuple[int, int, str], np.ndarray], float
-]:
+def _place_all(
+    replication: tuple[int, int, int], *, reverse: bool = False
+) -> tuple[dict[tuple[int, int, str], np.ndarray], float]:
     crystal = build_bulk_crystal(load_allomorph("ii"), replication)
     labels = list(crystal.atom_labels)
     xyz = np.asarray(crystal.cartesian_coordinates)

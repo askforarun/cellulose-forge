@@ -53,15 +53,35 @@ def _gromacs_energies(
     )
     _run(
         [
-            gmx, "grompp", "-f", mdp.name, "-p", "system.top", "-c", "structure.gro",
-            "-o", "cross_engine.tpr", "-po", "cross_engine_mdout.mdp", "-maxwarn", "0",
+            gmx,
+            "grompp",
+            "-f",
+            mdp.name,
+            "-p",
+            "system.top",
+            "-c",
+            "structure.gro",
+            "-o",
+            "cross_engine.tpr",
+            "-po",
+            "cross_engine_mdout.mdp",
+            "-maxwarn",
+            "0",
         ],
         directory,
     )
     _run([gmx, "mdrun", "-s", "cross_engine.tpr", "-deffnm", "cross_engine"], directory)
     names = [
-        "Bond", "Angle", "Proper Dih.", "Per. Imp. Dih.", "LJ-14", "Coulomb-14",
-        "LJ (SR)", "Coulomb (SR)", "Coul. recip.", "Potential",
+        "Bond",
+        "Angle",
+        "Proper Dih.",
+        "Per. Imp. Dih.",
+        "LJ-14",
+        "Coulomb-14",
+        "LJ (SR)",
+        "Coulomb (SR)",
+        "Coul. recip.",
+        "Potential",
     ]
     if dispersion:
         names.insert(-1, "Disper. corr.")
@@ -134,8 +154,16 @@ def _lammps_energies(lammps: str, directory: Path) -> dict[str, float]:
     return dict(
         zip(
             (
-                "step", "temperature", "potential", "bonds", "angles", "torsions",
-                "lj", "coulomb_short", "coulomb_long", "dispersion_tail",
+                "step",
+                "temperature",
+                "potential",
+                "bonds",
+                "angles",
+                "torsions",
+                "lj",
+                "coulomb_short",
+                "coulomb_long",
+                "dispersion_tail",
             ),
             values,
             strict=True,
@@ -165,8 +193,12 @@ def _case(  # noqa: PLR0913, PLR0917
     )
     arguments.extend(
         (
-            "--md-engine", "openmm", "--md-engine", "lammps",
-            "--openmm-python", openmm_python,
+            "--md-engine",
+            "openmm",
+            "--md-engine",
+            "lammps",
+            "--openmm-python",
+            openmm_python,
         )
     )
     assert main(arguments) == 0
@@ -207,8 +239,12 @@ def _case(  # noqa: PLR0913, PLR0917
         "nonbonded": sum(
             gromacs[name]
             for name in (
-                "LJ (SR)", "Coulomb (SR)", "Coul. recip.", "Disper. corr.",
-                "LJ-14", "Coulomb-14",
+                "LJ (SR)",
+                "Coulomb (SR)",
+                "Coul. recip.",
+                "Disper. corr.",
+                "LJ-14",
+                "Coulomb-14",
             )
         ),
     }
@@ -233,12 +269,12 @@ def _case(  # noqa: PLR0913, PLR0917
         "bonds_plus_explicit_pairs": gromacs_kcal["Bond"] + explicit_lj + explicit_coulomb,
         "angles": gromacs_kcal["Angle"],
         "torsions": gromacs_kcal["Proper Dih."] + gromacs_kcal["Per. Imp. Dih."],
-        "remaining_lj": (
-            gromacs_kcal["LJ (SR)"] + gromacs_kcal["LJ-14"] - explicit_lj
-        ),
+        "remaining_lj": (gromacs_kcal["LJ (SR)"] + gromacs_kcal["LJ-14"] - explicit_lj),
         "remaining_coulomb": (
-            gromacs_kcal["Coulomb (SR)"] + gromacs_kcal["Coul. recip."]
-            + gromacs_kcal["Coulomb-14"] - explicit_coulomb
+            gromacs_kcal["Coulomb (SR)"]
+            + gromacs_kcal["Coul. recip."]
+            + gromacs_kcal["Coulomb-14"]
+            - explicit_coulomb
         ),
         "potential": gromacs_kcal["Potential"],
         "dispersion_correction": gromacs_kcal["Disper. corr."],

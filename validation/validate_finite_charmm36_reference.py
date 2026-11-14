@@ -53,9 +53,7 @@ def _generated_interactions(
 
 def validate(force_field_directory: Path, itp_path: Path) -> dict[str, object]:
     """Return exact atom and bonded-graph comparison results."""
-    reference = read_charmm36_chain_template(
-        itp_path, require_uniform_residues=False
-    )
+    reference = read_charmm36_chain_template(itp_path, require_uniform_residues=False)
     generated = native_finite_charmm36_topology(
         force_field_directory, degree_polymerization=reference.degree_polymerization
     )
@@ -69,9 +67,7 @@ def validate(force_field_directory: Path, itp_path: Path) -> dict[str, object]:
     }
     if reference_atoms != generated_atoms:
         common_atoms = reference_atoms.keys() & generated_atoms.keys()
-        changed_atoms = sum(
-            reference_atoms[key] != generated_atoms[key] for key in common_atoms
-        )
+        changed_atoms = sum(reference_atoms[key] != generated_atoms[key] for key in common_atoms)
         raise ValueError(
             "generated finite atoms differ from CHARMM-GUI: "
             f"missing={len(reference_atoms.keys() - generated_atoms.keys())}, "

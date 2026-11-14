@@ -21,9 +21,17 @@ from cellulose_forge.geometry import (
 
 RESIDUE_ATOMS = 21
 RESIDUE_BONDS = (
-    ("C1", "C2"), ("C2", "C3"), ("C3", "C4"), ("C4", "C5"),
-    ("C5", "O5"), ("O5", "C1"), ("C5", "C6"), ("C6", "O6"),
-    ("C2", "O2"), ("C3", "O3"), ("C4", "O4"),
+    ("C1", "C2"),
+    ("C2", "C3"),
+    ("C3", "C4"),
+    ("C4", "C5"),
+    ("C5", "O5"),
+    ("O5", "C1"),
+    ("C5", "C6"),
+    ("C6", "O6"),
+    ("C2", "O2"),
+    ("C3", "O3"),
+    ("C4", "O4"),
 )
 
 
@@ -148,21 +156,15 @@ def test_modelled_hydrogens_point_to_reported_acceptors() -> None:
     donors = {"HO2": "O2", "HO3": "O3", "HO6": "O6"}
     for hydrogen, acceptor in acceptors.items():
         oxygen = atoms[donors[hydrogen]]
-        donor_acceptor = np.linalg.norm(
-            _minimum_image(acceptor - oxygen, crystal.basis_vectors)
-        )
+        donor_acceptor = np.linalg.norm(_minimum_image(acceptor - oxygen, crystal.basis_vectors))
         assert donor_acceptor == pytest.approx(expected_oxygen_distances[hydrogen], abs=0.002)
         hydrogen_acceptor = np.linalg.norm(
             _minimum_image(acceptor - atoms[hydrogen], crystal.basis_vectors)
         )
         assert hydrogen_acceptor > 1.3
         assert hydrogen_acceptor < donor_acceptor
-        hydrogen_to_donor = _minimum_image(
-            oxygen - atoms[hydrogen], crystal.basis_vectors
-        )
-        hydrogen_to_acceptor = _minimum_image(
-            acceptor - atoms[hydrogen], crystal.basis_vectors
-        )
+        hydrogen_to_donor = _minimum_image(oxygen - atoms[hydrogen], crystal.basis_vectors)
+        hydrogen_to_acceptor = _minimum_image(acceptor - atoms[hydrogen], crystal.basis_vectors)
         cosine = np.dot(hydrogen_to_donor, hydrogen_to_acceptor) / (
             np.linalg.norm(hydrogen_to_donor) * np.linalg.norm(hydrogen_to_acceptor)
         )
@@ -196,9 +198,7 @@ def test_modelled_hydroxyl_hydrogens_have_no_periodic_clashes() -> None:
         for other in heavy:
             if labels[other] == bonded_oxygen[str(labels[atom])]:
                 distance_to_hydrogen = np.linalg.norm(
-                    _minimum_image(
-                        coordinates[other] - coordinates[atom], crystal.basis_vectors
-                    )
+                    _minimum_image(coordinates[other] - coordinates[atom], crystal.basis_vectors)
                 )
                 if distance_to_hydrogen == pytest.approx(0.96, abs=1e-6):
                     continue
@@ -256,12 +256,26 @@ def test_mirrored_mannan_is_rejected() -> None:
 
 def test_cli_writes_mannan_i_bulk_and_provenance(tmp_path: Path) -> None:
     output = tmp_path / "mannan_i.pdb"
-    assert main(
-        [
-            "build", "--polymer", "mannan", "--allomorph", "I",
-            "--shape", "bulk", "--cells", "2", "2", "2", "--output", str(output),
-        ]
-    ) == 0
+    assert (
+        main(
+            [
+                "build",
+                "--polymer",
+                "mannan",
+                "--allomorph",
+                "I",
+                "--shape",
+                "bulk",
+                "--cells",
+                "2",
+                "2",
+                "2",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
 
     report = json.loads(output.with_suffix(".build_report.json").read_text(encoding="utf-8"))
     assert " MAN " in output.read_text(encoding="utf-8")
@@ -281,18 +295,32 @@ def test_cli_writes_mannan_i_bulk_and_provenance(tmp_path: Path) -> None:
     [
         ["--polymer", "mannan", "--allomorph", "I", "--shape", "slab", "--face", "1", "0", "0"],
         [
-            "--polymer", "mannan", "--allomorph", "I", "--shape", "fibril",
-            "--fibril-model", "36-chain",
+            "--polymer",
+            "mannan",
+            "--allomorph",
+            "I",
+            "--shape",
+            "fibril",
+            "--fibril-model",
+            "36-chain",
         ],
         [
-            "--polymer", "mannan", "--allomorph", "I", "--shape", "bulk",
-            "--cells", "1", "1", "1", "--force-field", "charmm36",
+            "--polymer",
+            "mannan",
+            "--allomorph",
+            "I",
+            "--shape",
+            "bulk",
+            "--cells",
+            "1",
+            "1",
+            "1",
+            "--force-field",
+            "charmm36",
         ],
         ["--polymer", "mannan", "--allomorph", "II", "--shape", "unit-cell"],
     ],
 )
-def test_cli_refuses_unvalidated_mannan_requests(
-    tmp_path: Path, arguments: list[str]
-) -> None:
+def test_cli_refuses_unvalidated_mannan_requests(tmp_path: Path, arguments: list[str]) -> None:
     with pytest.raises(SystemExit, match="2"):
         main(["build", *arguments, "--output", str(tmp_path / "invalid")])

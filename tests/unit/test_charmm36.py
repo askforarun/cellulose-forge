@@ -252,9 +252,7 @@ def test_builds_native_periodic_topology_from_bglc(
         render_finite_charmm36_itp(finite) + "#ifdef REST_ON\n#endif\n",
         encoding="utf-8",
     )
-    reread_finite = read_charmm36_chain_template(
-        finite_path, require_uniform_residues=False
-    )
+    reread_finite = read_charmm36_chain_template(finite_path, require_uniform_residues=False)
     assert len(reread_finite.atoms) == finite.atom_count
 
 

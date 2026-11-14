@@ -40,10 +40,22 @@ CASES: dict[str, list[str]] = {
     },
     **{
         f"slab_{key}": [
-            "--allomorph", name, "--shape", "slab", "--face", *face.split(),
-            "--layers", "2", "--chains-per-layer", "4",
-            "--degree-polymerization", "4", "--chain-boundary", "periodic",
-            "--vacuum", "20",
+            "--allomorph",
+            name,
+            "--shape",
+            "slab",
+            "--face",
+            *face.split(),
+            "--layers",
+            "2",
+            "--chains-per-layer",
+            "4",
+            "--degree-polymerization",
+            "4",
+            "--chain-boundary",
+            "periodic",
+            "--vacuum",
+            "20",
         ]
         for key, name, face in (
             ("i_alpha_010", "I-alpha", "0 1 0"),
@@ -53,12 +65,32 @@ CASES: dict[str, list[str]] = {
         )
     },
     "fibril_i_beta_36": [
-        "--allomorph", "I-beta", "--shape", "fibril", "--fibril-model", "36-chain",
-        "--degree-polymerization", "4", "--chain-boundary", "periodic", "--vacuum", "20",
+        "--allomorph",
+        "I-beta",
+        "--shape",
+        "fibril",
+        "--fibril-model",
+        "36-chain",
+        "--degree-polymerization",
+        "4",
+        "--chain-boundary",
+        "periodic",
+        "--vacuum",
+        "20",
     ],
     "fibril_i_beta_18": [
-        "--allomorph", "I-beta", "--shape", "fibril", "--fibril-model", "18-chain",
-        "--degree-polymerization", "4", "--chain-boundary", "periodic", "--vacuum", "20",
+        "--allomorph",
+        "I-beta",
+        "--shape",
+        "fibril",
+        "--fibril-model",
+        "18-chain",
+        "--degree-polymerization",
+        "4",
+        "--chain-boundary",
+        "periodic",
+        "--vacuum",
+        "20",
     ],
 }
 
@@ -72,12 +104,10 @@ def _build_hash(arguments: list[str], output: Path) -> str:
 
 def test_cellulose_coordinate_outputs_are_unchanged(tmp_path: Path) -> None:
     actual = {
-        name: _build_hash(arguments, tmp_path / f"{name}.pdb")
-        for name, arguments in CASES.items()
+        name: _build_hash(arguments, tmp_path / f"{name}.pdb") for name, arguments in CASES.items()
     }
     if os.environ.get("CELLULOSE_FORGE_UPDATE_HASHES") == "1":
-        HASH_FILE.write_text(json.dumps(actual, indent=2, sort_keys=True) + "\n",
-                             encoding="utf-8")
+        HASH_FILE.write_text(json.dumps(actual, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         pytest.skip("recorded new cellulose hashes")
     expected = json.loads(HASH_FILE.read_text(encoding="utf-8"))
     assert actual == expected

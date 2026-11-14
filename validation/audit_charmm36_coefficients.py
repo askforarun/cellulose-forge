@@ -123,9 +123,7 @@ def audit(  # noqa: PLR0912, PLR0915
             continue
         expected = sorted((term.phase, term.phi_k * 4.184, term.per) for term in value)
         actual = sorted(
-            (float(row[5]), float(row[6]), int(row[7]))
-            for row in rows
-            if row[4] == "9"
+            (float(row[5]), float(row[6]), int(row[7])) for row in rows if row[4] == "9"
         )
         if len(actual) != len(expected) or any(
             not (_close(a[0], e[0]) and _close(a[1], e[1]) and a[2] == e[2])

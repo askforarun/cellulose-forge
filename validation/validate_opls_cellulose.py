@@ -102,8 +102,17 @@ periodic-molecules = {periodic}
 nstenergy = 1
 nstcalcenergy = 1
 """
-GROMACS_TERMS = ("Bond", "Angle", "Ryckaert-Bell.", "LJ-14", "Coulomb-14", "LJ-(SR)",
-                 "Coulomb-(SR)", "Coul.-recip.", "Potential")
+GROMACS_TERMS = (
+    "Bond",
+    "Angle",
+    "Ryckaert-Bell.",
+    "LJ-14",
+    "Coulomb-14",
+    "LJ-(SR)",
+    "Coulomb-(SR)",
+    "Coul.-recip.",
+    "Potential",
+)
 # GROMACS oplsaa.ff dihedral types and the Kony class they must reproduce.
 TRANSCRIPTION = {
     "O-C-O-C": ("CT", "OS", "CO", "OS"),
@@ -144,7 +153,7 @@ def _ffbonded() -> dict[str, dict[tuple[str, ...], tuple[float, ...]]]:
             fields = line.split()
             n = width[section]
             tables.setdefault(section, {})[tuple(fields[:n])] = tuple(
-                float(value) for value in fields[n + 1:]
+                float(value) for value in fields[n + 1 :]
             )
     return tables
 
@@ -193,14 +202,22 @@ def _crystal(kind: str, allomorph: str, boundary: str) -> object:
     padding = 12.0 if boundary == "finite" else None
     if kind == "slab":
         return build_chain_parallel_slab(
-            definition, MillerIndex(*SLAB_FACES[allomorph]), layers=3, chains_per_layer=4,
-            degree_polymerization=6, vacuum=30.0, padding_z=padding or 0.0,
+            definition,
+            MillerIndex(*SLAB_FACES[allomorph]),
+            layers=3,
+            chains_per_layer=4,
+            degree_polymerization=6,
+            vacuum=30.0,
+            padding_z=padding or 0.0,
             chain_boundary=boundary,
         )
     if kind == "bulk":
         return build_bulk_crystal(definition, BULK_CELLS[allomorph])
     return build_36_chain_fibril(
-        definition, degree_polymerization=6, vacuum=20.0, padding_z=padding,
+        definition,
+        degree_polymerization=6,
+        vacuum=20.0,
+        padding_z=padding,
         chain_boundary=boundary,
     )
 
@@ -255,11 +272,29 @@ def _gromacs_terms(directory: Path, periodic: bool, gmx: str) -> dict[str, float
     (directory / "point.mdp").write_text(
         POINT_MDP.format(periodic="yes" if periodic else "no"), encoding="utf-8"
     )
-    _run([gmx, "grompp", "-f", "point.mdp", "-c", "structure.g96", "-p", "system.top",
-          "-o", "point.tpr", "-maxwarn", "0"], directory)
+    _run(
+        [
+            gmx,
+            "grompp",
+            "-f",
+            "point.mdp",
+            "-c",
+            "structure.g96",
+            "-p",
+            "system.top",
+            "-o",
+            "point.tpr",
+            "-maxwarn",
+            "0",
+        ],
+        directory,
+    )
     _run([gmx, "mdrun", "-deffnm", "point", "-ntomp", "1"], directory)
-    _run([gmx, "energy", "-f", "point.edr", "-o", "point.xvg"], directory,
-         stdin="\n".join(GROMACS_TERMS) + "\n\n")
+    _run(
+        [gmx, "energy", "-f", "point.edr", "-o", "point.xvg"],
+        directory,
+        stdin="\n".join(GROMACS_TERMS) + "\n\n",
+    )
     legends, values = [], []
     for line in (directory / "point.xvg").read_text(encoding="utf-8").splitlines():
         match = re.match(r'@ s\d+ legend "(.+)"', line)
@@ -310,7 +345,7 @@ def _numpy_terms(directory: Path, chains: int, periodic: bool) -> dict[str, floa
     xyz, box = _read_g96(directory / "structure.g96")
     torsion = lj14 = coulomb14 = sei_lj = sei_coulomb = 0.0
     for chain in range(chains):
-        position = xyz[chain * n: (chain + 1) * n]
+        position = xyz[chain * n : (chain + 1) * n]
         for row in itp["dihedrals"]:
             a, b, c, d = (int(value) - 1 for value in row[:4])
             coefficients = [float(value) for value in row[5:11]]
@@ -340,8 +375,11 @@ def _numpy_terms(directory: Path, chains: int, periodic: bool) -> dict[str, floa
                 sei_lj += lj
                 sei_coulomb += coulomb
     return {
-        "Ryckaert-Bell.": torsion, "LJ-14": lj14, "Coulomb-14": coulomb14,
-        "SEI-LJ": sei_lj, "SEI-Coulomb": sei_coulomb,
+        "Ryckaert-Bell.": torsion,
+        "LJ-14": lj14,
+        "Coulomb-14": coulomb14,
+        "SEI-LJ": sei_lj,
+        "SEI-Coulomb": sei_coulomb,
     }
 
 
@@ -353,7 +391,7 @@ def _sei_prediction(directory: Path, chains: int, periodic: bool) -> float:
     xyz, box = _read_g96(directory / "structure.g96")
     total = 0.0
     for chain in range(chains):
-        position = xyz[chain * n: (chain + 1) * n]
+        position = xyz[chain * n : (chain + 1) * n]
         for row in itp["pairs"]:
             if row[2] != "2":
                 continue
@@ -406,8 +444,12 @@ def _cross_engine(
     _write_g96(build, directory / "structure.g96")
     gromacs = _gromacs_terms(directory, periodic, gmx)
     _, openmm = write_opls_openmm(
-        build, directory / "openmm", dispersion_correction=False, python_executable=python,
-        minimization_iterations=1, validation_ewald_error_tolerance=1.0e-6,
+        build,
+        directory / "openmm",
+        dispersion_correction=False,
+        python_executable=python,
+        minimization_iterations=1,
+        validation_ewald_error_tolerance=1.0e-6,
     )
     write_opls_lammps(build, directory, dispersion_correction=False)
     lammps = _lammps_terms(directory)
@@ -423,22 +465,34 @@ def _cross_engine(
         "bond": (gromacs["Bond"], energies["HarmonicBondForce"], lammps["bond"], False),
         "angle": (gromacs["Angle"], energies["HarmonicAngleForce"], lammps["angle"], False),
         "torsion": (
-            gromacs["Ryckaert-Bell."], energies["RBTorsionForce"], lammps["torsion"], False
+            gromacs["Ryckaert-Bell."],
+            energies["RBTorsionForce"],
+            lammps["torsion"],
+            False,
         ),
         "pairs_1_4_and_sei": (gromacs["LJ-14"] + gromacs["Coulomb-14"], exceptions, None, False),
         "sei_pairs": (sei["SEI-LJ"] + sei["SEI-Coulomb"], None, lammps["sei_pairs"], False),
         "lennard_jones": (gromacs["LJ-(SR)"], energies["OPLSLennardJones"], None, False),
         "lammps_pair_lennard_jones": (
-            gromacs["LJ-(SR)"] + gromacs["LJ-14"] - sei["SEI-LJ"], None,
-            lammps["pair_lennard_jones"], False,
+            gromacs["LJ-(SR)"] + gromacs["LJ-14"] - sei["SEI-LJ"],
+            None,
+            lammps["pair_lennard_jones"],
+            False,
         ),
         "lammps_pair_coulomb": (
-            gromacs["Coulomb-(SR)"] + gromacs["Coul.-recip."] + gromacs["Coulomb-14"]
-            - sei["SEI-Coulomb"], None, lammps["pair_coulomb"], True,
+            gromacs["Coulomb-(SR)"]
+            + gromacs["Coul.-recip."]
+            + gromacs["Coulomb-14"]
+            - sei["SEI-Coulomb"],
+            None,
+            lammps["pair_coulomb"],
+            True,
         ),
         "potential": (
-            gromacs["Potential"], openmm["initial_potential_energy_kj_mol"],
-            lammps["potential"], True,
+            gromacs["Potential"],
+            openmm["initial_potential_energy_kj_mol"],
+            lammps["potential"],
+            True,
         ),
     }
     platform = str(openmm["validation_platform"])
@@ -463,14 +517,24 @@ def _cross_engine(
         if openmm_value is not None:
             openmm_tolerance = OPENMM_CPU_RELATIVE_TOLERANCE if platform == "CPU" else tolerance
             difference = score(float(openmm_value))  # type: ignore[arg-type]
-            entry.update({"openmm_kj_mol": openmm_value, "openmm_relative_difference": difference,
-                          "openmm_tolerance": openmm_tolerance})
+            entry.update(
+                {
+                    "openmm_kj_mol": openmm_value,
+                    "openmm_relative_difference": difference,
+                    "openmm_tolerance": openmm_tolerance,
+                }
+            )
             passed = difference <= openmm_tolerance
         if lammps_value is not None:
             difference = score(lammps_value)
-            entry.update({"lammps_kj_mol": lammps_value, "lammps_relative_difference": difference,
-                          "lammps_absolute_difference_kj_mol": abs(lammps_value - reference),
-                          "lammps_tolerance": tolerance})
+            entry.update(
+                {
+                    "lammps_kj_mol": lammps_value,
+                    "lammps_relative_difference": difference,
+                    "lammps_absolute_difference_kj_mol": abs(lammps_value - reference),
+                    "lammps_tolerance": tolerance,
+                }
+            )
             passed = passed and difference <= tolerance
         entry["passed"] = passed
         comparison[name] = entry
@@ -478,37 +542,99 @@ def _cross_engine(
 
 
 def _gromacs_smoke(directory: Path) -> dict[str, object]:
-    logs = _run(["gmx", "grompp", "-f", "minim.mdp", "-c", "structure.gro", "-p", "system.top",
-                 "-o", "minim.tpr", "-maxwarn", "0"], directory)
+    logs = _run(
+        [
+            "gmx",
+            "grompp",
+            "-f",
+            "minim.mdp",
+            "-c",
+            "structure.gro",
+            "-p",
+            "system.top",
+            "-o",
+            "minim.tpr",
+            "-maxwarn",
+            "0",
+        ],
+        directory,
+    )
     logs += _run(["gmx", "mdrun", "-deffnm", "minim", "-ntmpi", "1", "-ntomp", "2"], directory)
-    logs += _run(["gmx", "grompp", "-f", "nvt.mdp", "-c", "minim.gro", "-p", "system.top",
-                  "-o", "nvt.tpr", "-maxwarn", "0"], directory)
+    logs += _run(
+        [
+            "gmx",
+            "grompp",
+            "-f",
+            "nvt.mdp",
+            "-c",
+            "minim.gro",
+            "-p",
+            "system.top",
+            "-o",
+            "nvt.tpr",
+            "-maxwarn",
+            "0",
+        ],
+        directory,
+    )
     logs += _run(["gmx", "mdrun", "-deffnm", "nvt", "-ntmpi", "1", "-ntomp", "2"], directory)
     combined = logs + (directory / "nvt.log").read_text(encoding="utf-8")
-    markers = [name for name, pattern in {"LINCS": r"LINCS WARNING", "NaN": r"\bnan\b",
-               "non-finite": r"non-finite"}.items()
-               if re.search(pattern, combined, flags=re.IGNORECASE)]
+    markers = [
+        name
+        for name, pattern in {
+            "LINCS": r"LINCS WARNING",
+            "NaN": r"\bnan\b",
+            "non-finite": r"non-finite",
+        }.items()
+        if re.search(pattern, combined, flags=re.IGNORECASE)
+    ]
     reached = "Statistics over 1001 steps" in combined
-    return {"grompp_maxwarn": 0, "nvt_reached_final_step": reached,
-            "failure_markers": markers, "passed": reached and not markers}
+    return {
+        "grompp_maxwarn": 0,
+        "nvt_reached_final_step": reached,
+        "failure_markers": markers,
+        "passed": reached and not markers,
+    }
 
 
 def _openmm_smoke(directory: Path, python: str) -> dict[str, object]:
-    output = _run([python, "run_openmm.py", "--platform", "CPU", "--minimize-iterations", "100",
-                   "--steps", "1000", "--timestep-fs", "1.0", "--report-interval", "500"],
-                  directory)
+    output = _run(
+        [
+            python,
+            "run_openmm.py",
+            "--platform",
+            "CPU",
+            "--minimize-iterations",
+            "100",
+            "--steps",
+            "1000",
+            "--timestep-fs",
+            "1.0",
+            "--report-interval",
+            "500",
+        ],
+        directory,
+    )
     match = re.search(r"Final potential energy: (\S+) kJ/mol", output)
     energy = float(match.group(1)) if match else float("nan")
-    return {"steps": 1000, "timestep_fs": 1.0, "final_potential_energy_kj_mol": energy,
-            "passed": bool(np.isfinite(energy))}
+    return {
+        "steps": 1000,
+        "timestep_fs": 1.0,
+        "final_potential_energy_kj_mol": energy,
+        "passed": bool(np.isfinite(energy)),
+    }
 
 
 def _lammps_smoke(directory: Path) -> dict[str, object]:
     log = _run(["lmp_serial", "-in", "in.cellulose", "-log", "none"], directory)
     finished = "Loop time" in log
     errors = [line for line in log.splitlines() if line.startswith("ERROR")]
-    return {"input": "in.cellulose (run 0)", "completed": finished, "errors": errors,
-            "passed": finished and not errors}
+    return {
+        "input": "in.cellulose (run 0)",
+        "completed": finished,
+        "errors": errors,
+        "passed": finished and not errors,
+    }
 
 
 def validate_case(
@@ -533,7 +659,8 @@ def validate_case(
                 value = ours[term]
                 difference = _relative(gromacs[term], value)
                 recomputed[term] = {
-                    "gromacs_kj_mol": gromacs[term], "numpy_kj_mol": value,
+                    "gromacs_kj_mol": gromacs[term],
+                    "numpy_kj_mol": value,
                     "relative_difference": difference,
                     "passed": difference <= TERM_RELATIVE_TOLERANCE,
                 }
@@ -541,10 +668,12 @@ def validate_case(
             # Shipped outputs, as the CLI writes them, for the runtime checks.
             run = Path(temporary) / variant / "run"
             write_opls_system(build, run)
-            write_gromacs_run_inputs(run, force_field=variant, periodic_chains=periodic,
-                                     dispersion=dispersion)
-            write_opls_openmm(build, run, dispersion_correction=dispersion,
-                              python_executable=python)
+            write_gromacs_run_inputs(
+                run, force_field=variant, periodic_chains=periodic, dispersion=dispersion
+            )
+            write_opls_openmm(
+                build, run, dispersion_correction=dispersion, python_executable=python
+            )
             write_opls_lammps(build, run, dispersion_correction=dispersion)
             smoke = {
                 "gromacs_smoke_test": _gromacs_smoke(run),
@@ -561,7 +690,8 @@ def validate_case(
             }
             checks = [item["passed"] for item in recomputed.values()]
             checks += [
-                item["passed"] for item in cross["terms"].values()  # type: ignore[attr-defined]
+                item["passed"]
+                for item in cross["terms"].values()  # type: ignore[attr-defined]
                 if isinstance(item, dict)
             ]
             checks += [item["passed"] for item in smoke.values()]
@@ -595,12 +725,17 @@ CASES = [
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", action="append", help="kind:allomorph:boundary")
-    parser.add_argument("--openmm-python", default=sys.executable,
-                        help="Python interpreter with OpenMM")
-    parser.add_argument("--gmx-double", default="gmx_d",
-                        help="double-precision GROMACS used for the energy reference")
-    parser.add_argument("--output", type=Path,
-                        default=ROOT / "validation/results/opls_cellulose_matrix.json")
+    parser.add_argument(
+        "--openmm-python", default=sys.executable, help="Python interpreter with OpenMM"
+    )
+    parser.add_argument(
+        "--gmx-double",
+        default="gmx_d",
+        help="double-precision GROMACS used for the energy reference",
+    )
+    parser.add_argument(
+        "--output", type=Path, default=ROOT / "validation/results/opls_cellulose_matrix.json"
+    )
     args = parser.parse_args()
     for tool in ("gmx", args.gmx_double, "lmp_serial"):
         if shutil.which(tool) is None:
@@ -609,12 +744,11 @@ def main() -> None:
     cases = {}
     for kind, allomorph, boundary in selected:
         name = f"{kind}_{allomorph}_{boundary}"
-        cases[name] = validate_case(
-            kind, allomorph, boundary, args.openmm_python, args.gmx_double
-        )
+        cases[name] = validate_case(kind, allomorph, boundary, args.openmm_python, args.gmx_double)
         print(f"{name}: passed={cases[name]['passed']}", file=sys.stderr, flush=True)
-    openmm_version = _run([args.openmm_python, "-c", "import openmm; print(openmm.__version__)"],
-                          ROOT).strip()
+    openmm_version = _run(
+        [args.openmm_python, "-c", "import openmm; print(openmm.__version__)"], ROOT
+    ).strip()
     lammps_banner = _run(["lmp_serial", "-h"], ROOT).splitlines()
     transcription = transcription_check()
     result = {

@@ -14,6 +14,7 @@ from pathlib import Path
 
 _EXPLICIT_PAIR_FIELD_COUNT = 8
 
+
 @dataclass(frozen=True)
 class ExplicitPairOverride:
     """One global, zero-based nonbonded exception."""

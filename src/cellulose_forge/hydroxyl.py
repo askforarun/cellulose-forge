@@ -351,8 +351,7 @@ class HydroxylHydrogenPlacer:
             if coordinate is None:
                 return False
             delta = self._minimum_image(
-                np.asarray(coordinate, dtype=np.float64)
-                - np.asarray(request[3], dtype=np.float64)
+                np.asarray(coordinate, dtype=np.float64) - np.asarray(request[3], dtype=np.float64)
             )
             return float(np.linalg.norm(delta)) <= MAXIMUM_DONOR_ACCEPTOR_ANGSTROM
 

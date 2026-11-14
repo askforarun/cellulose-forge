@@ -125,6 +125,7 @@ def compare_energy_terms(
         }
     return comparison
 
+
 TIGHT_ENERGY_MDP = """integrator = md
 nsteps = 0
 cutoff-scheme = Verlet
@@ -264,8 +265,7 @@ def input_geometry_checks(
         for bond in template.bonds:
             distance = float(
                 np.linalg.norm(
-                    positions[offset + bond.atom1_index]
-                    - positions[offset + bond.atom2_index]
+                    positions[offset + bond.atom1_index] - positions[offset + bond.atom2_index]
                 )
             )
             elements = {
@@ -337,9 +337,7 @@ def stereochemistry_checks(
         return bool(isomorphic)
 
     for chain_index in range(CHAIN_COUNT):
-        chain_positions = positions[
-            chain_index * atom_count : (chain_index + 1) * atom_count
-        ]
+        chain_positions = positions[chain_index * atom_count : (chain_index + 1) * atom_count]
         if not matches_template(chain_positions):
             failures.append(chain_index + 1)
 
@@ -455,9 +453,7 @@ def run_gromacs_smoke_test(interchange: object) -> dict[str, object]:
             "nvt_reached_final_step": reached_final_step,
             "failure_markers": failed_markers,
             "passed": bool(
-                (directory / "minim.gro").exists()
-                and reached_final_step
-                and not failed_markers
+                (directory / "minim.gro").exists() and reached_final_step and not failed_markers
             ),
         }
 
@@ -468,8 +464,7 @@ def system_bond_lengths(positions: np.ndarray, molecule: Molecule) -> np.ndarray
     return np.asarray(
         [
             np.linalg.norm(
-                positions[offset + bond.atom1_index]
-                - positions[offset + bond.atom2_index]
+                positions[offset + bond.atom1_index] - positions[offset + bond.atom2_index]
             )
             for chain_index in range(CHAIN_COUNT)
             for offset in [chain_index * atom_count]
@@ -535,9 +530,7 @@ def validate_case(
             interchange.to_openmm_system(combine_nonbonded_forces=False)  # type: ignore[attr-defined]
         ),
     )
-    failed_energy_terms = [
-        term for term, values in comparison.items() if not values["passed"]
-    ]
+    failed_energy_terms = [term for term, values in comparison.items() if not values["passed"]]
 
     system = interchange.to_openmm_system(ewald_tolerance=1.0e-6)
     disable_slab_dispersion_correction(system)
@@ -563,9 +556,7 @@ def validate_case(
     context.setVelocitiesToTemperature(300.0 * openmm.unit.kelvin, 20261112)
     integrator.step(NVT_STEPS)
     final_state = context.getState(getEnergy=True, getPositions=True)
-    final_positions = final_state.getPositions(asNumpy=True).value_in_unit(
-        openmm.unit.angstrom
-    )
+    final_positions = final_state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
     maximum_bond_change = float(
         np.max(np.abs(system_bond_lengths(final_positions, template) - minimized_bonds))
     )
@@ -598,9 +589,7 @@ def validate_case(
             openmm.unit.kilojoule_per_mole
         ),
         "minimized_potential_energy_kj_mol": (
-            minimized_state.getPotentialEnergy().value_in_unit(
-                openmm.unit.kilojoule_per_mole
-            )
+            minimized_state.getPotentialEnergy().value_in_unit(openmm.unit.kilojoule_per_mole)
         ),
         "openmm_nvt_smoke_test": {
             "duration_ps": 1.0,
@@ -625,13 +614,10 @@ def main() -> None:
     args = parser.parse_args()
     charge_method = args.charge_method
     cache_infix = "" if charge_method == "am1bcc" else f"_{charge_method}"
-    cache = Path(
-        f"validation/results/openff_cellodextrin_dp6{cache_infix}_charged.json"
-    )
+    cache = Path(f"validation/results/openff_cellodextrin_dp6{cache_infix}_charged.json")
     if not cache.exists():
         raise FileNotFoundError(
-            "Run probe_openff_cellobiose.py --dp 6 "
-            f"--charge-method {charge_method} first"
+            f"Run probe_openff_cellobiose.py --dp 6 --charge-method {charge_method} first"
         )
     template = Molecule.from_json(cache.read_text(encoding="utf-8"))
     cases = {
@@ -669,9 +655,7 @@ def main() -> None:
             for case in cases.values()
         ),
     }
-    destination = Path(
-        f"validation/results/openff_finite_slab{cache_infix}_matrix.json"
-    )
+    destination = Path(f"validation/results/openff_finite_slab{cache_infix}_matrix.json")
     destination.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))
 

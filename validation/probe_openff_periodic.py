@@ -36,8 +36,7 @@ def periodic_dp6_template() -> Molecule:
     terminal_indices = [
         atom.molecule_atom_index
         for atom in finite.atoms
-        if (atom.name, int(atom.metadata["residue_number"]))
-        in {("HO1", 1), ("O1", 1), ("H4O", 7)}
+        if (atom.name, int(atom.metadata["residue_number"])) in {("HO1", 1), ("O1", 1), ("H4O", 7)}
     ]
     if len(terminal_indices) != TERMINAL_ATOM_COUNT:
         raise RuntimeError(f"Expected three finite terminal atoms: {terminal_indices}")
@@ -99,9 +98,7 @@ def main() -> None:
                 "charge_e": float(molecule.total_charge.m),
                 "stereochemistry_source": "PubChem-derived finite DP6 internal residue 3",
                 "stereochemistry_by_atom_name": {
-                    name: next(
-                        atom.stereochemistry for atom in molecule.atoms if atom.name == name
-                    )
+                    name: next(atom.stereochemistry for atom in molecule.atoms if atom.name == name)
                     for name in ("C1", "C2", "C3", "C4", "C5")
                 },
                 "charge_provenance": {

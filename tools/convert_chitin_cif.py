@@ -36,17 +36,39 @@ import numpy as np
 
 DATA = Path(__file__).resolve().parents[1] / "src/cellulose_forge/data/crystallography/chitin"
 ATOM_ORDER = (
-    "C1", "H1", "C2", "H2", "C3", "H3", "C4", "H4", "C5", "H5", "C6", "H61", "H62",
-    "N2", "HN2", "C7", "O7", "C8", "H81", "H82", "H83",
-    "O3", "O4", "O5", "O6", "HO3", "HO6",
+    "C1",
+    "H1",
+    "C2",
+    "H2",
+    "C3",
+    "H3",
+    "C4",
+    "H4",
+    "C5",
+    "H5",
+    "C6",
+    "H61",
+    "H62",
+    "N2",
+    "HN2",
+    "C7",
+    "O7",
+    "C8",
+    "H81",
+    "H82",
+    "H83",
+    "O3",
+    "O4",
+    "O5",
+    "O6",
+    "HO3",
+    "HO6",
 )
 SOURCES = {
     "alpha": {
         "allomorph": "alpha",
         "space_group": "P 21 21 21",
-        "citation": (
-            "Sikorski, P.; Hori, R.; Wada, M. Biomacromolecules 2009, 10, 1100-1105."
-        ),
+        "citation": ("Sikorski, P.; Hori, R.; Wada, M. Biomacromolecules 2009, 10, 1100-1105."),
         "doi": "10.1021/bm801251e",
         "file": "300K.cif (supporting information)",
         "chain_generator": "-x+1/2, -y, z+1/2",
@@ -55,9 +77,7 @@ SOURCES = {
     "beta": {
         "allomorph": "beta",
         "space_group": "P 1 1 21",
-        "citation": (
-            "Nishiyama, Y.; Noishiki, Y.; Wada, M. Macromolecules 2011, 44, 950-957."
-        ),
+        "citation": ("Nishiyama, Y.; Noishiki, Y.; Wada, M. Macromolecules 2011, 44, 950-957."),
         "doi": "10.1021/ma102240r",
         "file": "ma102240r_si_001.cif (supporting information)",
         "chain_generator": "-x, -y, z+1/2",
@@ -141,8 +161,11 @@ def _name_atoms(elements: list[str], cartesian: np.ndarray) -> list[str]:
     names: dict[int, str] = {}
 
     def heavy(atom: int, element: str | None = None) -> list[int]:
-        return [n for n in neighbors[atom] if elements[n] != "H"
-                and (element is None or elements[n] == element)]
+        return [
+            n
+            for n in neighbors[atom]
+            if elements[n] != "H" and (element is None or elements[n] == element)
+        ]
 
     nitrogen = next(i for i, e in enumerate(elements) if e == "N")
     names[nitrogen] = "N2"
@@ -152,7 +175,9 @@ def _name_atoms(elements: list[str], cartesian: np.ndarray) -> list[str]:
     names[next(iter(heavy(carbonyl, "O")))] = "O7"
     names[next(n for n in heavy(carbonyl, "C"))] = "C8"
     ring_oxygen = next(
-        i for i, e in enumerate(elements) if e == "O" and len(heavy(i, "C")) == 2  # noqa: PLR2004
+        i
+        for i, e in enumerate(elements)
+        if e == "O" and len(heavy(i, "C")) == 2  # noqa: PLR2004
     )
     names[ring_oxygen] = "O5"
     c1 = next(n for n in heavy(ring_oxygen, "C") if c2 in neighbors[n])
@@ -171,9 +196,16 @@ def _name_atoms(elements: list[str], cartesian: np.ndarray) -> list[str]:
         raise SystemExit(f"expected one glycosidic oxygen, found {len(glycosidic)}")
     names[glycosidic[0]] = "OGLY"
     hydrogen_names = {
-        "C1": ["H1"], "C2": ["H2"], "C3": ["H3"], "C4": ["H4"], "C5": ["H5"],
-        "C6": ["H61", "H62"], "N2": ["HN2"], "C8": ["H81", "H82", "H83"],
-        "O3": ["HO3"], "O6": ["HO6"],
+        "C1": ["H1"],
+        "C2": ["H2"],
+        "C3": ["H3"],
+        "C4": ["H4"],
+        "C5": ["H5"],
+        "C6": ["H61", "H62"],
+        "N2": ["HN2"],
+        "C8": ["H81", "H82", "H83"],
+        "O3": ["HO3"],
+        "O6": ["HO6"],
     }
     for atom, name in list(names.items()):
         hydrogens = sorted(n for n in neighbors[atom] if elements[n] == "H")
@@ -191,22 +223,24 @@ def convert(allomorph: str, cif: Path, disorder_group: str | None) -> dict[str, 
     """Return the CelluloseForge definition derived from one CIF."""
     source = SOURCES[allomorph]
     scalars, rows = _read_cif(cif)
-    cell = [_number(scalars[f"_cell_{key}"]) for key in (
-        "length_a", "length_b", "length_c", "angle_alpha", "angle_beta", "angle_gamma"
-    )]
+    cell = [
+        _number(scalars[f"_cell_{key}"])
+        for key in ("length_a", "length_b", "length_c", "angle_alpha", "angle_beta", "angle_gamma")
+    ]
     matrix = _cell_matrix(cell)
     # Keep every fully occupied site and the partially occupied sites of the
     # requested disorder group. Selecting by group alone would drop H5 of the
     # alpha-chitin CIF, which is labelled group 1 although its occupancy is 1.
     selected = [
-        row for row in rows
+        row
+        for row in rows
         if _number(row.get("_atom_site_occupancy", "1")) >= 1.0 - 1e-6
         or row.get("_atom_site_disorder_group", ".") == disorder_group
     ]
     elements = [row["_atom_site_type_symbol"] for row in selected]
-    fractional = np.asarray([
-        [_number(row[f"_atom_site_fract_{axis}"]) for axis in "xyz"] for row in selected
-    ])
+    fractional = np.asarray(
+        [[_number(row[f"_atom_site_fract_{axis}"]) for axis in "xyz"] for row in selected]
+    )
     names = _name_atoms(elements, fractional @ matrix)
     if sorted(names) != sorted([*ATOM_ORDER[:22], "OGLY", *ATOM_ORDER[23:]]):
         raise SystemExit(f"unexpected atom set: {sorted(names)}")
@@ -217,8 +251,10 @@ def convert(allomorph: str, cif: Path, disorder_group: str | None) -> dict[str, 
     for direction in (-1, 1):
         image = position["OGLY"]
         for _ in range(abs(direction)):
-            image = rotation @ image + translation * direction if direction > 0 else (
-                np.linalg.solve(rotation, image - translation)
+            image = (
+                rotation @ image + translation * direction
+                if direction > 0
+                else (np.linalg.solve(rotation, image - translation))
             )
         for shift in range(-2, 3):
             for sx in (-1, 0, 1):
@@ -265,23 +301,35 @@ def convert(allomorph: str, cif: Path, disorder_group: str | None) -> dict[str, 
                     " The antiparallel second chain is the image of the first under "
                     f"({source['second_chain']}); together with the chain screw this "
                     "generates all four P2_12_12_1 positions."
-                    if source["second_chain"] else ""
+                    if source["second_chain"]
+                    else ""
                 )
             ),
         },
         "unit_cell": {
-            "a": cell[0], "b": cell[1], "c": cell[2],
-            "alpha_deg": cell[3], "beta_deg": cell[4], "gamma_deg": cell[5],
+            "a": cell[0],
+            "b": cell[1],
+            "c": cell[2],
+            "alpha_deg": cell[3],
+            "beta_deg": cell[4],
+            "gamma_deg": cell[5],
             "length_unit": "angstrom",
         },
         "symmetry_operations": [
-            {"name": "identity", "rotation": np.eye(3, dtype=int).tolist(),
-             "translation": [0.0, 0.0, 0.0]},
-            {"name": "chain_screw", "description": (
-                f"Two-fold screw along c, ({source['chain_generator']}), generating the "
-                "second residue of every chain."),
-             "rotation": screw_rotation.astype(int).tolist(),
-             "translation": screw_translation.tolist()},
+            {
+                "name": "identity",
+                "rotation": np.eye(3, dtype=int).tolist(),
+                "translation": [0.0, 0.0, 0.0],
+            },
+            {
+                "name": "chain_screw",
+                "description": (
+                    f"Two-fold screw along c, ({source['chain_generator']}), generating the "
+                    "second residue of every chain."
+                ),
+                "rotation": screw_rotation.astype(int).tolist(),
+                "translation": screw_translation.tolist(),
+            },
         ],
         "asymmetric_unit": {
             "description": (

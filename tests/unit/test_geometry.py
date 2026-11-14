@@ -29,9 +29,7 @@ def _c1_signed_volumes(crystal: BulkCrystal) -> np.ndarray:
     volumes: list[float] = []
     for chain, residue in sorted(set(zip(chains, residues, strict=True))):
         mask = (chains == chain) & (residues == residue)
-        lookup = dict(
-            zip(labels[mask], crystal.cartesian_coordinates[mask], strict=True)
-        )
+        lookup = dict(zip(labels[mask], crystal.cartesian_coordinates[mask], strict=True))
         if not {"C1", "O5", "C2", "H1"}.issubset(lookup):
             continue
         center = lookup["C1"]

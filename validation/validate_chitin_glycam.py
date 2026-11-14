@@ -62,9 +62,7 @@ def _external_versions(
     parmed_python: str,
     amber_output: Path,
 ) -> dict[str, str]:
-    gromacs = subprocess.run(
-        [gmx, "--version"], capture_output=True, text=True, check=False
-    ).stdout
+    gromacs = subprocess.run([gmx, "--version"], capture_output=True, text=True, check=False).stdout
     gromacs_match = re.search(r"GROMACS version:\s*(.+)", gromacs)
     parmed = subprocess.run(
         [
@@ -95,8 +93,13 @@ def _build_arguments(  # noqa: PLR0913, PLR0917
     engine: str,
 ) -> list[str]:
     arguments = [
-        "build", "--polymer", "chitin", "--allomorph", allomorph,
-        "--shape", shape,
+        "build",
+        "--polymer",
+        "chitin",
+        "--allomorph",
+        allomorph,
+        "--shape",
+        shape,
     ]
     if shape == "bulk":
         cells = ("6", "2", "3") if allomorph == "alpha" else ("5", "3", "3")
@@ -104,21 +107,36 @@ def _build_arguments(  # noqa: PLR0913, PLR0917
     else:
         arguments.extend(
             (
-                "--face", "1", "0", "0", "--layers", "2",
-                "--chains-per-layer", "4", "--degree-polymerization", "6",
-                "--vacuum", "30",
+                "--face",
+                "1",
+                "0",
+                "0",
+                "--layers",
+                "2",
+                "--chains-per-layer",
+                "4",
+                "--degree-polymerization",
+                "6",
+                "--vacuum",
+                "30",
             )
         )
         if boundary == "finite":
             arguments.extend(("--padding-longitudinal", "12"))
     arguments.extend(
         (
-            "--chain-boundary", boundary,
-            "--force-field", "glycam",
-            "--md-engine", engine,
-            "--tleap-executable", tleap,
-            "--parmed-python", parmed_python,
-            "--output", str(output),
+            "--chain-boundary",
+            boundary,
+            "--force-field",
+            "glycam",
+            "--md-engine",
+            engine,
+            "--tleap-executable",
+            tleap,
+            "--parmed-python",
+            parmed_python,
+            "--output",
+            str(output),
         )
     )
     return arguments
@@ -149,19 +167,31 @@ def _gromacs_case(  # noqa: PLR0913, PLR0917
     if directory.exists():
         shutil.rmtree(directory)
     directory.mkdir(parents=True)
-    assert main(
-        _build_arguments(
-            allomorph, shape, boundary, directory, tleap, parmed_python, "gromacs"
+    assert (
+        main(
+            _build_arguments(allomorph, shape, boundary, directory, tleap, parmed_python, "gromacs")
         )
-    ) == 0
+        == 0
+    )
     report = json.loads((directory / "build_report.json").read_text(encoding="utf-8"))
     logs = []
     logs.append(
         _run(
             [
-                gmx, "grompp", "-f", "minim.mdp", "-p", "system.top",
-                "-c", "structure.gro", "-o", "em.tpr", "-po", "em.mdout.mdp",
-                "-maxwarn", "0",
+                gmx,
+                "grompp",
+                "-f",
+                "minim.mdp",
+                "-p",
+                "system.top",
+                "-c",
+                "structure.gro",
+                "-o",
+                "em.tpr",
+                "-po",
+                "em.mdout.mdp",
+                "-maxwarn",
+                "0",
             ],
             directory,
         )
@@ -170,9 +200,20 @@ def _gromacs_case(  # noqa: PLR0913, PLR0917
     logs.append(
         _run(
             [
-                gmx, "grompp", "-f", "nvt.mdp", "-p", "system.top",
-                "-c", "em.gro", "-o", "nvt.tpr", "-po", "nvt.mdout.mdp",
-                "-maxwarn", "0",
+                gmx,
+                "grompp",
+                "-f",
+                "nvt.mdp",
+                "-p",
+                "system.top",
+                "-c",
+                "em.gro",
+                "-o",
+                "nvt.tpr",
+                "-po",
+                "nvt.mdout.mdp",
+                "-maxwarn",
+                "0",
             ],
             directory,
         )
@@ -189,9 +230,7 @@ def _gromacs_case(  # noqa: PLR0913, PLR0917
         "chain_boundary": boundary,
         "atom_count": report["force_field_atom_count"],
         "chain_count": report["chain_count"],
-        "explicit_mixed_scaling_pairs_per_chain": _explicit_pair_count(
-            directory / "system.top"
-        ),
+        "explicit_mixed_scaling_pairs_per_chain": _explicit_pair_count(directory / "system.top"),
         "grompp_maxwarn": 0,
         "minimization_completed": True,
         "nvt_completed_ps": 1.0,
@@ -209,22 +248,41 @@ def _amber_case(
     if directory.exists():
         shutil.rmtree(directory)
     directory.mkdir(parents=True)
-    assert main(
-        _build_arguments(
-            "beta", "slab", "finite", directory, tleap, parmed_python, "amber"
-        )
-    ) == 0
+    assert (
+        main(_build_arguments("beta", "slab", "finite", directory, tleap, parmed_python, "amber"))
+        == 0
+    )
     _run(
         [
-            sander, "-O", "-i", "min.in", "-p", "structure.prmtop",
-            "-c", "structure.inpcrd", "-o", "min.out", "-r", "min.rst7",
+            sander,
+            "-O",
+            "-i",
+            "min.in",
+            "-p",
+            "structure.prmtop",
+            "-c",
+            "structure.inpcrd",
+            "-o",
+            "min.out",
+            "-r",
+            "min.rst7",
         ],
         directory,
     )
     _run(
         [
-            sander, "-O", "-i", "nvt.in", "-p", "structure.prmtop",
-            "-c", "min.rst7", "-o", "nvt.out", "-r", "nvt.rst7",
+            sander,
+            "-O",
+            "-i",
+            "nvt.in",
+            "-p",
+            "structure.prmtop",
+            "-c",
+            "min.rst7",
+            "-o",
+            "nvt.out",
+            "-r",
+            "nvt.rst7",
         ],
         directory,
     )
@@ -290,8 +348,18 @@ def _amber_gromacs_energy_comparison(
     )
     _run(
         [
-            sander, "-O", "-i", "amber_sp.in", "-p", "structure.prmtop",
-            "-c", "identical.inpcrd", "-o", "amber_sp.out", "-r", "amber_sp.rst7",
+            sander,
+            "-O",
+            "-i",
+            "amber_sp.in",
+            "-p",
+            "structure.prmtop",
+            "-c",
+            "identical.inpcrd",
+            "-o",
+            "amber_sp.out",
+            "-r",
+            "amber_sp.rst7",
         ],
         directory,
     )
@@ -315,9 +383,20 @@ nstenergy = 1
     )
     _run(
         [
-            gmx_double, "grompp", "-f", "gromacs_sp.mdp", "-p", "system.top",
-            "-c", "structure.gro", "-o", "gromacs_sp.tpr", "-po", "gromacs_sp.mdout.mdp",
-            "-maxwarn", "0",
+            gmx_double,
+            "grompp",
+            "-f",
+            "gromacs_sp.mdp",
+            "-p",
+            "system.top",
+            "-c",
+            "structure.gro",
+            "-o",
+            "gromacs_sp.tpr",
+            "-po",
+            "gromacs_sp.mdout.mdp",
+            "-maxwarn",
+            "0",
         ],
         directory,
     )
@@ -332,18 +411,13 @@ nstenergy = 1
     )
     xvg_lines = (directory / "gromacs_sp.xvg").read_text(encoding="utf-8").splitlines()
     legends = [
-        match.group(1)
-        for line in xvg_lines
-        if (match := re.match(r'@ s\d+ legend "(.*)"', line))
+        match.group(1) for line in xvg_lines if (match := re.match(r'@ s\d+ legend "(.*)"', line))
     ]
     values = next(
-        line.split()[1:]
-        for line in reversed(xvg_lines)
-        if line and not line.startswith(("#", "@"))
+        line.split()[1:] for line in reversed(xvg_lines) if line and not line.startswith(("#", "@"))
     )
     gromacs = {
-        name: float(value) / _KJ_PER_KCAL
-        for name, value in zip(legends, values, strict=True)
+        name: float(value) / _KJ_PER_KCAL for name, value in zip(legends, values, strict=True)
     }
     amber_text = (directory / "amber_sp.out").read_text(encoding="utf-8")
     amber_matches = {
@@ -373,8 +447,7 @@ nstenergy = 1
             "gromacs_kcal_mol": gromacs_value,
             "amber_kcal_mol": amber_value,
             "raw_difference_kcal_mol": gromacs_value - amber_value,
-            "coulomb_constant_corrected_difference_kcal_mol": corrected_gromacs
-            - amber_value,
+            "coulomb_constant_corrected_difference_kcal_mol": corrected_gromacs - amber_value,
         }
     maximum_corrected = max(
         abs(term["coulomb_constant_corrected_difference_kcal_mol"])
