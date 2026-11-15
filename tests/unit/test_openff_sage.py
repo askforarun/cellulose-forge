@@ -233,7 +233,7 @@ def test_build_time_stereochemistry_guard_rejects_wrong_graph_label() -> None:
     )
     terminal_c3.stereochemistry = "S"
     with pytest.raises(ValueError, match="declared stereochemistry disagrees"):
-        validate_declared_stereochemistry(build.molecule, build.mapped, "chitin")
+        validate_declared_stereochemistry(build.molecule, build.mapped, "finite", "chitin")
 
 
 @pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
@@ -250,6 +250,7 @@ def test_declared_stereo_guard_handles_wrapped_periodic_chains(polymer: str) -> 
     result = validate_declared_stereochemistry(
         build.molecule,
         replace(build.mapped, cartesian_coordinates=wrapped),
+        "periodic",
         polymer,
     )
     assert result["passed"] is True
@@ -529,7 +530,7 @@ def test_fast_stereo_guard_agrees_with_full_rdkit_perception(
         cartesian_coordinates=(fractional - np.floor(fractional)) @ mapped.basis_vectors,  # type: ignore[attr-defined]
     )
     for coordinates in (mapped, wrapped):
-        assert validate_declared_stereochemistry(molecule, coordinates, polymer)["passed"]
+        assert validate_declared_stereochemistry(molecule, coordinates, boundary, polymer)["passed"]
     chain = wrapped.cartesian_coordinates[: molecule.n_atoms]  # type: ignore[attr-defined]
     for atom in molecule.atoms:  # type: ignore[attr-defined]
         if atom.stereochemistry is not None:
@@ -554,7 +555,7 @@ def test_fast_stereo_guard_catches_every_single_label_flip(
         original = atom.stereochemistry
         atom.stereochemistry = "R" if original == "S" else "S"
         with pytest.raises(ValueError, match="declared stereochemistry disagrees"):
-            validate_declared_stereochemistry(molecule, mapped, polymer)
+            validate_declared_stereochemistry(molecule, mapped, boundary, polymer)
         atom.stereochemistry = original
     assert len(labelled) == 20
 
@@ -563,8 +564,20 @@ def test_fast_stereo_guard_catches_every_single_label_flip(
 def test_fast_stereo_guard_stays_fast_for_long_periodic_chains() -> None:
     """RDKit's global perception took seconds per DP20 periodic chain; the guard must not."""
     molecule, mapped = _guard_case("cellulose", "i_beta", "periodic", 40)
-    validate_declared_stereochemistry(molecule, mapped, "cellulose")
+    validate_declared_stereochemistry(molecule, mapped, "periodic", "cellulose")
     started = time.perf_counter()
-    result = validate_declared_stereochemistry(molecule, mapped, "cellulose")
+    result = validate_declared_stereochemistry(molecule, mapped, "periodic", "cellulose")
     assert time.perf_counter() - started < 1.0
     assert result["labelled_centres_per_chain"] == 200
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+def test_declared_stereo_guard_requires_explicit_valid_boundary() -> None:
+    molecule, mapped = _guard_case("cellulose", "i_beta", "finite", 4)
+    with pytest.raises(ValueError, match=r"chain_boundary.*'finite' or 'periodic'"):
+        validate_declared_stereochemistry(molecule, mapped, "inferred", "cellulose")
+
+    # The supplied boundary controls the reference graph; it is not inferred
+    # from terminal atom names.
+    with pytest.raises(ValueError, match="molecular graph"):
+        validate_declared_stereochemistry(molecule, mapped, "periodic", "cellulose")

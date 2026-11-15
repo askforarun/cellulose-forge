@@ -385,6 +385,7 @@ def validate_sage_stereochemistry(
 def validate_declared_stereochemistry(
     molecule: Any,
     mapped: GlycamMappedSystem,
+    chain_boundary: str,
     polymer: str = "cellulose",
 ) -> dict[str, object]:
     """Confirm every declared R/S label against the mapped coordinates.
@@ -400,7 +401,11 @@ def validate_declared_stereochemistry(
     bonded neighbours, so wrapped periodic coordinates need no unwrapping. The
     cost is linear in the number of centres.
     """
-    boundary = "periodic" if _is_periodic_graph(molecule) else "finite"
+    if chain_boundary not in _REFERENCE_DEGREE:
+        raise ValueError(
+            "OpenFF stereochemistry validation requires chain_boundary to be 'finite' or 'periodic'"
+        )
+    boundary = chain_boundary
     degree = len({int(atom.metadata["residue_number"]) for atom in molecule.atoms})
     priorities = _neighbour_priorities(polymer, boundary)
     index = {
@@ -420,10 +425,15 @@ def validate_declared_stereochemistry(
             raise ValueError(
                 f"no CIP priority reference for {polymer} {atom.name} in residue {residue}"
             )
-        ranked = [
-            index[_neighbour_residue(residue, offset, degree, boundary), name]
-            for offset, name in order
-        ]
+        try:
+            ranked = [
+                index[_neighbour_residue(residue, offset, degree, boundary), name]
+                for offset, name in order
+            ]
+        except KeyError as error:
+            raise ValueError(
+                f"OpenFF {polymer} molecular graph is incompatible with chain_boundary={boundary!r}"
+            ) from error
         bonded = {neighbour.molecule_atom_index for neighbour in atom.bonded_atoms}
         if set(ranked) != bonded:
             raise ValueError(
@@ -478,11 +488,6 @@ def validate_declared_stereochemistry(
 
 
 _REFERENCE_DEGREE = {"finite": 3, "periodic": 5}
-
-
-def _is_periodic_graph(molecule: Any) -> bool:
-    names = {atom.name for atom in molecule.atoms}
-    return not ({"O1", "HO1", "HO4"} & names)
 
 
 def _residue_class(residue: int, degree: int, boundary: str) -> str:
@@ -579,7 +584,9 @@ def build_sage_system(
         chain_boundary,
         profile.residue_name,
     )
-    declared_stereo = validate_declared_stereochemistry(molecule, mapped, selected_polymer)
+    declared_stereo = validate_declared_stereochemistry(
+        molecule, mapped, chain_boundary, selected_polymer
+    )
     unit = importlib.import_module("openff.units").unit
 
     molecule.add_conformer(mapped.cartesian_coordinates[: molecule.n_atoms] * unit.angstrom)
