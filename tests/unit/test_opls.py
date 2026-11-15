@@ -320,6 +320,8 @@ def test_cli_writes_openmm(tmp_path: Path) -> None:
     report = json.loads((tmp_path / "out" / "build_report.json").read_text())
     assert report["engine_validation"]["openmm"]["status"] == "passed"
     assert not (tmp_path / "out" / "system.top").exists()
+    assert "<Energies" not in (tmp_path / "out" / "state.xml").read_text(encoding="utf-8")
+    assert report["engine_validation"]["openmm"]["diagnostic_energy_precision_kj_mol"] == 1.0e-6
 
 
 @pytest.mark.parametrize(

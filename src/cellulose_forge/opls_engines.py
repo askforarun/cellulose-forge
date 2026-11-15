@@ -263,7 +263,9 @@ minimized = constrained_context.getState(getEnergy=True).getPotentialEnergy()
 with open(request["system_path"], "w", encoding="utf-8") as handle:
     handle.write(openmm.XmlSerializer.serialize(constrained))
 with open(request["state_path"], "w", encoding="utf-8") as handle:
-    handle.write(openmm.XmlSerializer.serialize(initial_state))
+    # Positions and box only: a serialized energy would carry OpenMM's
+    # process-dependent last-digit summation noise into a structural file.
+    handle.write(openmm.XmlSerializer.serialize(context.getState(getPositions=True)))
 topology = app.Topology()
 atoms = []
 for chain_index in range(chains):

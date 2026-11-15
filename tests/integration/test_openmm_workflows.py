@@ -151,6 +151,8 @@ def _gromacs_energies(directory: Path, *, periodic: bool) -> dict[str, float]:
 def _assert_openmm_matches_gromacs(output: Path, *, periodic: bool) -> None:
     report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
     openmm_energies = report["openmm_validation"]["initial_energies_kj_mol"]
+    assert "<Energies" not in (output / "state.xml").read_text(encoding="utf-8")
+    assert report["openmm_validation"]["diagnostic_energy_precision_kj_mol"] == 1.0e-6
     gromacs = _gromacs_energies(output, periodic=periodic)
 
     openmm_bonded = sum(openmm_energies.get(name, 0.0) for name in _OPENMM_BONDED_FORCES)

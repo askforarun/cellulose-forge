@@ -27,6 +27,8 @@ from cellulose_forge.gromacs_pairs import prepare_explicit_pairs
 
 OPENMM_SYSTEM_FILE = "system.xml"
 OPENMM_STATE_FILE = "state.xml"
+# Build-report energies are rounded to this many decimals of kJ/mol.
+DIAGNOSTIC_ENERGY_DECIMALS = 6
 OPENMM_TOPOLOGY_FILE = "topology.cif"
 OPENMM_RUNNER_FILE = "run_openmm.py"
 POSITION_RESTRAINT_SCALE_PARAMETER = "cellulose_restraint_scale"
@@ -220,7 +222,9 @@ minimized = constrained_context.getState(getEnergy=True).getPotentialEnergy()
 with open(request["system_path"], "w", encoding="utf-8") as handle:
     handle.write(openmm.XmlSerializer.serialize(constrained))
 with open(request["state_path"], "w", encoding="utf-8") as handle:
-    handle.write(openmm.XmlSerializer.serialize(initial_state))
+    # Positions and box only: a serialized energy would carry OpenMM's
+    # process-dependent last-digit summation noise into a structural file.
+    handle.write(openmm.XmlSerializer.serialize(context.getState(getPositions=True)))
 top.topology.setPeriodicBoxVectors(box_vectors)
 with open(request["topology_path"], "w", encoding="utf-8") as handle:
     PDBxFile.writeFile(top.topology, gro.positions, handle, keepIds=True)
@@ -476,6 +480,34 @@ def _check_box_supports_cutoff(system: GlycamMappedSystem, cutoff_nm: float) -> 
         )
 
 
+def diagnostic_energy_report(metadata: dict[str, object]) -> dict[str, object]:
+    """Return builder metadata with diagnostic energies recorded at a fixed precision.
+
+    OpenMM sums some forces (for example ``CustomNonbondedForce`` on the
+    Reference platform) in an order that can differ between processes, so the
+    same coordinates can give energies that differ in the last binary digit
+    (about 1e-16 relative). Build-time checks use the full-precision values;
+    the report records every ``*_kj_mol`` value to ``1e-6`` kJ/mol so that
+    identical builds produce identical reports.
+    """
+    reported: dict[str, object] = {}
+    for key, value in metadata.items():
+        if key.endswith("_kj_mol") and isinstance(value, float):
+            reported[key] = round(value, DIAGNOSTIC_ENERGY_DECIMALS)
+        elif key.endswith("_kj_mol") and isinstance(value, dict):
+            reported[key] = {
+                name: round(float(term), DIAGNOSTIC_ENERGY_DECIMALS) for name, term in value.items()
+            }
+        else:
+            reported[key] = value
+    reported["diagnostic_energy_precision_kj_mol"] = 10.0**-DIAGNOSTIC_ENERGY_DECIMALS
+    reported["diagnostic_energy_note"] = (
+        "build-time diagnostic energies computed in full precision and recorded to "
+        "1e-6 kJ/mol; they are not equilibrium or force-field-accuracy results"
+    )
+    return reported
+
+
 def _validated_metadata(stdout: str, *, periodic_chains: bool) -> dict[str, object]:
     """Parse and check the builder's JSON report."""
     try:
@@ -515,7 +547,7 @@ def _validated_metadata(stdout: str, *, periodic_chains: bool) -> dict[str, obje
         periodic_forces = cast(list[str], metadata.get("periodic_forces", []))
         if "NonbondedForce exceptions" not in periodic_forces:
             raise ValueError("periodic nonbonded exceptions were not enabled in OpenMM")
-    return metadata
+    return diagnostic_energy_report(metadata)
 
 
 def write_openmm_system(  # noqa: PLR0913

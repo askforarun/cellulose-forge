@@ -226,3 +226,77 @@ def test_validation_platform_avoids_reference_for_tilted_third_vector() -> None:
     tilted = [[31.2, 0.0, 0.0], [-11.27, 24.39, 0.0], [-11.23, -0.79, 21.03]]
     assert validation_platform_for_box(upright) == "Reference"
     assert validation_platform_for_box(tilted) == "CPU"
+
+
+def _write_with(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, metadata: dict[str, object]):  # type: ignore[no-untyped-def]
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    topology = tmp_path / "system.top"
+    topology.touch()
+    _fake_builder(monkeypatch, metadata)
+    return write_openmm_system(
+        _two_chain_system(),
+        topology,
+        topology,
+        tmp_path / "out",
+        periodic_chains=True,
+        dispersion_correction=False,
+        python_executable=sys.executable,
+    )[1]
+
+
+def test_report_records_diagnostic_energies_at_fixed_precision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    metadata = _write_with(
+        tmp_path,
+        monkeypatch,
+        _metadata(
+            initial_potential_energy_kj_mol=-1686.2651533258913,
+            minimized_potential_energy_kj_mol=-1686.2651533258904,
+            initial_energies_kj_mol={
+                "HarmonicBondForce": 120.12345678,
+                "HarmonicAngleForce": 60.0,
+                "PeriodicTorsionForce": 30.0,
+                "NonbondedForce": -400.0,
+                "NonbondedForce exceptions (1-4)": 900.0,
+            },
+        ),
+    )
+    assert metadata["initial_potential_energy_kj_mol"] == -1686.265153
+    assert metadata["minimized_potential_energy_kj_mol"] == -1686.265153
+    assert metadata["initial_energies_kj_mol"]["HarmonicBondForce"] == 120.123457  # type: ignore[index]
+    assert metadata["diagnostic_energy_precision_kj_mol"] == pytest.approx(1.0e-6)
+    assert "full precision" in str(metadata["diagnostic_energy_note"])
+    assert metadata["maximum_bond_length_deviation_nm"] == 0.01
+
+
+def test_last_digit_energy_noise_gives_identical_reports(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The OpenMM Reference CustomNonbondedForce noise seen between processes."""
+    first = _write_with(
+        tmp_path / "a",
+        monkeypatch,
+        _metadata(minimized_potential_energy_kj_mol=-1686.2651533258904),
+    )
+    second = _write_with(
+        tmp_path / "b",
+        monkeypatch,
+        _metadata(minimized_potential_energy_kj_mol=-1686.2651533258913),
+    )
+    assert json.dumps(first, sort_keys=True) == json.dumps(second, sort_keys=True)
+
+
+def test_build_checks_use_full_precision_energies(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A bonded energy 3e-8 kJ/mol per atom over the limit is refused, not rounded away."""
+    over_limit = {
+        "HarmonicBondForce": 50.0 * 12 - 60.0 - 30.0 + 4.0e-7,
+        "HarmonicAngleForce": 60.0,
+        "PeriodicTorsionForce": 30.0,
+        "NonbondedForce": -400.0,
+        "NonbondedForce exceptions (1-4)": 900.0,
+    }
+    with pytest.raises(ValueError, match="per atom"):
+        _write_with(tmp_path, monkeypatch, _metadata(initial_energies_kj_mol=over_limit))
