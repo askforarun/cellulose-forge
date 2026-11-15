@@ -11,10 +11,10 @@
   "improper_types": 0,
   "proper_dihedral_types": 58,
   "provenance": {
-    "cellulose_forge_commit": "8749fe2a5b324c0540a1eb12010cdde343e3ceed",
+    "cellulose_forge_commit": "eabf364afd724603df83d97698f6b97ec5b59074",
     "software_versions": {
       "ParmEd": "4.3.1",
-      "cellulose-forge": "not installed",
+      "cellulose-forge": "1.2.0",
       "numpy": "1.26.4"
     },
     "tracked_tree_clean": true
