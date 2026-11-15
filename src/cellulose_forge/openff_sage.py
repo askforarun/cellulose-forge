@@ -565,6 +565,11 @@ def build_sage_system(
     """Build, map, charge, and validate one reusable Sage polymer chain."""
     selected_polymer = polymer or ("chitin" if crystal.residue_name == "NAG" else "cellulose")
     profile = _polymer_profile(selected_polymer)
+    if crystal.residue_name != profile.residue_name:
+        raise ValueError(
+            f"OpenFF {selected_polymer} requires crystal residue {profile.residue_name}, "
+            f"not {crystal.residue_name}"
+        )
     if not crystal.chain_numbers or not crystal.residue_numbers:
         raise ValueError("OpenFF mapping requires explicit chain and residue numbers")
     first_chain = next(iter(crystal.chain_numbers))

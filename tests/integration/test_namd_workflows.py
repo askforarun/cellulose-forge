@@ -188,7 +188,10 @@ def test_real_periodic_cellulose_psf_matches_gromacs_topology(
         kcal["potential"],
     ]
     (output / "single_point_namd.log").write_text(
-        "ENERGY: " + " ".join(f"{value:.12g}" for value in namd_fields) + "\n",
+        "ETITLE: TS BOND ANGLE DIHED IMPRP ELECT VDW BOUNDARY MISC KINETIC "
+        "TOTAL TEMP POTENTIAL\nENERGY: "
+        + " ".join(f"{value:.12g}" for value in namd_fields)
+        + "\n",
         encoding="utf-8",
     )
     subprocess.run(

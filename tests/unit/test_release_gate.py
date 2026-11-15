@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 
@@ -74,6 +75,24 @@ def test_mismatched_tag_is_an_error() -> None:
     gate = release_gate.Gate(release=True)
     release_gate.check_versions(gate, "v0.0.1")
     assert "error" in _statuses(gate, "tag")
+
+
+def test_missing_release_tag_is_an_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    real_git = release_gate._git
+
+    def fake_git(*arguments: str) -> subprocess.CompletedProcess[str]:
+        if arguments[:3] == ("rev-parse", "--verify", "--quiet"):
+            return subprocess.CompletedProcess(["git", *arguments], 1, "", "")
+        return real_git(*arguments)
+
+    monkeypatch.setattr(release_gate, "_git", fake_git)
+    gate = release_gate.Gate(release=True)
+    release_gate.check_versions(gate, "v1.3.0")
+    assert any(
+        finding.status == "error" and "does not exist" in finding.message
+        for finding in gate.findings
+        if finding.check == "tag"
+    )
 
 
 def test_provenance_finder_searches_nested_documents() -> None:

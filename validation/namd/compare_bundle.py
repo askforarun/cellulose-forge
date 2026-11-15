@@ -142,7 +142,7 @@ def compare(build: Path) -> dict[str, object]:
         "atom_count": len(atoms),
         "atom_row_mismatches": {key: value for key, value in mismatches.items() if value},
         "net_charge_psf": round(sum(float(atom["charge"]) for atom in atoms), 8),
-        "sets_equal": {
+        "term_counters_equal": {
             "bonds": gromacs_bonds == psf_bonds,
             "angles": gromacs_angles == psf_angles,
             "proper_dihedrals": gromacs_propers == psf_propers,

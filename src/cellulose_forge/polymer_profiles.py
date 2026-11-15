@@ -158,13 +158,10 @@ def engine_capability_error(  # noqa: PLR0911 - preserve specific historical dia
         return (
             "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps"
         )
-    declared_engines = {
-        "glycam": frozenset({"gromacs", "amber", "openmm", "lammps"}),
-        "charmm36": frozenset({"gromacs", "openmm", "lammps", "namd"}),
-        "openff": frozenset({"gromacs", "openmm"}),
-        "opls-aa": frozenset({"gromacs", "openmm", "lammps"}),
-        "opls-aa-sei": frozenset({"gromacs", "openmm", "lammps"}),
-    }.get(force_field, capability.engines if capability is not None else frozenset())
+    # Let capability_error() emit the polymer/force-field-specific refusal.
+    if capability is None:
+        return None
+    declared_engines = capability.engines
     unsupported = [engine for engine in engines if engine not in declared_engines]
     if not unsupported:
         return None

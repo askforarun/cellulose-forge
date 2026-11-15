@@ -251,9 +251,12 @@ def check_versions(gate: Gate, tag: str | None) -> None:
     if tag is not None:
         if tag != f"v{version}":
             gate.error("tag", f"tag {tag} does not match version v{version}")
-        tagged = _git("rev-parse", "--verify", "--quiet", f"refs/tags/{tag}^{{commit}}").stdout
+        tag_result = _git("rev-parse", "--verify", "--quiet", f"refs/tags/{tag}^{{commit}}")
+        tagged = tag_result.stdout
         head = _git("rev-parse", "HEAD").stdout.strip()
-        if tagged.strip() and tagged.strip() != head:
+        if tag_result.returncode != 0:
+            gate.error("tag", f"tag {tag} does not exist")
+        elif tagged.strip() != head:
             gate.error("tag", f"existing tag {tag} points at {tagged.strip()[:10]}, not HEAD")
         elif tag == f"v{version}":
             gate.ok("tag", f"tag {tag} matches the version and HEAD")

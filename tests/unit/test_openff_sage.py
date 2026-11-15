@@ -55,6 +55,12 @@ def test_missing_optional_dependency_has_installation_message(
         require_openff()
 
 
+def test_library_api_refuses_mannan_as_cellulose_sage_graph() -> None:
+    crystal = build_bulk_crystal(load_allomorph("i", polymer="mannan"), (2, 2, 2))
+    with pytest.raises(ValueError, match=r"requires crystal residue BGC, not MAN"):
+        build_sage_system(crystal, "periodic", "cellulose")
+
+
 def test_triclinic_box_reduction_preserves_lattice_volume() -> None:
     box = np.asarray(((10.0, 0.0, 0.0), (-7.0, 9.0, 0.0), (6.0, 5.0, 8.0)))
     reduced = reduced_periodic_box(box)

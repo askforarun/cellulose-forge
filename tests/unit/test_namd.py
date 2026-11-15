@@ -279,6 +279,9 @@ def test_writer_copies_parameter_file_and_writes_complete_bundle(
     assert files.configuration.is_file()
     assert files.parameters.read_text(encoding="utf-8") == "* test parameters\n"
     assert "rigidBonds none" in files.single_point_configuration.read_text()
+    assert "coordinates structure_namd.pdb" in files.single_point_configuration.read_text()
+    assert "temperature 0" in files.single_point_configuration.read_text()
+    assert "outputName single_point" in files.single_point_configuration.read_text()
     binary = files.single_point_coordinates.read_bytes()
     assert struct.unpack("=i", binary[:4])[0] == _system().atom_count
     assert len(binary) == 4 + 3 * 8 * _system().atom_count
@@ -299,6 +302,8 @@ def test_single_point_script_groups_matching_terms(tmp_path: Path) -> None:
     script.write_text(render_single_point_energy_script(), encoding="utf-8")
     namd = tmp_path / "namd.log"
     namd.write_text(
+        "ETITLE: TS BOND ANGLE DIHED IMPRP ELECT VDW BOUNDARY MISC KINETIC "
+        "TOTAL TEMP POTENTIAL TOTAL3 TEMPAVG PRESSURE GPRESSURE VOLUME PRESSAVG GPRESSAVG\n"
         "ENERGY: 0 1 5 3 4 26 19 0 0 0 58 300 58 58 300 0 0 1000 0 0\n",
         encoding="utf-8",
     )
@@ -346,7 +351,11 @@ def test_single_point_script_refuses_missing_gromacs_term(tmp_path: Path) -> Non
     script = tmp_path / "single_point_energy.py"
     script.write_text(render_single_point_energy_script(), encoding="utf-8")
     namd = tmp_path / "namd.log"
-    namd.write_text("ENERGY: 0 1 5 3 4 26 19 0 0 0 58 300 58\n", encoding="utf-8")
+    namd.write_text(
+        "ETITLE: TS BOND ANGLE DIHED IMPRP ELECT VDW BOUNDARY MISC KINETIC TOTAL TEMP POTENTIAL\n"
+        "ENERGY: 0 1 5 3 4 26 19 0 0 0 58 300 58\n",
+        encoding="utf-8",
+    )
     names = (
         "Bond",
         "U-B",

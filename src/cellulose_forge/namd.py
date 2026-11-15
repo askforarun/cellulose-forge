@@ -342,7 +342,10 @@ def render_namd_single_point_configuration(vectors: FloatArray, *, periodic_chai
     return "\n".join(
         [
             "structure system.psf",
+            "coordinates structure_namd.pdb",
             "binCoordinates single_point.coor",
+            "temperature 0",
+            "outputName single_point",
             "paraTypeCharmm on",
             "parameters par_all36_carb.prm",
             "exclude scaled1-4",
@@ -413,6 +416,11 @@ GMX_EXE="${GMX_EXE:-gmx}"
 PYTHON_EXE="${PYTHON_EXE:-python3}"
 NAMD_THREADS="${NAMD_THREADS:-8}"
 
+if [[ ! -f system.top ]]; then
+  echo "cross-engine comparison requires system.top; generate GROMACS output alongside NAMD" >&2
+  exit 2
+fi
+
 "${NAMD_EXE}" +p"${NAMD_THREADS}" single_point_namd.conf > single_point_namd.log
 
 "${GMX_EXE}" grompp -f single_point_gromacs.mdp -c single_point_coordinates.gro \
@@ -439,17 +447,18 @@ from pathlib import Path
 KJ_PER_KCAL = 4.184
 ABSOLUTE_TOLERANCE = 0.1
 RELATIVE_TOLERANCE = 5.0e-5
-NAMD_FIELDS = (
-    "TS", "BOND", "ANGLE", "DIHED", "IMPRP", "ELECT", "VDW", "BOUNDARY",
-    "MISC", "KINETIC", "TOTAL", "TEMP", "POTENTIAL", "TOTAL3", "TEMPAVG",
-    "PRESSURE", "GPRESSURE", "VOLUME", "PRESSAVG", "GPRESSAVG",
-)
-
 def namd_energies(path: Path) -> dict[str, float]:
+    fields: list[str] | None = None
     for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith("ETITLE:"):
+            fields = line.split()[1:]
         if line.startswith("ENERGY:"):
+            if fields is None:
+                raise ValueError("NAMD log contains ENERGY before ETITLE")
             values = [float(value) for value in line.split()[1:]]
-            return dict(zip(NAMD_FIELDS, values, strict=False))
+            if len(values) != len(fields):
+                raise ValueError("NAMD ENERGY field count differs from ETITLE")
+            return dict(zip(fields, values, strict=True))
     raise ValueError("NAMD log contains no ENERGY row")
 
 def gromacs_energies(path: Path) -> dict[str, float]:
@@ -506,7 +515,8 @@ namd_groups = {
 }
 for engine, terms in (("namd", namd_groups), ("gromacs", gmx_groups)):
     component_sum = sum(value for name, value in terms.items() if name != "potential")
-    if abs(component_sum - terms["potential"]) > 0.05:
+    sum_tolerance = max(0.05, 1.0e-6 * abs(terms["potential"]))
+    if abs(component_sum - terms["potential"]) > sum_tolerance:
         raise ValueError(f"{engine} components do not sum to Potential")
     directory = Path("single_point") / engine
     directory.mkdir(parents=True, exist_ok=True)
