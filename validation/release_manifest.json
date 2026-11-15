@@ -18,7 +18,7 @@
     "openff_periodic_bulk_nagl_matrix.json": {"role": "evidence", "validator": "validation/validate_openff_periodic_bulk.py"},
     "openff_periodic_slab_nagl_matrix.json": {"role": "evidence", "validator": "validation/validate_openff_periodic_slab.py"},
     "openff_shipped_outputs.json": {"role": "evidence", "validator": "validation/validate_openff_shipped_outputs.py"},
-    "openmm_engine_validation.json": {"role": "unprovenanced-evidence", "validator": "validation/validate_openmm_engine.py"},
+    "openmm_engine_validation.json": {"role": "evidence", "validator": "validation/validate_openmm_engine.py"},
     "openmm_tilted_box.json": {"role": "evidence", "validator": "validation/measure_openmm_tilted_box.py"},
     "opls_cellulose_matrix.json": {"role": "evidence", "validator": "validation/validate_opls_cellulose.py"},
 
