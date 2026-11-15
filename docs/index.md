@@ -4,8 +4,8 @@ CelluloseForge constructs experimentally grounded crystalline cellulose and
 chitin unit cells, bulk crystals, chain-parallel slabs, and literature-defined
 fibrils, plus coordinate-only Mannan I crystals. Supported systems can be
 parameterized with GLYCAM06j-1, finite- or periodic-chain CHARMM36, or
-experimental OpenFF Sage 2.3, and written for GROMACS, OpenMM, LAMMPS, and
-(finite GLYCAM chains) Amber, each with starting run inputs. The CHARMM36
+experimental OpenFF Sage 2.3, and written for GROMACS, OpenMM, LAMMPS, NAMD,
+and (finite GLYCAM chains) Amber, each with starting run inputs. The CHARMM36
 workflow does not require VMD or `psfgen` at runtime.
 
 Start with the [step-by-step tutorial](tutorial.md). The main repository README

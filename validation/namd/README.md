@@ -1,12 +1,15 @@
 # NAMD validation bundle
 
-This folder keeps the reusable scripts for the experimental NAMD backend in
-one place. Generated simulation folders remain self-contained and do not
-depend on Slurm or another scheduler.
+This folder keeps the reusable scripts for the NAMD backend in one place.
+Generated simulation folders remain self-contained and do not depend on Slurm
+or another scheduler.
 
 - `compare_bundle.py` independently parses `system.psf`, expands the generated
   GROMACS topology with ParmEd, and compares atom properties and bonded term
   sets. It also records the parameter checksum and periodic cell widths.
+- `analyze_dynamics.py` checks completion, finite energies, temperature,
+  minimum-image bond lengths, and heavy-atom RMSD after the generated
+  minimization and 1 ps NVT smoke test.
 - Every generated NAMD/GROMACS build contains the sole maintained runner,
   `run_single_point_comparison.sh`, its two engine inputs, and
   `single_point_energy.py`. There is deliberately no second copy here that can
@@ -42,13 +45,14 @@ python validation/namd/run_acceptance_matrix.py \
 ```
 
 The launcher refuses missing executables or parameters and stops at the first
-failed build, topology audit, or energy comparison. It does not create mock
-NAMD output.
+failed build, topology audit, energy comparison, or dynamics smoke test. It
+does not create mock NAMD output.
 
 The stored acceptance matrix now records successful NAMD 3.0.3 single-point
 comparisons against GROMACS for cellulose Ibeta, triclinic cellulose Ialpha,
 and alpha-chitin. These comparisons use matched, unswitched 12 angstrom
 Lennard-Jones settings to isolate topology and engine consistency; production
-NAMD inputs retain the native CHARMM36 10--12 angstrom force switch. The
-backend remains experimental until short production-input dynamics have also
-been validated.
+NAMD inputs retain the native CHARMM36 10--12 angstrom force switch. The same
+matrix runs each generated production input through minimization and 1 ps NVT
+and requires finite energies, intact bonds, and a heavy-atom RMSD below 2
+angstrom.

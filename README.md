@@ -127,6 +127,7 @@ Simulation engines by force field and chain boundary:
 | GROMACS | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | Released |
 | OpenMM | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | Released (1.2.0) |
 | LAMMPS | Finite and periodic | Finite and periodic | Not available | Finite and periodic | Experimental (1.2.0) |
+| NAMD | Not available | Finite and periodic | Not available | Not available | Validated (next release) |
 | Amber | Finite only | Not available | Not available | Not available | Released (1.2.0) |
 
 Native Amber output cannot represent covalently periodic chains because Amber

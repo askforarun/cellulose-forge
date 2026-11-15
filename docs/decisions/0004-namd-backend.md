@@ -61,9 +61,10 @@ GROMACS port back into a CHARMM PRM and does not redistribute CHARMM files.
 - A real-build check caught and fixed the configuration's coordinate filename;
   it now names the PSF-ordered `structure_namd.pdb`.
 
-NAMD is not installed on the development Mac. NAMD parsing, dynamics, and
-term-resolved energy comparison therefore remain review/validation tasks, not
-claims made by the implementation.
+NAMD 3.0.3 was subsequently installed on the development Mac. The stored
+acceptance matrix now records real NAMD parsing, term-resolved single-point
+comparison against GROMACS, minimization, and 1 ps NVT for periodic I-beta,
+triclinic I-alpha, and alpha-chitin.
 
 ## Changes after independent review
 
@@ -85,11 +86,12 @@ The five review findings against `d674258` are addressed:
    interaction sets for real cellulose and chitin bundles.
 
 Each generated folder also contains a portable shell runner, dedicated
-unconstrained NAMD and GROMACS 10--12 Angstrom force-switch single-point
+unconstrained NAMD and GROMACS matched unswitched 12 Angstrom single-point
 inputs, and a dependency-free comparison script. Both engines read coordinates
 derived from the same GRO file. Missing terms, inconsistent energy sums, and
-tolerance failures stop the comparison. NAMD runtime execution remains the
-only missing acceptance step.
+tolerance failures stop the comparison. Production inputs retain the native
+CHARMM 10--12 Angstrom force switch and pass minimization plus 1 ps NVT in all
+three stored cases, with finite energies and intact bonds.
 
 ## Independent review requested from Claude
 

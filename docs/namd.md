@@ -1,10 +1,10 @@
-# NAMD output (experimental)
+# NAMD output
 
 CelluloseForge can write native NAMD inputs for existing CHARMM36 cellulose
 and anhydrous alpha/beta-chitin systems. The stored NAMD 3.0.3/GROMACS
-single-point matrix passes for periodic I-beta, triclinic I-alpha, and
-alpha-chitin. The backend remains experimental until its short dynamics checks
-are complete.
+acceptance matrix passes for periodic I-beta, triclinic I-alpha, and
+alpha-chitin. It covers topology, matched single-point energies, minimization,
+and 1 ps of NVT with the generated production input.
 
 The first milestone supports the finite and covalently periodic chain
 geometries already supported by CHARMM36. It writes:
@@ -83,5 +83,8 @@ same command without changing the validation logic.
 
 NAMD restraints, NPT, GLYCAM, OpenFF, OPLS-AA, chitin dihydrate, and mannan are
 outside this first milestone. The current evidence is stored in
-`validation/results/namd_acceptance_matrix.json`; it validates topology and
-single-point energies, not production dynamics.
+`validation/results/namd_acceptance_matrix.json`. All three production runs
+reached their final frame with finite energies and intact bonds; heavy-atom
+RMSDs after 1 ps were 0.28--0.51 Angstrom. This is an interoperability and
+short-dynamics smoke test, not a claim of long-timescale stability or
+force-field accuracy. NPT remains outside this first milestone.

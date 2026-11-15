@@ -6,7 +6,7 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Added
 
-- Experimental native NAMD output for CHARMM36 cellulose and anhydrous
+- Native NAMD output for CHARMM36 cellulose and anhydrous
   alpha/beta-chitin: extended X-PLOR PSF, PSF-ordered PDB, a copied canonical
   CHARMM carbohydrate parameter file, and a PME minimization/NVT input. The
   writer expands every chain, preserves periodic closure interactions, checks
@@ -15,9 +15,11 @@ All notable changes to CelluloseForge are documented in this file.
   28 Angstrom minimum box width set by NAMD's pair list. Generated bundles
   include a scheduler-neutral runner, matching unconstrained NAMD and GROMACS
   single-point inputs, and a failing energy-comparison script.
-  Real NAMD 3.0.3/GROMACS single-point validation now covers periodic I-beta,
-  triclinic I-alpha, and alpha-chitin, including chitin impropers. Short NAMD
-  dynamics validation remains pending.
+  Real NAMD 3.0.3/GROMACS single-point validation covers periodic I-beta,
+  triclinic I-alpha, and alpha-chitin, including chitin impropers. The same
+  matrix validates the generated production input through minimization and 1
+  ps NVT, with finite energies, intact bonds, and heavy-atom RMSDs of
+  0.28--0.51 Angstrom.
 - Added a portable cross-engine single-point bundle contract with one subfolder per MD
   engine, shared-coordinate checksums, required comparable terms, explicit
   convention corrections, and a machine-readable pass/fail report. Engine

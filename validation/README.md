@@ -258,7 +258,7 @@ all 21 nonbonded and 21 one-four parameter combinations, and produced a valid
 run-input file. This validates preprocessing and file interoperability; it is
 not a claim that a production simulation of the large slab has been completed.
 
-## NAMD CHARMM36 single-point matrix
+## NAMD CHARMM36 acceptance matrix
 
 `namd/run_acceptance_matrix.py` builds periodic cellulose I-beta, triclinic
 cellulose I-alpha, and alpha-chitin with both NAMD and GROMACS output. It checks
@@ -267,8 +267,11 @@ identical GRO-derived coordinates with NAMD 3 and GROMACS using an unswitched
 12 Angstrom Lennard-Jones cutoff and matched PME tolerance. The compact result
 is stored in `results/namd_acceptance_matrix.json`; large engine files remain
 outside version control. All three cases pass, including the alpha-chitin
-improper term. This is single-point validation and does not yet establish
-short-dynamics stability in NAMD.
+improper term. The same validator runs the native CHARMM 10--12 Angstrom
+force-switch production input through 1,000 minimization steps and 1 ps NVT.
+Every case reaches the final frame with finite energies and intact bonds;
+heavy-atom RMSDs are 0.28--0.51 Angstrom. These are short interoperability
+smoke tests, not long-timescale or NPT validation.
 
 ## OpenMM engine validation
 
