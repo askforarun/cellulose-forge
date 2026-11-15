@@ -26,7 +26,7 @@ class PolymerProfile:
 
 _CELLULOSE_FORCE_FIELD_SHAPES = frozenset({"unit-cell", "bulk", "crystal", "slab", "fibril"})
 _CHITIN_FORCE_FIELD_SHAPES = frozenset({"unit-cell", "bulk", "crystal", "slab"})
-_ENGINE_ORDER = ("gromacs", "openmm", "lammps", "amber")
+_ENGINE_ORDER = ("gromacs", "openmm", "lammps", "namd", "amber")
 _SHAPE_ORDER = ("unit-cell", "bulk", "crystal", "slab", "fibril")
 
 POLYMER_PROFILES: Mapping[str, PolymerProfile] = {
@@ -45,7 +45,7 @@ POLYMER_PROFILES: Mapping[str, PolymerProfile] = {
             ),
             "charmm36": ForceFieldCapability(
                 _CELLULOSE_FORCE_FIELD_SHAPES,
-                frozenset({"gromacs", "openmm", "lammps"}),
+                frozenset({"gromacs", "openmm", "lammps", "namd"}),
             ),
             "openff": ForceFieldCapability(
                 _CELLULOSE_FORCE_FIELD_SHAPES,
@@ -75,7 +75,7 @@ POLYMER_PROFILES: Mapping[str, PolymerProfile] = {
             ),
             "charmm36": ForceFieldCapability(
                 _CHITIN_FORCE_FIELD_SHAPES,
-                frozenset({"gromacs", "openmm", "lammps"}),
+                frozenset({"gromacs", "openmm", "lammps", "namd"}),
             ),
             "openff": ForceFieldCapability(
                 _CHITIN_FORCE_FIELD_SHAPES,
@@ -160,7 +160,7 @@ def engine_capability_error(  # noqa: PLR0911 - preserve specific historical dia
         )
     declared_engines = {
         "glycam": frozenset({"gromacs", "amber", "openmm", "lammps"}),
-        "charmm36": frozenset({"gromacs", "openmm", "lammps"}),
+        "charmm36": frozenset({"gromacs", "openmm", "lammps", "namd"}),
         "openff": frozenset({"gromacs", "openmm"}),
         "opls-aa": frozenset({"gromacs", "openmm", "lammps"}),
         "opls-aa-sei": frozenset({"gromacs", "openmm", "lammps"}),
@@ -170,7 +170,9 @@ def engine_capability_error(  # noqa: PLR0911 - preserve specific historical dia
         return None
     passed = ", ".join(unsupported)
     if force_field == "charmm36":
-        return f"CHARMM36 does not support --md-engine {passed}; use gromacs, openmm, or lammps"
+        return (
+            f"CHARMM36 does not support --md-engine {passed}; use gromacs, openmm, lammps, or namd"
+        )
     if force_field == "glycam" and polymer == "chitin":
         return (
             f"chitin GLYCAM does not support --md-engine {passed}; use gromacs, openmm, "

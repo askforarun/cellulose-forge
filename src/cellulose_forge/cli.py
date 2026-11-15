@@ -56,6 +56,7 @@ from cellulose_forge.glycam_mapping import (
 )
 from cellulose_forge.gromacs import write_glycam_gromacs_system
 from cellulose_forge.lammps import LammpsSystemFiles, write_lammps_system
+from cellulose_forge.namd import NamdSystemFiles, validate_namd_one_four_pairs, write_namd_system
 from cellulose_forge.openff_sage import (
     SAGE_FORCE_FIELD,
     VALIDATION_SCOPE,
@@ -248,7 +249,7 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     build.add_argument(
         "--md-engine",
-        choices=["gromacs", "amber", "openmm", "lammps"],
+        choices=["gromacs", "amber", "openmm", "lammps", "namd"],
         action="append",
         help=(
             "target MD engine; repeat for multiple outputs (default: gromacs for "
@@ -264,6 +265,11 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         "--charmm-force-field-directory",
         type=Path,
         help="CHARMM36 GROMACS force-field directory containing forcefield.itp",
+    )
+    build.add_argument(
+        "--charmm-parameter-file",
+        type=Path,
+        help="canonical CHARMM carbohydrate PRM copied into NAMD output",
     )
     build.add_argument(
         "--tleap-executable",
@@ -1048,6 +1054,13 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
     openmm_metadata: dict[str, object] | None = None
     lammps_files: LammpsSystemFiles | None = None
     lammps_metadata: dict[str, object] | None = None
+    namd_files: NamdSystemFiles | None = None
+    namd_metadata: dict[str, object] | None = None
+    if "namd" in args.md_engines:
+        if args.charmm_parameter_file is None:
+            parser.error("--md-engine namd requires --charmm-parameter-file")
+        if restraints is not None:
+            parser.error("NAMD position restraints are not implemented yet")
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_charmm36_") as temporary:
         gromacs_directory = args.output if write_gromacs else Path(temporary)
         gro_path, itp_path, topology_path, force_field_path = write_charmm36_system(
@@ -1092,6 +1105,26 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                 gromacs_coordinates=gro_path,
                 parser=parser,
             )
+        if "namd" in args.md_engines:
+            assert args.charmm_parameter_file is not None
+            try:
+                namd_files = write_namd_system(
+                    mapped,
+                    topology,
+                    args.charmm_parameter_file,
+                    args.output,
+                    periodic_chains=args.chain_boundary == "periodic",
+                )
+                namd_metadata = {
+                    "status": "written; runtime validation pending",
+                    "explicit_one_four_pair_count_per_chain": validate_namd_one_four_pairs(
+                        topology
+                    ),
+                    "force_switch_angstrom": [10.0, 12.0],
+                    "pme": True,
+                }
+            except ValueError as error:
+                parser.error(str(error))
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
@@ -1115,15 +1148,27 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         "charmm36_release": CHARMM36_RELEASE,
         "outputs": _engine_outputs(
             coordinate_path,
-            {
-                "gromacs_coordinates": gro_path.name,
-                "gromacs_molecule_topology": itp_path.name,
-                "gromacs_topology": topology_path.name,
-                "gromacs_force_field": force_field_path.name,
-                **gromacs_run_inputs,
-            }
-            if write_gromacs
-            else {},
+            (
+                {
+                    "gromacs_coordinates": gro_path.name,
+                    "gromacs_molecule_topology": itp_path.name,
+                    "gromacs_topology": topology_path.name,
+                    "gromacs_force_field": force_field_path.name,
+                    **gromacs_run_inputs,
+                }
+                if write_gromacs
+                else {}
+            )
+            | (
+                {
+                    "namd_psf": namd_files.psf.name,
+                    "namd_coordinates": namd_files.pdb.name,
+                    "namd_configuration": namd_files.configuration.name,
+                    "namd_parameters": namd_files.parameters.name,
+                }
+                if namd_files is not None
+                else {}
+            ),
             openmm_files,
             lammps_files,
         ),
@@ -1145,6 +1190,8 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         report["openmm_validation"] = openmm_metadata
     if lammps_metadata is not None:
         report["lammps_validation"] = lammps_metadata
+    if namd_metadata is not None:
+        report["namd_validation"] = namd_metadata
     if periodic_image_contact is not None:
         report["closest_longitudinal_periodic_image_contact"] = periodic_image_contact.as_dict()
     if periodic_bond_validation is not None:

@@ -2,6 +2,17 @@
 
 All notable changes to CelluloseForge are documented in this file.
 
+## Unreleased
+
+### Added
+
+- Experimental native NAMD output for CHARMM36 cellulose and anhydrous
+  alpha/beta-chitin: extended X-PLOR PSF, PSF-ordered PDB, a copied canonical
+  CHARMM carbohydrate parameter file, and a PME minimization/NVT input. The
+  writer expands every chain, preserves periodic closure interactions, checks
+  the complete graph-derived 1-4 pair set, and writes full triclinic cell
+  vectors. Runtime NAMD cross-engine validation remains pending.
+
 ## 1.3.0 - 2026-11-15
 
 ### Changed
