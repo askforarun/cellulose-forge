@@ -210,6 +210,9 @@ _ANGLE_PARAMETERS: dict[tuple[str, str, str], tuple[float, float]] = {
 # Fudge factors of the OPLS-AA [ defaults ] directive.
 OPLS_FUDGE_QQ = 0.5
 OPLS_FUDGE_LJ = 0.5
+# CelluloseForge has adopted and validated these OPLS-AA parameters only for
+# beta-D-glucopyranose (cellulose); every OPLS residue written is BGC.
+OPLS_RESIDUE_NAME = "BGC"
 
 
 @dataclass(frozen=True)
@@ -573,7 +576,18 @@ class OplsBuild:
 
 
 def build_opls_system(crystal: BulkCrystal, variant: str, chain_boundary: str) -> OplsBuild:
-    """Map a crystal onto repeated OPLS chains with the shared polymer mapper."""
+    """Map a crystal onto repeated OPLS chains with the shared polymer mapper.
+
+    Only cellulose crystals are accepted: the atom typing here has been
+    adopted and validated for beta-D-glucopyranose only, and mannose shares
+    glucose atom names, so the residue check is what prevents glucose typing
+    from being applied silently to another sugar.
+    """
+    if crystal.residue_name != OPLS_RESIDUE_NAME:
+        raise ValueError(
+            f"OPLS-AA output supports cellulose ({OPLS_RESIDUE_NAME}) residues only; "
+            f"this crystal has {crystal.residue_name} residues"
+        )
     first_chain = next(iter(crystal.chain_numbers))
     degree = len(
         {
@@ -587,7 +601,7 @@ def build_opls_system(crystal: BulkCrystal, variant: str, chain_boundary: str) -
         crystal,
         chain_template((atom.name, atom.residue) for atom in topology.atoms),
         chain_boundary,
-        "BGC",
+        OPLS_RESIDUE_NAME,
     )
     return OplsBuild(topology, mapped)
 
@@ -608,7 +622,7 @@ def _format_topology(topology: OplsTopology, molecule_name: str) -> str:
     ):
         mass = _OPLS_TYPES[atom_type][2]
         lines.append(
-            f"{number:6d} {atom_type:>9s} {atom.residue:5d}  BGC {atom.name:>5s} "
+            f"{number:6d} {atom_type:>9s} {atom.residue:5d}  {OPLS_RESIDUE_NAME} {atom.name:>5s} "
             f"{number:6d} {charge:9.4f} {mass:9.4f}"
         )
     lines += ["", "[ bonds ]", "; explicit OPLS-AA parameters (b0 nm, kb kJ mol-1 nm-2)"]

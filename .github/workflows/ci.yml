@@ -19,7 +19,7 @@ jobs:
       - name: OpenFF Sage unit tests (no skips)
         shell: micromamba-shell {0}
         run: |
-          pytest tests/unit/test_openff_sage.py tests/integration/test_openff_sage_workflows.py -q -rs | tee openff-tests.log
+          pytest tests/unit/test_openff_sage.py tests/unit/test_polymer_mapping.py tests/integration/test_openff_sage_workflows.py -q -rs | tee openff-tests.log
           if grep -q "skipped" openff-tests.log; then
             echo "OpenFF Sage tests were skipped"; exit 1
           fi

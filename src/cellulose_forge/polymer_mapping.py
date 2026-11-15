@@ -1,13 +1,26 @@
 """Map crystal coordinates onto repeated beta-(1->4) chain templates.
 
 This module is shared by the graph-based backends (OpenFF Sage and OPLS-AA).
-It knows nothing about force fields: a backend describes one chain as an
+The mapping itself is backend-independent: a backend describes one chain as an
 ordered sequence of :class:`ChainTemplateAtom` entries (atom name and residue
 number, residue 1 being the reducing end), and the mapper returns coordinates
-for every crystal chain in exactly that atom order. Atoms absent from the
-crystal are placed from fixed reference geometry: the finite-chain O1/HO1 and
-HO4 caps, and the cellulose II hydroxyl hydrogens, which are resolved as one
-hydrogen-bond network.
+for every crystal chain in exactly that atom order. Crystal atoms are copied
+unchanged from the residue selected by tracing the O4->C1 glycosidic path.
+
+Atoms absent from the crystal are placed from fixed reference geometry, which
+is not polymer-specific:
+
+* Finite-chain caps (O1/HO1 on the reducing end, HO4 on the non-reducing end)
+  use glucose-derived reference coordinates, superposed on the C1/H1/O5 and
+  O4/C4/H4 anchors. Those anchor atoms are the same in GlcNAc, so the caps are
+  also applied to chitin; a polymer with different anchors needs its own
+  reference geometry.
+* Cellulose II HO2/HO3/HO6 hydrogens, absent from the crystal definition, are
+  placed from the same reference residue and resolved as one hydrogen-bond
+  network. This applies only to cellulose II.
+
+The returned :class:`GlycamMappedSystem` is the shared mapped-coordinate
+container used by every backend despite its historical name.
 """
 
 from __future__ import annotations
@@ -26,6 +39,8 @@ from cellulose_forge.hydroxyl import HydroxylHydrogenPlacer
 CHAIN_BOUNDARIES = frozenset({"finite", "periodic"})
 
 _MAX_LINK_ANGSTROM = 2.0
+_MINIMUM_CHAIN_RESIDUES = 2
+_LINK_ATOMS = ("C1", "O4")
 _BOX_DEGENERACY_TOLERANCE = 1.0e-12
 _MISSING_II_HYDROGENS = frozenset({"HO2", "HO3", "HO6"})
 _REDUCING_CAP = frozenset({"O1", "HO1"})
@@ -246,7 +261,9 @@ def _lookup(crystal: BulkCrystal, chain: int, residue: int) -> dict[str, FloatAr
     }
 
 
-def _residue_order(crystal: BulkCrystal, chain: int, periodic: bool) -> tuple[int, ...]:
+def _residue_order(  # noqa: PLR0912 - each refusal names the failing residue
+    crystal: BulkCrystal, chain: int, periodic: bool
+) -> tuple[int, ...]:
     residues = tuple(
         dict.fromkeys(
             residue
@@ -256,20 +273,45 @@ def _residue_order(crystal: BulkCrystal, chain: int, periodic: bool) -> tuple[in
             if atom_chain == chain
         )
     )
+    if len(residues) < _MINIMUM_CHAIN_RESIDUES:
+        raise ValueError(f"chain {chain} has fewer than two residues; no glycosidic path exists")
     lookups = {residue: _lookup(crystal, chain, residue) for residue in residues}
+    for residue, lookup in lookups.items():
+        missing = [name for name in _LINK_ATOMS if name not in lookup]
+        if missing:
+            raise ValueError(
+                f"chain {chain} residue {residue} lacks {' and '.join(missing)}; "
+                "the glycosidic O4->C1 path cannot be traced"
+            )
     successors: dict[int, int] = {}
     for residue in residues:
-        candidates = []
+        partners = []
         for other in residues:
             if other == residue:
                 continue
             delta = lookups[other]["C1"] - lookups[residue]["O4"]
             if periodic:
                 delta = minimum_image(delta, crystal.basis_vectors)
-            candidates.append((float(np.linalg.norm(delta)), other))
-        distance, other = min(candidates)
-        if distance <= _MAX_LINK_ANGSTROM:
-            successors[residue] = other
+            distance = float(np.linalg.norm(delta))
+            if distance <= _MAX_LINK_ANGSTROM:
+                partners.append((distance, other))
+        if len(partners) > 1:
+            listed = ", ".join(
+                f"residue {other} ({distance:.2f} A)" for distance, other in partners
+            )
+            raise ValueError(
+                f"chain {chain} residue {residue} O4 has more than one C1 within "
+                f"{_MAX_LINK_ANGSTROM:.1f} A ({listed}); the glycosidic path is ambiguous"
+            )
+        if partners:
+            successors[residue] = partners[0][1]
+    targets = list(successors.values())
+    repeated = sorted({other for other in targets if targets.count(other) > 1})
+    if repeated:
+        raise ValueError(
+            f"chain {chain} residue(s) {', '.join(map(str, repeated))} receive more than one "
+            "O4->C1 link; the glycosidic path is ambiguous"
+        )
     if periodic:
         start = residues[0]
     else:
