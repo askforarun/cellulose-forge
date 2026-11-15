@@ -24,9 +24,10 @@ class PolymerProfile:
     force_fields: Mapping[str, ForceFieldCapability]
 
 
-_CELLULOSE_FORCE_FIELD_SHAPES = frozenset({"bulk", "crystal", "slab", "fibril"})
-_CHITIN_FORCE_FIELD_SHAPES = frozenset({"bulk", "crystal", "slab"})
+_CELLULOSE_FORCE_FIELD_SHAPES = frozenset({"unit-cell", "bulk", "crystal", "slab", "fibril"})
+_CHITIN_FORCE_FIELD_SHAPES = frozenset({"unit-cell", "bulk", "crystal", "slab"})
 _ENGINE_ORDER = ("gromacs", "openmm", "lammps", "amber")
+_SHAPE_ORDER = ("unit-cell", "bulk", "crystal", "slab", "fibril")
 
 POLYMER_PROFILES: Mapping[str, PolymerProfile] = {
     "cellulose": PolymerProfile(
@@ -108,9 +109,11 @@ def capability_error(  # noqa: PLR0911 - each capability refusal stays explicit
     engines: tuple[str, ...],
     chain_boundary: str | None,
 ) -> str | None:
-    """Return an actionable error before any molecular construction begins."""
+    """Return an actionable shape or boundary error before construction."""
     profile = polymer_profile(polymer)
     capability = profile.force_fields.get(force_field)
+    if polymer == "mannan" and shape not in profile.force_fields["none"].shapes:
+        return "mannan currently supports --shape unit-cell and bulk"
     if capability is None:
         if polymer == "chitin" and force_field in {"opls-aa", "opls-aa-sei"}:
             name = "OPLS-AA-SEI" if force_field == "opls-aa-sei" else "OPLS-AA"
@@ -122,30 +125,75 @@ def capability_error(  # noqa: PLR0911 - each capability refusal stays explicit
             return "mannan force-field output is not implemented; use --force-field none"
         supported = ", ".join(profile.force_fields)
         return f"{polymer} supports --force-field {supported}"
-    if force_field == "none" and engines:
-        return "--md-engine requires a supported force-field build"
     if shape not in capability.shapes:
+        if polymer == "chitin" and shape == "fibril" and force_field == "openff":
+            return "experimental OpenFF Sage chitin fibrils are not implemented"
+        if polymer == "chitin":
+            return "chitin currently supports --shape unit-cell, bulk, and slab"
         if force_field in {"opls-aa", "opls-aa-sei"}:
             name = "OPLS-AA-SEI" if force_field == "opls-aa-sei" else "OPLS-AA"
             return f"experimental {name} supports slabs, fibrils, and periodic bulk crystals"
-        supported = ", ".join(sorted(capability.shapes))
+        supported = ", ".join(item for item in _SHAPE_ORDER if item in capability.shapes)
         return f"{polymer} with --force-field {force_field} supports --shape {supported}"
-    unsupported_engines = set(engines) - capability.engines
-    if unsupported_engines:
-        if force_field in {"opls-aa", "opls-aa-sei"}:
-            return (
-                "experimental OPLS-AA and OPLS-AA-SEI support --md-engine "
-                "gromacs, openmm, and lammps"
-            )
-        ordered = [engine for engine in _ENGINE_ORDER if engine in capability.engines]
-        supported = (
-            f"{ordered[0]} and {ordered[1]}"
-            if len(ordered) == 2  # noqa: PLR2004 - natural-language list grammar
-            else f"{', '.join(ordered[:-1])}, and {ordered[-1]}"
-        )
-        return f"{polymer} with --force-field {force_field} supports --md-engine {supported}"
-    if force_field != "none" and not engines:
-        return f"{force_field} builds require at least one --md-engine"
+    if force_field == "openff" and shape in {"bulk", "crystal"} and chain_boundary != "periodic":
+        return "experimental OpenFF Sage bulk crystals require periodic chains"
+    if force_field in {"opls-aa", "opls-aa-sei"}:
+        name = "OPLS-AA-SEI" if force_field == "opls-aa-sei" else "OPLS-AA"
+        if shape in {"bulk", "crystal"} and chain_boundary != "periodic":
+            return f"experimental {name} bulk crystals require periodic chains"
     if "amber" in engines and chain_boundary == "periodic":
-        return "native Amber output is available only for finite chains"
+        return (
+            "native Amber output currently supports finite chains only; Amber does not "
+            "represent covalent bonds across periodic boundaries, so use --md-engine "
+            "gromacs, openmm, or lammps for periodic chains"
+        )
     return None
+
+
+def engine_capability_error(  # noqa: PLR0911 - preserve specific historical diagnostics
+    polymer: str, force_field: str, engines: tuple[str, ...]
+) -> str | None:
+    """Return the historical, actionable MD-engine refusal for a request."""
+    profile = polymer_profile(polymer)
+    capability = profile.force_fields.get(force_field)
+    if force_field == "none" and engines:
+        return "--md-engine requires a supported force-field build"
+    if force_field == "glycam" and not engines:
+        return "GLYCAM builds require at least one --md-engine"
+    if force_field in {"opls-aa", "opls-aa-sei"} and not engines:
+        return (
+            "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps"
+        )
+    if capability is None:
+        return None
+    unsupported = [engine for engine in engines if engine not in capability.engines]
+    if not unsupported:
+        return None
+    passed = ", ".join(unsupported)
+    if force_field == "charmm36":
+        return f"CHARMM36 does not support --md-engine {passed}; use gromacs, openmm, or lammps"
+    if force_field == "glycam" and polymer == "chitin":
+        return (
+            f"chitin GLYCAM does not support --md-engine {passed}; use gromacs, openmm, "
+            "lammps, or amber for finite chains"
+        )
+    if force_field == "openff":
+        return (
+            f"experimental OpenFF does not support --md-engine {passed}; use gromacs or openmm only"
+        )
+    if force_field in {"opls-aa", "opls-aa-sei"}:
+        return (
+            f"experimental OPLS-AA and OPLS-AA-SEI do not support --md-engine {passed}; "
+            "they support --md-engine gromacs, openmm, and lammps"
+        )
+    ordered = [engine for engine in _ENGINE_ORDER if engine in capability.engines]
+    if len(ordered) == 1:
+        supported = ordered[0]
+    elif len(ordered) == 2:  # noqa: PLR2004 - natural-language list grammar
+        supported = f"{ordered[0]} and {ordered[1]}"
+    else:
+        supported = f"{', '.join(ordered[:-1])}, and {ordered[-1]}"
+    return (
+        f"{polymer} with --force-field {force_field} does not support --md-engine {passed}; "
+        f"use {supported}"
+    )

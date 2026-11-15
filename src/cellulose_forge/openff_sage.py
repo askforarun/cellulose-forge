@@ -133,6 +133,27 @@ class SagePolymerProfile:
     terminal_stereochemistry: Mapping[tuple[str, str], str]
     reference_parity: dict[str, int]
 
+    def __post_init__(self) -> None:
+        """Reject incomplete chemistry profiles at definition time."""
+        try:
+            polymer_profile(self.name)
+        except ValueError as error:
+            raise ValueError(f"Sage profile names unknown polymer {self.name!r}") from error
+        expected_bonds = {frozenset(bond) for bond in self.internal_bonds}
+        recorded_bonds = set(self.bond_orders)
+        missing = expected_bonds - recorded_bonds
+        extra = recorded_bonds - expected_bonds
+        if missing or extra:
+            raise ValueError(
+                "Sage profile bond orders must cover every internal bond exactly; "
+                f"missing={sorted(map(sorted, missing))}, extra={sorted(map(sorted, extra))}"
+            )
+        required_terminal = {("reducing", "C1"), ("nonreducing", "C3")}
+        if set(self.terminal_stereochemistry) != required_terminal:
+            raise ValueError(
+                "Sage profile terminal stereochemistry must define reducing C1 and nonreducing C3"
+            )
+
     @property
     def residue_name(self) -> str:
         """Return the canonical residue name from the shared polymer profile."""
@@ -144,7 +165,7 @@ _POLYMER_PROFILES = {
         name="cellulose",
         internal_atoms=_INTERNAL_ATOMS,
         internal_bonds=_INTERNAL_BONDS,
-        bond_orders={},
+        bond_orders={frozenset(bond): 1 for bond in _INTERNAL_BONDS},
         stereochemistry=_STEREOCHEMISTRY,
         terminal_stereochemistry={("reducing", "C1"): "R", ("nonreducing", "C3"): "S"},
         reference_parity=_REFERENCE_PARITY,
@@ -153,7 +174,10 @@ _POLYMER_PROFILES = {
         name="chitin",
         internal_atoms=_CHITIN_INTERNAL_ATOMS,
         internal_bonds=_CHITIN_INTERNAL_BONDS,
-        bond_orders={frozenset({"C7", "O7"}): 2},
+        bond_orders={
+            frozenset(bond): 2 if frozenset(bond) == frozenset({"C7", "O7"}) else 1
+            for bond in _CHITIN_INTERNAL_BONDS
+        },
         stereochemistry=_STEREOCHEMISTRY,
         terminal_stereochemistry={("reducing", "C1"): "R", ("nonreducing", "C3"): "R"},
         reference_parity=_REFERENCE_PARITY,
@@ -290,7 +314,12 @@ def build_sage_molecule(  # noqa: PLR0912
                 },
             )
         for left, right in profile.internal_bonds:
-            order = profile.bond_orders.get(frozenset({left, right}), 1)
+            try:
+                order = profile.bond_orders[frozenset({left, right})]
+            except KeyError as error:
+                raise ValueError(
+                    f"Sage {profile.name} profile lacks a bond order for {left}-{right}"
+                ) from error
             molecule.add_bond(indices[residue, left], indices[residue, right], order, False)
     for residue in range(1, degree_polymerization):
         molecule.add_bond(indices[residue, "O4"], indices[residue + 1, "C1"], 1, False)

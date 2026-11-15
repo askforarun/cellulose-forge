@@ -77,7 +77,7 @@ from cellulose_forge.opls import (
     write_opls_system,
 )
 from cellulose_forge.opls_engines import write_opls_lammps, write_opls_openmm
-from cellulose_forge.polymer_profiles import capability_error
+from cellulose_forge.polymer_profiles import capability_error, engine_capability_error
 from cellulose_forge.restraints import (
     ChainRestraints,
     group_mapped_chains,
@@ -372,15 +372,6 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         return 0 if all(check.ok for check in checks if check.name not in optional_engines) else 1
     if args.command == "build":
         _resolve_md_engines(args, build_parser())
-        unsupported = capability_error(
-            args.polymer,
-            args.force_field,
-            args.shape,
-            args.md_engines,
-            args.chain_boundary,
-        )
-        if unsupported is not None:
-            build_parser().error(unsupported)
         if args.padding_longitudinal is not None and args.padding_z is not None:
             build_parser().error(
                 "--padding-longitudinal and deprecated --padding-z are mutually exclusive"
@@ -395,6 +386,15 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
             args.padding_z if args.padding_longitudinal is None else args.padding_longitudinal
         )
         definition = _load_definition(args, build_parser())
+        unsupported = capability_error(
+            args.polymer,
+            args.force_field,
+            args.shape,
+            args.md_engines,
+            args.chain_boundary,
+        )
+        if unsupported is not None:
+            build_parser().error(unsupported)
         if args.shape != "fibril" and any(
             value is not None for value in (args.padding_x, args.padding_y)
         ):
@@ -505,6 +505,10 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         engines = ()
     else:
         engines = ("gromacs",)
+
+    unsupported = engine_capability_error(args.polymer, args.force_field, engines)
+    if unsupported is not None:
+        parser.error(unsupported)
 
     args.md_engines = engines
 

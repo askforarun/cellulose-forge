@@ -104,6 +104,14 @@ def test_chitin_direct_graph_has_glcnac_chemistry(boundary: str) -> None:
     assert len(carbonyls) == 6
     assert all(int(bond.bond_order) == 2 for bond in carbonyls)
     assert {atom.metadata["residue_name"] for atom in molecule.atoms} == {"NAG"}
+    terminal = {
+        (int(atom.metadata["residue_number"]), atom.name): atom.stereochemistry
+        for atom in molecule.atoms
+        if atom.name in {"C1", "C3"}
+    }
+    if boundary == "finite":
+        assert terminal[1, "C1"] == "R"
+        assert terminal[6, "C3"] == "R"
 
 
 @pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")

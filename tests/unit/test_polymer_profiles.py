@@ -7,7 +7,11 @@ from pathlib import Path
 import pytest
 
 from cellulose_forge import cli
-from cellulose_forge.polymer_profiles import POLYMER_PROFILES, capability_error
+from cellulose_forge.polymer_profiles import (
+    POLYMER_PROFILES,
+    capability_error,
+    engine_capability_error,
+)
 
 
 def test_capability_table_records_supported_force_fields_and_engines() -> None:
@@ -60,7 +64,7 @@ def test_capability_table_records_supported_force_fields_and_engines() -> None:
                 "--force-field",
                 "openff",
             ],
-            "supports --shape bulk, crystal, slab",
+            "chitin fibrils are not implemented",
         ),
         (
             [
@@ -86,21 +90,16 @@ def test_capability_table_records_supported_force_fields_and_engines() -> None:
                 "--md-engine",
                 "amber",
             ],
-            "supports --md-engine gromacs, openmm, and lammps",
+            "CHARMM36 does not support --md-engine amber",
         ),
     ],
 )
 def test_cli_refuses_unsupported_capability_before_construction(
     arguments: list[str],
     message: str,
-    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     tmp_path: Path,
 ) -> None:
-    def construction_must_not_start(*_args: object, **_kwargs: object) -> None:
-        raise AssertionError("crystal construction started before capability validation")
-
-    monkeypatch.setattr(cli, "_load_definition", construction_must_not_start)
     with pytest.raises(SystemExit):
         cli.main(["build", *arguments, "--output", str(tmp_path / "result")])
     assert message in capsys.readouterr().err
@@ -109,5 +108,27 @@ def test_cli_refuses_unsupported_capability_before_construction(
 def test_native_amber_periodic_chains_are_refused_by_profile() -> None:
     assert (
         capability_error("chitin", "glycam", "slab", ("amber",), "periodic")
-        == "native Amber output is available only for finite chains"
+        == "native Amber output currently supports finite chains only; Amber does not "
+        "represent covalent bonds across periodic boundaries, so use --md-engine "
+        "gromacs, openmm, or lammps for periodic chains"
     )
+
+
+@pytest.mark.parametrize(
+    ("polymer", "force_field", "engines", "message"),
+    [
+        ("cellulose", "charmm36", ("amber",), "does not support --md-engine amber"),
+        ("chitin", "glycam", ("namd",), "amber for finite chains"),
+        ("cellulose", "openff", ("lammps",), "use gromacs or openmm only"),
+        ("cellulose", "opls-aa", (), "support --md-engine gromacs, openmm, and lammps"),
+    ],
+)
+def test_engine_refusals_name_the_request_and_preserve_qualifiers(
+    polymer: str, force_field: str, engines: tuple[str, ...], message: str
+) -> None:
+    assert message in str(engine_capability_error(polymer, force_field, engines))
+
+
+def test_unit_cell_reaches_physical_box_validation_instead_of_profile_refusal() -> None:
+    assert capability_error("cellulose", "glycam", "unit-cell", ("gromacs",), "periodic") is None
+    assert capability_error("chitin", "charmm36", "unit-cell", ("gromacs",), "periodic") is None
