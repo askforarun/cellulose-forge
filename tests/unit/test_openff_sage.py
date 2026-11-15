@@ -229,6 +229,25 @@ def test_build_time_stereochemistry_guard_rejects_wrong_graph_label() -> None:
 
 
 @pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+@pytest.mark.parametrize("polymer", ["cellulose", "chitin"])
+def test_declared_stereo_guard_handles_wrapped_periodic_chains(polymer: str) -> None:
+    if polymer == "cellulose":
+        crystal = build_bulk_crystal(load_allomorph("i_beta"), (3, 3, 3))
+    else:
+        crystal = build_bulk_crystal(load_allomorph("beta", polymer="chitin"), (4, 2, 2))
+    build = build_sage_system(crystal, "periodic", polymer)
+    inverse = np.linalg.inv(build.mapped.basis_vectors)
+    fractional = build.mapped.cartesian_coordinates @ inverse
+    wrapped = (fractional - np.floor(fractional)) @ build.mapped.basis_vectors
+    result = validate_declared_stereochemistry(
+        build.molecule,
+        replace(build.mapped, cartesian_coordinates=wrapped),
+        polymer,
+    )
+    assert result["passed"] is True
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
 @pytest.mark.parametrize(
     ("degree", "pubchem_cid", "isomeric_smiles"),
     (

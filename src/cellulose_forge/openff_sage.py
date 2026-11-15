@@ -371,24 +371,27 @@ def validate_declared_stereochemistry(
         start = chain_index * molecule.n_atoms
         coordinates = mapped.cartesian_coordinates[start : start + molecule.n_atoms]
         perceived_molecule = molecule.to_rdkit()
-        conformer = chem.Conformer(perceived_molecule.GetNumAtoms())
-        for atom_index, coordinate in enumerate(coordinates):
-            conformer.SetAtomPosition(atom_index, point_type(*map(float, coordinate)))
-        perceived_molecule.RemoveAllConformers()
-        perceived_molecule.AddConformer(conformer)
-        for atom in perceived_molecule.GetAtoms():
-            atom.SetChiralTag(chem.ChiralType.CHI_UNSPECIFIED)
-            if atom.HasProp("_CIPCode"):
-                atom.ClearProp("_CIPCode")
-        chem.AssignStereochemistryFrom3D(
-            perceived_molecule,
-            confId=0,
-            replaceExistingTags=True,
-        )
         signature: list[tuple[int, str, str | None]] = []
         for atom_index, atom in enumerate(molecule.atoms):
             if atom.stereochemistry is None:
                 continue
+            locally_unwrapped = _unwrap_chain_from_atom(
+                molecule, coordinates, atom_index, mapped.basis_vectors
+            )
+            conformer = chem.Conformer(perceived_molecule.GetNumAtoms())
+            for coordinate_index, coordinate in enumerate(locally_unwrapped):
+                conformer.SetAtomPosition(coordinate_index, point_type(*map(float, coordinate)))
+            perceived_molecule.RemoveAllConformers()
+            perceived_molecule.AddConformer(conformer)
+            for perceived in perceived_molecule.GetAtoms():
+                perceived.SetChiralTag(chem.ChiralType.CHI_UNSPECIFIED)
+                if perceived.HasProp("_CIPCode"):
+                    perceived.ClearProp("_CIPCode")
+            chem.AssignStereochemistryFrom3D(
+                perceived_molecule,
+                confId=0,
+                replaceExistingTags=True,
+            )
             perceived_atom = perceived_molecule.GetAtomWithIdx(atom_index)
             actual = (
                 perceived_atom.GetProp("_CIPCode") if perceived_atom.HasProp("_CIPCode") else None
@@ -413,6 +416,46 @@ def validate_declared_stereochemistry(
         "failures": failures,
         "passed": True,
     }
+
+
+def _unwrap_chain_from_atom(
+    molecule: Any,
+    coordinates: FloatArray,
+    root: int,
+    box: FloatArray,
+) -> FloatArray:
+    """Unwrap a periodic chain locally from one centre along its bond graph.
+
+    A covalently periodic chain is a closed graph and has no single globally
+    unwrapped embedding. Rooting a spanning tree at the centre being perceived
+    guarantees that all directly bonded neighbours use their nearest periodic
+    images, which is the local geometry needed for stereochemistry.
+    """
+    positions = np.asarray(coordinates, dtype=np.float64)
+    unwrapped = np.empty_like(positions)
+    visited = np.zeros(len(positions), dtype=bool)
+    adjacency: list[list[int]] = [[] for _ in range(len(positions))]
+    for bond in molecule.bonds:
+        left = int(bond.atom1.molecule_atom_index)
+        right = int(bond.atom2.molecule_atom_index)
+        adjacency[left].append(right)
+        adjacency[right].append(left)
+    unwrapped[root] = positions[root]
+    visited[root] = True
+    queue = [root]
+    while queue:
+        parent = queue.pop(0)
+        for child in adjacency[parent]:
+            if visited[child]:
+                continue
+            unwrapped[child] = unwrapped[parent] + minimum_image(
+                positions[child] - positions[parent], box
+            )
+            visited[child] = True
+            queue.append(child)
+    if not bool(np.all(visited)):
+        raise ValueError("OpenFF stereochemistry graph contains disconnected atoms")
+    return unwrapped
 
 
 def build_sage_system(
