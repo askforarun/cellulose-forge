@@ -7,6 +7,7 @@ CelluloseForge atom names and bonds; no AmberTools or GLYCAM template is used.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import importlib
 import importlib.metadata
@@ -357,105 +358,169 @@ def validate_declared_stereochemistry(
     mapped: GlycamMappedSystem,
     polymer: str = "cellulose",
 ) -> dict[str, object]:
-    """Confirm graph stereochemical labels using coordinates perceived by RDKit.
+    """Confirm every declared R/S label against the mapped coordinates.
 
-    RDKit remains an optional dependency imported only inside the OpenFF path.
-    Equivalent chains are reduced to their perceived stereochemical signature,
-    so each distinct chain type is checked once.
+    RDKit's global stereo perception treats a covalently periodic chain as one
+    macrocycle and its cost grows explosively with chain length (seconds per
+    chain at DP20), so it is not run on the built chains. Instead the CIP
+    priority order of each centre's four neighbours, which depends only on the
+    chemistry within a few bonds and is therefore the same for every residue
+    of a kind (reducing, internal, non-reducing) at any chain length, is
+    computed once by RDKit on a short chain of the same polymer and boundary.
+    Each centre's handedness is then read from the minimum-image vectors to its
+    bonded neighbours, so wrapped periodic coordinates need no unwrapping. The
+    cost is linear in the number of centres.
     """
-    chem = importlib.import_module("rdkit.Chem")
-    point_type = importlib.import_module("rdkit.Geometry").Point3D
-    signatures: set[tuple[tuple[int, str, str | None], ...]] = set()
-    failures: list[tuple[int, int, str, str, str | None]] = []
-    for chain_index, chain in enumerate(dict.fromkeys(mapped.chain_numbers)):
-        start = chain_index * molecule.n_atoms
-        coordinates = mapped.cartesian_coordinates[start : start + molecule.n_atoms]
-        perceived_molecule = molecule.to_rdkit()
-        signature: list[tuple[int, str, str | None]] = []
-        for atom_index, atom in enumerate(molecule.atoms):
-            if atom.stereochemistry is None:
-                continue
-            locally_unwrapped = _unwrap_chain_from_atom(
-                molecule, coordinates, atom_index, mapped.basis_vectors
+    boundary = "periodic" if _is_periodic_graph(molecule) else "finite"
+    degree = len({int(atom.metadata["residue_number"]) for atom in molecule.atoms})
+    priorities = _neighbour_priorities(polymer, boundary)
+    index = {
+        (int(atom.metadata["residue_number"]), atom.name): atom.molecule_atom_index
+        for atom in molecule.atoms
+    }
+    centres: list[int] = []
+    neighbours: list[list[int]] = []
+    declared: list[str] = []
+    keys: list[tuple[int, str]] = []
+    for atom in molecule.atoms:
+        if atom.stereochemistry is None:
+            continue
+        residue = int(atom.metadata["residue_number"])
+        order = priorities.get((_residue_class(residue, degree, boundary), atom.name))
+        if order is None:
+            raise ValueError(
+                f"no CIP priority reference for {polymer} {atom.name} in residue {residue}"
             )
-            conformer = chem.Conformer(perceived_molecule.GetNumAtoms())
-            for coordinate_index, coordinate in enumerate(locally_unwrapped):
-                conformer.SetAtomPosition(coordinate_index, point_type(*map(float, coordinate)))
-            perceived_molecule.RemoveAllConformers()
-            perceived_molecule.AddConformer(conformer)
-            for perceived in perceived_molecule.GetAtoms():
-                perceived.SetChiralTag(chem.ChiralType.CHI_UNSPECIFIED)
-                if perceived.HasProp("_CIPCode"):
-                    perceived.ClearProp("_CIPCode")
-            chem.AssignStereochemistryFrom3D(
-                perceived_molecule,
-                confId=0,
-                replaceExistingTags=True,
+        ranked = [
+            index[_neighbour_residue(residue, offset, degree, boundary), name]
+            for offset, name in order
+        ]
+        bonded = {neighbour.molecule_atom_index for neighbour in atom.bonded_atoms}
+        if set(ranked) != bonded:
+            raise ValueError(
+                f"{polymer} {atom.name} in residue {residue}: CIP reference neighbours "
+                "do not match the molecular graph"
             )
-            perceived_atom = perceived_molecule.GetAtomWithIdx(atom_index)
-            actual = (
-                perceived_atom.GetProp("_CIPCode") if perceived_atom.HasProp("_CIPCode") else None
-            )
-            residue = int(atom.metadata["residue_number"])
-            signature.append((residue, atom.name, actual))
-            if actual != atom.stereochemistry:
-                failures.append((chain, residue, atom.name, atom.stereochemistry, actual))
-        signatures.add(tuple(signature))
+        centres.append(atom.molecule_atom_index)
+        neighbours.append(ranked)
+        declared.append(str(atom.stereochemistry))
+        keys.append((residue, atom.name))
+    chain_numbers = tuple(dict.fromkeys(mapped.chain_numbers))
+    coordinates = np.asarray(mapped.cartesian_coordinates, dtype=np.float64).reshape(
+        len(chain_numbers), molecule.n_atoms, 3
+    )
+    centre_xyz = coordinates[:, centres, None, :]
+    neighbour_xyz = coordinates[:, np.asarray(neighbours), :]
+    box = np.asarray(mapped.basis_vectors, dtype=np.float64)
+    fractional = (neighbour_xyz - centre_xyz) @ np.linalg.inv(box)
+    vectors = (fractional - np.round(fractional)) @ box
+    handedness = np.einsum(
+        "...i,...i->...", vectors[..., 0, :], np.cross(vectors[..., 1, :], vectors[..., 2, :])
+    )
+    if not np.all(np.isfinite(handedness)) or np.any(handedness == 0.0):
+        raise ValueError(f"OpenFF {polymer} stereocentre geometry is degenerate")
+    # Priorities 1-3 traversed clockwise with priority 4 pointing away is R,
+    # which is a negative triple product of the three bond vectors.
+    perceived = np.where(handedness < 0.0, "R", "S")
+    failures: list[tuple[int, int, str, str, str]] = []
+    signatures: set[tuple[str, ...]] = set()
+    for chain_index, chain in enumerate(chain_numbers):
+        labels = tuple(str(label) for label in perceived[chain_index])
+        signatures.add(labels)
+        for (residue, name), expected, actual in zip(keys, declared, labels, strict=True):
+            if actual != expected:
+                failures.append((chain, residue, name, expected, actual))
     if failures:
         raise ValueError(
             f"OpenFF {polymer} declared stereochemistry disagrees with mapped "
             f"coordinates: {failures[:5]}"
         )
     return {
-        "method": "RDKit AssignStereochemistryFrom3D after clearing declared chiral tags",
-        "chains_examined": mapped.chain_count,
-        "distinct_chain_types_checked": len(signatures),
-        "labelled_centres_per_chain": sum(
-            atom.stereochemistry is not None for atom in molecule.atoms
+        "method": (
+            "RDKit CIP neighbour priorities from a short reference chain; handedness "
+            "from minimum-image bond vectors of every centre"
         ),
+        "chains_examined": len(chain_numbers),
+        "distinct_chain_types_checked": len(signatures),
+        "labelled_centres_per_chain": len(centres),
         "failures": failures,
         "passed": True,
     }
 
 
-def _unwrap_chain_from_atom(
-    molecule: Any,
-    coordinates: FloatArray,
-    root: int,
-    box: FloatArray,
-) -> FloatArray:
-    """Unwrap a periodic chain locally from one centre along its bond graph.
+_REFERENCE_DEGREE = {"finite": 3, "periodic": 5}
 
-    A covalently periodic chain is a closed graph and has no single globally
-    unwrapped embedding. Rooting a spanning tree at the centre being perceived
-    guarantees that all directly bonded neighbours use their nearest periodic
-    images, which is the local geometry needed for stereochemistry.
+
+def _is_periodic_graph(molecule: Any) -> bool:
+    names = {atom.name for atom in molecule.atoms}
+    return not ({"O1", "HO1", "HO4"} & names)
+
+
+def _residue_class(residue: int, degree: int, boundary: str) -> str:
+    if boundary == "periodic":
+        return "internal"
+    if residue == 1:
+        return "reducing"
+    return "nonreducing" if residue == degree else "internal"
+
+
+def _neighbour_residue(residue: int, offset: int, degree: int, boundary: str) -> int:
+    target = residue + offset
+    return (target - 1) % degree + 1 if boundary == "periodic" else target
+
+
+@functools.cache
+def _neighbour_priorities(
+    polymer: str, boundary: str
+) -> dict[tuple[str, str], tuple[tuple[int, str], ...]]:
+    """Return each centre's neighbours in descending CIP priority, by residue kind.
+
+    Neighbours are keyed by residue offset (-1, 0 or +1 along the chain) and atom
+    name. RDKit ranks a short reference chain built from the same polymer graph;
+    a ranking that cannot order all four neighbours is refused.
     """
-    positions = np.asarray(coordinates, dtype=np.float64)
-    unwrapped = np.empty_like(positions)
-    visited = np.zeros(len(positions), dtype=bool)
-    adjacency: list[list[int]] = [[] for _ in range(len(positions))]
-    for bond in molecule.bonds:
-        left = int(bond.atom1.molecule_atom_index)
-        right = int(bond.atom2.molecule_atom_index)
-        adjacency[left].append(right)
-        adjacency[right].append(left)
-    unwrapped[root] = positions[root]
-    visited[root] = True
-    queue = [root]
-    while queue:
-        parent = queue.pop(0)
-        for child in adjacency[parent]:
-            if visited[child]:
-                continue
-            unwrapped[child] = unwrapped[parent] + minimum_image(
-                positions[child] - positions[parent], box
+    chem = importlib.import_module("rdkit.Chem")
+    degree = _REFERENCE_DEGREE[boundary]
+    reference = build_sage_molecule(degree, boundary, polymer)
+    editable = chem.RWMol()
+    for atom in reference.atoms:
+        rdkit_atom = chem.Atom(int(atom.atomic_number))
+        rdkit_atom.SetNoImplicit(True)
+        editable.AddAtom(rdkit_atom)
+    orders = {1: chem.BondType.SINGLE, 2: chem.BondType.DOUBLE}
+    for bond in reference.bonds:
+        editable.AddBond(
+            int(bond.atom1.molecule_atom_index),
+            int(bond.atom2.molecule_atom_index),
+            orders[int(bond.bond_order)],
+        )
+    ranked = editable.GetMol()
+    chem.SanitizeMol(ranked)
+    chem.AssignStereochemistry(ranked, cleanIt=True, force=True, flagPossibleStereoCenters=True)
+    table: dict[tuple[str, str], tuple[tuple[int, str], ...]] = {}
+    for atom in reference.atoms:
+        if atom.stereochemistry is None:
+            continue
+        residue = int(atom.metadata["residue_number"])
+        bonded = list(atom.bonded_atoms)
+        rank = {
+            neighbour.molecule_atom_index: int(
+                ranked.GetAtomWithIdx(neighbour.molecule_atom_index).GetProp("_CIPRank")
             )
-            visited[child] = True
-            queue.append(child)
-    if not bool(np.all(visited)):
-        raise ValueError("OpenFF stereochemistry graph contains disconnected atoms")
-    return unwrapped
+            for neighbour in bonded
+        }
+        if len(set(rank.values())) != len(bonded):
+            raise ValueError(f"{polymer} {atom.name} neighbours cannot be CIP-ranked")
+        order = []
+        for neighbour in sorted(bonded, key=lambda item: -rank[item.molecule_atom_index]):
+            offset = int(neighbour.metadata["residue_number"]) - residue
+            if boundary == "periodic" and abs(offset) > 1:
+                offset = -1 if offset > 0 else 1
+            order.append((offset, neighbour.name))
+        key = (_residue_class(residue, degree, boundary), atom.name)
+        if table.setdefault(key, tuple(order)) != tuple(order):
+            raise ValueError(f"{polymer} {atom.name} CIP order differs between equivalent residues")
+    return table
 
 
 def build_sage_system(

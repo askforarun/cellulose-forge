@@ -428,3 +428,135 @@ def test_glycam_and_openff_place_identical_cellulose_ii_hydrogens() -> None:
     assert from_glycam.keys() == from_openff.keys()
     for oxygen_position, hydrogen in from_glycam.items():
         np.testing.assert_allclose(hydrogen, from_openff[oxygen_position], atol=1e-6)
+
+
+def _guard_case(polymer: str, allomorph: str, boundary: str, degree: int) -> tuple[object, object]:
+    from cellulose_forge.polymer_mapping import (  # noqa: PLC0415
+        chain_template,
+        map_crystal_to_chain_template,
+    )
+
+    if allomorph == "ii":
+        crystal = build_chain_parallel_slab(
+            load_allomorph("ii"),
+            MillerIndex(1, 1, 0),
+            layers=3,
+            chains_per_layer=4,
+            degree_polymerization=degree,
+            vacuum=20.0,
+            chain_boundary=boundary,
+        )
+    else:
+        crystal = build_chain_parallel_slab(
+            load_allomorph(allomorph, polymer),
+            MillerIndex(1, 0, 0),
+            layers=1,
+            chains_per_layer=2,
+            degree_polymerization=degree,
+            vacuum=20.0,
+            chain_boundary=boundary,
+        )
+    molecule = build_sage_molecule(degree, boundary, polymer)
+    template = chain_template(
+        (atom.name, int(atom.metadata["residue_number"])) for atom in molecule.atoms
+    )
+    residue = "NAG" if polymer == "chitin" else "BGC"
+    return molecule, map_crystal_to_chain_template(crystal, template, boundary, residue)
+
+
+def _full_rdkit_label(
+    molecule: object, coordinates: np.ndarray, box: np.ndarray, centre: int
+) -> str | None:
+    """Reference: RDKit's full perception with the chain unwrapped around ``centre``."""
+    chem = importlib.import_module("rdkit.Chem")
+    point_type = importlib.import_module("rdkit.Geometry").Point3D
+    atoms = molecule.n_atoms  # type: ignore[attr-defined]
+    adjacency: list[list[int]] = [[] for _ in range(atoms)]
+    for bond in molecule.bonds:  # type: ignore[attr-defined]
+        left, right = bond.atom1.molecule_atom_index, bond.atom2.molecule_atom_index
+        adjacency[left].append(right)
+        adjacency[right].append(left)
+    inverse = np.linalg.inv(box)
+    unwrapped = np.empty((atoms, 3))
+    unwrapped[centre] = coordinates[centre]
+    seen = {centre}
+    queue = [centre]
+    while queue:
+        parent = queue.pop(0)
+        for child in adjacency[parent]:
+            if child not in seen:
+                fractional = (coordinates[child] - coordinates[parent]) @ inverse
+                unwrapped[child] = unwrapped[parent] + (fractional - np.round(fractional)) @ box
+                seen.add(child)
+                queue.append(child)
+    rdkit_molecule = molecule.to_rdkit()  # type: ignore[attr-defined]
+    conformer = chem.Conformer(atoms)
+    for index, coordinate in enumerate(unwrapped):
+        conformer.SetAtomPosition(index, point_type(*map(float, coordinate)))
+    rdkit_molecule.RemoveAllConformers()
+    rdkit_molecule.AddConformer(conformer)
+    for atom in rdkit_molecule.GetAtoms():
+        atom.SetChiralTag(chem.ChiralType.CHI_UNSPECIFIED)
+        if atom.HasProp("_CIPCode"):
+            atom.ClearProp("_CIPCode")
+    chem.AssignStereochemistryFrom3D(rdkit_molecule, confId=0, replaceExistingTags=True)
+    perceived = rdkit_molecule.GetAtomWithIdx(centre)
+    return perceived.GetProp("_CIPCode") if perceived.HasProp("_CIPCode") else None
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+@pytest.mark.parametrize("degree", [4, 6])
+@pytest.mark.parametrize("boundary", ["finite", "periodic"])
+@pytest.mark.parametrize(
+    ("polymer", "allomorph"), [("cellulose", "i_beta"), ("cellulose", "ii"), ("chitin", "beta")]
+)
+def test_fast_stereo_guard_agrees_with_full_rdkit_perception(
+    polymer: str, allomorph: str, boundary: str, degree: int
+) -> None:
+    """The linear-time guard reads the same R/S as RDKit at every centre, wrapped or not."""
+    molecule, mapped = _guard_case(polymer, allomorph, boundary, degree)
+    fractional = mapped.cartesian_coordinates @ np.linalg.inv(mapped.basis_vectors)  # type: ignore[attr-defined]
+    wrapped = replace(
+        mapped,  # type: ignore[type-var]
+        cartesian_coordinates=(fractional - np.floor(fractional)) @ mapped.basis_vectors,  # type: ignore[attr-defined]
+    )
+    for coordinates in (mapped, wrapped):
+        assert validate_declared_stereochemistry(molecule, coordinates, polymer)["passed"]
+    chain = wrapped.cartesian_coordinates[: molecule.n_atoms]  # type: ignore[attr-defined]
+    for atom in molecule.atoms:  # type: ignore[attr-defined]
+        if atom.stereochemistry is not None:
+            perceived = _full_rdkit_label(
+                molecule,
+                chain,
+                wrapped.basis_vectors,
+                atom.molecule_atom_index,  # type: ignore[attr-defined]
+            )
+            assert perceived == atom.stereochemistry, (atom.metadata["residue_number"], atom.name)
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+@pytest.mark.parametrize("boundary", ["finite", "periodic"])
+@pytest.mark.parametrize(("polymer", "allomorph"), [("cellulose", "i_beta"), ("chitin", "beta")])
+def test_fast_stereo_guard_catches_every_single_label_flip(
+    polymer: str, allomorph: str, boundary: str
+) -> None:
+    molecule, mapped = _guard_case(polymer, allomorph, boundary, 4)
+    labelled = [atom for atom in molecule.atoms if atom.stereochemistry is not None]  # type: ignore[attr-defined]
+    for atom in labelled:
+        original = atom.stereochemistry
+        atom.stereochemistry = "R" if original == "S" else "S"
+        with pytest.raises(ValueError, match="declared stereochemistry disagrees"):
+            validate_declared_stereochemistry(molecule, mapped, polymer)
+        atom.stereochemistry = original
+    assert len(labelled) == 20
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+def test_fast_stereo_guard_stays_fast_for_long_periodic_chains() -> None:
+    """RDKit's global perception took seconds per DP20 periodic chain; the guard must not."""
+    molecule, mapped = _guard_case("cellulose", "i_beta", "periodic", 40)
+    validate_declared_stereochemistry(molecule, mapped, "cellulose")
+    started = time.perf_counter()
+    result = validate_declared_stereochemistry(molecule, mapped, "cellulose")
+    assert time.perf_counter() - started < 1.0
+    assert result["labelled_centres_per_chain"] == 200
