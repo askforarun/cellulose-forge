@@ -96,6 +96,10 @@ the OPLS `CustomNonbondedForce` on the Reference platform) in an order that
 differs between processes, changing the last binary digit of an otherwise
 identical energy. `state.xml` stores positions and box vectors only, so that
 noise never reaches the starting-state file.
+Validation tolerances are unchanged: the tightest cross-engine tolerance
+(1 × 10^-5 relative, for bonded terms) is thousands of times larger than the
+largest possible effect of this rounding, 5 × 10^-7 kJ/mol. The same policy
+applies to the GLYCAM06j-1, CHARMM36, OPLS-AA and OPLS-AA-SEI OpenMM reports.
 
 For CHARMM36, this current OpenMM representation does not reproduce the
 official CHARMM 10--12 angstrom force-switch protocol: OpenMM's built-in

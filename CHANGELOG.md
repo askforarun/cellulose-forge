@@ -9,7 +9,7 @@ All notable changes to CelluloseForge are documented in this file.
 - OpenMM build reports (GLYCAM06j-1, CHARMM36, OPLS-AA, OPLS-AA-SEI) record
   build-time diagnostic energies to 1e-6 kJ/mol and say so
   (`diagnostic_energy_precision_kj_mol`); build-time checks still use full
-  precision. The serialized `state.xml` now holds positions and box vectors
+  precision and validation tolerances are unchanged. The serialized `state.xml` now holds positions and box vectors
   only, as for OpenFF. OpenMM's Reference `CustomNonbondedForce` energy can
   differ in its last binary digit between processes for identical
   coordinates, which previously made repeated OPLS reports differ.
