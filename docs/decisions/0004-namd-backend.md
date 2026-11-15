@@ -39,7 +39,7 @@ GROMACS port back into a CHARMM PRM and does not redistribute CHARMM files.
   `oneFourScaling 1.0`, a 10--12 angstrom force switch via
   `vdwForceSwitching on`, and no LJ tail correction.
 - `wrapAll off` is deliberate for chains covalently bonded through the cell.
-- NAMD builds require every perpendicular box width to exceed 24 Angstrom.
+- NAMD builds require every perpendicular box width to exceed 28 Angstrom.
 - The canonical February 2026 parameter file is enforced by SHA-256 and the
   digest is recorded in the build report.
 - PSF interaction rows follow psfgen's grouping, and zero `NUMLP` and
@@ -69,8 +69,8 @@ claims made by the implementation.
 
 The five review findings against `d674258` are addressed:
 
-1. NAMD builds now require every perpendicular box width to exceed 24
-   Angstrom, rather than inheriting the 21 Angstrom GROMACS/OpenMM rule.
+1. NAMD builds now require every perpendicular box width to exceed 28
+   Angstrom, twice its 14 Angstrom pair-list distance.
 2. PSF rows use psfgen-compatible grouping (four bonds, three angles, or two
    proper/improper dihedrals per line), with zero `NUMLP` and `NCRTERM`
    sections. Headless VMD loaded a real 2,592-atom beta-chitin PSF/PDB with all
@@ -84,11 +84,11 @@ The five review findings against `d674258` are addressed:
    `validation/namd/compare_bundle.py` additionally reproduced exact atom and
    interaction sets for real cellulose and chitin bundles.
 
-Each generated folder also contains a portable shell runner, a matching GROMACS
-10--12 Angstrom force-switch zero-step MDP, and a dependency-free comparison
-script. NAMD emits its initial `ENERGY` row before minimization; GROMACS reads
-the same NAMD PDB and writes the corresponding t=0 terms. The comparison JSON
-keeps raw terms and grouped differences. NAMD runtime execution remains the
+Each generated folder also contains a portable shell runner, dedicated
+unconstrained NAMD and GROMACS 10--12 Angstrom force-switch single-point
+inputs, and a dependency-free comparison script. Both engines read coordinates
+derived from the same GRO file. Missing terms, inconsistent energy sums, and
+tolerance failures stop the comparison. NAMD runtime execution remains the
 only missing acceptance step.
 
 ## Independent review requested from Claude

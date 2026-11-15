@@ -747,16 +747,22 @@ def _check_force_field_box(
     required = 2.0 * (cutoff + PAIRLIST_BUFFER_ANGSTROM)
     namd_requested = "namd" in args.md_engines
     if namd_requested:
-        cutoff = 12.0
+        cutoff = 14.0
         required = 2.0 * cutoff
-    if min(periodic_box_heights(crystal.basis_vectors)) <= required:
+    box_heights = periodic_box_heights(crystal.basis_vectors)
+    narrow_axis = min(range(len(box_heights)), key=box_heights.__getitem__)
+    narrow_width = box_heights[narrow_axis]
+    if narrow_width <= required:
         remedy = (
             "increase --cells"
             if args.shape in {"bulk", "crystal", "unit-cell"}
-            else "increase --degree-polymerization, the padding, or the vacuum"
+            else (
+                "increase --chains-per-layer, --layers, --degree-polymerization, "
+                "the padding, or the vacuum as appropriate for the narrow direction"
+            )
         )
         reason = (
-            f"twice NAMD's {cutoff:g} angstrom CHARMM cutoff"
+            f"twice NAMD's {cutoff:g} angstrom pair-list distance"
             if namd_requested
             else (
                 f"twice the {cutoff:g} angstrom nonbonded cutoff plus a "
@@ -765,7 +771,8 @@ def _check_force_field_box(
         )
         parser.error(
             f"the periodic box must exceed {required:g} angstrom ({reason}) "
-            f"in every direction; {remedy}"
+            f"in every direction; direction {narrow_axis + 1} is {narrow_width:.3f} angstrom; "
+            f"{remedy}"
         )
     if not is_vacuum_shape(args.shape):
         return
@@ -1147,6 +1154,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                     mapped,
                     topology,
                     args.charmm_parameter_file,
+                    gro_path,
                     args.output,
                     periodic_chains=args.chain_boundary == "periodic",
                 )
@@ -1200,10 +1208,13 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                     "namd_psf": namd_files.psf.name,
                     "namd_coordinates": namd_files.pdb.name,
                     "namd_configuration": namd_files.configuration.name,
+                    "namd_single_point_configuration": namd_files.single_point_configuration.name,
+                    "namd_single_point_coordinates": namd_files.single_point_coordinates.name,
+                    "single_point_shared_coordinates": namd_files.shared_coordinates.name,
                     "namd_parameters": namd_files.parameters.name,
-                    "namd_gromacs_t0_mdp": namd_files.gromacs_reference.name,
-                    "namd_t0_runner": namd_files.t0_runner.name,
-                    "namd_t0_comparison": namd_files.energy_comparison.name,
+                    "gromacs_single_point_mdp": namd_files.gromacs_single_point.name,
+                    "single_point_runner": namd_files.single_point_runner.name,
+                    "single_point_energy_adapter": namd_files.energy_adapter.name,
                 }
                 if namd_files is not None
                 else {}

@@ -222,7 +222,7 @@ NAMD, LAMMPS, or OpenMM. The pip extras install Python-side dependencies only:
 ```bash
 python -m pip install 'cellulose-forge[amber]'   # ParmEd; install AmberTools with conda
 python -m pip install 'cellulose-forge[openmm]'
-python -m pip install 'cellulose-forge[lammps]'  # OpenMM topology conversion support
+python -m pip install 'cellulose-forge[lammps-converter]'  # does not install LAMMPS
 ```
 
 ### Coordinate-only installation with uv

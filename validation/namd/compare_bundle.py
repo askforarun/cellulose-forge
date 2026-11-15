@@ -106,15 +106,19 @@ def compare(build: Path) -> dict[str, object]:
         for term in topology.dihedrals
         if not term.improper
     )
-    gromacs_impropers = Counter(
+    improper_dihedrals = Counter(
         (term.atom1.idx, term.atom2.idx, term.atom3.idx, term.atom4.idx)
         for term in topology.dihedrals
         if term.improper
     )
-    gromacs_impropers.update(
+    explicit_impropers = Counter(
         (term.atom1.idx, term.atom2.idx, term.atom3.idx, term.atom4.idx)
         for term in topology.impropers
     )
+    # ParmEd may expose the same ordered CHARMM improper through both
+    # collections. Counter union keeps its true multiplicity without adding
+    # the duplicate view; atom order and the central atom remain significant.
+    gromacs_impropers = improper_dihedrals | explicit_impropers
     psf_bonds = Counter(_canonical(term) for term in psf["!NBOND"])
     psf_angles = Counter(_canonical(term) for term in psf["!NTHETA"])
     psf_propers = Counter(_canonical(term) for term in psf["!NPHI"])
@@ -142,8 +146,7 @@ def compare(build: Path) -> dict[str, object]:
             "bonds": gromacs_bonds == psf_bonds,
             "angles": gromacs_angles == psf_angles,
             "proper_dihedrals": gromacs_propers == psf_propers,
-            "impropers": {frozenset(term) for term in gromacs_impropers}
-            == {frozenset(term) for term in psf_impropers},
+            "impropers": gromacs_impropers == psf_impropers,
         },
         "cell_widths_angstrom": widths,
         "parameter_sha256": _checksum(build / "par_all36_carb.prm"),

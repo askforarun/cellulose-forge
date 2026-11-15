@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import struct
 import subprocess
 import sys
 from dataclasses import replace
@@ -19,11 +20,12 @@ from cellulose_forge.charmm36 import (
 )
 from cellulose_forge.cli import main
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
+from cellulose_forge.gromacs import write_gro
 from cellulose_forge.namd import (
     render_namd_configuration,
     render_pdb,
     render_psf,
-    render_t0_comparison_script,
+    render_single_point_energy_script,
     validate_charmm_parameter_file,
     validate_namd_one_four_pairs,
     write_namd_system,
@@ -156,7 +158,7 @@ def test_pdb_order_and_triclinic_configuration() -> None:
     assert "vdwForceSwitching on" in configuration
     assert "wrapAll off" in configuration
     assert configuration.index("minimize 1000") < configuration.index("reinitvels 300")
-    assert configuration.index("run 0") < configuration.index("minimize 1000")
+    assert "run 0" not in configuration
 
 
 def test_pdb_uses_fixed_width_alias_for_six_character_chitin_residue() -> None:
@@ -228,13 +230,16 @@ def test_cli_rejects_unused_parameter_file(
     assert "requires --md-engine namd" in capsys.readouterr().err
 
 
-def test_cli_applies_namd_twelve_angstrom_cutoff(
+def test_cli_applies_namd_fourteen_angstrom_pairlist(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     parameters = tmp_path / "parameters.prm"
     parameters.write_text("* test parameters\n", encoding="utf-8")
     checksum = hashlib.sha256(parameters.read_bytes()).hexdigest()
     monkeypatch.setattr("cellulose_forge.namd.CHARMM36_CARB_PARAMETER_SHA256", checksum)
+    monkeypatch.setattr(
+        "cellulose_forge.cli.periodic_box_heights", lambda _vectors: (25.0, 30.0, 30.0)
+    )
 
     with pytest.raises(SystemExit, match="2"):
         main(
@@ -247,7 +252,11 @@ def test_cli_applies_namd_twelve_angstrom_cutoff(
             )
         )
 
-    assert "must exceed 24 angstrom" in capsys.readouterr().err
+    error = capsys.readouterr().err
+    assert "must exceed 28 angstrom" in error
+    assert "direction 1 is 25.000 angstrom" in error
+    assert "pair-list distance" in error
+    assert "--chains-per-layer" in error
     assert not (tmp_path / "out").exists()
 
 
@@ -259,26 +268,35 @@ def test_writer_copies_parameter_file_and_writes_complete_bundle(
     checksum = hashlib.sha256(parameters.read_bytes()).hexdigest()
     monkeypatch.setattr("cellulose_forge.namd.CHARMM36_CARB_PARAMETER_SHA256", checksum)
 
+    gro = tmp_path / "structure.gro"
+    write_gro(_system(), gro)
     files = write_namd_system(
-        _system(), _topology(), parameters, tmp_path / "namd", periodic_chains=False
+        _system(), _topology(), parameters, gro, tmp_path / "namd", periodic_chains=False
     )
 
     assert files.psf.is_file()
     assert files.pdb.is_file()
     assert files.configuration.is_file()
     assert files.parameters.read_text(encoding="utf-8") == "* test parameters\n"
-    assert "vdw-modifier = Force-switch" in files.gromacs_reference.read_text()
-    assert "periodic-molecules = no" in files.gromacs_reference.read_text()
-    assert "gromacs_t0_energy.xvg" in files.t0_runner.read_text()
-    assert "SBATCH" not in files.t0_runner.read_text()
-    assert files.t0_runner.stat().st_mode & 0o111
-    comparison = files.energy_comparison.read_text(encoding="utf-8")
-    compile(comparison, str(files.energy_comparison), "exec")
+    assert "rigidBonds none" in files.single_point_configuration.read_text()
+    binary = files.single_point_coordinates.read_bytes()
+    assert struct.unpack("=i", binary[:4])[0] == _system().atom_count
+    assert len(binary) == 4 + 3 * 8 * _system().atom_count
+    assert "vdw-modifier = Force-switch" in files.gromacs_single_point.read_text()
+    assert "ewald-rtol = 1e-6" in files.gromacs_single_point.read_text()
+    assert "periodic-molecules = no" in files.gromacs_single_point.read_text()
+    runner = files.single_point_runner.read_text()
+    assert "single_point_coordinates.gro" in runner
+    assert "structure_namd.pdb" not in runner
+    assert "SBATCH" not in runner
+    assert files.single_point_runner.stat().st_mode & 0o111
+    comparison = files.energy_adapter.read_text(encoding="utf-8")
+    compile(comparison, str(files.energy_adapter), "exec")
 
 
-def test_t0_comparison_script_groups_matching_terms(tmp_path: Path) -> None:
+def test_single_point_script_groups_matching_terms(tmp_path: Path) -> None:
     script = tmp_path / "compare.py"
-    script.write_text(render_t0_comparison_script(), encoding="utf-8")
+    script.write_text(render_single_point_energy_script(), encoding="utf-8")
     namd = tmp_path / "namd.log"
     namd.write_text(
         "ENERGY: 0 1 5 3 4 26 19 0 0 0 58 300 58 58 300 0 0 1000 0 0\n",
@@ -288,7 +306,6 @@ def test_t0_comparison_script_groups_matching_terms(tmp_path: Path) -> None:
     names = (
         "Bond",
         "U-B",
-        "Angle",
         "Proper Dih.",
         "Improper Dih.",
         "LJ-14",
@@ -298,25 +315,68 @@ def test_t0_comparison_script_groups_matching_terms(tmp_path: Path) -> None:
         "Coul. recip.",
         "Potential",
     )
-    values_kcal = (1, 2, 3, 3, 4, 7, 8, 12, 9, 9, 58)
+    values_kj = (4.184, 20.92, 12.552, 16.736, 29.288, 33.472, 50.208, 37.656, 37.656, 242.672)
     xvg.write_text(
         "\n".join(
             [
                 *(f'@ s{index} legend "{name}"' for index, name in enumerate(names)),
-                "0 " + " ".join(str(value * 4.184) for value in values_kcal),
+                "0 " + " ".join(str(value) for value in values_kj),
             ]
         )
         + "\n",
         encoding="utf-8",
     )
 
-    completed = subprocess.run(
-        [sys.executable, str(script), str(namd), str(xvg)],
+    coordinates = tmp_path / "coordinates.gro"
+    coordinates.write_text("shared\n", encoding="utf-8")
+    subprocess.run(
+        [sys.executable, str(script), str(namd), str(xvg), str(coordinates)],
+        cwd=tmp_path,
         check=True,
         capture_output=True,
         text=True,
     )
-    result = json.loads(completed.stdout)
+    result = json.loads((tmp_path / "single_point_energy_comparison.json").read_text())
+    assert result["passed"] is True
+    for term in ("bond", "angle", "dihedral", "improper", "electrostatics", "vdw", "potential"):
+        assert result["comparison"][term]["difference_kj_mol"] == pytest.approx(0.0)
 
-    for term in ("BOND", "ANGLE", "DIHED", "IMPRP", "ELECT", "VDW", "POTENTIAL"):
-        assert result["comparison"][term]["difference_kcal_mol"] == pytest.approx(0.0)
+
+def test_single_point_script_refuses_missing_gromacs_term(tmp_path: Path) -> None:
+    script = tmp_path / "single_point_energy.py"
+    script.write_text(render_single_point_energy_script(), encoding="utf-8")
+    namd = tmp_path / "namd.log"
+    namd.write_text("ENERGY: 0 1 5 3 4 26 19 0 0 0 58 300 58\n", encoding="utf-8")
+    names = (
+        "Bond",
+        "U-B",
+        "Proper Dih.",
+        "Improper Dih.",
+        "LJ-14",
+        "Coulomb-14",
+        "Coulomb (SR)",
+        "Coul. recip.",
+        "Potential",
+    )
+    xvg = tmp_path / "energy.xvg"
+    xvg.write_text(
+        "\n".join(
+            [
+                *(f'@ s{index} legend "{name}"' for index, name in enumerate(names)),
+                "0 " + " ".join("1" for _name in names),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    coordinates = tmp_path / "coordinates.gro"
+    coordinates.write_text("shared\n", encoding="utf-8")
+    completed = subprocess.run(
+        [sys.executable, str(script), str(namd), str(xvg), str(coordinates)],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode != 0
+    assert "missing required terms: ['LJ (SR)']" in completed.stderr

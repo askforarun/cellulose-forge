@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import shutil
+import struct
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from cellulose_forge.charmm36 import (
     charmm36_dihedral_kinds,
     charmm36_interaction_indices,
 )
+from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
 
 CharmmTopology = PeriodicCharmm36Topology | FiniteCharmm36Topology
@@ -23,6 +25,8 @@ _ONE_FOUR_GRAPH_DISTANCE = 3
 _MAXIMUM_SEGMENT_COUNT = 999
 _MAXIMUM_PDB_ATOM_COUNT = 99_999
 _MAXIMUM_PDB_RESIDUE_NAME_LENGTH = 4
+_ORTHORHOMBIC_GRO_BOX_VALUE_COUNT = 3
+_TRICLINIC_GRO_BOX_VALUE_COUNT = 9
 _PDB_RESIDUE_ALIASES = {"BGLCNA": "NAG"}
 CHARMM36_CARB_PARAMETER_SHA256 = "9acd5f1d887afaf5e2cdc0e420440ab912cc2b584f787120d6845dd077d58ee6"
 
@@ -34,10 +38,13 @@ class NamdSystemFiles:
     psf: Path
     pdb: Path
     configuration: Path
+    single_point_configuration: Path
+    single_point_coordinates: Path
+    shared_coordinates: Path
     parameters: Path
-    gromacs_reference: Path
-    t0_runner: Path
-    energy_comparison: Path
+    gromacs_single_point: Path
+    single_point_runner: Path
+    energy_adapter: Path
 
 
 def _chain_atoms(topology: CharmmTopology) -> tuple[Charmm36TemplateAtom, ...]:
@@ -240,14 +247,56 @@ def render_pdb(system: GlycamMappedSystem, topology: CharmmTopology) -> str:
     return "\n".join(lines)
 
 
+def _read_gro_coordinates(path: Path) -> tuple[FloatArray, FloatArray]:
+    """Read the rounded coordinates and full triclinic box used by GROMACS."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    atom_count = int(lines[1])
+    coordinates = np.asarray(
+        [
+            [float(line[20:28]), float(line[28:36]), float(line[36:44])]
+            for line in lines[2 : 2 + atom_count]
+        ],
+        dtype=float,
+    )
+    values = [float(value) for value in lines[2 + atom_count].split()]
+    if len(values) == _ORTHORHOMBIC_GRO_BOX_VALUE_COUNT:
+        vectors = np.diag(values)
+    elif len(values) == _TRICLINIC_GRO_BOX_VALUE_COUNT:
+        vectors = np.asarray(
+            [
+                [values[0], values[3], values[4]],
+                [values[5], values[1], values[6]],
+                [values[7], values[8], values[2]],
+            ],
+            dtype=float,
+        )
+    else:
+        raise ValueError("GROMACS coordinate box must contain 3 or 9 values")
+    return coordinates * 10.0, vectors * 10.0
+
+
+def _write_namd_binary_coordinates(path: Path, coordinates: FloatArray) -> None:
+    """Write NAMD binary coordinates from the same rounded positions as the GRO file."""
+    with path.open("wb") as handle:
+        handle.write(struct.pack("=i", len(coordinates)))
+        for coordinate in coordinates:
+            handle.write(struct.pack("=ddd", *coordinate))
+
+
+def _cell_lines(vectors: FloatArray) -> list[str]:
+    origin = 0.5 * vectors.sum(axis=0)
+    return [
+        *[
+            f"cellBasisVector{index} {vector[0]:.8f} {vector[1]:.8f} {vector[2]:.8f}"
+            for index, vector in enumerate(vectors, start=1)
+        ],
+        f"cellOrigin {origin[0]:.8f} {origin[1]:.8f} {origin[2]:.8f}",
+    ]
+
+
 def render_namd_configuration(system: GlycamMappedSystem, *, periodic_chains: bool) -> str:
     """Render a conservative CHARMM36 PME minimization/NVT smoke-test input."""
     vectors = np.asarray(system.basis_vectors, dtype=float)
-    origin = 0.5 * vectors.sum(axis=0)
-    vector_lines = [
-        f"cellBasisVector{index} {vector[0]:.8f} {vector[1]:.8f} {vector[2]:.8f}"
-        for index, vector in enumerate(vectors, start=1)
-    ]
     return "\n".join(
         [
             "structure system.psf",
@@ -262,8 +311,8 @@ def render_namd_configuration(system: GlycamMappedSystem, *, periodic_chains: bo
             "pairlistdist 14.0",
             "PME yes",
             "PMEGridSpacing 1.0",
-            *vector_lines,
-            f"cellOrigin {origin[0]:.8f} {origin[1]:.8f} {origin[2]:.8f}",
+            "PMETolerance 1.0e-6",
+            *_cell_lines(vectors),
             "vdwForceSwitching on",
             "LJcorrection off",
             "wrapAll off",
@@ -280,7 +329,6 @@ def render_namd_configuration(system: GlycamMappedSystem, *, periodic_chains: bo
             "outputEnergies 1",
             "outputName namd",
             "binaryoutput no",
-            "run 0",
             "minimize 1000",
             "reinitvels 300",
             "run 500",
@@ -289,8 +337,38 @@ def render_namd_configuration(system: GlycamMappedSystem, *, periodic_chains: bo
     )
 
 
-def render_gromacs_t0_mdp(*, periodic_chains: bool) -> str:
-    """Render a zero-step GROMACS reference using the NAMD CHARMM settings."""
+def render_namd_single_point_configuration(vectors: FloatArray, *, periodic_chains: bool) -> str:
+    """Render an unconstrained NAMD single-point calculation."""
+    return "\n".join(
+        [
+            "structure system.psf",
+            "binCoordinates single_point.coor",
+            "paraTypeCharmm on",
+            "parameters par_all36_carb.prm",
+            "exclude scaled1-4",
+            "oneFourScaling 1.0",
+            "switching on",
+            "switchdist 10.0",
+            "cutoff 12.0",
+            "pairlistdist 14.0",
+            "PME yes",
+            "PMEGridSpacing 1.0",
+            "PMETolerance 1.0e-6",
+            *_cell_lines(vectors),
+            "vdwForceSwitching on",
+            "LJcorrection off",
+            "wrapAll off",
+            f"# covalently periodic chains: {'yes' if periodic_chains else 'no'}",
+            "rigidBonds none",
+            "outputEnergies 1",
+            "run 0",
+            "",
+        ]
+    )
+
+
+def render_gromacs_single_point_mdp(*, periodic_chains: bool) -> str:
+    """Render a single-point GROMACS reference using the NAMD CHARMM settings."""
     return "\n".join(
         [
             "integrator = md",
@@ -305,6 +383,7 @@ def render_gromacs_t0_mdp(*, periodic_chains: bool) -> str:
             "rcoulomb = 1.2",
             "fourierspacing = 0.10",
             "pme-order = 4",
+            "ewald-rtol = 1e-6",
             "vdwtype = Cut-off",
             "vdw-modifier = Force-switch",
             "rvdw-switch = 1.0",
@@ -324,41 +403,42 @@ def render_gromacs_t0_mdp(*, periodic_chains: bool) -> str:
     )
 
 
-def render_t0_runner() -> str:
-    """Render a portable runner for NAMD and optional GROMACS t=0 energies."""
+def render_single_point_runner() -> str:
+    """Render the sole portable NAMD/GROMACS single-point runner."""
     return """#!/bin/bash
 set -euo pipefail
 
 NAMD_EXE="${NAMD_EXE:-namd3}"
 GMX_EXE="${GMX_EXE:-gmx}"
+PYTHON_EXE="${PYTHON_EXE:-python3}"
 NAMD_THREADS="${NAMD_THREADS:-8}"
 
-"${NAMD_EXE}" +p"${NAMD_THREADS}" run_namd.conf > namd.log
+"${NAMD_EXE}" +p"${NAMD_THREADS}" single_point_namd.conf > single_point_namd.log
 
-if [[ -f system.top && -f structure.gro ]]; then
-  "${GMX_EXE}" grompp -f gromacs_namd_t0.mdp -c structure_namd.pdb \
-    -p system.top -o gromacs_t0.tpr -po gromacs_t0_processed.mdp -maxwarn 0
-  "${GMX_EXE}" mdrun -s gromacs_t0.tpr -deffnm gromacs_t0 -nsteps 0
-  printf '%s\n' Bond U-B Angle Proper-Dih. Improper-Dih. LJ-14 Coulomb-14 \
-    LJ-SR Coulomb-SR Coul.-recip. Potential 0 | \
-    "${GMX_EXE}" energy -f gromacs_t0.edr -o gromacs_t0_energy.xvg
-  python compare_t0.py namd.log gromacs_t0_energy.xvg > t0_energy_comparison.json
-else
-  echo 'GROMACS files absent: NAMD completed; cross-engine t=0 comparison skipped.'
-fi
+"${GMX_EXE}" grompp -f single_point_gromacs.mdp -c single_point_coordinates.gro \
+  -p system.top -o single_point_gromacs.tpr -po single_point_gromacs_processed.mdp -maxwarn 0
+"${GMX_EXE}" mdrun -s single_point_gromacs.tpr -deffnm single_point_gromacs -nsteps 0
+printf '%s\n' Bond U-B Proper-Dih. Improper-Dih. LJ-14 Coulomb-14 \
+  'LJ-(SR)' 'Coulomb-(SR)' 'Coul.-recip.' Potential 0 | \
+  "${GMX_EXE}" energy -f single_point_gromacs.edr -o single_point_gromacs.xvg
+"${PYTHON_EXE}" single_point_energy.py single_point_namd.log \
+  single_point_gromacs.xvg single_point_coordinates.gro
 """
 
 
-def render_t0_comparison_script() -> str:
-    """Render the dependency-free NAMD/GROMACS t=0 energy comparison script."""
-    return '''"""Compare first NAMD ENERGY row with a GROMACS energy XVG."""
+def render_single_point_energy_script() -> str:
+    """Render the dependency-free, failing NAMD/GROMACS energy adapter."""
+    return '''"""Normalize and compare NAMD/GROMACS single-point energies."""
 from __future__ import annotations
+import hashlib
 import json
 import re
 import sys
 from pathlib import Path
 
 KJ_PER_KCAL = 4.184
+ABSOLUTE_TOLERANCE = 0.1
+RELATIVE_TOLERANCE = 5.0e-5
 NAMD_FIELDS = (
     "TS", "BOND", "ANGLE", "DIHED", "IMPRP", "ELECT", "VDW", "BOUNDARY",
     "MISC", "KINETIC", "TOTAL", "TEMP", "POTENTIAL", "TOTAL3", "TEMPAVG",
@@ -385,39 +465,81 @@ def gromacs_energies(path: Path) -> dict[str, float]:
             break
     if data is None:
         raise ValueError("GROMACS XVG contains no data row")
-    return {legends[index]: value / KJ_PER_KCAL for index, value in enumerate(data)}
+    return {legends[index]: value for index, value in enumerate(data)}
 
-def pick(values: dict[str, float], *names: str) -> float:
-    normalized = {key.replace(" ", "").lower(): value for key, value in values.items()}
-    return sum(normalized.get(name.replace(" ", "").lower(), 0.0) for name in names)
+def require(values: dict[str, float], *names: str) -> float:
+    missing = [name for name in names if name not in values]
+    if missing:
+        raise ValueError(f"GROMACS energy output is missing required terms: {missing}")
+    return sum(values[name] for name in names)
+
+def psf_count(marker: str) -> int:
+    for line in Path("system.psf").read_text().splitlines():
+        if marker in line:
+            return int(line.split()[0])
+    raise ValueError(f"PSF is missing {marker}")
 
 namd = namd_energies(Path(sys.argv[1]))
 gmx = gromacs_energies(Path(sys.argv[2]))
+checksum = hashlib.sha256(Path(sys.argv[3]).read_bytes()).hexdigest()
 gmx_groups = {
-    "BOND": pick(gmx, "Bond"),
-    "ANGLE": pick(gmx, "Angle", "U-B"),
-    "DIHED": pick(gmx, "Proper Dih.", "Proper-Dih."),
-    "IMPRP": pick(gmx, "Improper Dih.", "Improper-Dih."),
-    "ELECT": pick(gmx, "Coulomb-14", "Coulomb (SR)", "Coulomb-SR", "Coul. recip."),
-    "VDW": pick(gmx, "LJ-14", "LJ (SR)", "LJ-SR"),
-    "POTENTIAL": pick(gmx, "Potential"),
+    "bond": require(gmx, "Bond"),
+    "angle": require(gmx, "U-B"),
+    "dihedral": require(gmx, "Proper Dih."),
+    "improper": (
+        require(gmx, "Improper Dih.")
+        if "Improper Dih." in gmx
+        else (0.0 if psf_count("!NIMPHI") == 0 else require(gmx, "Improper Dih."))
+    ),
+    "electrostatics": require(gmx, "Coulomb-14", "Coulomb (SR)", "Coul. recip."),
+    "vdw": require(gmx, "LJ-14", "LJ (SR)"),
+    "potential": require(gmx, "Potential"),
 }
-comparison = {
-    key: {
-        "namd_kcal_mol": namd[key],
-        "gromacs_kcal_mol": value,
-        "difference_kcal_mol": namd[key] - value,
+namd_groups = {
+    "bond": namd["BOND"] * KJ_PER_KCAL,
+    "angle": namd["ANGLE"] * KJ_PER_KCAL,
+    "dihedral": namd["DIHED"] * KJ_PER_KCAL,
+    "improper": namd["IMPRP"] * KJ_PER_KCAL,
+    "electrostatics": namd["ELECT"] * KJ_PER_KCAL,
+    "vdw": namd["VDW"] * KJ_PER_KCAL,
+    "potential": namd["POTENTIAL"] * KJ_PER_KCAL,
+}
+for engine, terms in (("namd", namd_groups), ("gromacs", gmx_groups)):
+    component_sum = sum(value for name, value in terms.items() if name != "potential")
+    if abs(component_sum - terms["potential"]) > 0.05:
+        raise ValueError(f"{engine} components do not sum to Potential")
+    directory = Path("single_point") / engine
+    directory.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": 1, "engine": engine, "units": "kJ/mol",
+        "coordinate_sha256": checksum, "terms": terms, "corrections": [],
     }
-    for key, value in gmx_groups.items()
-}
-print(json.dumps({"namd": namd, "gromacs_kcal_mol": gmx, "comparison": comparison}, indent=2))
+    (directory / "energy.json").write_text(json.dumps(payload, indent=2) + "\\n")
+
+comparison = {}
+passed = True
+for name, reference in gmx_groups.items():
+    observed = namd_groups[name]
+    difference = observed - reference
+    allowed = max(ABSOLUTE_TOLERANCE, RELATIVE_TOLERANCE * max(abs(reference), abs(observed), 1.0))
+    term_passed = abs(difference) <= allowed
+    passed &= term_passed
+    comparison[name] = {"gromacs_kj_mol": reference, "namd_kj_mol": observed,
+                        "difference_kj_mol": difference, "allowed_kj_mol": allowed,
+                        "passed": term_passed}
+report = {"schema_version": 1, "coordinate_sha256": checksum,
+          "reference_engine": "gromacs", "comparison": comparison, "passed": passed}
+Path("single_point_energy_comparison.json").write_text(json.dumps(report, indent=2) + "\\n")
+if not passed:
+    raise SystemExit("single-point energy comparison failed")
 '''
 
 
-def write_namd_system(
+def write_namd_system(  # noqa: PLR0913
     system: GlycamMappedSystem,
     topology: CharmmTopology,
     parameter_file: str | Path,
+    gromacs_coordinates: str | Path,
     output_directory: str | Path,
     *,
     periodic_chains: bool,
@@ -429,28 +551,41 @@ def write_namd_system(
     psf = directory / "system.psf"
     pdb = directory / "structure_namd.pdb"
     configuration = directory / "run_namd.conf"
+    single_point_configuration = directory / "single_point_namd.conf"
+    single_point_coordinates = directory / "single_point.coor"
+    shared_coordinates = directory / "single_point_coordinates.gro"
     parameters = directory / "par_all36_carb.prm"
-    gromacs_reference = directory / "gromacs_namd_t0.mdp"
-    t0_runner = directory / "run_t0_comparison.sh"
-    energy_comparison = directory / "compare_t0.py"
+    gromacs_single_point = directory / "single_point_gromacs.mdp"
+    single_point_runner = directory / "run_single_point_comparison.sh"
+    energy_adapter = directory / "single_point_energy.py"
+    shutil.copy2(gromacs_coordinates, shared_coordinates)
+    rounded_coordinates, rounded_vectors = _read_gro_coordinates(shared_coordinates)
+    _write_namd_binary_coordinates(single_point_coordinates, rounded_coordinates)
     psf.write_text(render_psf(system, topology), encoding="utf-8")
     pdb.write_text(render_pdb(system, topology), encoding="utf-8")
     configuration.write_text(
         render_namd_configuration(system, periodic_chains=periodic_chains), encoding="utf-8"
     )
-    gromacs_reference.write_text(
-        render_gromacs_t0_mdp(periodic_chains=periodic_chains), encoding="utf-8"
+    single_point_configuration.write_text(
+        render_namd_single_point_configuration(rounded_vectors, periodic_chains=periodic_chains),
+        encoding="utf-8",
     )
-    t0_runner.write_text(render_t0_runner(), encoding="utf-8")
-    t0_runner.chmod(t0_runner.stat().st_mode | 0o111)
-    energy_comparison.write_text(render_t0_comparison_script(), encoding="utf-8")
+    gromacs_single_point.write_text(
+        render_gromacs_single_point_mdp(periodic_chains=periodic_chains), encoding="utf-8"
+    )
+    single_point_runner.write_text(render_single_point_runner(), encoding="utf-8")
+    single_point_runner.chmod(single_point_runner.stat().st_mode | 0o111)
+    energy_adapter.write_text(render_single_point_energy_script(), encoding="utf-8")
     shutil.copy2(source_parameters, parameters)
     return NamdSystemFiles(
         psf=psf,
         pdb=pdb,
         configuration=configuration,
+        single_point_configuration=single_point_configuration,
+        single_point_coordinates=single_point_coordinates,
+        shared_coordinates=shared_coordinates,
         parameters=parameters,
-        gromacs_reference=gromacs_reference,
-        t0_runner=t0_runner,
-        energy_comparison=energy_comparison,
+        gromacs_single_point=gromacs_single_point,
+        single_point_runner=single_point_runner,
+        energy_adapter=energy_adapter,
     )

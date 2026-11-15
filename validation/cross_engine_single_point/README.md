@@ -1,12 +1,12 @@
-# Cross-engine t=0 validation bundle
+# Cross-engine single-point energy bundle
 
 A release bundle has one shared coordinate source and one subfolder per MD
 engine:
 
 ```text
-cross_engine_t0/
+cross_engine_single_point/
   manifest.json
-  run_t0_validation.py
+  run_single_point_validation.py
   shared/
   gromacs/
   openmm/
@@ -15,7 +15,7 @@ cross_engine_t0/
   amber/                 # finite GLYCAM systems only
 ```
 
-Each engine subfolder contains its native inputs and a `run_t0.py` adapter.
+Each engine subfolder contains its native inputs and a `run_single_point.py` adapter.
 The adapter performs an energy evaluation at the supplied coordinates without
 minimisation or dynamics and writes `energy.json`. Energies use kJ/mol and the
 canonical names listed in `manifest.example.json`. The manifest's
@@ -24,14 +24,19 @@ subset. An adapter is also where a
 documented engine convention is normalized; it must record every correction
 in the JSON rather than silently changing a value.
 
+The canonical breakdown is deliberately aggregate and has no synonyms:
+`bond`; `angle` (including Urey--Bradley); `dihedral` (proper torsions);
+`improper`; `vdw` (ordinary plus 1--4 Lennard-Jones); `electrostatics`
+(real-space, reciprocal-space, and 1--4); and `potential`.
+
 Run the bundle with:
 
 ```bash
-python run_t0_validation.py
+python run_single_point_validation.py
 ```
 
 Use `--no-run` to compare existing `energy.json` files. The output
-`t0_energy_comparison.json` contains the raw normalized energies, the common
+`single_point_energy_comparison.json` contains the raw normalized energies, the common
 terms compared against the reference engine, absolute and relative
 differences, and pass/fail status. Missing executables cause an explicit
 failure unless an engine is marked optional in the manifest.
@@ -41,7 +46,7 @@ engine named in the manifest. For example, an Amber/GROMACS bundle can be run
 without installing OpenMM, LAMMPS, or NAMD:
 
 ```bash
-python run_t0_validation.py --engine gromacs --engine amber
+python run_single_point_validation.py --engine gromacs --engine amber
 ```
 
 Not every force field has every engine. Amber is finite-chain GLYCAM only;

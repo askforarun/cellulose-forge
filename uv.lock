@@ -95,7 +95,7 @@ docs = [
     { name = "mkdocs" },
     { name = "mkdocs-material" },
 ]
-lammps = [
+lammps-converter = [
     { name = "openmm" },
 ]
 openmm = [
@@ -109,7 +109,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11" },
     { name = "numpy", specifier = ">=1.26,<2.3" },
     { name = "openmm", marker = "extra == 'all-python-engines'", specifier = ">=8.1" },
-    { name = "openmm", marker = "extra == 'lammps'", specifier = ">=8.1" },
+    { name = "openmm", marker = "extra == 'lammps-converter'", specifier = ">=8.1" },
     { name = "openmm", marker = "extra == 'openmm'", specifier = ">=8.1" },
     { name = "parmed", marker = "extra == 'all-python-engines'", specifier = ">=4.2" },
     { name = "parmed", marker = "extra == 'amber'", specifier = ">=4.2" },
@@ -117,7 +117,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7" },
 ]
-provides-extras = ["dev", "docs", "openmm", "amber", "lammps", "all-python-engines"]
+provides-extras = ["dev", "docs", "openmm", "amber", "lammps-converter", "all-python-engines"]
 
 [[package]]
 name = "certifi"

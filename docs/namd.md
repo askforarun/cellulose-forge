@@ -12,9 +12,10 @@ geometries already supported by CHARMM36. It writes:
 - `par_all36_carb.prm`, copied from a canonical CHARMM parameter file supplied
   by the user; and
 - `run_namd.conf`, a conservative minimization and 1 ps NVT smoke test.
-- `gromacs_namd_t0.mdp`, `run_t0_comparison.sh`, and `compare_t0.py`, which
-  evaluate the same starting coordinates in NAMD and GROMACS and write a JSON
-  comparison when both engines were requested.
+- `single_point_namd.conf`, `single_point_gromacs.mdp`,
+  `run_single_point_comparison.sh`, and `single_point_energy.py`, which evaluate
+  the same GRO-derived coordinates without constraints, minimization, or
+  dynamics and write normalized kJ/mol energy files plus a failing comparison.
 
 Example:
 
@@ -47,7 +48,7 @@ Before writing, CelluloseForge requires the explicit CHARMM36 1-4 pair list to
 match the unique bond-graph distance-three pairs exactly. Missing, extra, or
 duplicate pairs stop the build. Full triclinic basis vectors are written in
 Angstrom, so tilted bulk cells are retained. Every perpendicular periodic box
-width must exceed 24 Angstrom, twice NAMD's 12 Angstrom cutoff.
+width must exceed 28 Angstrom, twice NAMD's 14 Angstrom pair-list distance.
 
 Portable reproducibility scripts are collected under `validation/namd/`.
 They require no scheduler: users set `NAMD_EXE`, `GMX_EXE`, and optionally

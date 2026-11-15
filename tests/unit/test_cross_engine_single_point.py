@@ -18,9 +18,9 @@ def _energy(engine: str, checksum: str, bond: float = 100.0) -> dict[str, object
     }
 
 
-def test_cross_engine_t0_runner_compares_subfolders(tmp_path: Path) -> None:
-    source = Path("validation/cross_engine_t0/run_t0_validation.py").resolve()
-    runner = tmp_path / "run_t0_validation.py"
+def test_cross_engine_single_point_runner_compares_subfolders(tmp_path: Path) -> None:
+    source = Path("validation/cross_engine_single_point/run_single_point_validation.py").resolve()
+    runner = tmp_path / "run_single_point_validation.py"
     runner.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
     shared = tmp_path / "shared"
     shared.mkdir()
@@ -56,14 +56,16 @@ def test_cross_engine_t0_runner_compares_subfolders(tmp_path: Path) -> None:
         text=True,
     )
     assert completed.returncode == 0, completed.stderr
-    report = json.loads((tmp_path / "t0_energy_comparison.json").read_text(encoding="utf-8"))
+    report = json.loads(
+        (tmp_path / "single_point_energy_comparison.json").read_text(encoding="utf-8")
+    )
     assert report["passed"] is True
     assert set(report["comparisons"]) == {"amber", "lammps", "namd", "openmm"}
 
 
-def test_cross_engine_t0_runner_rejects_energy_difference(tmp_path: Path) -> None:
-    source = Path("validation/cross_engine_t0/run_t0_validation.py").resolve()
-    runner = tmp_path / "run_t0_validation.py"
+def test_cross_engine_single_point_runner_rejects_energy_difference(tmp_path: Path) -> None:
+    source = Path("validation/cross_engine_single_point/run_single_point_validation.py").resolve()
+    runner = tmp_path / "run_single_point_validation.py"
     runner.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
     coordinates = tmp_path / "coordinates.g96"
     coordinates.write_text("identical coordinates\n", encoding="utf-8")
@@ -95,6 +97,8 @@ def test_cross_engine_t0_runner_rejects_energy_difference(tmp_path: Path) -> Non
         check=False,
     )
     assert completed.returncode == 1
-    report = json.loads((tmp_path / "t0_energy_comparison.json").read_text(encoding="utf-8"))
+    report = json.loads(
+        (tmp_path / "single_point_energy_comparison.json").read_text(encoding="utf-8")
+    )
     assert report["passed"] is False
     assert report["comparisons"]["openmm"]["common_terms"]["bond"]["passed"] is False

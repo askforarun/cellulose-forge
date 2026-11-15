@@ -53,7 +53,7 @@ openmm = [
 amber = [
   "parmed>=4.2",
 ]
-lammps = [
+lammps-converter = [
   "openmm>=8.1",
 ]
 all-python-engines = [

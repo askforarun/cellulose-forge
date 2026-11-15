@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -94,3 +97,112 @@ def test_real_periodic_cellulose_psf_matches_gromacs_topology(
         assert float(psf_fields[7]) == pytest.approx(float(itp[7]), abs=5e-5)
 
     assert report["namd_validation"]["parameter_sha256"] == checksum
+
+    gmx = shutil.which("gmx")
+    if gmx is None:
+        pytest.skip("GROMACS is required for the single-point adapter integration check")
+    subprocess.run(
+        [
+            gmx,
+            "grompp",
+            "-f",
+            "single_point_gromacs.mdp",
+            "-c",
+            "single_point_coordinates.gro",
+            "-p",
+            "system.top",
+            "-o",
+            "single_point.tpr",
+            "-maxwarn",
+            "0",
+        ],
+        cwd=output,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [gmx, "mdrun", "-s", "single_point.tpr", "-deffnm", "single_point", "-nsteps", "0"],
+        cwd=output,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    selections = "\n".join(
+        (
+            "Bond",
+            "U-B",
+            "Proper-Dih.",
+            "Improper-Dih.",
+            "LJ-14",
+            "Coulomb-14",
+            "LJ-(SR)",
+            "Coulomb-(SR)",
+            "Coul.-recip.",
+            "Potential",
+            "0",
+        )
+    )
+    subprocess.run(
+        [gmx, "energy", "-f", "single_point.edr", "-o", "single_point.xvg"],
+        cwd=output,
+        input=selections + "\n",
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    xvg_lines = (output / "single_point.xvg").read_text(encoding="utf-8").splitlines()
+    legends = [line.split('"')[1] for line in xvg_lines if line.startswith("@ s")]
+    values = [
+        float(value)
+        for line in xvg_lines
+        if line and not line.startswith(("#", "@"))
+        for value in line.split()[1:]
+    ]
+    energies = dict(zip(legends, values, strict=True))
+    grouped = {
+        "bond": energies["Bond"],
+        "angle": energies["U-B"],
+        "dihedral": energies["Proper Dih."],
+        "improper": energies.get("Improper Dih.", 0.0),
+        "electrostatics": (
+            energies["Coulomb-14"] + energies["Coulomb (SR)"] + energies["Coul. recip."]
+        ),
+        "vdw": energies["LJ-14"] + energies["LJ (SR)"],
+        "potential": energies["Potential"],
+    }
+    kcal = {name: value / 4.184 for name, value in grouped.items()}
+    namd_fields = [
+        0.0,
+        kcal["bond"],
+        kcal["angle"],
+        kcal["dihedral"],
+        kcal["improper"],
+        kcal["electrostatics"],
+        kcal["vdw"],
+        0.0,
+        0.0,
+        0.0,
+        kcal["potential"],
+        0.0,
+        kcal["potential"],
+    ]
+    (output / "single_point_namd.log").write_text(
+        "ENERGY: " + " ".join(f"{value:.12g}" for value in namd_fields) + "\n",
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            "single_point_energy.py",
+            "single_point_namd.log",
+            "single_point.xvg",
+            "single_point_coordinates.gro",
+        ],
+        cwd=output,
+        check=True,
+    )
+    comparison = json.loads(
+        (output / "single_point_energy_comparison.json").read_text(encoding="utf-8")
+    )
+    assert comparison["passed"] is True

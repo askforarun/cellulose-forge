@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run and compare normalized t=0 energy evaluations across MD engines."""
+"""Run and compare normalized single-point energies across MD engines."""
 
 from __future__ import annotations
 
@@ -14,15 +14,8 @@ from typing import Any
 CANONICAL_TERMS = {
     "bond",
     "angle",
-    "urey_bradley",
     "dihedral",
-    "proper_dihedral",
     "improper",
-    "improper_dihedral",
-    "lj_14",
-    "coulomb_14",
-    "lj_nonbonded",
-    "coulomb_nonbonded",
     "vdw",
     "electrostatics",
     "potential",
@@ -32,7 +25,7 @@ CANONICAL_TERMS = {
 def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=Path("manifest.json"))
-    parser.add_argument("--output", type=Path, default=Path("t0_energy_comparison.json"))
+    parser.add_argument("--output", type=Path, default=Path("single_point_energy_comparison.json"))
     parser.add_argument("--no-run", action="store_true", help="compare existing energy.json files")
     parser.add_argument(
         "--engine",
@@ -147,7 +140,10 @@ def _collect_energies(
             raise FileNotFoundError(f"{engine}: missing directory {directory}")
         if not arguments.no_run:
             try:
-                subprocess.run(specification["command"], cwd=directory, check=True)
+                command = list(specification["command"])
+                if command and command[0] in {"python", "python3"}:
+                    command[0] = sys.executable
+                subprocess.run(command, cwd=directory, check=True)
             except (FileNotFoundError, subprocess.CalledProcessError) as error:
                 if specification.get("optional", False):
                     skipped[engine] = str(error)
@@ -202,7 +198,7 @@ def main() -> int:
         "passed": passed,
     }
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(f"t=0 cross-engine validation: {'PASS' if passed else 'FAIL'}")
+    print(f"single-point cross-engine validation: {'PASS' if passed else 'FAIL'}")
     print(f"report: {args.output}")
     return 0 if passed else 1
 

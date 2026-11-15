@@ -12,10 +12,11 @@ All notable changes to CelluloseForge are documented in this file.
   writer expands every chain, preserves periodic closure interactions, checks
   the complete graph-derived 1-4 pair set, and writes full triclinic cell
   vectors. It enforces the canonical February 2026 parameter checksum and a
-  24 Angstrom minimum box width. Generated bundles include a scheduler-neutral
-  runner, a matching GROMACS zero-step input, and a t=0 energy-comparison script.
+  28 Angstrom minimum box width set by NAMD's pair list. Generated bundles
+  include a scheduler-neutral runner, matching unconstrained NAMD and GROMACS
+  single-point inputs, and a failing energy-comparison script.
   Runtime NAMD cross-engine validation remains pending.
-- Added a portable cross-engine t=0 bundle contract with one subfolder per MD
+- Added a portable cross-engine single-point bundle contract with one subfolder per MD
   engine, shared-coordinate checksums, required comparable terms, explicit
   convention corrections, and a machine-readable pass/fail report. Engine
   subfolders can be selected independently, so unrelated executables are not
