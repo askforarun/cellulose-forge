@@ -31,10 +31,15 @@ def _executable(value: str) -> str:
     return resolved
 
 
-def main() -> None:
+def main() -> None:  # noqa: PLR0915 - linear fail-fast acceptance workflow
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--parameter-file", type=Path, required=True)
     parser.add_argument("--output", type=Path, default=Path("namd_acceptance_matrix"))
+    parser.add_argument(
+        "--summary-output",
+        type=Path,
+        help="optional second location for the compact acceptance_matrix.json",
+    )
     parser.add_argument("--cellulose-forge", default="cellulose-forge")
     parser.add_argument("--namd", default="namd3")
     parser.add_argument("--gmx", default="gmx")
@@ -186,9 +191,12 @@ def main() -> None:
             "comparison": comparison,
         }
 
-    (output / "acceptance_matrix.json").write_text(
-        json.dumps(results, indent=2) + "\n", encoding="utf-8"
-    )
+    rendered = json.dumps(results, indent=2) + "\n"
+    (output / "acceptance_matrix.json").write_text(rendered, encoding="utf-8")
+    if arguments.summary_output is not None:
+        summary_output = arguments.summary_output.resolve()
+        summary_output.parent.mkdir(parents=True, exist_ok=True)
+        summary_output.write_text(rendered, encoding="utf-8")
 
 
 if __name__ == "__main__":
