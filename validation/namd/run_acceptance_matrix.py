@@ -1,8 +1,8 @@
 """Build and run the three-case experimental NAMD acceptance matrix.
 
 This script requires real ``namd3`` and ``gmx`` executables. It stops on the
-first failed build, topology comparison, or single-point energy comparison;
-it never synthesizes engine output.
+first failed build, topology comparison, single-point energy comparison, or
+production-input dynamics smoke test; it never synthesizes engine output.
 """
 
 from __future__ import annotations
@@ -166,11 +166,33 @@ def main() -> None:  # noqa: PLR0915 - linear fail-fast acceptance workflow
             env=environment,
             check=True,
         )
+        with (directory / "production_dynamics.log").open("w", encoding="utf-8") as log:
+            subprocess.run(
+                [namd, f"+p{arguments.namd_threads}", "run_namd.conf"],
+                cwd=directory,
+                check=True,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+            )
+        subprocess.run(
+            [
+                sys.executable,
+                str(root / "validation" / "namd" / "analyze_dynamics.py"),
+                str(directory),
+                "--output",
+                str(directory / "dynamics_validation.json"),
+            ],
+            cwd=root,
+            check=True,
+        )
         comparison = json.loads(
             (directory / "single_point_energy_comparison.json").read_text(encoding="utf-8")
         )
         bundle_comparison = json.loads(
             (directory / "bundle_comparison.json").read_text(encoding="utf-8")
+        )
+        dynamics_validation = json.loads(
+            (directory / "dynamics_validation.json").read_text(encoding="utf-8")
         )
         if comparison.get("passed") is not True:
             raise SystemExit(f"single-point comparison did not pass: {name}")
@@ -178,6 +200,8 @@ def main() -> None:  # noqa: PLR0915 - linear fail-fast acceptance workflow
             bundle_comparison["term_counters_equal"].values()
         ):
             raise SystemExit(f"topology comparison did not pass: {name}")
+        if dynamics_validation.get("passed") is not True:
+            raise SystemExit(f"production dynamics validation did not pass: {name}")
         namd_log = (directory / "single_point_namd.log").read_text(
             encoding="utf-8", errors="replace"
         )
@@ -191,6 +215,7 @@ def main() -> None:  # noqa: PLR0915 - linear fail-fast acceptance workflow
             "cells": list(cells),
             "bundle_comparison": bundle_comparison,
             "comparison": comparison,
+            "production_dynamics": dynamics_validation,
         }
 
     rendered = json.dumps(results, indent=2) + "\n"
