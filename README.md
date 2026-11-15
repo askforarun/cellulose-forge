@@ -213,6 +213,18 @@ AmberTools and ParmEd, OpenMM output needs `openmm`
 environment described below. To work from the source repository instead, use
 one of the following.
 
+Engine dependencies are deliberately selective. CelluloseForge never installs
+the GROMACS, NAMD, LAMMPS, or Amber executables as hidden dependencies. For an
+Amber/GLYCAM-only installation from a source checkout, use
+`environment-amber.yml`; it installs AmberTools and ParmEd but not GROMACS,
+NAMD, LAMMPS, or OpenMM. The pip extras install Python-side dependencies only:
+
+```bash
+python -m pip install 'cellulose-forge[amber]'   # ParmEd; install AmberTools with conda
+python -m pip install 'cellulose-forge[openmm]'
+python -m pip install 'cellulose-forge[lammps]'  # OpenMM topology conversion support
+```
+
 ### Coordinate-only installation with uv
 
 ```bash

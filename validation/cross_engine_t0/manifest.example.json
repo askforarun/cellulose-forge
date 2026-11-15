@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "system": "replace-with-system-name",
+  "coordinate_file": "shared/coordinates.g96",
+  "coordinate_sha256": "replace-with-shared-coordinate-sha256",
+  "reference_engine": "gromacs",
+  "absolute_tolerance_kj_mol": 0.05,
+  "relative_tolerance": 0.00001,
+  "required_terms": ["bond", "angle", "dihedral", "improper", "vdw", "electrostatics", "potential"],
+  "engines": {
+    "gromacs": {"directory": "gromacs", "command": ["python", "run_t0.py"]},
+    "openmm": {"directory": "openmm", "command": ["python", "run_t0.py"]},
+    "lammps": {"directory": "lammps", "command": ["python", "run_t0.py"]},
+    "namd": {"directory": "namd", "command": ["python", "run_t0.py"], "optional": true},
+    "amber": {"directory": "amber", "command": ["python", "run_t0.py"], "optional": true}
+  }
+}

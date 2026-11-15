@@ -50,6 +50,16 @@ docs = [
 openmm = [
   "openmm>=8.1",
 ]
+amber = [
+  "parmed>=4.2",
+]
+lammps = [
+  "openmm>=8.1",
+]
+all-python-engines = [
+  "openmm>=8.1",
+  "parmed>=4.2",
+]
 
 [project.scripts]
 cellulose-forge = "cellulose_forge.cli:main"

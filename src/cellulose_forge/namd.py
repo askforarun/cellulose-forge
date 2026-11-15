@@ -36,7 +36,7 @@ class NamdSystemFiles:
     configuration: Path
     parameters: Path
     gromacs_reference: Path
-    slurm: Path
+    t0_runner: Path
     energy_comparison: Path
 
 
@@ -324,29 +324,16 @@ def render_gromacs_t0_mdp(*, periodic_chains: bool) -> str:
     )
 
 
-def render_slurm_script() -> str:
-    """Render a portable Slurm job for NAMD and optional GROMACS t=0 energies."""
+def render_t0_runner() -> str:
+    """Render a portable runner for NAMD and optional GROMACS t=0 energies."""
     return """#!/bin/bash
-#SBATCH --job-name=cf_namd
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --time=01:00:00
-#SBATCH --output=%x-%j.out
-#SBATCH --error=%x-%j.err
-
 set -euo pipefail
-
-# Set module names only when the target cluster needs them, for example:
-# export NAMD_MODULE=apps/namd/3
-# export GROMACS_MODULE=apps/gromacs_cuda/2026.1
-[[ -z "${NAMD_MODULE:-}" ]] || module load "${NAMD_MODULE}"
-[[ -z "${GROMACS_MODULE:-}" ]] || module load "${GROMACS_MODULE}"
 
 NAMD_EXE="${NAMD_EXE:-namd3}"
 GMX_EXE="${GMX_EXE:-gmx}"
+NAMD_THREADS="${NAMD_THREADS:-8}"
 
-"${NAMD_EXE}" +p"${SLURM_CPUS_PER_TASK}" run_namd.conf > namd.log
+"${NAMD_EXE}" +p"${NAMD_THREADS}" run_namd.conf > namd.log
 
 if [[ -f system.top && -f structure.gro ]]; then
   "${GMX_EXE}" grompp -f gromacs_namd_t0.mdp -c structure_namd.pdb \
@@ -444,7 +431,7 @@ def write_namd_system(
     configuration = directory / "run_namd.conf"
     parameters = directory / "par_all36_carb.prm"
     gromacs_reference = directory / "gromacs_namd_t0.mdp"
-    slurm = directory / "run_cross_engine.sbatch"
+    t0_runner = directory / "run_t0_comparison.sh"
     energy_comparison = directory / "compare_t0.py"
     psf.write_text(render_psf(system, topology), encoding="utf-8")
     pdb.write_text(render_pdb(system, topology), encoding="utf-8")
@@ -454,7 +441,8 @@ def write_namd_system(
     gromacs_reference.write_text(
         render_gromacs_t0_mdp(periodic_chains=periodic_chains), encoding="utf-8"
     )
-    slurm.write_text(render_slurm_script(), encoding="utf-8")
+    t0_runner.write_text(render_t0_runner(), encoding="utf-8")
+    t0_runner.chmod(t0_runner.stat().st_mode | 0o111)
     energy_comparison.write_text(render_t0_comparison_script(), encoding="utf-8")
     shutil.copy2(source_parameters, parameters)
     return NamdSystemFiles(
@@ -463,6 +451,6 @@ def write_namd_system(
         configuration=configuration,
         parameters=parameters,
         gromacs_reference=gromacs_reference,
-        slurm=slurm,
+        t0_runner=t0_runner,
         energy_comparison=energy_comparison,
     )

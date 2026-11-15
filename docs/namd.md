@@ -12,7 +12,7 @@ geometries already supported by CHARMM36. It writes:
 - `par_all36_carb.prm`, copied from a canonical CHARMM parameter file supplied
   by the user; and
 - `run_namd.conf`, a conservative minimization and 1 ps NVT smoke test.
-- `gromacs_namd_t0.mdp`, `run_cross_engine.sbatch`, and `compare_t0.py`, which
+- `gromacs_namd_t0.mdp`, `run_t0_comparison.sh`, and `compare_t0.py`, which
   evaluate the same starting coordinates in NAMD and GROMACS and write a JSON
   comparison when both engines were requested.
 
@@ -49,7 +49,10 @@ duplicate pairs stop the build. Full triclinic basis vectors are written in
 Angstrom, so tilted bulk cells are retained. Every perpendicular periodic box
 width must exceed 24 Angstrom, twice NAMD's 12 Angstrom cutoff.
 
-Reproducibility and cluster scripts are collected under `validation/namd/`.
+Portable reproducibility scripts are collected under `validation/namd/`.
+They require no scheduler: users set `NAMD_EXE`, `GMX_EXE`, and optionally
+`NAMD_THREADS`, then run the shell script directly. A scheduler can invoke the
+same command without changing the validation logic.
 
 NAMD restraints, NPT, GLYCAM, OpenFF, OPLS-AA, chitin dihydrate, and mannan are
 outside this first milestone. The build report labels NAMD runtime validation

@@ -1202,7 +1202,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                     "namd_configuration": namd_files.configuration.name,
                     "namd_parameters": namd_files.parameters.name,
                     "namd_gromacs_t0_mdp": namd_files.gromacs_reference.name,
-                    "namd_slurm_script": namd_files.slurm.name,
+                    "namd_t0_runner": namd_files.t0_runner.name,
                     "namd_t0_comparison": namd_files.energy_comparison.name,
                 }
                 if namd_files is not None

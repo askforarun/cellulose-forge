@@ -269,7 +269,9 @@ def test_writer_copies_parameter_file_and_writes_complete_bundle(
     assert files.parameters.read_text(encoding="utf-8") == "* test parameters\n"
     assert "vdw-modifier = Force-switch" in files.gromacs_reference.read_text()
     assert "periodic-molecules = no" in files.gromacs_reference.read_text()
-    assert "gromacs_t0_energy.xvg" in files.slurm.read_text()
+    assert "gromacs_t0_energy.xvg" in files.t0_runner.read_text()
+    assert "SBATCH" not in files.t0_runner.read_text()
+    assert files.t0_runner.stat().st_mode & 0o111
     comparison = files.energy_comparison.read_text(encoding="utf-8")
     compile(comparison, str(files.energy_comparison), "exec")
 

@@ -44,7 +44,7 @@ GROMACS port back into a CHARMM PRM and does not redistribute CHARMM files.
   digest is recorded in the build report.
 - PSF interaction rows follow psfgen's grouping, and zero `NUMLP` and
   `NCRTERM` sections are present for VMD compatibility.
-- Reusable comparison and Slurm scripts live together in `validation/namd/`.
+- Reusable scheduler-neutral comparison scripts live together in `validation/namd/`.
 
 ## Checks completed by Codex
 
@@ -84,7 +84,7 @@ The five review findings against `d674258` are addressed:
    `validation/namd/compare_bundle.py` additionally reproduced exact atom and
    interaction sets for real cellulose and chitin bundles.
 
-Each generated folder also contains a Slurm script, a matching GROMACS
+Each generated folder also contains a portable shell runner, a matching GROMACS
 10--12 Angstrom force-switch zero-step MDP, and a dependency-free comparison
 script. NAMD emits its initial `ENERGY` row before minimization; GROMACS reads
 the same NAMD PDB and writes the corresponding t=0 terms. The comparison JSON

@@ -1,13 +1,13 @@
 # NAMD validation bundle
 
 This folder keeps the reusable scripts for the experimental NAMD backend in
-one place. Generated simulation folders remain self-contained; copy a build
-folder plus `run_namd.sbatch` to a NAMD installation or Slurm cluster.
+one place. Generated simulation folders remain self-contained and do not
+depend on Slurm or another scheduler.
 
 - `compare_bundle.py` independently parses `system.psf`, expands the generated
   GROMACS topology with ParmEd, and compares atom properties and bonded term
   sets. It also records the parameter checksum and periodic cell widths.
-- `run_cross_engine.sbatch` runs NAMD, then performs a matching GROMACS t=0
+- `run_t0_comparison.sh` runs NAMD, then performs a matching GROMACS t=0
   calculation when the build contains both engines. The generated build folder
   also contains this script, its matching MDP and `compare_t0.py`.
 
@@ -18,12 +18,13 @@ python validation/namd/compare_bundle.py BUILD_DIRECTORY \
   --output comparison.json
 ```
 
-Run a generated folder on Slurm:
+Run a generated folder on any workstation or cluster login/compute node where
+the two executables are available:
 
 ```bash
-cp validation/namd/run_cross_engine.sbatch BUILD_DIRECTORY/
+cp validation/namd/run_t0_comparison.sh BUILD_DIRECTORY/
 cd BUILD_DIRECTORY
-sbatch run_cross_engine.sbatch
+NAMD_EXE=namd3 GMX_EXE=gmx ./run_t0_comparison.sh
 ```
 
 The stored release validator will eventually build the full matrix, run NAMD,
