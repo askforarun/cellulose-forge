@@ -35,6 +35,12 @@ independent reference topology and energy. A NAMD-only build remains runnable
 with `run_namd.conf`, but `run_single_point_comparison.sh` stops with an
 actionable error when `system.top` is absent.
 
+The comparison inputs use the same unswitched 12 Angstrom Lennard-Jones cutoff
+in both engines. This avoids the known constant potential offset between
+NAMD/CHARMM `vfswitch` and GROMACS force-switch while testing the same atom
+types, pair parameters, exclusions, and coordinates. Production
+`run_namd.conf` retains the native CHARMM 10--12 Angstrom force switch.
+
 For the initial periodic-bulk acceptance matrix, use cells large enough for
 NAMD's 14 Angstrom pair list:
 

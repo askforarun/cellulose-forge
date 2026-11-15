@@ -286,7 +286,8 @@ def test_writer_copies_parameter_file_and_writes_complete_bundle(
     binary = files.single_point_coordinates.read_bytes()
     assert struct.unpack("=i", binary[:4])[0] == _system().atom_count
     assert len(binary) == 4 + 3 * 8 * _system().atom_count
-    assert "vdw-modifier = Force-switch" in files.gromacs_single_point.read_text()
+    assert "vdw-modifier = None" in files.gromacs_single_point.read_text()
+    assert "switching off" in files.single_point_configuration.read_text()
     assert "ewald-rtol = 1e-6" in files.gromacs_single_point.read_text()
     assert "periodic-molecules = no" in files.gromacs_single_point.read_text()
     runner = files.single_point_runner.read_text()

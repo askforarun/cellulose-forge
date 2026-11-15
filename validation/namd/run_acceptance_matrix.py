@@ -8,8 +8,10 @@ it never synthesizes engine output.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -36,12 +38,21 @@ def main() -> None:
     parser.add_argument("--cellulose-forge", default="cellulose-forge")
     parser.add_argument("--namd", default="namd3")
     parser.add_argument("--gmx", default="gmx")
+    parser.add_argument(
+        "--audit-python",
+        default=sys.executable,
+        help="Python interpreter containing ParmEd for compare_bundle.py",
+    )
     parser.add_argument("--namd-threads", type=int, default=8)
     arguments = parser.parse_args()
 
     forge = _executable(arguments.cellulose_forge)
     namd = _executable(arguments.namd)
     gmx = _executable(arguments.gmx)
+    audit_python = _executable(arguments.audit_python)
+    subprocess.run(
+        [audit_python, "-c", "import parmed"], check=True, capture_output=True, text=True
+    )
     parameter_file = arguments.parameter_file.resolve()
     if not parameter_file.is_file():
         raise SystemExit(f"CHARMM parameter file does not exist: {parameter_file}")
@@ -59,12 +70,40 @@ def main() -> None:
         capture_output=True,
         text=True,
     ).stdout.strip()
+    forge_version = subprocess.run(
+        [forge, "--version"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    gromacs_version_output = subprocess.run(
+        [gmx, "--version"], check=True, capture_output=True, text=True
+    ).stdout
+    gromacs_version = next(
+        line.split(":", 1)[1].strip()
+        for line in gromacs_version_output.splitlines()
+        if line.startswith("GROMACS version:")
+    )
     case_results: dict[str, object] = {}
+    software_versions = {
+        "cellulose_forge": forge_version,
+        "gromacs": gromacs_version,
+        "parmed": subprocess.run(
+            [audit_python, "-c", "import parmed; print(parmed.__version__)"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip(),
+    }
     results: dict[str, object] = {
         "schema_version": 1,
         "cellulose_forge_commit": commit,
         "tracked_tree_clean": not tracked_status,
-        "executables": {"cellulose_forge": forge, "namd": namd, "gromacs": gmx},
+        "software_versions": software_versions,
+        "parameter_sha256": hashlib.sha256(parameter_file.read_bytes()).hexdigest(),
+        "single_point_protocol": {
+            "constraints": "none",
+            "lj_cutoff_angstrom": 12.0,
+            "lj_switching": "off in both engines",
+            "pme_tolerance": 1.0e-6,
+        },
         "cases": case_results,
     }
     for name, polymer, allomorph, cells in CASES:
@@ -96,7 +135,7 @@ def main() -> None:
         subprocess.run(command, cwd=root, check=True)
         subprocess.run(
             [
-                sys.executable,
+                audit_python,
                 str(root / "validation" / "namd" / "compare_bundle.py"),
                 str(directory),
                 "--output",
@@ -123,12 +162,27 @@ def main() -> None:
         comparison = json.loads(
             (directory / "single_point_energy_comparison.json").read_text(encoding="utf-8")
         )
+        bundle_comparison = json.loads(
+            (directory / "bundle_comparison.json").read_text(encoding="utf-8")
+        )
         if comparison.get("passed") is not True:
             raise SystemExit(f"single-point comparison did not pass: {name}")
+        if bundle_comparison["atom_row_mismatches"] or not all(
+            bundle_comparison["term_counters_equal"].values()
+        ):
+            raise SystemExit(f"topology comparison did not pass: {name}")
+        namd_log = (directory / "single_point_namd.log").read_text(
+            encoding="utf-8", errors="replace"
+        )
+        namd_match = re.search(r"^Info: NAMD\s+([^\s]+)", namd_log, flags=re.MULTILINE)
+        if namd_match is None:
+            raise SystemExit(f"cannot identify NAMD version: {name}")
+        software_versions["namd"] = namd_match.group(1)
         case_results[name] = {
             "polymer": polymer,
             "allomorph": allomorph,
             "cells": list(cells),
+            "bundle_comparison": bundle_comparison,
             "comparison": comparison,
         }
 

@@ -350,15 +350,14 @@ def render_namd_single_point_configuration(vectors: FloatArray, *, periodic_chai
             "parameters par_all36_carb.prm",
             "exclude scaled1-4",
             "oneFourScaling 1.0",
-            "switching on",
-            "switchdist 10.0",
+            "switching off",
             "cutoff 12.0",
             "pairlistdist 14.0",
             "PME yes",
             "PMEGridSpacing 1.0",
             "PMETolerance 1.0e-6",
             *_cell_lines(vectors),
-            "vdwForceSwitching on",
+            "vdwForceSwitching off",
             "LJcorrection off",
             "wrapAll off",
             f"# covalently periodic chains: {'yes' if periodic_chains else 'no'}",
@@ -388,8 +387,7 @@ def render_gromacs_single_point_mdp(*, periodic_chains: bool) -> str:
             "pme-order = 4",
             "ewald-rtol = 1e-6",
             "vdwtype = Cut-off",
-            "vdw-modifier = Force-switch",
-            "rvdw-switch = 1.0",
+            "vdw-modifier = None",
             "rvdw = 1.2",
             "DispCorr = no",
             "pbc = xyz",
@@ -504,6 +502,14 @@ gmx_groups = {
     "vdw": require(gmx, "LJ-14", "LJ (SR)"),
     "potential": require(gmx, "Potential"),
 }
+gmx_scales = {
+    **{name: abs(value) for name, value in gmx_groups.items()},
+    # These reported subtotals can be small cancellations of large components.
+    "electrostatics": sum(
+        abs(require(gmx, name)) for name in ("Coulomb-14", "Coulomb (SR)", "Coul. recip.")
+    ),
+    "vdw": sum(abs(require(gmx, name)) for name in ("LJ-14", "LJ (SR)")),
+}
 namd_groups = {
     "bond": namd["BOND"] * KJ_PER_KCAL,
     "angle": namd["ANGLE"] * KJ_PER_KCAL,
@@ -531,11 +537,13 @@ passed = True
 for name, reference in gmx_groups.items():
     observed = namd_groups[name]
     difference = observed - reference
-    allowed = max(ABSOLUTE_TOLERANCE, RELATIVE_TOLERANCE * max(abs(reference), abs(observed), 1.0))
+    scale = max(gmx_scales[name], abs(observed), 1.0)
+    allowed = max(ABSOLUTE_TOLERANCE, RELATIVE_TOLERANCE * scale)
     term_passed = abs(difference) <= allowed
     passed &= term_passed
     comparison[name] = {"gromacs_kj_mol": reference, "namd_kj_mol": observed,
                         "difference_kj_mol": difference, "allowed_kj_mol": allowed,
+                        "comparison_scale_kj_mol": scale,
                         "passed": term_passed}
 report = {"schema_version": 1, "coordinate_sha256": checksum,
           "reference_engine": "gromacs", "comparison": comparison, "passed": passed}

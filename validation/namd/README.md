@@ -37,6 +37,7 @@ Run all three cases with real executables using:
 ```bash
 python validation/namd/run_acceptance_matrix.py \
   --parameter-file /path/to/par_all36_carb.prm \
+  --audit-python /path/to/ambertools/bin/python \
   --output validation/namd_acceptance_matrix
 ```
 
