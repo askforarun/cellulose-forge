@@ -22,7 +22,7 @@
     "openmm_tilted_box.json": {"role": "evidence", "validator": "validation/measure_openmm_tilted_box.py"},
     "opls_cellulose_matrix.json": {"role": "evidence", "validator": "validation/validate_opls_cellulose.py"},
 
-    "charmm36_coefficients.json": {"role": "unprovenanced-evidence", "validator": "validation/audit_charmm36_coefficients.py"},
+    "charmm36_coefficients.json": {"role": "evidence", "validator": "validation/audit_charmm36_coefficients.py"},
     "charmm36_fibril_matrix.json": {"role": "reference", "validator": null},
     "charmm36_finite_fibril_matrix.json": {"role": "reference", "validator": null},
     "charmm36_finite_pme_nvt.json": {"role": "reference", "validator": null},
