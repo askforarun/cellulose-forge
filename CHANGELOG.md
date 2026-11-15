@@ -15,7 +15,9 @@ All notable changes to CelluloseForge are documented in this file.
   28 Angstrom minimum box width set by NAMD's pair list. Generated bundles
   include a scheduler-neutral runner, matching unconstrained NAMD and GROMACS
   single-point inputs, and a failing energy-comparison script.
-  Runtime NAMD cross-engine validation remains pending.
+  Real NAMD 3.0.3/GROMACS single-point validation now covers periodic I-beta,
+  triclinic I-alpha, and alpha-chitin, including chitin impropers. Short NAMD
+  dynamics validation remains pending.
 - Added a portable cross-engine single-point bundle contract with one subfolder per MD
   engine, shared-coordinate checksums, required comparable terms, explicit
   convention corrections, and a machine-readable pass/fail report. Engine

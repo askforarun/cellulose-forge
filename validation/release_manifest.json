@@ -11,6 +11,7 @@
     "chitin_glycam_engines.json": {"role": "evidence", "validator": "validation/validate_chitin_glycam.py"},
     "chitin_openff_matrix.json": {"role": "evidence", "validator": "validation/validate_chitin_openff.py"},
     "force_field_matrix.json": {"role": "evidence", "validator": "validation/validate_force_field_matrix.py"},
+    "namd_acceptance_matrix.json": {"role": "evidence", "validator": "validation/namd/run_acceptance_matrix.py"},
     "openff_fibril_nagl_matrix.json": {"role": "evidence", "validator": "validation/validate_openff_fibrils.py"},
     "openff_finite_slab_matrix.json": {"role": "evidence", "validator": "validation/validate_openff_finite_slab.py"},
     "openff_finite_slab_nagl_matrix.json": {"role": "evidence", "validator": "validation/validate_openff_finite_slab.py"},

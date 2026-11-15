@@ -99,9 +99,11 @@ def main() -> None:  # noqa: PLR0915 - linear fail-fast acceptance workflow
     }
     results: dict[str, object] = {
         "schema_version": 1,
-        "cellulose_forge_commit": commit,
-        "tracked_tree_clean": not tracked_status,
-        "software_versions": software_versions,
+        "provenance": {
+            "cellulose_forge_commit": commit,
+            "tracked_tree_clean": not tracked_status,
+            "software_versions": software_versions,
+        },
         "parameter_sha256": hashlib.sha256(parameter_file.read_bytes()).hexdigest(),
         "single_point_protocol": {
             "constraints": "none",
