@@ -29,7 +29,7 @@
     "charmm36_finite_reference.json": {"role": "reference", "validator": "validation/validate_finite_charmm36_reference.py"},
     "charmm36_ibeta_shapes.json": {"role": "reference", "validator": null},
     "charmm36_reference.json": {"role": "reference", "validator": "validation/validate_charmm36_reference.py"},
-    "high_throughput_coordinate_matrix.json": {"role": "unprovenanced-evidence", "validator": "validation/benchmark_coordinate_matrix.py"},
+    "high_throughput_coordinate_matrix.json": {"role": "evidence", "validator": "validation/benchmark_coordinate_matrix.py"},
     "ibeta_110_lattice_validation.json": {"role": "reference", "validator": null},
     "position_restraint_validation.json": {"role": "reference", "validator": null},
 
