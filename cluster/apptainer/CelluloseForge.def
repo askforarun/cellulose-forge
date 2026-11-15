@@ -1,0 +1,48 @@
+Bootstrap: docker
+From: ubuntu:24.04
+
+%files
+    cellulose-forge.gitbundle /opt/build/cellulose-forge.gitbundle
+    charmm36-feb2026_cgenff-5.0.ff /opt/cellulose-forge-data/forcefields/charmm36-feb2026_cgenff-5.0.ff
+
+%post
+    set -eu
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends build-essential ca-certificates cmake curl git libfftw3-dev ninja-build pkg-config wget
+    rm -rf /var/lib/apt/lists/*
+    curl -L -o /tmp/miniforge.sh https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+    bash /tmp/miniforge.sh -b -p /opt/conda
+    rm /tmp/miniforge.sh
+    /opt/conda/bin/conda create -y -p /opt/envs/core -c conda-forge python=3.12 'numpy>=1.26,<2.3' ambertools parmed openmm pytest pytest-cov ruff mypy pip
+    /opt/conda/bin/conda create -y -p /opt/envs/openff -c conda-forge python=3.12 'numpy>=1.26,<2.3' openff-toolkit=0.19.0 openff-interchange=0.5.5 openff-nagl=0.6.1 openff-nagl-models=2026.9.0 openmm=8.6.1 gromacs=2024.2 lammps pytest pytest-cov ruff mypy pip
+    git clone /opt/build/cellulose-forge.gitbundle /opt/cellulose-forge
+    /opt/envs/core/bin/pip install --no-deps -e /opt/cellulose-forge
+    /opt/envs/openff/bin/pip install --no-deps -e /opt/cellulose-forge
+    wget -q -O /tmp/gromacs.tar.gz https://ftp.gromacs.org/gromacs/gromacs-2025.4.tar.gz
+    echo '733448146f1f0555c9fd8d7a5d14ac7b  /tmp/gromacs.tar.gz' | md5sum -c -
+    tar -C /tmp -xzf /tmp/gromacs.tar.gz
+    cmake -S /tmp/gromacs-2025.4 -B /tmp/gromacs-build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/gromacs-double -DGMX_DOUBLE=ON -DGMX_BUILD_OWN_FFTW=OFF -DGMX_GPU=OFF -DGMX_MPI=OFF -DGMX_OPENMP=ON
+    cmake --build /tmp/gromacs-build --parallel
+    cmake --install /tmp/gromacs-build
+    rm -rf /tmp/gromacs-2025.4 /tmp/gromacs-build /tmp/gromacs.tar.gz
+    if [ -x /opt/envs/openff/bin/lmp ] && [ ! -e /opt/envs/openff/bin/lmp_serial ]; then ln -s /opt/envs/openff/bin/lmp /opt/envs/openff/bin/lmp_serial; fi
+    rm -rf /opt/conda/pkgs /opt/build
+
+%environment
+    export CELLULOSE_FORGE_DATA_DIR=/opt/cellulose-forge-data
+    export PATH=/opt/envs/core/bin:/opt/envs/openff/bin:/opt/gromacs-double/bin:$PATH
+    export PYTHONNOUSERSITE=1
+    export OMP_NUM_THREADS=1
+
+%test
+    /opt/envs/core/bin/python -m cellulose_forge.cli --version
+    /opt/envs/openff/bin/python -c 'import openff.toolkit, openmm'
+    /opt/envs/openff/bin/gmx --version
+    /opt/gromacs-double/bin/gmx_d --version
+    /opt/envs/openff/bin/lmp -help >/dev/null
+
+%labels
+    org.opencontainers.image.title CelluloseForge-private-validation
+    org.opencontainers.image.version 1.3.0
+    org.opencontainers.image.revision release/1.3.0-rc
