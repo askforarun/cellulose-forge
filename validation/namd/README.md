@@ -45,7 +45,10 @@ The launcher refuses missing executables or parameters and stops at the first
 failed build, topology audit, or energy comparison. It does not create mock
 NAMD output.
 
-The stored release validator will eventually build the full matrix, run NAMD,
-and compare term-resolved energies against double-precision GROMACS and
-OpenMM. Until NAMD runtime validation is complete, the CLI and documentation
-label this backend experimental.
+The stored acceptance matrix now records successful NAMD 3.0.3 single-point
+comparisons against GROMACS for cellulose Ibeta, triclinic cellulose Ialpha,
+and alpha-chitin. These comparisons use matched, unswitched 12 angstrom
+Lennard-Jones settings to isolate topology and engine consistency; production
+NAMD inputs retain the native CHARMM36 10--12 angstrom force switch. The
+backend remains experimental until short production-input dynamics have also
+been validated.

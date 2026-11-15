@@ -349,6 +349,122 @@ def test_single_point_script_groups_matching_terms(tmp_path: Path) -> None:
         assert result["comparison"][term]["difference_kj_mol"] == pytest.approx(0.0)
 
 
+def test_single_point_script_scales_cancelling_nonbonded_components(tmp_path: Path) -> None:
+    script = tmp_path / "compare.py"
+    script.write_text(render_single_point_energy_script(), encoding="utf-8")
+    namd = tmp_path / "namd.log"
+    # ELECT differs by 0.5 kJ/mol after conversion, but the GROMACS Coulomb
+    # subtotal is a cancellation of components whose absolute sum is 20,000
+    # kJ/mol. The comparison must therefore use the component scale, not the
+    # small net electrostatic energy.
+    electrostatic_kj = 10.5
+    namd.write_text(
+        "ETITLE: TS BOND ANGLE DIHED IMPRP ELECT VDW BOUNDARY MISC KINETIC "
+        "TOTAL TEMP POTENTIAL\n"
+        f"ENERGY: 0 1 1 1 0 {electrostatic_kj / 4.184} {3.684 / 4.184} 0 0 0 "
+        f"{26.736 / 4.184} 0 {26.736 / 4.184}\n",
+        encoding="utf-8",
+    )
+    names = (
+        "Bond",
+        "U-B",
+        "Proper Dih.",
+        "Improper Dih.",
+        "LJ-14",
+        "Coulomb-14",
+        "LJ (SR)",
+        "Coulomb (SR)",
+        "Coul. recip.",
+        "Potential",
+    )
+    values = (
+        4.184,
+        4.184,
+        4.184,
+        0.0,
+        10000.0,
+        10000.0,
+        -9995.816,
+        -9990.0,
+        0.0,
+        26.736,
+    )
+    xvg = tmp_path / "energy.xvg"
+    xvg.write_text(
+        "\n".join(
+            [
+                *(f'@ s{index} legend "{name}"' for index, name in enumerate(names)),
+                "0 " + " ".join(str(value) for value in values),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    coordinates = tmp_path / "coordinates.gro"
+    coordinates.write_text("shared\n", encoding="utf-8")
+    subprocess.run(
+        [sys.executable, str(script), str(namd), str(xvg), str(coordinates)],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    result = json.loads((tmp_path / "single_point_energy_comparison.json").read_text())
+    electrostatics = result["comparison"]["electrostatics"]
+    assert electrostatics["difference_kj_mol"] == pytest.approx(0.5)
+    assert electrostatics["comparison_scale_kj_mol"] == pytest.approx(19990.0)
+    assert electrostatics["allowed_kj_mol"] == pytest.approx(0.9995)
+    assert electrostatics["passed"] is True
+
+
+def test_single_point_script_uses_first_energy_after_etitle(tmp_path: Path) -> None:
+    script = tmp_path / "compare.py"
+    script.write_text(render_single_point_energy_script(), encoding="utf-8")
+    namd = tmp_path / "namd.log"
+    namd.write_text(
+        "ETITLE: TS BOND ANGLE DIHED IMPRP ELECT VDW BOUNDARY MISC KINETIC "
+        "TOTAL TEMP POTENTIAL\n"
+        "ENERGY: 0 1 5 3 4 26 19 0 0 0 58 300 58\n"
+        "ENERGY: 1 999 999 999 999 999 999 0 0 0 999 300 999\n",
+        encoding="utf-8",
+    )
+    xvg = tmp_path / "energy.xvg"
+    names = (
+        "Bond",
+        "U-B",
+        "Proper Dih.",
+        "Improper Dih.",
+        "LJ-14",
+        "Coulomb-14",
+        "LJ (SR)",
+        "Coulomb (SR)",
+        "Coul. recip.",
+        "Potential",
+    )
+    values = (4.184, 20.92, 12.552, 16.736, 29.288, 33.472, 50.208, 37.656, 37.656, 242.672)
+    xvg.write_text(
+        "\n".join(
+            [
+                *(f'@ s{index} legend "{name}"' for index, name in enumerate(names)),
+                "0 " + " ".join(str(value) for value in values),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    coordinates = tmp_path / "coordinates.gro"
+    coordinates.write_text("shared\n", encoding="utf-8")
+    subprocess.run(
+        [sys.executable, str(script), str(namd), str(xvg), str(coordinates)],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    result = json.loads((tmp_path / "single_point_energy_comparison.json").read_text())
+    assert result["comparison"]["bond"]["namd_kj_mol"] == pytest.approx(4.184)
+
+
 def test_single_point_script_refuses_missing_gromacs_term(tmp_path: Path) -> None:
     script = tmp_path / "single_point_energy.py"
     script.write_text(render_single_point_energy_script(), encoding="utf-8")
