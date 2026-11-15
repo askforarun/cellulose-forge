@@ -73,7 +73,7 @@ CASES: dict[str, dict[str, Any]] = {
     "glycam_periodic_triclinic_bulk": {
         "force_field": "glycam",
         "chain_boundary": "periodic",
-        "geometry": ["--shape", "bulk", "--cells", "3", "3", "2"],
+        "geometry": ["--shape", "bulk", "--cells", "4", "4", "4"],
         "dispersion_correction": True,
     },
 }
