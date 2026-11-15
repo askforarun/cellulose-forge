@@ -160,11 +160,18 @@ def test_real_periodic_cellulose_psf_matches_gromacs_topology(
         for value in line.split()[1:]
     ]
     energies = dict(zip(legends, values, strict=True))
+    if "Improper Dih." not in energies:
+        improper_count = next(
+            int(line.split()[0])
+            for line in (output / "system.psf").read_text(encoding="utf-8").splitlines()
+            if "!NIMPHI" in line
+        )
+        assert improper_count == 0
     grouped = {
         "bond": energies["Bond"],
         "angle": energies["U-B"],
         "dihedral": energies["Proper Dih."],
-        "improper": energies.get("Improper Dih.", 0.0),
+        "improper": energies["Improper Dih."] if "Improper Dih." in energies else 0.0,
         "electrostatics": (
             energies["Coulomb-14"] + energies["Coulomb (SR)"] + energies["Coul. recip."]
         ),

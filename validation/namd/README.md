@@ -27,6 +27,23 @@ cd BUILD_DIRECTORY
 NAMD_EXE=namd3 GMX_EXE=gmx ./run_single_point_comparison.sh
 ```
 
+Generate comparison-capable folders with both `--md-engine namd` and
+`--md-engine gromacs`. The recommended starting bulk cells are I-beta
+cellulose `4 4 3`, triclinic I-alpha cellulose `4 5 6`, and alpha-chitin
+`7 2 3`; each clears the strict 28 Angstrom NAMD pair-list gate.
+
+Run all three cases with real executables using:
+
+```bash
+python validation/namd/run_acceptance_matrix.py \
+  --parameter-file /path/to/par_all36_carb.prm \
+  --output validation/namd_acceptance_matrix
+```
+
+The launcher refuses missing executables or parameters and stops at the first
+failed build, topology audit, or energy comparison. It does not create mock
+NAMD output.
+
 The stored release validator will eventually build the full matrix, run NAMD,
 and compare term-resolved energies against double-precision GROMACS and
 OpenMM. Until NAMD runtime validation is complete, the CLI and documentation

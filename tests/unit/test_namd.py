@@ -26,6 +26,7 @@ from cellulose_forge.namd import (
     render_pdb,
     render_psf,
     render_single_point_energy_script,
+    render_single_point_runner,
     validate_charmm_parameter_file,
     validate_namd_one_four_pairs,
     write_namd_system,
@@ -389,3 +390,38 @@ def test_single_point_script_refuses_missing_gromacs_term(tmp_path: Path) -> Non
     )
     assert completed.returncode != 0
     assert "missing required terms: ['LJ (SR)']" in completed.stderr
+
+
+@pytest.mark.parametrize(
+    ("log", "message"),
+    [
+        ("ENERGY: 0 1 2\n", "ENERGY before ETITLE"),
+        ("ETITLE: TS BOND ANGLE\nENERGY: 0 1\n", "field count differs"),
+    ],
+)
+def test_single_point_script_refuses_malformed_namd_energy(
+    tmp_path: Path, log: str, message: str
+) -> None:
+    script = tmp_path / "single_point_energy.py"
+    script.write_text(render_single_point_energy_script(), encoding="utf-8")
+    namd = tmp_path / "namd.log"
+    namd.write_text(log, encoding="utf-8")
+    completed = subprocess.run(
+        [sys.executable, str(script), str(namd), "missing.xvg", "missing.gro"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode != 0
+    assert message in completed.stderr
+
+
+def test_single_point_runner_refuses_missing_gromacs_topology(tmp_path: Path) -> None:
+    runner = tmp_path / "run_single_point_comparison.sh"
+    runner.write_text(render_single_point_runner(), encoding="utf-8")
+    completed = subprocess.run(
+        ["bash", str(runner)], cwd=tmp_path, check=False, capture_output=True, text=True
+    )
+    assert completed.returncode == 2
+    assert "requires system.top" in completed.stderr

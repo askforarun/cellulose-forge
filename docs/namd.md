@@ -24,10 +24,28 @@ cellulose-forge build \
   --polymer cellulose --allomorph I-beta \
   --shape slab --face 1 1 0 --layers 4 --chains-per-layer 8 \
   --degree-polymerization 8 --chain-boundary periodic --vacuum 30 \
-  --force-field charmm36 --md-engine namd \
+  --force-field charmm36 --md-engine namd --md-engine gromacs \
   --charmm-parameter-file /path/to/par_all36_carb.prm \
   --output ibeta_namd
 ```
+
+Both engine selections are required for the bundled cross-engine single-point
+comparison: NAMD supplies the PSF/PRM calculation and GROMACS supplies the
+independent reference topology and energy. A NAMD-only build remains runnable
+with `run_namd.conf`, but `run_single_point_comparison.sh` stops with an
+actionable error when `system.top` is absent.
+
+For the initial periodic-bulk acceptance matrix, use cells large enough for
+NAMD's 14 Angstrom pair list:
+
+| Case | `--cells` |
+| --- | --- |
+| Cellulose I-beta | `4 4 3` |
+| Cellulose I-alpha | `4 5 6` |
+| Alpha-chitin | `7 2 3` |
+
+The smaller I-alpha `3 5 5` GROMACS matrix cell does not satisfy NAMD's
+28 Angstrom minimum perpendicular width.
 
 The parameter file is not redistributed. It must be from the same CHARMM36
 release as the installed GROMACS port. CelluloseForge copies it into the build
