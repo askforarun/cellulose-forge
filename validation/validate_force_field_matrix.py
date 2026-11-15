@@ -1,11 +1,12 @@
 """Validate the supported GLYCAM06j-1 and CHARMM36 cellulose matrix.
 
-The matrix contains periodic bulk crystals for all four allomorphs and finite
-and covalently periodic slabs for the documented chain-parallel faces.  Every
-case is built from the public CLI, preprocessed with ``grompp -maxwarn 0``,
-minimized, and propagated for a 1 ps NVT smoke test.  Periodic builds must also
-carry a successful mapped-geometry and written-topology O4--C1 bond check in
-their build report.
+The matrix contains periodic bulk crystals for all four allomorphs, finite and
+covalently periodic slabs for the documented chain-parallel faces, and finite
+and periodic CHARMM36 36-chain fibrils for I-alpha, I-beta, and cellulose II.
+Every case is built from the public CLI, preprocessed with
+``grompp -maxwarn 0``, minimized, and propagated for a 1 ps NVT smoke test.
+Periodic builds must also carry a successful mapped-geometry and
+written-topology O4--C1 bond check in their build report.
 """
 
 from __future__ import annotations
@@ -38,6 +39,7 @@ SLAB_FACES: dict[str, tuple[int, int, int]] = {
     "III-I": (1, 1, 0),
 }
 FORCE_FIELDS = ("glycam", "charmm36")
+FIBRIL_ALLOMORPHS = ("I-alpha", "I-beta", "II")
 PERIODIC_BOND_LIMIT_ANGSTROM = 2.0
 
 
@@ -124,7 +126,7 @@ def _build_command(
     ]
     if case.shape == "bulk":
         command.extend(["--cells", *(str(value) for value in BULK_CELLS[case.allomorph])])
-    else:
+    elif case.shape == "slab":
         command.extend(
             [
                 "--face",
@@ -133,6 +135,19 @@ def _build_command(
                 "3",
                 "--chains-per-layer",
                 "6",
+                "--degree-polymerization",
+                "6",
+                "--vacuum",
+                "24",
+            ]
+        )
+        if case.boundary == "finite":
+            command.extend(["--padding-longitudinal", "12"])
+    else:
+        command.extend(
+            [
+                "--fibril-model",
+                "36-chain",
                 "--degree-polymerization",
                 "6",
                 "--vacuum",
@@ -278,6 +293,7 @@ def _validate_case(
         "shape": case.shape,
         "chain_boundary": case.boundary,
         "face": (list(SLAB_FACES[case.allomorph]) if case.shape == "slab" else None),
+        "fibril_model": ("36-chain" if case.shape == "fibril" else None),
         "cells": (list(BULK_CELLS[case.allomorph]) if case.shape == "bulk" else None),
         "atom_count": report["force_field_atom_count"],
         "chain_count": report["chain_count"],
@@ -290,7 +306,7 @@ def _validate_case(
 
 
 def main() -> int:
-    """Run and record the 24-system force-field validation matrix."""
+    """Run and record the consolidated cellulose force-field validation matrix."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--gmx", default="gmx")
@@ -319,6 +335,11 @@ def main() -> int:
         for allomorph in SLAB_FACES
         for boundary in ("finite", "periodic")
     )
+    matrix.extend(
+        MatrixCase("charmm36", allomorph, "fibril", boundary)
+        for allomorph in FIBRIL_ALLOMORPHS
+        for boundary in ("finite", "periodic")
+    )
     cases = [_validate_case(args, case=case) for case in matrix]
     result_provenance = provenance(("cellulose-forge", "numpy"))
     if args.parmed_python is None:
@@ -333,6 +354,9 @@ def main() -> int:
         "protocol": {
             "bulk": "four periodic allomorphs with each force field",
             "slabs": "four faces, finite and periodic chains, with each force field",
+            "fibrils": (
+                "CHARMM36 36-chain I-alpha, I-beta, and II fibrils, with finite and periodic chains"
+            ),
             "preprocessing": "grompp -maxwarn 0",
             "minimization": "generated force-field-consistent minim.mdp",
             "dynamics": "generated 1 ps PME/NVT smoke test at 300 K",

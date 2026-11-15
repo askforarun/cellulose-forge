@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 from cellulose_forge.charmm36 import (
@@ -13,6 +14,11 @@ from cellulose_forge.charmm36 import (
     native_finite_charmm36_topology,
     read_charmm36_chain_template,
 )
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "validation"))
+
+from _provenance import provenance  # noqa: E402
 
 
 def _sha256(path: Path) -> str:
@@ -107,6 +113,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     result = validate(args.force_field_directory, args.itp)
+    result["provenance"] = provenance(("cellulose-forge", "numpy"))
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output is None:
         print(rendered, end="")

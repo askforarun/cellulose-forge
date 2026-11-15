@@ -5,12 +5,18 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 from collections import defaultdict
 from pathlib import Path
 
-from parmed.charmm import CharmmParameterSet
+from parmed.charmm import CharmmParameterSet  # type: ignore[import-not-found]
 
 from cellulose_forge.charmm36 import read_charmm36_chain_template
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "validation"))
+
+from _provenance import provenance  # noqa: E402
 
 _MINIMUM_NONBONDED_FIELDS = 4
 _MINIMUM_ANGLETYPE_FIELDS = 8
@@ -121,13 +127,15 @@ def audit(  # noqa: PLR0912, PLR0915
         if value is None or not rows:
             failures.append(f"missing dihedral {types}")
             continue
-        expected = sorted((term.phase, term.phi_k * 4.184, term.per) for term in value)
-        actual = sorted(
+        expected_dihedrals: list[tuple[float, float, int]] = sorted(
+            (term.phase, term.phi_k * 4.184, term.per) for term in value
+        )
+        actual_dihedrals: list[tuple[float, float, int]] = sorted(
             (float(row[5]), float(row[6]), int(row[7])) for row in rows if row[4] == "9"
         )
-        if len(actual) != len(expected) or any(
+        if len(actual_dihedrals) != len(expected_dihedrals) or any(
             not (_close(a[0], e[0]) and _close(a[1], e[1]) and a[2] == e[2])
-            for a, e in zip(actual, expected, strict=True)
+            for a, e in zip(actual_dihedrals, expected_dihedrals, strict=True)
         ):
             failures.append(f"dihedral {types}")
 
@@ -158,6 +166,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = audit(args.prm, args.itp, args.ffbonded, args.ffnonbonded)
+    result["provenance"] = provenance(("cellulose-forge", "numpy", "ParmEd"))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 

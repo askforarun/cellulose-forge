@@ -26,6 +26,9 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 VALIDATION = ROOT / "validation"
+sys.path.insert(0, str(VALIDATION))
+
+from _provenance import provenance  # noqa: E402
 
 SLAB = [
     "--shape",
@@ -377,6 +380,7 @@ def main() -> int:
     dirty = bool(_run(["git", "status", "--porcelain", "--untracked-files=no"], ROOT).strip())
     results = {name: _validate_case(args, name, case) for name, case in CASES.items()}
     summary = {
+        "provenance": provenance(("cellulose-forge", "numpy")),
         "cellulose_forge_commit": commit,
         "cellulose_forge_working_tree_modified": dirty,
         "openmm_version": versions,

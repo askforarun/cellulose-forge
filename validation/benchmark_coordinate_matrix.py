@@ -24,6 +24,11 @@ from typing import Any
 
 from cellulose_forge import __version__
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "validation"))
+
+from _provenance import provenance  # noqa: E402
+
 ALLOMORPHS = ("I-alpha", "I-beta", "II", "III-I")
 CELL_MATRICES = ((1, 1, 1), (2, 2, 2), (4, 4, 5))
 MINIMUM_DETERMINISM_REPEATS = 2
@@ -97,6 +102,7 @@ def run_benchmark(repeats: int) -> dict[str, Any]:
                 )
 
     return {
+        "provenance": provenance(("cellulose-forge", "numpy")),
         "benchmark": "coordinate-only bulk construction matrix",
         "command": "uv run python validation/benchmark_coordinate_matrix.py",
         "cellulose_forge_version": __version__,
