@@ -29,7 +29,7 @@ GROMACS, OpenMM, LAMMPS and (for finite GLYCAM chains) Amber, and checks that
 every engine evaluates the **same energy** for the same model.
 
 > [!IMPORTANT]
-> ## 🚀 New in 1.2.0, now on PyPI
+> ## 🚀 New in 1.3.0
 >
 > `pip install cellulose-forge`. This release adds **OpenMM output** for GLYCAM06j-1 and CHARMM36
 > with finite or covalently periodic chains; **native Amber output** for finite
@@ -42,7 +42,7 @@ every engine evaluates the **same energy** for the same model.
 > **odd-DP chains** remain planned. Feedback and
 > contributions are welcome.
 
-> **Release status:** CelluloseForge 1.2.0 is the current stable release. Its
+> **Release status:** CelluloseForge 1.3.0 is the release candidate described by this branch. Its
 > supported and validated boundaries are intentionally narrower than the
 > long-term project plan. Every supported combination is validated as
 > described in [Validation](#validation).
