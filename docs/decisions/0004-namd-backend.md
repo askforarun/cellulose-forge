@@ -39,6 +39,12 @@ GROMACS port back into a CHARMM PRM and does not redistribute CHARMM files.
   `oneFourScaling 1.0`, a 10--12 angstrom force switch via
   `vdwForceSwitching on`, and no LJ tail correction.
 - `wrapAll off` is deliberate for chains covalently bonded through the cell.
+- NAMD builds require every perpendicular box width to exceed 24 Angstrom.
+- The canonical February 2026 parameter file is enforced by SHA-256 and the
+  digest is recorded in the build report.
+- PSF interaction rows follow psfgen's grouping, and zero `NUMLP` and
+  `NCRTERM` sections are present for VMD compatibility.
+- Reusable comparison and Slurm scripts live together in `validation/namd/`.
 
 ## Checks completed by Codex
 
@@ -58,6 +64,32 @@ GROMACS port back into a CHARMM PRM and does not redistribute CHARMM files.
 NAMD is not installed on the development Mac. NAMD parsing, dynamics, and
 term-resolved energy comparison therefore remain review/validation tasks, not
 claims made by the implementation.
+
+## Changes after independent review
+
+The five review findings against `d674258` are addressed:
+
+1. NAMD builds now require every perpendicular box width to exceed 24
+   Angstrom, rather than inheriting the 21 Angstrom GROMACS/OpenMM rule.
+2. PSF rows use psfgen-compatible grouping (four bonds, three angles, or two
+   proper/improper dihedrals per line), with zero `NUMLP` and `NCRTERM`
+   sections. Headless VMD loaded a real 2,592-atom beta-chitin PSF/PDB with all
+   192 impropers.
+3. The February 2026 `par_all36_carb.prm` SHA-256 is enforced and recorded.
+4. Missing/wrong parameter files and NAMD restraint requests are rejected
+   before an output directory is created. Supplying the parameter option
+   without requesting NAMD is also rejected.
+5. A real periodic CHARMM36 integration test compares the expanded NAMD PSF
+   with the generated GROMACS topology. The independent script in
+   `validation/namd/compare_bundle.py` additionally reproduced exact atom and
+   interaction sets for real cellulose and chitin bundles.
+
+Each generated folder also contains a Slurm script, a matching GROMACS
+10--12 Angstrom force-switch zero-step MDP, and a dependency-free comparison
+script. NAMD emits its initial `ENERGY` row before minimization; GROMACS reads
+the same NAMD PDB and writes the corresponding t=0 terms. The comparison JSON
+keeps raw terms and grouped differences. NAMD runtime execution remains the
+only missing acceptance step.
 
 ## Independent review requested from Claude
 

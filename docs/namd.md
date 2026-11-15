@@ -12,6 +12,9 @@ geometries already supported by CHARMM36. It writes:
 - `par_all36_carb.prm`, copied from a canonical CHARMM parameter file supplied
   by the user; and
 - `run_namd.conf`, a conservative minimization and 1 ps NVT smoke test.
+- `gromacs_namd_t0.mdp`, `run_cross_engine.sbatch`, and `compare_t0.py`, which
+  evaluate the same starting coordinates in NAMD and GROMACS and write a JSON
+  comparison when both engines were requested.
 
 Example:
 
@@ -27,8 +30,10 @@ cellulose-forge build \
 
 The parameter file is not redistributed. It must be from the same CHARMM36
 release as the installed GROMACS port. CelluloseForge copies it into the build
-folder and does not attempt to reconstruct a CHARMM parameter file from the
-GROMACS port.
+folder, records its SHA-256, and requires the canonical February 2026 file
+(`9acd5f1d887afaf5e2cdc0e420440ab912cc2b584f787120d6845dd077d58ee6`).
+It does not attempt to reconstruct a CHARMM parameter file from the GROMACS
+port.
 
 The generated input uses PME, `exclude scaled1-4`, `oneFourScaling 1.0`, the
 native CHARMM 10--12 Angstrom force switch, and no isotropic Lennard-Jones tail
@@ -41,10 +46,12 @@ GPU-resident mode does not support this force-switching setting.
 Before writing, CelluloseForge requires the explicit CHARMM36 1-4 pair list to
 match the unique bond-graph distance-three pairs exactly. Missing, extra, or
 duplicate pairs stop the build. Full triclinic basis vectors are written in
-Angstrom, so tilted bulk cells are retained.
+Angstrom, so tilted bulk cells are retained. Every perpendicular periodic box
+width must exceed 24 Angstrom, twice NAMD's 12 Angstrom cutoff.
+
+Reproducibility and cluster scripts are collected under `validation/namd/`.
 
 NAMD restraints, NPT, GLYCAM, OpenFF, OPLS-AA, chitin dihydrate, and mannan are
 outside this first milestone. The build report labels NAMD runtime validation
 as pending until the NAMD executable has parsed and run the full acceptance
 matrix.
-

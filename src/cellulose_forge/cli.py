@@ -56,7 +56,12 @@ from cellulose_forge.glycam_mapping import (
 )
 from cellulose_forge.gromacs import write_glycam_gromacs_system
 from cellulose_forge.lammps import LammpsSystemFiles, write_lammps_system
-from cellulose_forge.namd import NamdSystemFiles, validate_namd_one_four_pairs, write_namd_system
+from cellulose_forge.namd import (
+    NamdSystemFiles,
+    validate_charmm_parameter_file,
+    validate_namd_one_four_pairs,
+    write_namd_system,
+)
 from cellulose_forge.openff_sage import (
     SAGE_FORCE_FIELD,
     VALIDATION_SCOPE,
@@ -378,6 +383,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         return 0 if all(check.ok for check in checks if check.name not in optional_engines) else 1
     if args.command == "build":
         _resolve_md_engines(args, build_parser())
+        _validate_namd_options(args, build_parser())
         if args.padding_longitudinal is not None and args.padding_z is not None:
             build_parser().error(
                 "--padding-longitudinal and deprecated --padding-z are mutually exclusive"
@@ -517,6 +523,26 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         parser.error(unsupported)
 
     args.md_engines = engines
+
+
+def _validate_namd_options(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    """Validate NAMD-only inputs before any output directory is created."""
+    requested = "namd" in args.md_engines
+    if args.charmm_parameter_file is not None and not requested:
+        parser.error("--charmm-parameter-file requires --md-engine namd")
+    if not requested:
+        return
+    if args.charmm_parameter_file is None:
+        parser.error("--md-engine namd requires --charmm-parameter-file")
+    if any(
+        value is not None
+        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
+    ):
+        parser.error("NAMD position restraints are not implemented yet")
+    try:
+        validate_charmm_parameter_file(args.charmm_parameter_file)
+    except ValueError as error:
+        parser.error(str(error))
 
 
 def _polymer_report_fields(
@@ -719,16 +745,27 @@ def _check_force_field_box(
     """
     cutoff = GROMACS_CUTOFF_ANGSTROM[args.force_field]
     required = 2.0 * (cutoff + PAIRLIST_BUFFER_ANGSTROM)
+    namd_requested = "namd" in args.md_engines
+    if namd_requested:
+        cutoff = 12.0
+        required = 2.0 * cutoff
     if min(periodic_box_heights(crystal.basis_vectors)) <= required:
         remedy = (
             "increase --cells"
             if args.shape in {"bulk", "crystal", "unit-cell"}
             else "increase --degree-polymerization, the padding, or the vacuum"
         )
+        reason = (
+            f"twice NAMD's {cutoff:g} angstrom CHARMM cutoff"
+            if namd_requested
+            else (
+                f"twice the {cutoff:g} angstrom nonbonded cutoff plus a "
+                f"{PAIRLIST_BUFFER_ANGSTROM:g} angstrom pair-list buffer on each side"
+            )
+        )
         parser.error(
-            f"the periodic box must exceed {required:g} angstrom (twice the {cutoff:g} "
-            f"angstrom nonbonded cutoff plus a {PAIRLIST_BUFFER_ANGSTROM:g} angstrom "
-            f"pair-list buffer on each side) in every direction; {remedy}"
+            f"the periodic box must exceed {required:g} angstrom ({reason}) "
+            f"in every direction; {remedy}"
         )
     if not is_vacuum_shape(args.shape):
         return
@@ -1056,11 +1093,6 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
     lammps_metadata: dict[str, object] | None = None
     namd_files: NamdSystemFiles | None = None
     namd_metadata: dict[str, object] | None = None
-    if "namd" in args.md_engines:
-        if args.charmm_parameter_file is None:
-            parser.error("--md-engine namd requires --charmm-parameter-file")
-        if restraints is not None:
-            parser.error("NAMD position restraints are not implemented yet")
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_charmm36_") as temporary:
         gromacs_directory = args.output if write_gromacs else Path(temporary)
         gro_path, itp_path, topology_path, force_field_path = write_charmm36_system(
@@ -1107,6 +1139,9 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             )
         if "namd" in args.md_engines:
             assert args.charmm_parameter_file is not None
+            _parameter_path, parameter_checksum = validate_charmm_parameter_file(
+                args.charmm_parameter_file
+            )
             try:
                 namd_files = write_namd_system(
                     mapped,
@@ -1122,6 +1157,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                     ),
                     "force_switch_angstrom": [10.0, 12.0],
                     "pme": True,
+                    "parameter_sha256": parameter_checksum,
                 }
             except ValueError as error:
                 parser.error(str(error))
@@ -1165,6 +1201,9 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                     "namd_coordinates": namd_files.pdb.name,
                     "namd_configuration": namd_files.configuration.name,
                     "namd_parameters": namd_files.parameters.name,
+                    "namd_gromacs_t0_mdp": namd_files.gromacs_reference.name,
+                    "namd_slurm_script": namd_files.slurm.name,
+                    "namd_t0_comparison": namd_files.energy_comparison.name,
                 }
                 if namd_files is not None
                 else {}

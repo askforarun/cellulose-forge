@@ -11,7 +11,10 @@ All notable changes to CelluloseForge are documented in this file.
   CHARMM carbohydrate parameter file, and a PME minimization/NVT input. The
   writer expands every chain, preserves periodic closure interactions, checks
   the complete graph-derived 1-4 pair set, and writes full triclinic cell
-  vectors. Runtime NAMD cross-engine validation remains pending.
+  vectors. It enforces the canonical February 2026 parameter checksum and a
+  24 Angstrom minimum box width. Generated bundles include a Slurm submission,
+  a matching GROMACS zero-step input, and a t=0 energy-comparison script.
+  Runtime NAMD cross-engine validation remains pending.
 
 ## 1.3.0 - 2026-11-15
 
