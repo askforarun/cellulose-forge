@@ -128,6 +128,9 @@ def check_declared_results(gate: Gate, manifest: dict[str, dict[str, str | None]
 def _provenance(document: object) -> dict[str, object] | None:
     """Return the first mapping that records a CelluloseForge commit."""
     if isinstance(document, dict):
+        explicit = document.get("provenance")
+        if isinstance(explicit, dict) and "cellulose_forge_commit" in explicit:
+            return explicit
         if "cellulose_forge_commit" in document:
             return document
         for value in document.values():
