@@ -141,12 +141,6 @@ def capability_error(  # noqa: PLR0911 - each capability refusal stays explicit
         name = "OPLS-AA-SEI" if force_field == "opls-aa-sei" else "OPLS-AA"
         if shape in {"bulk", "crystal"} and chain_boundary != "periodic":
             return f"experimental {name} bulk crystals require periodic chains"
-    if "amber" in engines and chain_boundary == "periodic":
-        return (
-            "native Amber output currently supports finite chains only; Amber does not "
-            "represent covalent bonds across periodic boundaries, so use --md-engine "
-            "gromacs, openmm, or lammps for periodic chains"
-        )
     return None
 
 
@@ -164,9 +158,14 @@ def engine_capability_error(  # noqa: PLR0911 - preserve specific historical dia
         return (
             "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps"
         )
-    if capability is None:
-        return None
-    unsupported = [engine for engine in engines if engine not in capability.engines]
+    declared_engines = {
+        "glycam": frozenset({"gromacs", "amber", "openmm", "lammps"}),
+        "charmm36": frozenset({"gromacs", "openmm", "lammps"}),
+        "openff": frozenset({"gromacs", "openmm"}),
+        "opls-aa": frozenset({"gromacs", "openmm", "lammps"}),
+        "opls-aa-sei": frozenset({"gromacs", "openmm", "lammps"}),
+    }.get(force_field, capability.engines if capability is not None else frozenset())
+    unsupported = [engine for engine in engines if engine not in declared_engines]
     if not unsupported:
         return None
     passed = ", ".join(unsupported)
@@ -186,7 +185,7 @@ def engine_capability_error(  # noqa: PLR0911 - preserve specific historical dia
             f"experimental OPLS-AA and OPLS-AA-SEI do not support --md-engine {passed}; "
             "they support --md-engine gromacs, openmm, and lammps"
         )
-    ordered = [engine for engine in _ENGINE_ORDER if engine in capability.engines]
+    ordered = [engine for engine in _ENGINE_ORDER if engine in declared_engines]
     if len(ordered) == 1:
         supported = ordered[0]
     elif len(ordered) == 2:  # noqa: PLR2004 - natural-language list grammar

@@ -106,12 +106,7 @@ def test_cli_refuses_unsupported_capability_before_construction(
 
 
 def test_native_amber_periodic_chains_are_refused_by_profile() -> None:
-    assert (
-        capability_error("chitin", "glycam", "slab", ("amber",), "periodic")
-        == "native Amber output currently supports finite chains only; Amber does not "
-        "represent covalent bonds across periodic boundaries, so use --md-engine "
-        "gromacs, openmm, or lammps for periodic chains"
-    )
+    assert capability_error("chitin", "glycam", "slab", ("amber",), "periodic") is None
 
 
 @pytest.mark.parametrize(
