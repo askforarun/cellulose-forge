@@ -164,6 +164,34 @@ def test_parse_amber_minimization_single_point_without_eptot() -> None:
     assert parsed["BOND"] == 10.0
 
 
+def test_parse_amber_minimization_accepts_correct_five_digit_rounding() -> None:
+    text = """
+   NSTEP       ENERGY          RMS            GMAX         NAME    NUMBER
+      0       1.2345E+04    1.0000       2.0000          C1       1
+ BOND   =   12300.0000  ANGLE   =      20.0000  DIHED      =      10.0000
+ 1-4 NB =       5.0000  1-4 EEL =       4.0000  VDWAALS    =       3.0000
+ EELEC  =       2.0000  EHBOND  =       0.0000  RESTRAINT  =       1.4377
+"""
+
+    parsed = parse_amber_energy(text)
+
+    assert parsed["MINIMIZATION ENERGY"] == 12345.0
+    assert parsed["EPtot"] == pytest.approx(12345.4377)
+
+
+def test_parse_amber_minimization_rejects_difference_beyond_printed_precision() -> None:
+    text = """
+   NSTEP       ENERGY          RMS            GMAX         NAME    NUMBER
+      0       1.2344E+04    1.0000       2.0000          C1       1
+ BOND   =   12300.0000  ANGLE   =      20.0000  DIHED      =      10.0000
+ 1-4 NB =       5.0000  1-4 EEL =       4.0000  VDWAALS    =       3.0000
+ EELEC  =       2.0000  EHBOND  =       0.0000  RESTRAINT  =       1.4377
+"""
+
+    with pytest.raises(ValueError, match="differs from its printed component sum"):
+        parse_amber_energy(text)
+
+
 def test_periodic_improper_classification_is_required() -> None:
     with pytest.raises(TypeError, match="periodic_improper"):
         _normalize_glycam_amber_energies(_kcal_terms(), coordinate_sha256="abc")  # type: ignore[call-arg]

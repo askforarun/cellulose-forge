@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 import re
 from collections.abc import Mapping
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from cellulose_forge.energy_drivers.report import EnergyReport, EnergyValue
@@ -108,7 +109,19 @@ def _parse_assignment(name: str, token: str) -> tuple[str, float]:
     return key, value
 
 
-def parse_amber_energy(source: str | Path) -> dict[str, float]:  # noqa: PLR0912
+def _printed_half_unit(token: str) -> float:
+    """Return half a unit in the last decimal place printed by sander."""
+    try:
+        value = Decimal(token)
+    except InvalidOperation as error:
+        raise ValueError(f"Amber energy token {token!r} is not decimal") from error
+    exponent = value.as_tuple().exponent
+    if not isinstance(exponent, int):
+        raise ValueError(f"Amber energy token {token!r} is not finite")
+    return float(Decimal("0.5").scaleb(exponent))
+
+
+def parse_amber_energy(source: str | Path) -> dict[str, float]:  # noqa: PLR0912, PLR0915
     """Parse the first sander ``mdout`` / ``mdinfo`` potential-energy block.
 
     Assignments without spaces around ``=`` (namelist echoes such as ``imin=1``)
@@ -122,6 +135,7 @@ def parse_amber_energy(source: str | Path) -> dict[str, float]:  # noqa: PLR0912
 
     lines = text.splitlines()
     minimization_energy: float | None = None
+    minimization_rounding = 0.0
     for line_index, line in enumerate(lines):
         fields = line.split()
         if len(fields) < _MIN_ENERGY_HEADER_FIELDS or fields[:_MIN_ENERGY_HEADER_FIELDS] != [
@@ -140,18 +154,23 @@ def parse_amber_energy(source: str | Path) -> dict[str, float]:  # noqa: PLR0912
                 continue
             if not math.isfinite(minimization_energy):
                 raise ValueError("Amber minimization ENERGY is not finite")
+            minimization_rounding = _printed_half_unit(tokens[1])
             break
         if minimization_energy is not None:
             break
 
     blocks: list[dict[str, float]] = []
+    block_rounding: list[dict[str, float]] = []
     current: dict[str, float] = {}
+    current_rounding: dict[str, float] = {}
 
     def flush() -> None:
-        nonlocal current
+        nonlocal current, current_rounding
         if current:
             blocks.append(current)
+            block_rounding.append(current_rounding)
             current = {}
+            current_rounding = {}
 
     for line in lines:
         pairs = _ASSIGNMENT.findall(line)
@@ -163,20 +182,31 @@ def parse_amber_energy(source: str | Path) -> dict[str, float]:  # noqa: PLR0912
             if (key == "NSTEP" and current) or key in current:
                 flush()
             current[key] = value
+            current_rounding[key] = _printed_half_unit(token)
     flush()
 
     for block in blocks:
         if "EPtot" in block:
             return block
     if minimization_energy is not None:
-        for block in blocks:
+        for block, rounding in zip(blocks, block_rounding, strict=True):
             if {"BOND", "ANGLE", "DIHED", "VDWAALS"} <= set(block):
                 component_sum = sum(
                     value
                     for name, value in block.items()
                     if _TERM_CATEGORIES.get(name) not in {None, "potential"}
                 )
-                allowed = max(0.1, 1.0e-5 * abs(component_sum))
+                # The minimization table is commonly printed with only five
+                # significant digits, while its components use four decimal
+                # places. Accept exactly the worst-case discrepancy introduced
+                # by those printed representations, not an arbitrary relative
+                # tolerance.
+                component_rounding = sum(
+                    rounding[name]
+                    for name in block
+                    if _TERM_CATEGORIES.get(name) not in {None, "potential"}
+                )
+                allowed = minimization_rounding + component_rounding
                 if abs(minimization_energy - component_sum) > allowed:
                     raise ValueError(
                         "Amber minimization ENERGY differs from its printed component sum"

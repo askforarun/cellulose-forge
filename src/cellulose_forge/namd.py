@@ -421,6 +421,7 @@ def render_namd_single_point_configuration(vectors: FloatArray, *, periodic_chai
             *_cell_lines(vectors),
             "vdwForceSwitching off",
             "LJcorrection off",
+            "mergeCrossterms no",
             "wrapAll off",
             f"# covalently periodic chains: {'yes' if periodic_chains else 'no'}",
             "rigidBonds none",

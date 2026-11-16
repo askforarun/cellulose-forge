@@ -24,6 +24,7 @@ from cellulose_forge.gromacs import write_gro
 from cellulose_forge.namd import (
     render_namd_configuration,
     render_namd_restraint_pdb,
+    render_namd_single_point_configuration,
     render_pdb,
     render_psf,
     render_single_point_energy_script,
@@ -326,6 +327,16 @@ def test_namd_restraints_require_equal_nonzero_axis_constants() -> None:
         render_namd_configuration(
             _system(), periodic_chains=True, restraint_force=(1000.0, 500.0, 0.0)
         )
+
+
+def test_namd_single_point_disables_crossterm_merging() -> None:
+    configuration = render_namd_single_point_configuration(
+        _system().basis_vectors,
+        periodic_chains=True,
+    )
+
+    assert "mergeCrossterms no" in configuration
+    assert "LJcorrection off" in configuration
 
 
 def test_single_point_script_groups_matching_terms(tmp_path: Path) -> None:
