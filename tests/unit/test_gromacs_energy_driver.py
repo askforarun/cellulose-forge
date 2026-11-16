@@ -1,10 +1,13 @@
+import hashlib
 from pathlib import Path
 
 import pytest
 
+import cellulose_forge.energy_drivers.gromacs as gromacs_driver
 from cellulose_forge.energy_drivers.gromacs import (
     normalize_gromacs_energies,
     parse_gromacs_xvg,
+    run_gromacs_single_point,
 )
 from cellulose_forge.energy_drivers.report import validate_potential_sum
 
@@ -137,3 +140,69 @@ def test_parse_gromacs_xvg_path(tmp_path: Path) -> None:
 def test_parse_gromacs_xvg_rejects_invalid_single_point_data(text: str, message: str) -> None:
     with pytest.raises(ValueError, match=message):
         parse_gromacs_xvg(text)
+
+
+def test_run_gromacs_single_point_uses_explicit_matched_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    coordinates = tmp_path / "coordinates.g96"
+    topology = tmp_path / "system.top"
+    mdp = tmp_path / "single_point.mdp"
+    coordinates.write_text("shared coordinates\n", encoding="utf-8")
+    topology.write_text("topology\n", encoding="utf-8")
+    mdp.write_text("nsteps = 0\nconstraints = none\n", encoding="utf-8")
+    checksum = hashlib.sha256(coordinates.read_bytes()).hexdigest()
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str], *, directory: Path, stdin: str | None = None) -> str:
+        assert directory == tmp_path.resolve()
+        commands.append(command)
+        if command[1] == "energy":
+            assert stdin is not None and "CMAP" in stdin
+            (tmp_path / "single_point_energy.xvg").write_text(
+                '@ s0 legend "Bond"\n@ s1 legend "Potential"\n0 1.25 1.25\n',
+                encoding="utf-8",
+            )
+        return ""
+
+    monkeypatch.setattr(gromacs_driver, "_run", fake_run)
+    report = run_gromacs_single_point(
+        tmp_path,
+        coordinate_file=coordinates,
+        topology_file=topology,
+        mdp_file=mdp,
+        coordinate_sha256=checksum,
+        executable="gmx-test",
+    )
+
+    assert [command[1] for command in commands] == ["grompp", "mdrun", "energy"]
+    assert report.terms["bond"] == 1.25
+    assert report.terms["potential"] == 1.25
+
+
+def test_run_gromacs_single_point_rejects_checksum_or_constrained_mdp(tmp_path: Path) -> None:
+    coordinates = tmp_path / "coordinates.g96"
+    topology = tmp_path / "system.top"
+    mdp = tmp_path / "single_point.mdp"
+    coordinates.write_text("shared coordinates\n", encoding="utf-8")
+    topology.write_text("topology\n", encoding="utf-8")
+    mdp.write_text("nsteps = 0\nconstraints = h-bonds\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="shared checksum"):
+        run_gromacs_single_point(
+            tmp_path,
+            coordinate_file=coordinates,
+            topology_file=topology,
+            mdp_file=mdp,
+            coordinate_sha256="wrong",
+        )
+
+    checksum = hashlib.sha256(coordinates.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match="constraints = none"):
+        run_gromacs_single_point(
+            tmp_path,
+            coordinate_file=coordinates,
+            topology_file=topology,
+            mdp_file=mdp,
+            coordinate_sha256=checksum,
+        )

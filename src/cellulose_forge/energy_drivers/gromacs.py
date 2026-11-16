@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import math
+import subprocess
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -63,6 +65,15 @@ _COMPONENT_TERMS = (
     "electrostatics",
     "restraint",
     "dispersion_correction",
+)
+
+_SELECTION_TERMS = (
+    *tuple(_TERM_CATEGORIES),
+    # Selected deliberately so unsupported contributions cannot disappear
+    # from the canonical decomposition.
+    "CMAP",
+    "Pull",
+    "AWH",
 )
 _LEGEND_PART_COUNT = 3
 
@@ -184,3 +195,115 @@ def normalize_gromacs_energies(
         terms=grouped,
         extra={"raw_terms": dict(raw_terms)},
     )
+
+
+def _run(command: list[str], *, directory: Path, stdin: str | None = None) -> str:
+    completed = subprocess.run(
+        command,
+        cwd=directory,
+        input=stdin,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"GROMACS command failed ({' '.join(command)}):\n{completed.stdout}{completed.stderr}"
+        )
+    return completed.stdout + completed.stderr
+
+
+def _validate_single_point_mdp(path: Path) -> None:
+    settings: dict[str, str] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.split(";", 1)[0].strip()
+        if not line or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        settings[key.strip().lower()] = value.strip().lower()
+    if settings.get("nsteps") != "0":
+        raise ValueError("GROMACS single-point MDP must set nsteps = 0")
+    if settings.get("constraints", "none") != "none":
+        raise ValueError("GROMACS single-point MDP must set constraints = none")
+
+
+def run_gromacs_single_point(  # noqa: PLR0913 - scientific inputs stay explicit
+    directory: Path,
+    *,
+    coordinate_file: Path,
+    topology_file: Path,
+    mdp_file: Path,
+    coordinate_sha256: str,
+    executable: str = "gmx",
+) -> EnergyReport:
+    """Run one GROMACS zero-step evaluation and return canonical energies.
+
+    The caller supplies the MDP because cutoff, switching, PME, dispersion,
+    periodic-molecule, and constraint settings must be matched across engines;
+    the adapter must never invent those scientific settings.
+    """
+    directory = directory.resolve()
+    coordinate_file = coordinate_file.resolve()
+    topology_file = topology_file.resolve()
+    mdp_file = mdp_file.resolve()
+    for path, description in (
+        (coordinate_file, "coordinate"),
+        (topology_file, "topology"),
+        (mdp_file, "MDP"),
+    ):
+        if not path.is_file():
+            raise FileNotFoundError(f"GROMACS {description} file does not exist: {path}")
+    actual_sha256 = hashlib.sha256(coordinate_file.read_bytes()).hexdigest()
+    if actual_sha256 != coordinate_sha256:
+        raise ValueError("GROMACS coordinate file does not match the shared checksum")
+    _validate_single_point_mdp(mdp_file)
+
+    tpr = directory / "single_point.tpr"
+    prefix = directory / "single_point"
+    xvg = directory / "single_point_energy.xvg"
+    _run(
+        [
+            executable,
+            "grompp",
+            "-f",
+            str(mdp_file),
+            "-c",
+            str(coordinate_file),
+            "-p",
+            str(topology_file),
+            "-o",
+            str(tpr),
+            "-maxwarn",
+            "0",
+        ],
+        directory=directory,
+    )
+    _run(
+        [
+            executable,
+            "mdrun",
+            "-s",
+            str(tpr),
+            "-deffnm",
+            str(prefix),
+            "-ntmpi",
+            "1",
+            "-ntomp",
+            "1",
+        ],
+        directory=directory,
+    )
+    selections = "\n".join(name.replace(" ", "-") for name in _SELECTION_TERMS)
+    _run(
+        [
+            executable,
+            "energy",
+            "-f",
+            str(prefix.with_suffix(".edr")),
+            "-o",
+            str(xvg),
+        ],
+        directory=directory,
+        stdin=f"{selections}\n0\n",
+    )
+    return normalize_gromacs_energies(parse_gromacs_xvg(xvg), coordinate_sha256=coordinate_sha256)

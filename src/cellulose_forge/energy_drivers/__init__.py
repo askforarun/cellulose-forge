@@ -3,6 +3,7 @@
 from cellulose_forge.energy_drivers.gromacs import (
     normalize_gromacs_energies,
     parse_gromacs_xvg,
+    run_gromacs_single_point,
 )
 from cellulose_forge.energy_drivers.openmm import openmm_energy_report
 from cellulose_forge.energy_drivers.report import (
@@ -21,5 +22,6 @@ __all__ = [
     "normalize_gromacs_energies",
     "openmm_energy_report",
     "parse_gromacs_xvg",
+    "run_gromacs_single_point",
     "validate_potential_sum",
 ]
