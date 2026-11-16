@@ -14,6 +14,7 @@ from cellulose_forge.energy_drivers.lammps import (
     normalize_lammps_energies,
     parse_lammps_input,
     parse_lammps_thermo,
+    run_lammps_single_point,
 )
 from cellulose_forge.energy_drivers.namd import (
     normalize_namd_energies,
@@ -53,6 +54,7 @@ __all__ = [
     "parse_lammps_thermo",
     "parse_namd_energy_log",
     "run_gromacs_single_point",
+    "run_lammps_single_point",
     "run_namd_single_point",
     "run_openmm_single_point",
     "validate_potential_sum",

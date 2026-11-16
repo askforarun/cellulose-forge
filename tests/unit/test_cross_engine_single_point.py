@@ -156,9 +156,14 @@ def test_builtin_gromacs_and_openmm_adapters_write_reports(
         calls["namd"] = (directory, kwargs)
         return EnergyReport("namd", "sha", {"bond": 1.0, "potential": 1.0})
 
+    def fake_lammps(directory: Path, **kwargs: object) -> EnergyReport:
+        calls["lammps"] = (directory, kwargs)
+        return EnergyReport("lammps", "sha", {"bond": 1.0, "potential": 1.0})
+
     monkeypatch.setitem(globals_, "run_gromacs_single_point", fake_gromacs)
     monkeypatch.setitem(globals_, "run_openmm_single_point", fake_openmm)
     monkeypatch.setitem(globals_, "run_namd_single_point", fake_namd)
+    monkeypatch.setitem(globals_, "run_lammps_single_point", fake_lammps)
 
     gromacs = tmp_path / "gromacs"
     openmm = tmp_path / "openmm"
@@ -166,6 +171,8 @@ def test_builtin_gromacs_and_openmm_adapters_write_reports(
     openmm.mkdir()
     namd = tmp_path / "namd"
     namd.mkdir()
+    lammps = tmp_path / "lammps"
+    lammps.mkdir()
     run_adapter(
         "gromacs",
         {
@@ -212,10 +219,27 @@ def test_builtin_gromacs_and_openmm_adapters_write_reports(
         namd,
         "sha",
     )
+    run_adapter(
+        "lammps",
+        {
+            "adapter": "lammps",
+            "inputs": {
+                "input_file": "in.cellulose",
+                "data_file": "system.data",
+                "coordinate_file": "../shared.gro",
+                "periodic_improper_count": 2,
+                "periodic_improper_kj_mol": 1.25,
+                "explicit_pair_kj_mol": {"vdw": 2.0, "electrostatics": 3.0},
+            },
+        },
+        lammps,
+        "sha",
+    )
 
     assert json.loads((gromacs / "energy.json").read_text())["engine"] == "gromacs"
     assert json.loads((openmm / "energy.json").read_text())["engine"] == "openmm"
     assert json.loads((namd / "energy.json").read_text())["engine"] == "namd"
+    assert json.loads((lammps / "energy.json").read_text())["engine"] == "lammps"
     openmm_call = calls["openmm"]
     assert isinstance(openmm_call, dict)
     classification = openmm_call["classification"]
@@ -226,6 +250,10 @@ def test_builtin_gromacs_and_openmm_adapters_write_reports(
     assert isinstance(namd_call, tuple)
     assert namd_call[1]["threads"] == 2
     assert namd_call[1]["classified_terms"] == {"MISC": "restraint"}
+    lammps_call = calls["lammps"]
+    assert isinstance(lammps_call, tuple)
+    assert lammps_call[1]["periodic_improper_count"] == 2
+    assert lammps_call[1]["explicit_pair_kj_mol"] == {"vdw": 2.0, "electrostatics": 3.0}
 
 
 def test_builtin_adapter_refuses_noncanonical_force_index(tmp_path: Path) -> None:

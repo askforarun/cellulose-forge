@@ -15,7 +15,7 @@ cross_engine_single_point/
   amber/                 # finite GLYCAM systems only
 ```
 
-GROMACS, OpenMM and NAMD use the built-in adapters selected in `manifest.json`; they
+GROMACS, OpenMM, NAMD and LAMMPS use the built-in adapters selected in `manifest.json`; they
 do not need a copied runner script. Other engines retain a subfolder runner
 during the staged migration. Each adapter performs an energy evaluation at the
 supplied coordinates without minimisation or dynamics and writes `energy.json`. Energies use kJ/mol and the
@@ -36,6 +36,11 @@ coordinates and that the input explicitly sets `mergeCrossterms no`,
 `LJcorrection off`, `rigidBonds none` and `run 0`. Nonzero `BOUNDARY` or `MISC`
 terms require an explicit classification in the manifest.
 
+The LAMMPS adapter checks that `system.data` contains the shared GRO
+coordinates before executing `run 0`. Periodic impropers and GLYCAM explicit
+pair energies must be supplied from the topology when present; they cannot be
+recovered uniquely from a LAMMPS thermo row.
+
 The canonical breakdown is deliberately aggregate and has no synonyms:
 `bond`; `angle` (including Urey--Bradley); `dihedral` (proper torsions);
 `improper`; `vdw` (ordinary plus 1--4 Lennard-Jones); `electrostatics`
@@ -48,6 +53,9 @@ other reported canonical terms within the configured numerical tolerance.
 Restraint and dispersion-correction contributions must therefore be reported
 separately whenever they are active and included in `potential`; an unknown
 nonzero contribution is an error rather than being silently absorbed.
+The manifest may define per-term `[absolute_kj_mol, relative]` tolerances;
+this is useful for net electrostatics, whose real-space and reciprocal-space
+components can be much larger than their sum.
 
 Run the bundle with:
 

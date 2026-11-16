@@ -6,6 +6,7 @@
   "reference_engine": "gromacs",
   "absolute_tolerance_kj_mol": 0.05,
   "relative_tolerance": 0.00001,
+  "term_tolerances": {"electrostatics": [0.1, 0.0002]},
   "required_terms": ["bond", "angle", "dihedral", "improper", "vdw", "electrostatics", "potential"],
   "engines": {
     "gromacs": {
@@ -33,7 +34,19 @@
         }
       }
     },
-    "lammps": {"directory": "lammps", "command": ["python", "run_single_point.py"]},
+    "lammps": {
+      "directory": "lammps",
+      "adapter": "lammps",
+      "inputs": {
+        "input_file": "in.cellulose",
+        "data_file": "system.data",
+        "coordinate_file": "../shared/coordinates.gro",
+        "executable": "lmp",
+        "periodic_improper_count": 0,
+        "periodic_improper_kj_mol": null,
+        "explicit_pair_kj_mol": null
+      }
+    },
     "namd": {
       "directory": "namd",
       "adapter": "namd",

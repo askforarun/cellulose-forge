@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import math
 import sys
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
@@ -19,6 +20,7 @@ from cellulose_forge.energy_drivers.lammps import (
     normalize_lammps_energies,
     parse_lammps_input,
     parse_lammps_thermo,
+    run_lammps_single_point,
 )
 from cellulose_forge.energy_drivers.report import validate_potential_sum
 
@@ -141,8 +143,54 @@ def _data() -> str:
         "Bonds\n\n1 1 1 2\n2 1 2 3\n3 1 3 4\n4 1 4 5\n5 1 5 6\n\n"
         "Dihedral Coeffs\n\n1 0.2 1 180 1.0\n2 0.3 3 0 0.0\n\n"
         "Dihedrals\n\n1 1 1 2 3 4\n2 1 2 3 4 5\n3 2 3 4 5 6\n\n"
-        "PairIJ Coeffs\n\n1 1 0.1 3.5 0.05 3.2\n1 2 0.12 3.3 0.06 3.1\n2 2 0.15 3.1 0.07 3.0\n"
+        "PairIJ Coeffs\n\n1 1 0.1 3.5 0.05 3.2\n1 2 0.12 3.3 0.06 3.1\n"
+        "2 2 0.15 3.1 0.07 3.0\n"
     )
+
+
+def _matching_gro() -> str:
+    coordinates = (
+        (0.100, 0.100, 0.100),
+        (0.250, 0.100, 0.100),
+        (0.400, 0.100, 0.100),
+        (0.550, 0.100, 0.100),
+        (0.700, 0.100, 0.100),
+        (0.850, 0.100, 0.100),
+        (0.100, 0.100, 2.200),
+    )
+    atoms = "\n".join(
+        f"    1BGLC    C1{index:5d}{x:8.3f}{y:8.3f}{z:8.3f}"
+        for index, (x, y, z) in enumerate(coordinates, start=1)
+    )
+    return f"shared\n7\n{atoms}\n3.0 3.0 3.0 0.0 0.0 0.15 0.0 0.0 0.0\n"
+
+
+def test_run_lammps_single_point_checks_and_normalizes_shared_coordinates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_file = tmp_path / "in.cellulose"
+    input_file.write_text(_PLAIN_INPUT, encoding="utf-8")
+    data_file = tmp_path / "system.data"
+    data_file.write_text(_data(), encoding="utf-8")
+    coordinates = tmp_path / "coordinates.gro"
+    coordinates.write_text(_matching_gro(), encoding="utf-8")
+    log = _log(_PLAIN_LABELS, _PLAIN_ROW)
+    monkeypatch.setattr(
+        "cellulose_forge.energy_drivers.lammps.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=log, stderr=""),
+    )
+
+    report = run_lammps_single_point(
+        tmp_path,
+        input_file=input_file,
+        data_file=data_file,
+        shared_coordinate_file=coordinates,
+        coordinate_sha256=hashlib.sha256(coordinates.read_bytes()).hexdigest(),
+        periodic_improper_count=0,
+    )
+
+    assert report.terms["potential"] == pytest.approx(_PLAIN_ROW["PotEng"] * KJ_PER_KCAL)
+    assert (tmp_path / "single_point_lammps.log").read_text() == log
 
 
 def _validator() -> ModuleType:

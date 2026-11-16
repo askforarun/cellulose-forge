@@ -32,7 +32,9 @@ which move energy between categories without changing ``potential``.
 
 from __future__ import annotations
 
+import hashlib
 import math
+import subprocess
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -55,6 +57,9 @@ _PLAIN_PAIR_STYLE = "lj/cut/coul/long"
 _SUPPORTED_PAIR_STYLES = frozenset({_CHARMM_PAIR_STYLE, _PLAIN_PAIR_STYLE})
 _EXCLUDED_BOND_DEPTH = 3
 _CHARMM_SWITCH_ARGUMENTS = 2
+_GRO_MINIMUM_LINES = 3
+_ORTHORHOMBIC_BOX_VALUES = 3
+_TRICLINIC_BOX_VALUES = 9
 
 # LAMMPS thermo keyword -> thermo header label.
 _THERMO_LABELS: dict[str, str] = {
@@ -758,4 +763,158 @@ def lammps_energy_report(  # noqa: PLR0913
         periodic_improper_kj_mol=periodic_improper_kj_mol,
         explicit_pair_kj_mol=explicit_pair_kj_mol,
         charmm_conventions=conventions,
+    )
+
+
+def _gro_positions_angstrom(path: Path) -> npt.NDArray[np.float64]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if len(lines) < _GRO_MINIMUM_LINES:
+        raise ValueError("shared GRO coordinate file is truncated")
+    try:
+        count = int(lines[1].strip())
+        return np.asarray(
+            [
+                [
+                    10.0 * float(line[20:28]),
+                    10.0 * float(line[28:36]),
+                    10.0 * float(line[36:44]),
+                ]
+                for line in lines[2 : 2 + count]
+            ]
+        )
+    except ValueError as error:
+        raise ValueError("shared GRO positions are invalid") from error
+
+
+def _gro_box_angstrom(path: Path) -> npt.NDArray[np.float64]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    try:
+        count = int(lines[1].strip())
+        values = [10.0 * float(value) for value in lines[count + 2].split()]
+    except (ValueError, IndexError) as error:
+        raise ValueError("shared GRO box is invalid") from error
+    if len(values) == _ORTHORHOMBIC_BOX_VALUES:
+        return np.diag(values)
+    if len(values) != _TRICLINIC_BOX_VALUES:
+        raise ValueError("shared GRO box must contain three or nine values")
+    return np.asarray(
+        [
+            [values[0], values[3], values[4]],
+            [values[5], values[1], values[6]],
+            [values[7], values[8], values[2]],
+        ]
+    )
+
+
+def _data_positions_angstrom(data: str) -> npt.NDArray[np.float64]:
+    rows = _section(data, "Atoms # full")
+    positions = np.zeros((len(rows), 3))
+    seen: set[int] = set()
+    for row in rows:
+        fields = row.split()
+        try:
+            index = int(fields[0]) - 1
+            coordinate = [float(value) for value in fields[4:7]]
+        except (ValueError, IndexError) as error:
+            raise ValueError("LAMMPS data atom coordinates are invalid") from error
+        if index < 0 or index >= len(rows) or index in seen:
+            raise ValueError("LAMMPS data atom indices are invalid")
+        seen.add(index)
+        positions[index] = coordinate
+    return positions
+
+
+def _data_box_angstrom(data: str) -> npt.NDArray[np.float64]:
+    header = data.split("\nMasses\n", 1)[0].splitlines()
+
+    def bounds(tag: str) -> float:
+        try:
+            row = next(line for line in header if line.endswith(tag))
+            low, high = (float(value) for value in row.split()[:2])
+        except (StopIteration, ValueError) as error:
+            raise ValueError(f"LAMMPS data file lacks valid {tag} bounds") from error
+        return high - low
+
+    tilt = next((line for line in header if line.endswith("xy xz yz")), "0 0 0 xy xz yz")
+    try:
+        xy, xz, yz = (float(value) for value in tilt.split()[:3])
+    except ValueError as error:
+        raise ValueError("LAMMPS data tilt factors are invalid") from error
+    return np.asarray(
+        [
+            [bounds("xlo xhi"), 0.0, 0.0],
+            [xy, bounds("ylo yhi"), 0.0],
+            [xz, yz, bounds("zlo zhi")],
+        ]
+    )
+
+
+def run_lammps_single_point(  # noqa: PLR0913
+    directory: Path,
+    *,
+    input_file: Path,
+    data_file: Path,
+    shared_coordinate_file: Path,
+    coordinate_sha256: str,
+    periodic_improper_count: int,
+    periodic_improper_kj_mol: float | None = None,
+    explicit_pair_kj_mol: Mapping[str, float] | None = None,
+    executable: str = "lmp",
+) -> EnergyReport:
+    """Run LAMMPS ``run 0`` and return canonical energies on shared coordinates."""
+    directory = directory.resolve()
+    input_file = input_file.resolve()
+    data_file = data_file.resolve()
+    shared_coordinate_file = shared_coordinate_file.resolve()
+    for path, description in (
+        (input_file, "input"),
+        (data_file, "data"),
+        (shared_coordinate_file, "shared coordinate"),
+    ):
+        if not path.is_file():
+            raise FileNotFoundError(f"LAMMPS {description} file does not exist: {path}")
+    if input_file.parent != directory:
+        raise ValueError("LAMMPS input file must be inside its engine directory")
+    actual_sha256 = hashlib.sha256(shared_coordinate_file.read_bytes()).hexdigest()
+    if actual_sha256 != coordinate_sha256:
+        raise ValueError("LAMMPS shared coordinate file does not match the shared checksum")
+    data_text = data_file.read_text(encoding="utf-8")
+    gro_positions = _gro_positions_angstrom(shared_coordinate_file)
+    gro_box = _gro_box_angstrom(shared_coordinate_file)
+    data_positions = _data_positions_angstrom(data_text)
+    data_box = _data_box_angstrom(data_text)
+    if not np.allclose(gro_box, data_box, rtol=0.0, atol=1.0e-8):
+        raise ValueError("LAMMPS data box differs from the shared GRO box")
+    if gro_positions.shape != data_positions.shape:
+        raise ValueError("LAMMPS data coordinates differ from the shared GRO coordinates")
+    delta = data_positions - gro_positions
+    fractional = delta @ np.linalg.inv(data_box)
+    residual = delta - np.rint(fractional) @ data_box
+    if not np.allclose(residual, 0.0, rtol=0.0, atol=1.0e-8):
+        raise ValueError("LAMMPS data coordinates differ from the shared GRO coordinates")
+    input_text = input_file.read_text(encoding="utf-8")
+    settings = parse_lammps_input(input_text)
+    if "run 0" not in (line.split("#", 1)[0].strip().lower() for line in input_text.splitlines()):
+        raise ValueError("LAMMPS single-point input must contain run 0")
+    completed = subprocess.run(
+        [executable, "-in", input_file.name, "-log", "none"],
+        cwd=directory,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    log = directory / "single_point_lammps.log"
+    log.write_text(completed.stdout + completed.stderr, encoding="utf-8")
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"LAMMPS single-point command failed with exit code {completed.returncode}"
+        )
+    return lammps_energy_report(
+        log,
+        input_text=input_text,
+        coordinate_sha256=coordinate_sha256,
+        periodic_improper_count=periodic_improper_count,
+        periodic_improper_kj_mol=periodic_improper_kj_mol,
+        explicit_pair_kj_mol=explicit_pair_kj_mol,
+        data_text=data_text if settings.charmm else None,
     )

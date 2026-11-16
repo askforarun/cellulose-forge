@@ -15,6 +15,7 @@ from typing import Any
 from cellulose_forge.energy_drivers import (
     OpenMMForceClassification,
     run_gromacs_single_point,
+    run_lammps_single_point,
     run_namd_single_point,
     run_openmm_single_point,
 )
@@ -25,6 +26,8 @@ from cellulose_forge.energy_drivers.report import (
     load_energy_report,
     validate_potential_sum,
 )
+
+_TOLERANCE_VALUE_COUNT = 2
 
 
 def _arguments() -> argparse.Namespace:
@@ -134,7 +137,48 @@ def _classified_terms(value: object) -> dict[str, str]:
     return dict(value)
 
 
-def _run_adapter(
+def _optional_energy(value: object, description: str) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise TypeError(f"{description} must be numeric")
+    return float(value)
+
+
+def _explicit_pair_energy(value: object) -> dict[str, float] | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict) or set(value) != {"vdw", "electrostatics"}:
+        raise TypeError("LAMMPS explicit_pair_kj_mol must contain vdw and electrostatics")
+    result: dict[str, float] = {}
+    for name, energy in value.items():
+        if isinstance(energy, bool) or not isinstance(energy, int | float):
+            raise TypeError(f"LAMMPS explicit-pair {name} energy must be numeric")
+        result[name] = float(energy)
+    return result
+
+
+def _term_tolerances(value: object) -> dict[str, tuple[float, float]]:
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise TypeError("term_tolerances must be an object")
+    result: dict[str, tuple[float, float]] = {}
+    for name, tolerance in value.items():
+        if (
+            not isinstance(name, str)
+            or not isinstance(tolerance, list)
+            or len(tolerance) != _TOLERANCE_VALUE_COUNT
+            or any(
+                isinstance(item, bool) or not isinstance(item, int | float) for item in tolerance
+            )
+        ):
+            raise TypeError("each term tolerance must be [absolute_kj_mol, relative]")
+        result[name] = (float(tolerance[0]), float(tolerance[1]))
+    return result
+
+
+def _run_adapter(  # noqa: PLR0912 - explicit staged engine dispatch
     engine: str,
     specification: dict[str, Any],
     directory: Path,
@@ -201,6 +245,27 @@ def _run_adapter(
             executable=str(inputs.get("executable", "namd3")),
             threads=threads,
             classified_terms=_classified_terms(inputs.get("classified_terms")),
+        )
+    elif adapter == "lammps":
+        if engine != "lammps":
+            raise ValueError(f"{engine}: lammps adapter cannot write another engine's report")
+        periodic_improper_count = inputs.get("periodic_improper_count")
+        if type(periodic_improper_count) is not int:
+            raise TypeError("lammps: periodic_improper_count must be an integer")
+        report = run_lammps_single_point(
+            directory,
+            input_file=_path(directory, inputs.get("input_file"), "input_file"),
+            data_file=_path(directory, inputs.get("data_file"), "data_file"),
+            shared_coordinate_file=_path(
+                directory, inputs.get("coordinate_file"), "coordinate_file"
+            ),
+            coordinate_sha256=coordinate_sha256,
+            periodic_improper_count=periodic_improper_count,
+            periodic_improper_kj_mol=_optional_energy(
+                inputs.get("periodic_improper_kj_mol"), "periodic_improper_kj_mol"
+            ),
+            explicit_pair_kj_mol=_explicit_pair_energy(inputs.get("explicit_pair_kj_mol")),
+            executable=str(inputs.get("executable", "lmp")),
         )
     else:
         raise ValueError(f"{engine}: unsupported built-in energy adapter {adapter!r}")
@@ -273,6 +338,7 @@ def main() -> int:
         raise ValueError("relative tolerance must be finite and non-negative")
 
     reference_name = manifest["reference_engine"]
+    term_tolerances = _term_tolerances(manifest.get("term_tolerances"))
     energies, skipped = _collect_energies(args, root, manifest, expected_checksum, required_terms)
 
     if reference_name not in energies:
@@ -285,6 +351,7 @@ def main() -> int:
             values,
             absolute_kj_mol=absolute,
             relative=relative,
+            term_tolerances=term_tolerances,
         )
         for engine, values in energies.items()
         if engine != reference_name
@@ -297,6 +364,10 @@ def main() -> int:
         "coordinate_sha256": expected_checksum,
         "reference_engine": reference_name,
         "tolerances": {"absolute_kj_mol": absolute, "relative": relative},
+        "term_tolerances": {
+            name: {"absolute_kj_mol": values[0], "relative": values[1]}
+            for name, values in term_tolerances.items()
+        },
         "required_terms": sorted(required_terms),
         "energies": {engine: report.to_dict() for engine, report in energies.items()},
         "comparisons": comparisons,
