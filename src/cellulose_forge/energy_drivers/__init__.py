@@ -5,7 +5,11 @@ from cellulose_forge.energy_drivers.gromacs import (
     parse_gromacs_xvg,
     run_gromacs_single_point,
 )
-from cellulose_forge.energy_drivers.openmm import openmm_energy_report
+from cellulose_forge.energy_drivers.openmm import (
+    OpenMMForceClassification,
+    openmm_energy_report,
+    run_openmm_single_point,
+)
 from cellulose_forge.energy_drivers.report import (
     CANONICAL_TERMS,
     EnergyReport,
@@ -17,11 +21,13 @@ from cellulose_forge.energy_drivers.report import (
 __all__ = [
     "CANONICAL_TERMS",
     "EnergyReport",
+    "OpenMMForceClassification",
     "compare_reports",
     "load_energy_report",
     "normalize_gromacs_energies",
     "openmm_energy_report",
     "parse_gromacs_xvg",
     "run_gromacs_single_point",
+    "run_openmm_single_point",
     "validate_potential_sum",
 ]
