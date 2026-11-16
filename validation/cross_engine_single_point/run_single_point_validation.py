@@ -11,15 +11,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
-CANONICAL_TERMS = {
-    "bond",
-    "angle",
-    "dihedral",
-    "improper",
-    "vdw",
-    "electrostatics",
-    "potential",
-}
+from cellulose_forge.energy_drivers.report import (
+    CANONICAL_TERMS,
+    EnergyReport,
+    compare_reports,
+    load_energy_report,
+)
 
 
 def _arguments() -> argparse.Namespace:
@@ -49,63 +46,13 @@ def _load_energy(
     engine: str,
     coordinate_sha256: str,
     required_terms: set[str],
-) -> dict[str, Any]:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if data.get("schema_version") != 1:
-        raise ValueError(f"{engine}: unsupported energy schema")
-    if data.get("engine") != engine:
-        raise ValueError(f"{engine}: energy.json names engine {data.get('engine')!r}")
-    if data.get("units") != "kJ/mol":
-        raise ValueError(f"{engine}: energies must be normalized to kJ/mol")
-    if data.get("coordinate_sha256") != coordinate_sha256:
-        raise ValueError(f"{engine}: coordinate checksum differs from the shared coordinates")
-    terms = data.get("terms")
-    if not isinstance(terms, dict) or not terms:
-        raise ValueError(f"{engine}: energy.json contains no terms")
-    unknown = set(terms) - CANONICAL_TERMS
-    if unknown:
-        raise ValueError(f"{engine}: unknown canonical terms: {sorted(unknown)}")
-    for name, value in terms.items():
-        if not isinstance(value, (int, float)):
-            raise TypeError(f"{engine}: term {name!r} is not numeric")
-    if "potential" not in terms:
-        raise ValueError(f"{engine}: potential energy is required")
-    missing = required_terms - set(terms)
-    if missing:
-        raise ValueError(f"{engine}: required comparable terms are missing: {sorted(missing)}")
-    if not isinstance(data.get("corrections", []), list):
-        raise TypeError(f"{engine}: corrections must be a list")
-    return data
-
-
-def _comparison(
-    reference: dict[str, Any],
-    candidate: dict[str, Any],
-    absolute: float,
-    relative: float,
-) -> dict[str, Any]:
-    common = sorted(set(reference["terms"]) & set(candidate["terms"]))
-    if not common:
-        raise ValueError("engines report no common energy terms")
-    terms: dict[str, Any] = {}
-    passed = True
-    for name in common:
-        expected = float(reference["terms"][name])
-        observed = float(candidate["terms"][name])
-        difference = observed - expected
-        scale = max(abs(expected), abs(observed), 1.0)
-        allowed = max(absolute, relative * scale)
-        term_passed = abs(difference) <= allowed
-        passed &= term_passed
-        terms[name] = {
-            "reference_kj_mol": expected,
-            "candidate_kj_mol": observed,
-            "difference_kj_mol": difference,
-            "relative_difference": abs(difference) / scale,
-            "allowed_difference_kj_mol": allowed,
-            "passed": term_passed,
-        }
-    return {"passed": passed, "common_terms": terms}
+) -> EnergyReport:
+    return load_energy_report(
+        path,
+        expected_engine=engine,
+        coordinate_sha256=coordinate_sha256,
+        required_terms=required_terms,
+    )
 
 
 def _selected_engines(arguments: argparse.Namespace, manifest: dict[str, Any]) -> set[str]:
@@ -125,9 +72,9 @@ def _collect_energies(
     manifest: dict[str, Any],
     checksum: str,
     required_terms: set[str],
-) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
+) -> tuple[dict[str, EnergyReport], dict[str, str]]:
     selected = _selected_engines(arguments, manifest)
-    energies: dict[str, dict[str, Any]] = {}
+    energies: dict[str, EnergyReport] = {}
     skipped: dict[str, str] = {}
     for engine, specification in manifest["engines"].items():
         if engine not in selected:
@@ -179,7 +126,12 @@ def main() -> int:
     absolute = float(manifest["absolute_tolerance_kj_mol"])
     relative = float(manifest["relative_tolerance"])
     comparisons = {
-        engine: _comparison(energies[reference_name], values, absolute, relative)
+        engine: compare_reports(
+            energies[reference_name],
+            values,
+            absolute_kj_mol=absolute,
+            relative=relative,
+        )
         for engine, values in energies.items()
         if engine != reference_name
     }
@@ -192,7 +144,7 @@ def main() -> int:
         "reference_engine": reference_name,
         "tolerances": {"absolute_kj_mol": absolute, "relative": relative},
         "required_terms": sorted(required_terms),
-        "energies": energies,
+        "energies": {engine: report.to_dict() for engine, report in energies.items()},
         "comparisons": comparisons,
         "skipped_optional_engines": skipped,
         "passed": passed,
