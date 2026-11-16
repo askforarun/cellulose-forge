@@ -15,7 +15,7 @@ cross_engine_single_point/
   amber/                 # finite GLYCAM systems only
 ```
 
-GROMACS and OpenMM use the built-in adapters selected in `manifest.json`; they
+GROMACS, OpenMM and NAMD use the built-in adapters selected in `manifest.json`; they
 do not need a copied runner script. Other engines retain a subfolder runner
 during the staged migration. Each adapter performs an energy evaluation at the
 supplied coordinates without minimisation or dynamics and writes `energy.json`. Energies use kJ/mol and the
@@ -30,6 +30,11 @@ an explicit force classification. Force and interaction indices are zero-based.
 Every harmonic-bond and torsion force must be represented, even when its list
 of special interactions is empty. Production `system.xml` files with hydrogen
 constraints are intentionally refused.
+
+The NAMD adapter verifies that its binary coordinates reproduce the shared GRO
+coordinates and that the input explicitly sets `mergeCrossterms no`,
+`LJcorrection off`, `rigidBonds none` and `run 0`. Nonzero `BOUNDARY` or `MISC`
+terms require an explicit classification in the manifest.
 
 The canonical breakdown is deliberately aggregate and has no synonyms:
 `bond`; `angle` (including Urey--Bradley); `dihedral` (proper torsions);

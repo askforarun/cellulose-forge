@@ -15,6 +15,7 @@ from typing import Any
 from cellulose_forge.energy_drivers import (
     OpenMMForceClassification,
     run_gromacs_single_point,
+    run_namd_single_point,
     run_openmm_single_point,
 )
 from cellulose_forge.energy_drivers.report import (
@@ -123,6 +124,16 @@ def _force_roles(value: object) -> dict[int, str]:
     return result
 
 
+def _classified_terms(value: object) -> dict[str, str]:
+    if value is None:
+        return {}
+    if not isinstance(value, dict) or any(
+        not isinstance(name, str) or not isinstance(role, str) for name, role in value.items()
+    ):
+        raise TypeError("NAMD classified_terms must be a string-to-string object")
+    return dict(value)
+
+
 def _run_adapter(
     engine: str,
     specification: dict[str, Any],
@@ -168,6 +179,28 @@ def _run_adapter(
             coordinate_sha256=coordinate_sha256,
             classification=classification,
             platform_name=str(inputs.get("platform_name", "Reference")),
+        )
+    elif adapter == "namd":
+        if engine != "namd":
+            raise ValueError(f"{engine}: namd adapter cannot write another engine's report")
+        threads = inputs.get("threads", 1)
+        if type(threads) is not int:
+            raise TypeError("namd: threads must be an integer")
+        report = run_namd_single_point(
+            directory,
+            configuration_file=_path(
+                directory, inputs.get("configuration_file"), "configuration_file"
+            ),
+            shared_coordinate_file=_path(
+                directory, inputs.get("coordinate_file"), "coordinate_file"
+            ),
+            binary_coordinate_file=_path(
+                directory, inputs.get("binary_coordinate_file"), "binary_coordinate_file"
+            ),
+            coordinate_sha256=coordinate_sha256,
+            executable=str(inputs.get("executable", "namd3")),
+            threads=threads,
+            classified_terms=_classified_terms(inputs.get("classified_terms")),
         )
     else:
         raise ValueError(f"{engine}: unsupported built-in energy adapter {adapter!r}")

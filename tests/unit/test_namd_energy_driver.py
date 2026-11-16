@@ -1,10 +1,14 @@
+import hashlib
+import struct
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from cellulose_forge.energy_drivers.namd import (
     KJ_PER_KCAL,
     parse_namd_energy_log,
+    run_namd_single_point,
 )
 from cellulose_forge.energy_drivers.namd import (
     normalize_namd_energies as _normalize_namd_energies,
@@ -182,6 +186,63 @@ def test_parse_namd_energy_log_refuses_more_than_one_energy_row(tmp_path: Path) 
 
     with pytest.raises(ValueError, match="must contain one ENERGY row"):
         parse_namd_energy_log(path)
+
+
+def test_run_namd_single_point_checks_shared_binary_coordinates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gro = tmp_path / "coordinates.gro"
+    gro.write_text(
+        "shared\n1\n    1BGLC    C1    1   0.100   0.200   0.300\n1.0 1.0 1.0\n",
+        encoding="utf-8",
+    )
+    binary = tmp_path / "single_point.coor"
+    binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.0))
+    configuration = tmp_path / "single_point_namd.conf"
+    configuration.write_text(
+        "mergeCrossterms no\nLJcorrection off\nrigidBonds none\nrun 0\n",
+        encoding="utf-8",
+    )
+    log = _energy_log(_STANDARD_TITLES, _kcal_terms())
+    monkeypatch.setattr(
+        "cellulose_forge.energy_drivers.namd.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=log, stderr=""),
+    )
+
+    report = run_namd_single_point(
+        tmp_path,
+        configuration_file=configuration,
+        shared_coordinate_file=gro,
+        binary_coordinate_file=binary,
+        coordinate_sha256=hashlib.sha256(gro.read_bytes()).hexdigest(),
+    )
+
+    assert report.terms["potential"] == 58.0 * KJ_PER_KCAL
+    assert (tmp_path / "single_point_namd.log").read_text() == log
+
+
+def test_run_namd_single_point_rejects_unmatched_binary_coordinates(tmp_path: Path) -> None:
+    gro = tmp_path / "coordinates.gro"
+    gro.write_text(
+        "shared\n1\n    1BGLC    C1    1   0.100   0.200   0.300\n1.0 1.0 1.0\n",
+        encoding="utf-8",
+    )
+    binary = tmp_path / "single_point.coor"
+    binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.1))
+    configuration = tmp_path / "single_point_namd.conf"
+    configuration.write_text(
+        "mergeCrossterms no\nLJcorrection off\nrigidBonds none\nrun 0\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="differ from the shared GRO"):
+        run_namd_single_point(
+            tmp_path,
+            configuration_file=configuration,
+            shared_coordinate_file=gro,
+            binary_coordinate_file=binary,
+            coordinate_sha256=hashlib.sha256(gro.read_bytes()).hexdigest(),
+        )
 
 
 def test_namd_attestations_are_required() -> None:

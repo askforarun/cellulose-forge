@@ -152,13 +152,20 @@ def test_builtin_gromacs_and_openmm_adapters_write_reports(
         calls["openmm"] = kwargs
         return EnergyReport("openmm", "sha", {"bond": 1.0, "potential": 1.0})
 
+    def fake_namd(directory: Path, **kwargs: object) -> EnergyReport:
+        calls["namd"] = (directory, kwargs)
+        return EnergyReport("namd", "sha", {"bond": 1.0, "potential": 1.0})
+
     monkeypatch.setitem(globals_, "run_gromacs_single_point", fake_gromacs)
     monkeypatch.setitem(globals_, "run_openmm_single_point", fake_openmm)
+    monkeypatch.setitem(globals_, "run_namd_single_point", fake_namd)
 
     gromacs = tmp_path / "gromacs"
     openmm = tmp_path / "openmm"
     gromacs.mkdir()
     openmm.mkdir()
+    namd = tmp_path / "namd"
+    namd.mkdir()
     run_adapter(
         "gromacs",
         {
@@ -190,15 +197,35 @@ def test_builtin_gromacs_and_openmm_adapters_write_reports(
         openmm,
         "sha",
     )
+    run_adapter(
+        "namd",
+        {
+            "adapter": "namd",
+            "inputs": {
+                "configuration_file": "single_point_namd.conf",
+                "coordinate_file": "../shared.gro",
+                "binary_coordinate_file": "single_point.coor",
+                "threads": 2,
+                "classified_terms": {"MISC": "restraint"},
+            },
+        },
+        namd,
+        "sha",
+    )
 
     assert json.loads((gromacs / "energy.json").read_text())["engine"] == "gromacs"
     assert json.loads((openmm / "energy.json").read_text())["engine"] == "openmm"
+    assert json.loads((namd / "energy.json").read_text())["engine"] == "namd"
     openmm_call = calls["openmm"]
     assert isinstance(openmm_call, dict)
     classification = openmm_call["classification"]
     assert classification.urey_bradley_bonds == {0: (2,)}
     assert classification.periodic_impropers == {2: ()}
     assert classification.force_roles == {4: "harmonic_improper"}
+    namd_call = calls["namd"]
+    assert isinstance(namd_call, tuple)
+    assert namd_call[1]["threads"] == 2
+    assert namd_call[1]["classified_terms"] == {"MISC": "restraint"}
 
 
 def test_builtin_adapter_refuses_noncanonical_force_index(tmp_path: Path) -> None:
