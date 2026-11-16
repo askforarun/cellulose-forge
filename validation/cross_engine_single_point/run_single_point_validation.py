@@ -12,6 +12,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from cellulose_forge.energy_drivers import (
+    OpenMMForceClassification,
+    run_gromacs_single_point,
+    run_openmm_single_point,
+)
 from cellulose_forge.energy_drivers.report import (
     CANONICAL_TERMS,
     EnergyReport,
@@ -76,6 +81,102 @@ def _selected_engines(arguments: argparse.Namespace, manifest: dict[str, Any]) -
     return selected
 
 
+def _path(directory: Path, value: object, description: str) -> Path:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{description} must be a non-empty path string")
+    return (directory / value).resolve()
+
+
+def _interaction_map(value: object, description: str) -> dict[int, tuple[int, ...]]:
+    if not isinstance(value, dict):
+        raise TypeError(f"{description} must be an object")
+    result: dict[int, tuple[int, ...]] = {}
+    for raw_force, raw_interactions in value.items():
+        try:
+            force = int(raw_force)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"{description} force indices must be integers") from error
+        if str(force) != str(raw_force) or force < 0:
+            raise ValueError(f"{description} force indices must be non-negative integers")
+        if not isinstance(raw_interactions, list) or any(
+            type(index) is not int or index < 0 for index in raw_interactions
+        ):
+            raise TypeError(f"{description} interaction indices must be non-negative integers")
+        result[force] = tuple(raw_interactions)
+    return result
+
+
+def _force_roles(value: object) -> dict[int, str]:
+    if not isinstance(value, dict):
+        raise TypeError("OpenMM force_roles must be an object")
+    result: dict[int, str] = {}
+    for raw_force, role in value.items():
+        try:
+            force = int(raw_force)
+        except (TypeError, ValueError) as error:
+            raise ValueError("OpenMM force-role indices must be integers") from error
+        if str(force) != str(raw_force) or force < 0 or not isinstance(role, str):
+            raise ValueError(
+                "OpenMM force roles require non-negative integer keys and string values"
+            )
+        result[force] = role
+    return result
+
+
+def _run_adapter(
+    engine: str,
+    specification: dict[str, Any],
+    directory: Path,
+    coordinate_sha256: str,
+) -> EnergyReport:
+    adapter = specification.get("adapter")
+    inputs = specification.get("inputs")
+    if not isinstance(inputs, dict):
+        raise TypeError(f"{engine}: adapter inputs must be an object")
+    if adapter == "gromacs":
+        if engine != "gromacs":
+            raise ValueError(f"{engine}: gromacs adapter cannot write another engine's report")
+        report = run_gromacs_single_point(
+            directory,
+            coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+            topology_file=_path(directory, inputs.get("topology_file"), "topology_file"),
+            mdp_file=_path(directory, inputs.get("mdp_file"), "mdp_file"),
+            coordinate_sha256=coordinate_sha256,
+            executable=str(inputs.get("executable", "gmx")),
+        )
+    elif adapter == "openmm":
+        if engine != "openmm":
+            raise ValueError(f"{engine}: openmm adapter cannot write another engine's report")
+        raw_classification = inputs.get("classification")
+        if not isinstance(raw_classification, dict):
+            raise TypeError("openmm: classification must be an object")
+        classification = OpenMMForceClassification(
+            urey_bradley_bonds=_interaction_map(
+                raw_classification.get("urey_bradley_bonds"), "OpenMM Urey--Bradley map"
+            ),
+            periodic_impropers=_interaction_map(
+                raw_classification.get("periodic_impropers"), "OpenMM periodic-improper map"
+            ),
+            rb_impropers=_interaction_map(
+                raw_classification.get("rb_impropers"), "OpenMM RB-improper map"
+            ),
+            force_roles=_force_roles(raw_classification.get("force_roles")),
+        )
+        report = run_openmm_single_point(
+            system_file=_path(directory, inputs.get("system_file"), "system_file"),
+            coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+            coordinate_sha256=coordinate_sha256,
+            classification=classification,
+            platform_name=str(inputs.get("platform_name", "Reference")),
+        )
+    else:
+        raise ValueError(f"{engine}: unsupported built-in energy adapter {adapter!r}")
+    (directory / "energy.json").write_text(
+        json.dumps(report.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return report
+
+
 def _collect_energies(
     arguments: argparse.Namespace,
     root: Path,
@@ -97,10 +198,13 @@ def _collect_energies(
             raise FileNotFoundError(f"{engine}: missing directory {directory}")
         if not arguments.no_run:
             try:
-                command = list(specification["command"])
-                if command and command[0] in {"python", "python3"}:
-                    command[0] = sys.executable
-                subprocess.run(command, cwd=directory, check=True)
+                if "adapter" in specification:
+                    _run_adapter(engine, specification, directory, checksum)
+                else:
+                    command = list(specification["command"])
+                    if command and command[0] in {"python", "python3"}:
+                        command[0] = sys.executable
+                    subprocess.run(command, cwd=directory, check=True)
             except (FileNotFoundError, subprocess.CalledProcessError) as error:
                 if specification.get("optional", False):
                     skipped[engine] = str(error)

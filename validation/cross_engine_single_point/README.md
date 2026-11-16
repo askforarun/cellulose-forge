@@ -15,14 +15,21 @@ cross_engine_single_point/
   amber/                 # finite GLYCAM systems only
 ```
 
-Each engine subfolder contains its native inputs and a `run_single_point.py` adapter.
-The adapter performs an energy evaluation at the supplied coordinates without
-minimisation or dynamics and writes `energy.json`. Energies use kJ/mol and the
+GROMACS and OpenMM use the built-in adapters selected in `manifest.json`; they
+do not need a copied runner script. Other engines retain a subfolder runner
+during the staged migration. Each adapter performs an energy evaluation at the
+supplied coordinates without minimisation or dynamics and writes `energy.json`. Energies use kJ/mol and the
 canonical names listed in `manifest.example.json`. The manifest's
 `required_terms` prevents a false pass based on only a small overlapping
 subset. An adapter is also where a
 documented engine convention is normalized; it must record every correction
 in the JSON rather than silently changing a value.
+
+The OpenMM entry must point to an unconstrained single-point `System` and give
+an explicit force classification. Force and interaction indices are zero-based.
+Every harmonic-bond and torsion force must be represented, even when its list
+of special interactions is empty. Production `system.xml` files with hydrogen
+constraints are intentionally refused.
 
 The canonical breakdown is deliberately aggregate and has no synonyms:
 `bond`; `angle` (including Urey--Bradley); `dihedral` (proper torsions);

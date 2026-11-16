@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import runpy
 import subprocess
 import sys
@@ -9,6 +10,8 @@ from argparse import Namespace
 from pathlib import Path
 
 import pytest
+
+from cellulose_forge.energy_drivers import EnergyReport
 
 
 def _energy(engine: str, checksum: str, bond: float = 100.0) -> dict[str, object]:
@@ -55,6 +58,7 @@ def test_cross_engine_single_point_runner_compares_subfolders(tmp_path: Path) ->
     completed = subprocess.run(
         [sys.executable, str(runner), "--no-run"],
         cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(Path("src").resolve())},
         check=False,
         capture_output=True,
         text=True,
@@ -98,6 +102,7 @@ def test_cross_engine_single_point_runner_rejects_energy_difference(tmp_path: Pa
     completed = subprocess.run(
         [sys.executable, str(runner), "--no-run"],
         cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(Path("src").resolve())},
         check=False,
     )
     assert completed.returncode == 1
@@ -126,3 +131,99 @@ def test_selected_engines_cannot_omit_required_engine() -> None:
 
     with pytest.raises(ValueError, match=r"omit required.*lammps"):
         namespace["_selected_engines"](arguments, manifest)
+
+
+def test_builtin_gromacs_and_openmm_adapters_write_reports(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    namespace = runpy.run_path(
+        "validation/cross_engine_single_point/run_single_point_validation.py",
+        run_name="energy_runner_adapter_test",
+    )
+    run_adapter = namespace["_run_adapter"]
+    globals_ = run_adapter.__globals__
+    calls: dict[str, object] = {}
+
+    def fake_gromacs(directory: Path, **kwargs: object) -> EnergyReport:
+        calls["gromacs"] = (directory, kwargs)
+        return EnergyReport("gromacs", "sha", {"bond": 1.0, "potential": 1.0})
+
+    def fake_openmm(**kwargs: object) -> EnergyReport:
+        calls["openmm"] = kwargs
+        return EnergyReport("openmm", "sha", {"bond": 1.0, "potential": 1.0})
+
+    monkeypatch.setitem(globals_, "run_gromacs_single_point", fake_gromacs)
+    monkeypatch.setitem(globals_, "run_openmm_single_point", fake_openmm)
+
+    gromacs = tmp_path / "gromacs"
+    openmm = tmp_path / "openmm"
+    gromacs.mkdir()
+    openmm.mkdir()
+    run_adapter(
+        "gromacs",
+        {
+            "adapter": "gromacs",
+            "inputs": {
+                "coordinate_file": "../shared.gro",
+                "topology_file": "system.top",
+                "mdp_file": "single_point.mdp",
+            },
+        },
+        gromacs,
+        "sha",
+    )
+    run_adapter(
+        "openmm",
+        {
+            "adapter": "openmm",
+            "inputs": {
+                "system_file": "system.xml",
+                "coordinate_file": "../shared.gro",
+                "classification": {
+                    "urey_bradley_bonds": {"0": [2]},
+                    "periodic_impropers": {"2": []},
+                    "rb_impropers": {},
+                    "force_roles": {"4": "harmonic_improper"},
+                },
+            },
+        },
+        openmm,
+        "sha",
+    )
+
+    assert json.loads((gromacs / "energy.json").read_text())["engine"] == "gromacs"
+    assert json.loads((openmm / "energy.json").read_text())["engine"] == "openmm"
+    openmm_call = calls["openmm"]
+    assert isinstance(openmm_call, dict)
+    classification = openmm_call["classification"]
+    assert classification.urey_bradley_bonds == {0: (2,)}
+    assert classification.periodic_impropers == {2: ()}
+    assert classification.force_roles == {4: "harmonic_improper"}
+
+
+def test_builtin_adapter_refuses_noncanonical_force_index(tmp_path: Path) -> None:
+    namespace = runpy.run_path(
+        "validation/cross_engine_single_point/run_single_point_validation.py",
+        run_name="energy_runner_bad_adapter_test",
+    )
+    directory = tmp_path / "openmm"
+    directory.mkdir()
+    with pytest.raises(ValueError, match="force indices"):
+        namespace["_run_adapter"](
+            "openmm",
+            {
+                "adapter": "openmm",
+                "inputs": {
+                    "system_file": "system.xml",
+                    "coordinate_file": "coordinates.gro",
+                    "classification": {
+                        "urey_bradley_bonds": {"01": []},
+                        "periodic_impropers": {},
+                        "rb_impropers": {},
+                        "force_roles": {},
+                    },
+                },
+            },
+            directory,
+            "sha",
+        )
