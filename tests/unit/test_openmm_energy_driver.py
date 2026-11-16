@@ -8,6 +8,7 @@ import pytest
 
 from cellulose_forge.energy_drivers.openmm import (
     OpenMMForceClassification,
+    openmm_classification_from_topology,
     openmm_energy_report,
     run_openmm_single_point,
 )
@@ -263,6 +264,41 @@ def test_run_openmm_single_point_refuses_nonbonded_parameter_offsets(tmp_path: P
     system_path.write_text(openmm.XmlSerializer.serialize(system), encoding="utf-8")
 
     with pytest.raises(ValueError, match="parameter offsets"):
+        run_openmm_single_point(
+            system_file=system_path,
+            coordinate_file=coordinates,
+            coordinate_sha256=checksum,
+            classification=OpenMMForceClassification(
+                urey_bradley_bonds={0: (1,)},
+                periodic_impropers={2: (1,)},
+                rb_impropers={5: ()},
+                force_roles={4: "restraint"},
+            ),
+        )
+
+
+def test_openmm_classification_from_topology_finds_urey_bradley(tmp_path: Path) -> None:
+    system, _, _ = _write_openmm_fixture(tmp_path)
+
+    classification = openmm_classification_from_topology(
+        system,
+        covalent_bonds={(0, 1)},
+        periodic_impropers={2: (1,)},
+        rb_impropers={5: ()},
+        force_roles={4: "restraint"},
+    )
+
+    assert classification.urey_bradley_bonds == {0: (1,)}
+
+
+def test_run_openmm_single_point_refuses_constrained_system(tmp_path: Path) -> None:
+    openmm = pytest.importorskip("openmm")
+    system_path, coordinates, checksum = _write_openmm_fixture(tmp_path)
+    system = openmm.XmlSerializer.deserialize(system_path.read_text(encoding="utf-8"))
+    system.addConstraint(0, 1, 0.14)
+    system_path.write_text(openmm.XmlSerializer.serialize(system), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="must be unconstrained"):
         run_openmm_single_point(
             system_file=system_path,
             coordinate_file=coordinates,

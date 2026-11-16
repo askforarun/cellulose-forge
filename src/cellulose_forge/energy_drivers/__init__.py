@@ -7,6 +7,7 @@ from cellulose_forge.energy_drivers.gromacs import (
 )
 from cellulose_forge.energy_drivers.openmm import (
     OpenMMForceClassification,
+    openmm_classification_from_topology,
     openmm_energy_report,
     run_openmm_single_point,
 )
@@ -25,6 +26,7 @@ __all__ = [
     "compare_reports",
     "load_energy_report",
     "normalize_gromacs_energies",
+    "openmm_classification_from_topology",
     "openmm_energy_report",
     "parse_gromacs_xvg",
     "run_gromacs_single_point",

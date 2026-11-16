@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
@@ -52,6 +52,7 @@ _EXPLICIT_FORCE_ROLES = frozenset(
         "restraint",
     }
 )
+_BOND_ATOM_COUNT = 2
 _GRO_HEADER_AND_BOX_LINES = 3
 _MIN_GRO_FIELD_WIDTH = 2
 _ORTHORHOMBIC_BOX_VALUES = 3
@@ -64,10 +65,9 @@ class OpenMMForceClassification:
 
     Keys are zero-based force indices in the serialized ``System``.  Interaction
     indices identify Urey--Bradley bonds or periodic impropers inside mixed
-    ``HarmonicBondForce`` and ``PeriodicTorsionForce`` objects.  ``force_roles``
-    is required for custom forces and may also classify an otherwise unsupported
-    force.  Long-range corrections are isolated by the evaluator and must not be
-    listed as a role.
+    ``HarmonicBondForce`` and ``PeriodicTorsionForce`` objects. ``force_roles``
+    is required for supported custom forces. Long-range corrections are isolated
+    by the evaluator and must not be listed as a role.
     """
 
     urey_bradley_bonds: Mapping[int, tuple[int, ...]] = field(default_factory=dict)
@@ -110,6 +110,54 @@ class OpenMMForceClassification:
                 raise ValueError(f"unsupported explicit OpenMM force role: {role!r}")
             roles[force_index] = role
         object.__setattr__(self, "force_roles", MappingProxyType(roles))
+
+
+def openmm_classification_from_topology(
+    system_file: Path,
+    *,
+    covalent_bonds: Collection[tuple[int, int]],
+    periodic_impropers: Mapping[int, tuple[int, ...]] | None = None,
+    rb_impropers: Mapping[int, tuple[int, ...]] | None = None,
+    force_roles: Mapping[int, str] | None = None,
+) -> OpenMMForceClassification:
+    """Classify Urey--Bradley terms from an independently supplied bond graph.
+
+    ``GromacsTopFile`` writes covalent bonds and CHARMM Urey--Bradley 1--3
+    interactions into the same ``HarmonicBondForce``. A term is Urey--Bradley
+    exactly when its endpoint pair is absent from the topology's covalent bond
+    graph. Improper membership and custom-force roles remain explicit because
+    neither can be recovered safely from an OpenMM force class.
+    """
+    if not system_file.is_file():
+        raise FileNotFoundError(f"OpenMM system file does not exist: {system_file}")
+    openmm = importlib.import_module("openmm")
+    system = openmm.XmlSerializer.deserialize(system_file.read_text(encoding="utf-8"))
+    normalized_bonds: set[tuple[int, int]] = set()
+    for pair in covalent_bonds:
+        if len(pair) != _BOND_ATOM_COUNT or any(
+            type(index) is not int or index < 0 for index in pair
+        ):
+            raise ValueError("OpenMM covalent bonds must contain two non-negative atom indices")
+        first, second = pair[0], pair[1]
+        if first == second:
+            raise ValueError("OpenMM covalent bonds cannot join an atom to itself")
+        normalized_bonds.add((min(first, second), max(first, second)))
+    urey_bradley: dict[int, tuple[int, ...]] = {}
+    for force_index, force in enumerate(system.getForces()):
+        if force.__class__.__name__ != "HarmonicBondForce":
+            continue
+        selected = []
+        for interaction_index in range(force.getNumBonds()):
+            first, second, *_ = force.getBondParameters(interaction_index)
+            if tuple(sorted((int(first), int(second)))) not in normalized_bonds:
+                selected.append(interaction_index)
+        urey_bradley[force_index] = tuple(selected)
+    return OpenMMForceClassification(
+        urey_bradley_bonds=urey_bradley,
+        periodic_impropers={} if periodic_impropers is None else periodic_impropers,
+        rb_impropers={} if rb_impropers is None else rb_impropers,
+        force_roles={} if force_roles is None else force_roles,
+    )
 
 
 def _gro_coordinate_data(openmm: Any, unit: Any, path: Path) -> tuple[Any, Any]:
@@ -305,6 +353,11 @@ def run_openmm_single_point(  # noqa: PLR0912, PLR0915
     app = importlib.import_module("openmm.app")
     unit = importlib.import_module("openmm.unit")
     system = openmm.XmlSerializer.deserialize(system_file.read_text(encoding="utf-8"))
+    if system.getNumConstraints():
+        raise ValueError(
+            "OpenMM single-point systems must be unconstrained; serialize a system "
+            "created with constraints=None so its bonded energy matches other engines"
+        )
     positions, box = _coordinate_data(openmm, app, unit, coordinate_file)
     if len(positions) != system.getNumParticles():
         raise ValueError("OpenMM coordinate and system particle counts differ")
