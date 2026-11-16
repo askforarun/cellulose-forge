@@ -80,15 +80,38 @@ def test_namd_angle_is_not_split_from_urey_bradley() -> None:
     assert report.terms["improper"] == raw["IMPRP"] * KJ_PER_KCAL
 
 
-def test_namd_misc_and_boundary_are_restraints() -> None:
+@pytest.mark.parametrize("term", ["BOUNDARY", "MISC"])
+def test_unclassified_nonzero_boundary_or_misc_fails(term: str) -> None:
+    raw = _kcal_terms()
+    raw[term] = 1.5
+    raw["POTENTIAL"] += 1.5
+
+    with pytest.raises(ValueError, match=rf"unclassified nonzero BOUNDARY/MISC.*{term}"):
+        normalize_namd_energies(raw, coordinate_sha256="abc")
+
+
+def test_explicitly_classified_boundary_and_misc_restraints_pass() -> None:
     raw = _kcal_terms()
     raw["MISC"] = 2.0
     raw["BOUNDARY"] = 1.5
     raw["POTENTIAL"] = 61.5
 
-    report = normalize_namd_energies(raw, coordinate_sha256="abc")
+    report = normalize_namd_energies(
+        raw,
+        coordinate_sha256="abc",
+        classified_terms={"BOUNDARY": "restraint", "MISC": "restraint"},
+    )
 
     assert report.terms["restraint"] == 3.5 * KJ_PER_KCAL
+    assert report.extra["classified_terms"] == {"BOUNDARY": "restraint", "MISC": "restraint"}
+    validate_potential_sum(report, absolute_kj_mol=1e-9, relative=0.0)
+
+
+def test_zero_boundary_and_misc_do_not_require_classification() -> None:
+    report = normalize_namd_energies(_kcal_terms(), coordinate_sha256="abc")
+
+    assert report.terms["restraint"] == 0.0
+    assert "classified_terms" not in report.extra
     validate_potential_sum(report, absolute_kj_mol=1e-9, relative=0.0)
 
 

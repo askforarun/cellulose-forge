@@ -1,4 +1,9 @@
-"""Normalize NAMD CHARMM single-point energies into canonical energy reports."""
+"""Normalize NAMD CHARMM single-point energies into canonical energy reports.
+
+Live NAMD evaluation must set ``mergeCrossterms no`` so a CHARMM CMAP
+contribution is printed as ``CROSSTERM`` rather than folded into ``DIHED``.
+This module does not write NAMD configuration.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +11,7 @@ import math
 from collections.abc import Mapping
 from pathlib import Path
 
-from cellulose_forge.energy_drivers.report import EnergyReport, EnergyValue
+from cellulose_forge.energy_drivers.report import CANONICAL_TERMS, EnergyReport, EnergyValue
 
 KJ_PER_KCAL = 4.184
 
@@ -18,6 +23,10 @@ KJ_PER_KCAL = 4.184
 # proper torsions only; IMPRP is harmonic impropers; ELECT/VDW already include
 # their scaled 1--4 contributions.  There is no separate CHARMM UB or 1--4
 # column in a standard NAMD log.
+#
+# BOUNDARY (spherical boundary) and MISC (external field / steering / similar)
+# are not automatically restraints.  Zero values are inactive; a nonzero value
+# must be classified by the caller.
 _TERM_CATEGORIES: dict[str, str] = {
     "BOND": "bond",
     "ANGLE": "angle",
@@ -25,10 +34,10 @@ _TERM_CATEGORIES: dict[str, str] = {
     "IMPRP": "improper",
     "ELECT": "electrostatics",
     "VDW": "vdw",
-    "BOUNDARY": "restraint",
-    "MISC": "restraint",
     "POTENTIAL": "potential",
 }
+_CLASSIFIABLE_TERMS = frozenset({"BOUNDARY", "MISC"})
+_CLASSIFICATION_TARGETS = CANONICAL_TERMS - {"potential"}
 
 _REQUIRED_CHARMM_TERMS = (
     "BOND",
@@ -125,8 +134,46 @@ def parse_namd_energy_log(source: str | Path) -> dict[str, float]:
     raise ValueError("NAMD log contains no ENERGY row")
 
 
+def _classification_map(classified_terms: Mapping[str, str] | None) -> dict[str, str]:
+    if classified_terms is None:
+        return {}
+    invalid_names = sorted(set(classified_terms) - _CLASSIFIABLE_TERMS)
+    if invalid_names:
+        raise ValueError(
+            f"NAMD classified_terms may only name BOUNDARY or MISC, not {invalid_names}"
+        )
+    invalid_targets = sorted(set(classified_terms.values()) - _CLASSIFICATION_TARGETS)
+    if invalid_targets:
+        raise ValueError(f"NAMD classified_terms use unknown canonical terms: {invalid_targets}")
+    return dict(classified_terms)
+
+
+def _namd_category(
+    raw_name: str,
+    value: EnergyValue,
+    classification: Mapping[str, str],
+    unclassified: list[str],
+    unsupported: list[str],
+) -> str | None:
+    if raw_name in _DIAGNOSTICS:
+        return None
+    if raw_name in classification:
+        return classification[raw_name]
+    if raw_name in _CLASSIFIABLE_TERMS:
+        if value != 0:
+            unclassified.append(raw_name)
+        return None
+    category = _TERM_CATEGORIES.get(raw_name)
+    if category is None and value != 0:
+        unsupported.append(raw_name)
+    return category
+
+
 def normalize_namd_energies(
-    raw_terms: Mapping[str, EnergyValue], *, coordinate_sha256: str
+    raw_terms: Mapping[str, EnergyValue],
+    *,
+    coordinate_sha256: str,
+    classified_terms: Mapping[str, str] | None = None,
 ) -> EnergyReport:
     """Return a complete canonical decomposition of NAMD CHARMM potential energy.
 
@@ -135,6 +182,13 @@ def normalize_namd_energies(
     CelluloseForge writes, so ``dispersion_correction`` is an explicit zero
     unless a future ETITLE field maps to it.  Unknown zero diagnostics are
     ignored; unknown nonzero potential-like contributions fail closed.
+
+    ``BOUNDARY`` and ``MISC`` are classified only when the caller passes
+    ``classified_terms`` (typically ``{"MISC": "restraint"}``).  Zero values
+    are inactive.  Nonzero unclassified ``BOUNDARY``/``MISC`` fail closed.
+
+    Future live NAMD runs must use ``mergeCrossterms no`` so CMAP cannot hide
+    inside ``DIHED``.
     """
     if not isinstance(raw_terms, Mapping) or not raw_terms:
         raise ValueError("NAMD energy mapping is empty")
@@ -142,26 +196,28 @@ def normalize_namd_energies(
     missing = [name for name in _REQUIRED_CHARMM_TERMS if name not in raw_terms]
     if missing:
         raise ValueError(f"NAMD output is missing required CHARMM energy terms: {missing}")
+    classification = _classification_map(classified_terms)
 
     grouped_kcal: dict[str, EnergyValue] = dict.fromkeys(_COMPONENT_TERMS, 0.0)
     potential_kcal: EnergyValue | None = None
+    unclassified: list[str] = []
     unsupported: list[str] = []
     for raw_name, raw_value in raw_terms.items():
         if not isinstance(raw_name, str) or not raw_name:
             raise TypeError("NAMD energy term names must be non-empty strings")
         value = _finite_energy(raw_value, raw_name)
-        if raw_name in _DIAGNOSTICS:
-            continue
-        category = _TERM_CATEGORIES.get(raw_name)
+        category = _namd_category(raw_name, value, classification, unclassified, unsupported)
         if category is None:
-            if value != 0:
-                unsupported.append(raw_name)
             continue
         if category == "potential":
             potential_kcal = value
         else:
             grouped_kcal[category] += value
 
+    if unclassified:
+        raise ValueError(
+            f"NAMD output contains unclassified nonzero BOUNDARY/MISC terms: {sorted(unclassified)}"
+        )
     if unsupported:
         raise ValueError(
             f"NAMD output contains unsupported nonzero energy terms: {sorted(unsupported)}"
@@ -171,9 +227,12 @@ def normalize_namd_energies(
 
     terms = {name: value * KJ_PER_KCAL for name, value in grouped_kcal.items()}
     terms["potential"] = potential_kcal * KJ_PER_KCAL
+    extra: dict[str, object] = {"raw_terms": dict(raw_terms), "raw_units": "kcal/mol"}
+    if classification:
+        extra["classified_terms"] = classification
     return EnergyReport(
         engine="namd",
         coordinate_sha256=coordinate_sha256,
         terms=terms,
-        extra={"raw_terms": dict(raw_terms), "raw_units": "kcal/mol"},
+        extra=extra,
     )
