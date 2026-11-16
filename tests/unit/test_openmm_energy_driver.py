@@ -110,6 +110,9 @@ def _write_openmm_fixture(directory: Path) -> tuple[Path, Path, str]:
         restraint.addPerParticleParameter(parameter)
     restraint.addParticle(0, [0.0, 0.0, 0.0])
     system.addForce(restraint)
+    rb = openmm.RBTorsionForce()
+    rb.addTorsion(0, 1, 2, 3, 1.0, 0.5, 0.25, 0.125, 0.0, 0.0)
+    system.addForce(rb)
     system.addForce(openmm.CMMotionRemover())
 
     system_path = directory / "system.xml"
@@ -118,10 +121,10 @@ def _write_openmm_fixture(directory: Path) -> tuple[Path, Path, str]:
     coordinate_path.write_text(
         "extended-precision fixture\n"
         "4\n"
-        "    1MOL     C1    1   0.01000000   0.00000000   0.00000000\n"
-        "    1MOL     C2    2   0.16000000   0.00000000   0.00000000\n"
-        "    1MOL     C3    3   0.27000000   0.08000000   0.00000000\n"
-        "    1MOL     C4    4   0.39000000   0.10000000   0.08000000\n"
+        "    1MOL     C1    1   0.01000000   0.00000000   0.00000000  9.0  8.0  7.0\n"
+        "    1MOL     C2    2   0.16000000   0.00000000   0.00000000  9.0  8.0  7.0\n"
+        "    1MOL     C3    3   0.27000000   0.08000000   0.00000000  9.0  8.0  7.0\n"
+        "    1MOL     C4    4   0.39000000   0.10000000   0.08000000  9.0  8.0  7.0\n"
         "  2.0000000  2.1000000  2.2000000  0.0000000  0.0000000"
         " -0.1000000  0.0000000  0.0000000  0.0000000\n",
         encoding="utf-8",
@@ -139,6 +142,7 @@ def test_run_openmm_single_point_splits_mixed_forces(tmp_path: Path) -> None:
         classification=OpenMMForceClassification(
             urey_bradley_bonds={0: (1,)},
             periodic_impropers={2: (1,)},
+            rb_impropers={5: ()},
             force_roles={4: "restraint"},
         ),
     )
@@ -163,7 +167,9 @@ def test_run_openmm_single_point_refuses_unclassified_custom_force(tmp_path: Pat
             coordinate_file=coordinates,
             coordinate_sha256=checksum,
             classification=OpenMMForceClassification(
-                urey_bradley_bonds={0: (1,)}, periodic_impropers={2: (1,)}
+                urey_bradley_bonds={0: (1,)},
+                periodic_impropers={2: (1,)},
+                rb_impropers={5: ()},
             ),
         )
 
@@ -177,4 +183,94 @@ def test_run_openmm_single_point_checks_coordinate_hash(tmp_path: Path) -> None:
             coordinate_file=coordinates,
             coordinate_sha256="wrong",
             classification=OpenMMForceClassification(),
+        )
+
+
+def test_run_openmm_single_point_requires_every_mixed_force_classification(
+    tmp_path: Path,
+) -> None:
+    system, coordinates, checksum = _write_openmm_fixture(tmp_path)
+
+    with pytest.raises(ValueError, match="every HarmonicBondForce"):
+        run_openmm_single_point(
+            system_file=system,
+            coordinate_file=coordinates,
+            coordinate_sha256=checksum,
+            classification=OpenMMForceClassification(
+                periodic_impropers={2: ()}, rb_impropers={5: ()}
+            ),
+        )
+
+
+def test_run_openmm_single_point_refuses_wrong_force_classification(tmp_path: Path) -> None:
+    system, coordinates, checksum = _write_openmm_fixture(tmp_path)
+
+    with pytest.raises(ValueError, match="every HarmonicBondForce"):
+        run_openmm_single_point(
+            system_file=system,
+            coordinate_file=coordinates,
+            coordinate_sha256=checksum,
+            classification=OpenMMForceClassification(
+                urey_bradley_bonds={2: ()},
+                periodic_impropers={2: ()},
+                rb_impropers={5: ()},
+            ),
+        )
+
+
+def test_run_openmm_single_point_refuses_periodic_system_without_coordinate_box(
+    tmp_path: Path,
+) -> None:
+    openmm = pytest.importorskip("openmm")
+    system_path, _, _ = _write_openmm_fixture(tmp_path)
+    system = openmm.XmlSerializer.deserialize(system_path.read_text(encoding="utf-8"))
+    system.setDefaultPeriodicBoxVectors(
+        openmm.Vec3(2, 0, 0), openmm.Vec3(0, 2, 0), openmm.Vec3(0, 0, 2)
+    )
+    system.getForce(3).setNonbondedMethod(openmm.NonbondedForce.CutoffPeriodic)
+    system_path.write_text(openmm.XmlSerializer.serialize(system), encoding="utf-8")
+    coordinates = tmp_path / "no_box.pdb"
+    coordinates.write_text(
+        "ATOM      1  C1  MOL A   1       0.100   0.000   0.000  1.00  0.00           C\n"
+        "ATOM      2  C2  MOL A   1       1.600   0.000   0.000  1.00  0.00           C\n"
+        "ATOM      3  C3  MOL A   1       2.700   0.800   0.000  1.00  0.00           C\n"
+        "ATOM      4  C4  MOL A   1       3.900   1.000   0.800  1.00  0.00           C\n"
+        "END\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="require box vectors"):
+        run_openmm_single_point(
+            system_file=system_path,
+            coordinate_file=coordinates,
+            coordinate_sha256=hashlib.sha256(coordinates.read_bytes()).hexdigest(),
+            classification=OpenMMForceClassification(
+                urey_bradley_bonds={0: (1,)},
+                periodic_impropers={2: (1,)},
+                rb_impropers={5: ()},
+                force_roles={4: "restraint"},
+            ),
+        )
+
+
+def test_run_openmm_single_point_refuses_nonbonded_parameter_offsets(tmp_path: Path) -> None:
+    openmm = pytest.importorskip("openmm")
+    system_path, coordinates, checksum = _write_openmm_fixture(tmp_path)
+    system = openmm.XmlSerializer.deserialize(system_path.read_text(encoding="utf-8"))
+    nonbonded = system.getForce(3)
+    nonbonded.addGlobalParameter("lambda", 0.0)
+    nonbonded.addParticleParameterOffset("lambda", 0, 0.1, 0.0, 0.0)
+    system_path.write_text(openmm.XmlSerializer.serialize(system), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="parameter offsets"):
+        run_openmm_single_point(
+            system_file=system_path,
+            coordinate_file=coordinates,
+            coordinate_sha256=checksum,
+            classification=OpenMMForceClassification(
+                urey_bradley_bonds={0: (1,)},
+                periodic_impropers={2: (1,)},
+                rb_impropers={5: ()},
+                force_roles={4: "restraint"},
+            ),
         )

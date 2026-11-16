@@ -53,6 +53,7 @@ _EXPLICIT_FORCE_ROLES = frozenset(
     }
 )
 _GRO_HEADER_AND_BOX_LINES = 3
+_MIN_GRO_FIELD_WIDTH = 2
 _ORTHORHOMBIC_BOX_VALUES = 3
 _TRICLINIC_BOX_VALUES = 9
 
@@ -71,12 +72,14 @@ class OpenMMForceClassification:
 
     urey_bradley_bonds: Mapping[int, tuple[int, ...]] = field(default_factory=dict)
     periodic_impropers: Mapping[int, tuple[int, ...]] = field(default_factory=dict)
+    rb_impropers: Mapping[int, tuple[int, ...]] = field(default_factory=dict)
     force_roles: Mapping[int, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         for description, mapping in (
             ("Urey--Bradley", self.urey_bradley_bonds),
             ("periodic improper", self.periodic_impropers),
+            ("RB improper", self.rb_impropers),
         ):
             normalized: dict[int, tuple[int, ...]] = {}
             for force_index, interaction_indices in mapping.items():
@@ -95,6 +98,7 @@ class OpenMMForceClassification:
                 {
                     "Urey--Bradley": "urey_bradley_bonds",
                     "periodic improper": "periodic_impropers",
+                    "RB improper": "rb_impropers",
                 }[description],
                 MappingProxyType(normalized),
             )
@@ -121,7 +125,15 @@ def _gro_coordinate_data(openmm: Any, unit: Any, path: Path) -> tuple[Any, Any]:
     positions = []
     try:
         for line in lines[2 : 2 + atom_count]:
-            x, y, z = (float(value) for value in line.split()[-3:])
+            first_decimal = line.index(".", 20)
+            second_decimal = line.index(".", first_decimal + 1)
+            field_width = second_decimal - first_decimal
+            if field_width < _MIN_GRO_FIELD_WIDTH or len(line) < 20 + 3 * field_width:
+                raise ValueError
+            x, y, z = (
+                float(line[20 + axis * field_width : 20 + (axis + 1) * field_width])
+                for axis in range(3)
+            )
             positions.append(openmm.Vec3(x, y, z))
         values = [float(value) for value in lines[-1].split()]
     except (ValueError, IndexError) as error:
@@ -163,6 +175,7 @@ def _context_energy(  # noqa: PLR0913, PLR0917 - one explicit evaluation context
     if box is not None:
         context.setPeriodicBoxVectors(*box)
     context.setPositions(positions)
+    context.computeVirtualSites()
     energy = context.getState(getEnergy=True).getPotentialEnergy()
     result = float(energy.value_in_unit(unit.kilojoule_per_mole))
     del context
@@ -199,11 +212,25 @@ def _zero_periodic_torsions(force: Any, selected: set[int]) -> None:
             )
 
 
+def _zero_rb_torsions(force: Any, selected: set[int]) -> None:
+    for index in range(force.getNumTorsions()):
+        parameters = force.getTorsionParameters(index)
+        if index in selected:
+            particles = parameters[:4]
+            coefficients = parameters[4:]
+            force.setTorsionParameters(index, *particles, *(0 * value for value in coefficients))
+
+
 def _nonbonded_components(  # noqa: PLR0913, PLR0917 - one explicit evaluation context
     openmm: Any, unit: Any, system: Any, force_index: int, positions: Any, box: Any, platform: Any
 ) -> dict[str, float]:
     electrostatic_system = _one_force_system(openmm, system, force_index)
     electrostatic = electrostatic_system.getForce(0)
+    if (
+        electrostatic.getNumParticleParameterOffsets()
+        or electrostatic.getNumExceptionParameterOffsets()
+    ):
+        raise ValueError("OpenMM NonbondedForce parameter offsets are unsupported")
     for index in range(electrostatic.getNumParticles()):
         charge, sigma, epsilon = electrostatic.getParticleParameters(index)
         electrostatic.setParticleParameters(index, charge, sigma, 0 * epsilon)
@@ -281,6 +308,8 @@ def run_openmm_single_point(  # noqa: PLR0912, PLR0915
     positions, box = _coordinate_data(openmm, app, unit, coordinate_file)
     if len(positions) != system.getNumParticles():
         raise ValueError("OpenMM coordinate and system particle counts differ")
+    if system.usesPeriodicBoundaryConditions() and box is None:
+        raise ValueError("periodic OpenMM systems require box vectors in the coordinate file")
     try:
         platform = openmm.Platform.getPlatformByName(platform_name)
     except Exception as error:
@@ -290,10 +319,34 @@ def run_openmm_single_point(  # noqa: PLR0912, PLR0915
     referenced = (
         set(classification.urey_bradley_bonds)
         | set(classification.periodic_impropers)
+        | set(classification.rb_impropers)
         | set(classification.force_roles)
     )
     if any(index >= force_count for index in referenced):
         raise ValueError("OpenMM classification refers to a missing force index")
+    interaction_maps = (
+        set(classification.urey_bradley_bonds),
+        set(classification.periodic_impropers),
+        set(classification.rb_impropers),
+    )
+    if any(set(classification.force_roles) & indices for indices in interaction_maps):
+        raise ValueError("an OpenMM force cannot have both a role and an interaction list")
+    expected_maps = {
+        "HarmonicBondForce": set(classification.urey_bradley_bonds),
+        "PeriodicTorsionForce": set(classification.periodic_impropers),
+        "RBTorsionForce": set(classification.rb_impropers),
+    }
+    for class_name, supplied in expected_maps.items():
+        actual = {
+            index
+            for index in range(force_count)
+            if system.getForce(index).__class__.__name__ == class_name
+        }
+        if supplied != actual:
+            raise ValueError(
+                f"OpenMM classification must explicitly list every {class_name} force "
+                f"(expected {sorted(actual)}, received {sorted(supplied)})"
+            )
 
     components: dict[str, float] = {}
     force_metadata: list[dict[str, object]] = []
@@ -355,7 +408,17 @@ def run_openmm_single_point(  # noqa: PLR0912, PLR0915
             else:
                 _add(components, "proper_dihedral", raw_energy)
         elif class_name == "RBTorsionForce":
-            _add(components, "proper_dihedral", raw_energy)
+            selected = set(classification.rb_impropers[force_index])
+            if any(index >= force.getNumTorsions() for index in selected):
+                raise ValueError("OpenMM RB improper classification refers to a missing torsion")
+            if selected:
+                propers = _one_force_system(openmm, system, force_index)
+                _zero_rb_torsions(propers.getForce(0), selected)
+                proper_energy = _context_energy(openmm, unit, propers, positions, box, platform)
+                _add(components, "proper_dihedral", proper_energy)
+                _add(components, "periodic_improper", raw_energy - proper_energy)
+            else:
+                _add(components, "proper_dihedral", raw_energy)
         elif class_name == "NonbondedForce":
             for name, value in _nonbonded_components(
                 openmm, unit, system, force_index, positions, box, platform
@@ -390,7 +453,13 @@ def run_openmm_single_point(  # noqa: PLR0912, PLR0915
     return openmm_energy_report(
         components,
         coordinate_sha256=coordinate_sha256,
-        extra={"platform": platform_name, "forces": force_metadata},
+        extra={
+            "platform": platform_name,
+            "forces": force_metadata,
+            "classified_components_kj_mol": {
+                name: value for name, value in components.items() if name != "potential"
+            },
+        },
     )
 
 
