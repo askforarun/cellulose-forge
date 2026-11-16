@@ -41,6 +41,11 @@ coordinates before executing `run 0`. Periodic impropers and GLYCAM explicit
 pair energies must be supplied from the topology when present; they cannot be
 recovered uniquely from a LAMMPS thermo row.
 
+The Amber adapter is limited to finite-chain GLYCAM systems. It verifies the
+Amber coordinates against the shared GRO file and requires an `imin=1`,
+`maxcyc=0` input. The periodic-improper contribution must be supplied
+explicitly in kcal/mol, including an explicit zero for cellulose.
+
 The canonical breakdown is deliberately aggregate and has no synonyms:
 `bond`; `angle` (including Urey--Bradley); `dihedral` (proper torsions);
 `improper`; `vdw` (ordinary plus 1--4 Lennard-Jones); `electrostatics`

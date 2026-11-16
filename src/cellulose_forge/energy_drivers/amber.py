@@ -7,8 +7,10 @@ impropers, CMAP) or rewrite sander inputs.
 
 from __future__ import annotations
 
+import hashlib
 import math
 import re
+import subprocess
 from collections.abc import Mapping
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -22,6 +24,9 @@ KJ_PER_KCAL = 4.184
 AMBER_COULOMB_KCAL_ANGSTROM = 332.0522
 GROMACS_COULOMB_KCAL_ANGSTROM = 332.0637
 COULOMB_SCALE_TO_GROMACS = GROMACS_COULOMB_KCAL_ANGSTROM / AMBER_COULOMB_KCAL_ANGSTROM
+_GRO_MINIMUM_LINES = 3
+_AMBER_MINIMUM_LINES = 2
+_COORDINATE_TOLERANCE_ANGSTROM = 1.0e-9
 
 _ASSIGNMENT = re.compile(r"([A-Za-z0-9()][A-Za-z0-9() .-]*?)\s+=\s+([-+0-9.Ee]+)")
 _MIN_ENERGY_HEADER_FIELDS = 2
@@ -143,9 +148,10 @@ def _minimization_energy_row(lines: list[str]) -> tuple[float, float] | None:
             if not math.isfinite(value):
                 raise ValueError("Amber minimization ENERGY is not finite")
             rows.append((value, _printed_half_unit(tokens[1])))
-    if len(rows) > 1:
+    unique_rows = set(rows)
+    if len(unique_rows) > 1:
         raise ValueError(
-            f"Amber single-point minimization table must contain one ENERGY row, found {len(rows)}"
+            "Amber single-point minimization output contains more than one distinct ENERGY row"
         )
     return rows[0] if rows else None
 
@@ -226,6 +232,117 @@ def parse_amber_energy(source: str | Path) -> dict[str, float]:
                     "EPtot": component_sum,
                 }
     raise ValueError("Amber output contains no EPtot energy block")
+
+
+def _gro_positions_angstrom(path: Path) -> list[tuple[float, float, float]]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if len(lines) < _GRO_MINIMUM_LINES:
+        raise ValueError("shared GRO coordinate file is truncated")
+    try:
+        count = int(lines[1].strip())
+        return [
+            (
+                10.0 * float(line[20:28]),
+                10.0 * float(line[28:36]),
+                10.0 * float(line[36:44]),
+            )
+            for line in lines[2 : 2 + count]
+        ]
+    except ValueError as error:
+        raise ValueError("shared GRO positions are invalid") from error
+
+
+def _amber_positions_angstrom(path: Path) -> list[tuple[float, float, float]]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if len(lines) < _AMBER_MINIMUM_LINES:
+        raise ValueError("Amber coordinate file is truncated")
+    try:
+        count = int(lines[1].split()[0])
+        values = [float(value) for line in lines[2:] for value in line.split()]
+    except (ValueError, IndexError) as error:
+        raise ValueError("Amber coordinate file is invalid") from error
+    required = count * 3
+    if len(values) < required:
+        raise ValueError("Amber coordinate file contains too few positions")
+    return [
+        (values[index], values[index + 1], values[index + 2]) for index in range(0, required, 3)
+    ]
+
+
+def _amber_single_point_input(text: str) -> None:
+    compact = re.sub(r"\s+", "", text.lower())
+    if "imin=1" not in compact or "maxcyc=0" not in compact:
+        raise ValueError("Amber single-point input must set imin=1 and maxcyc=0")
+
+
+def run_glycam_amber_single_point(  # noqa: PLR0913
+    directory: Path,
+    *,
+    input_file: Path,
+    topology_file: Path,
+    amber_coordinate_file: Path,
+    shared_coordinate_file: Path,
+    coordinate_sha256: str,
+    periodic_improper: float,
+    executable: str = "sander",
+) -> EnergyReport:
+    """Run a finite-chain GLYCAM Amber single point on shared coordinates."""
+    directory = directory.resolve()
+    input_file = input_file.resolve()
+    topology_file = topology_file.resolve()
+    amber_coordinate_file = amber_coordinate_file.resolve()
+    shared_coordinate_file = shared_coordinate_file.resolve()
+    for path, description in (
+        (input_file, "input"),
+        (topology_file, "topology"),
+        (amber_coordinate_file, "coordinate"),
+        (shared_coordinate_file, "shared coordinate"),
+    ):
+        if not path.is_file():
+            raise FileNotFoundError(f"Amber {description} file does not exist: {path}")
+    if input_file.parent != directory:
+        raise ValueError("Amber input file must be inside its engine directory")
+    actual_sha256 = hashlib.sha256(shared_coordinate_file.read_bytes()).hexdigest()
+    if actual_sha256 != coordinate_sha256:
+        raise ValueError("Amber shared coordinate file does not match the shared checksum")
+    gro_positions = _gro_positions_angstrom(shared_coordinate_file)
+    amber_positions = _amber_positions_angstrom(amber_coordinate_file)
+    if len(gro_positions) != len(amber_positions) or any(
+        abs(left - right) > _COORDINATE_TOLERANCE_ANGSTROM
+        for gro, amber in zip(gro_positions, amber_positions, strict=True)
+        for left, right in zip(gro, amber, strict=True)
+    ):
+        raise ValueError("Amber coordinates differ from the shared GRO coordinates")
+    _amber_single_point_input(input_file.read_text(encoding="utf-8"))
+    output = directory / "single_point_amber.out"
+    completed = subprocess.run(
+        [
+            executable,
+            "-O",
+            "-i",
+            input_file.name,
+            "-p",
+            str(topology_file),
+            "-c",
+            str(amber_coordinate_file),
+            "-o",
+            str(output),
+        ],
+        cwd=directory,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"Amber single-point command failed with exit code {completed.returncode}: "
+            f"{completed.stdout}{completed.stderr}"
+        )
+    return normalize_glycam_amber_energies(
+        parse_amber_energy(output),
+        coordinate_sha256=coordinate_sha256,
+        periodic_improper=periodic_improper,
+    )
 
 
 def _coulomb_correction(

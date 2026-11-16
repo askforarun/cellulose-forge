@@ -60,6 +60,18 @@
         "classified_terms": {}
       }
     },
-    "amber": {"directory": "amber", "command": ["python", "run_single_point.py"], "optional": true}
+    "amber": {
+      "directory": "amber",
+      "adapter": "amber",
+      "optional": true,
+      "inputs": {
+        "input_file": "single_point.in",
+        "topology_file": "structure.prmtop",
+        "amber_coordinate_file": "structure.inpcrd",
+        "coordinate_file": "../shared/coordinates.gro",
+        "executable": "sander",
+        "periodic_improper_kcal_mol": 0.0
+      }
+    }
   }
 }

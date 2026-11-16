@@ -14,6 +14,7 @@ from typing import Any
 
 from cellulose_forge.energy_drivers import (
     OpenMMForceClassification,
+    run_glycam_amber_single_point,
     run_gromacs_single_point,
     run_lammps_single_point,
     run_namd_single_point,
@@ -266,6 +267,26 @@ def _run_adapter(  # noqa: PLR0912 - explicit staged engine dispatch
             ),
             explicit_pair_kj_mol=_explicit_pair_energy(inputs.get("explicit_pair_kj_mol")),
             executable=str(inputs.get("executable", "lmp")),
+        )
+    elif adapter == "amber":
+        if engine != "amber":
+            raise ValueError(f"{engine}: amber adapter cannot write another engine's report")
+        periodic_improper = inputs.get("periodic_improper_kcal_mol")
+        if isinstance(periodic_improper, bool) or not isinstance(periodic_improper, int | float):
+            raise TypeError("amber: periodic_improper_kcal_mol must be explicitly numeric")
+        report = run_glycam_amber_single_point(
+            directory,
+            input_file=_path(directory, inputs.get("input_file"), "input_file"),
+            topology_file=_path(directory, inputs.get("topology_file"), "topology_file"),
+            amber_coordinate_file=_path(
+                directory, inputs.get("amber_coordinate_file"), "amber_coordinate_file"
+            ),
+            shared_coordinate_file=_path(
+                directory, inputs.get("coordinate_file"), "coordinate_file"
+            ),
+            coordinate_sha256=coordinate_sha256,
+            periodic_improper=float(periodic_improper),
+            executable=str(inputs.get("executable", "sander")),
         )
     else:
         raise ValueError(f"{engine}: unsupported built-in energy adapter {adapter!r}")

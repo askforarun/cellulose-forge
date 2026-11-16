@@ -3,6 +3,7 @@
 from cellulose_forge.energy_drivers.amber import (
     normalize_glycam_amber_energies,
     parse_amber_energy,
+    run_glycam_amber_single_point,
 )
 from cellulose_forge.energy_drivers.gromacs import (
     normalize_gromacs_energies,
@@ -53,6 +54,7 @@ __all__ = [
     "parse_lammps_input",
     "parse_lammps_thermo",
     "parse_namd_energy_log",
+    "run_glycam_amber_single_point",
     "run_gromacs_single_point",
     "run_lammps_single_point",
     "run_namd_single_point",

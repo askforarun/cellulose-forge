@@ -133,7 +133,7 @@ def test_selected_engines_cannot_omit_required_engine() -> None:
         namespace["_selected_engines"](arguments, manifest)
 
 
-def test_builtin_gromacs_and_openmm_adapters_write_reports(
+def test_builtin_gromacs_and_openmm_adapters_write_reports(  # noqa: PLR0915
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     namespace = runpy.run_path(
@@ -160,10 +160,15 @@ def test_builtin_gromacs_and_openmm_adapters_write_reports(
         calls["lammps"] = (directory, kwargs)
         return EnergyReport("lammps", "sha", {"bond": 1.0, "potential": 1.0})
 
+    def fake_amber(directory: Path, **kwargs: object) -> EnergyReport:
+        calls["amber"] = (directory, kwargs)
+        return EnergyReport("amber", "sha", {"bond": 1.0, "potential": 1.0})
+
     monkeypatch.setitem(globals_, "run_gromacs_single_point", fake_gromacs)
     monkeypatch.setitem(globals_, "run_openmm_single_point", fake_openmm)
     monkeypatch.setitem(globals_, "run_namd_single_point", fake_namd)
     monkeypatch.setitem(globals_, "run_lammps_single_point", fake_lammps)
+    monkeypatch.setitem(globals_, "run_glycam_amber_single_point", fake_amber)
 
     gromacs = tmp_path / "gromacs"
     openmm = tmp_path / "openmm"
@@ -173,6 +178,8 @@ def test_builtin_gromacs_and_openmm_adapters_write_reports(
     namd.mkdir()
     lammps = tmp_path / "lammps"
     lammps.mkdir()
+    amber = tmp_path / "amber"
+    amber.mkdir()
     run_adapter(
         "gromacs",
         {
@@ -235,11 +242,27 @@ def test_builtin_gromacs_and_openmm_adapters_write_reports(
         lammps,
         "sha",
     )
+    run_adapter(
+        "amber",
+        {
+            "adapter": "amber",
+            "inputs": {
+                "input_file": "single_point.in",
+                "topology_file": "structure.prmtop",
+                "amber_coordinate_file": "structure.inpcrd",
+                "coordinate_file": "../shared.gro",
+                "periodic_improper_kcal_mol": 0.0,
+            },
+        },
+        amber,
+        "sha",
+    )
 
     assert json.loads((gromacs / "energy.json").read_text())["engine"] == "gromacs"
     assert json.loads((openmm / "energy.json").read_text())["engine"] == "openmm"
     assert json.loads((namd / "energy.json").read_text())["engine"] == "namd"
     assert json.loads((lammps / "energy.json").read_text())["engine"] == "lammps"
+    assert json.loads((amber / "energy.json").read_text())["engine"] == "amber"
     openmm_call = calls["openmm"]
     assert isinstance(openmm_call, dict)
     classification = openmm_call["classification"]
@@ -254,6 +277,9 @@ def test_builtin_gromacs_and_openmm_adapters_write_reports(
     assert isinstance(lammps_call, tuple)
     assert lammps_call[1]["periodic_improper_count"] == 2
     assert lammps_call[1]["explicit_pair_kj_mol"] == {"vdw": 2.0, "electrostatics": 3.0}
+    amber_call = calls["amber"]
+    assert isinstance(amber_call, tuple)
+    assert amber_call[1]["periodic_improper"] == 0.0
 
 
 def test_builtin_adapter_refuses_noncanonical_force_index(tmp_path: Path) -> None:

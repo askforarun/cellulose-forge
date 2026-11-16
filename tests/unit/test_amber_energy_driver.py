@@ -1,5 +1,7 @@
+import hashlib
 from collections.abc import Mapping
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -9,6 +11,7 @@ from cellulose_forge.energy_drivers.amber import (
     GROMACS_COULOMB_KCAL_ANGSTROM,
     KJ_PER_KCAL,
     parse_amber_energy,
+    run_glycam_amber_single_point,
 )
 from cellulose_forge.energy_drivers.amber import (
     normalize_glycam_amber_energies as _normalize_glycam_amber_energies,
@@ -149,6 +152,43 @@ def test_parse_amber_energy_path(tmp_path: Path) -> None:
     assert report.terms["bond"] == 10.0 * KJ_PER_KCAL
 
 
+def test_run_glycam_amber_single_point_uses_shared_coordinates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_file = tmp_path / "single_point.in"
+    input_file.write_text("&cntrl\n imin=1, maxcyc=0,\n/\n", encoding="utf-8")
+    topology = tmp_path / "structure.prmtop"
+    topology.write_text("test topology\n", encoding="utf-8")
+    amber_coordinates = tmp_path / "structure.inpcrd"
+    amber_coordinates.write_text("test\n 1\n 1.0000 2.0000 3.0000\n", encoding="utf-8")
+    shared = tmp_path / "coordinates.gro"
+    shared.write_text(
+        "shared\n1\n    1BGLC    C1    1   0.100   0.200   0.300\n1.0 1.0 1.0\n",
+        encoding="utf-8",
+    )
+
+    def fake_sander(command: list[str], **kwargs: object) -> SimpleNamespace:
+        output = Path(command[command.index("-o") + 1])
+        output.write_text(_SANDER_BLOCK, encoding="utf-8")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(
+        "cellulose_forge.energy_drivers.amber.subprocess.run",
+        fake_sander,
+    )
+    report = run_glycam_amber_single_point(
+        tmp_path,
+        input_file=input_file,
+        topology_file=topology,
+        amber_coordinate_file=amber_coordinates,
+        shared_coordinate_file=shared,
+        coordinate_sha256=hashlib.sha256(shared.read_bytes()).hexdigest(),
+        periodic_improper=0.0,
+    )
+
+    assert report.terms["bond"] == 10.0 * KJ_PER_KCAL
+
+
 def test_parse_amber_minimization_single_point_without_eptot() -> None:
     text = """
    NSTEP       ENERGY          RMS            GMAX         NAME    NUMBER
@@ -202,8 +242,22 @@ def test_parse_amber_minimization_rejects_multiple_energy_rows() -> None:
  EELEC  =      19.0000  EHBOND  =       0.0000  RESTRAINT  =      12.0000
 """
 
-    with pytest.raises(ValueError, match="must contain one ENERGY row, found 2"):
+    with pytest.raises(ValueError, match="more than one distinct ENERGY row"):
         parse_amber_energy(text)
+
+
+def test_parse_amber_minimization_accepts_repeated_identical_summary() -> None:
+    block = """
+   NSTEP       ENERGY          RMS            GMAX         NAME    NUMBER
+      1       81.0000       1.0000       2.0000          C1       1
+ BOND   =      10.0000  ANGLE   =       5.0000  DIHED      =       9.0000
+ 1-4 NB =       7.0000  1-4 EEL =      11.0000  VDWAALS    =       8.0000
+ EELEC  =      19.0000  EHBOND  =       0.0000  RESTRAINT  =      12.0000
+"""
+
+    parsed = parse_amber_energy(block + block)
+
+    assert parsed["EPtot"] == 81.0
 
 
 def test_periodic_improper_classification_is_required() -> None:
