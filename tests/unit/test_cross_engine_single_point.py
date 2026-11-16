@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import runpy
 import subprocess
 import sys
+from argparse import Namespace
 from pathlib import Path
+
+import pytest
 
 
 def _energy(engine: str, checksum: str, bond: float = 100.0) -> dict[str, object]:
@@ -13,7 +17,7 @@ def _energy(engine: str, checksum: str, bond: float = 100.0) -> dict[str, object
         "engine": engine,
         "units": "kJ/mol",
         "coordinate_sha256": checksum,
-        "terms": {"bond": bond, "potential": 200.0},
+        "terms": {"bond": bond, "potential": bond},
         "corrections": [],
     }
 
@@ -102,3 +106,23 @@ def test_cross_engine_single_point_runner_rejects_energy_difference(tmp_path: Pa
     )
     assert report["passed"] is False
     assert report["comparisons"]["openmm"]["common_terms"]["bond"]["passed"] is False
+
+
+def test_selected_engines_cannot_omit_required_engine() -> None:
+    namespace = runpy.run_path(
+        "validation/cross_engine_single_point/run_single_point_validation.py",
+        run_name="energy_runner_test",
+    )
+    arguments = Namespace(selected_engines=["gromacs", "openmm"])
+    manifest = {
+        "reference_engine": "gromacs",
+        "engines": {
+            "gromacs": {"optional": False},
+            "openmm": {"optional": False},
+            "lammps": {"optional": False},
+            "amber": {"optional": True},
+        },
+    }
+
+    with pytest.raises(ValueError, match=r"omit required.*lammps"):
+        namespace["_selected_engines"](arguments, manifest)

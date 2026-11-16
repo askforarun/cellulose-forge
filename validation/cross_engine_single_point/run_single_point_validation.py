@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -16,6 +17,7 @@ from cellulose_forge.energy_drivers.report import (
     EnergyReport,
     compare_reports,
     load_energy_report,
+    validate_potential_sum,
 )
 
 
@@ -63,6 +65,14 @@ def _selected_engines(arguments: argparse.Namespace, manifest: dict[str, Any]) -
     reference = manifest["reference_engine"]
     if arguments.selected_engines and reference not in selected:
         raise ValueError(f"selected engines must include reference engine {reference!r}")
+    required = {
+        engine
+        for engine, specification in manifest["engines"].items()
+        if not specification.get("optional", False)
+    }
+    omitted = required - selected
+    if omitted:
+        raise ValueError(f"selected engines omit required engines: {sorted(omitted)}")
     return selected
 
 
@@ -118,13 +128,20 @@ def main() -> int:
     if "potential" not in required_terms:
         raise ValueError("manifest required_terms must include potential")
 
+    absolute = float(manifest["absolute_tolerance_kj_mol"])
+    relative = float(manifest["relative_tolerance"])
+    if not math.isfinite(absolute) or absolute < 0:
+        raise ValueError("absolute tolerance must be finite and non-negative")
+    if not math.isfinite(relative) or relative < 0:
+        raise ValueError("relative tolerance must be finite and non-negative")
+
     reference_name = manifest["reference_engine"]
     energies, skipped = _collect_energies(args, root, manifest, expected_checksum, required_terms)
 
     if reference_name not in energies:
         raise ValueError(f"reference engine {reference_name!r} did not produce energies")
-    absolute = float(manifest["absolute_tolerance_kj_mol"])
-    relative = float(manifest["relative_tolerance"])
+    for energy in energies.values():
+        validate_potential_sum(energy, absolute_kj_mol=absolute, relative=relative)
     comparisons = {
         engine: compare_reports(
             energies[reference_name],

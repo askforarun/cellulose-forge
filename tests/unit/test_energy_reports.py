@@ -6,7 +6,12 @@ from typing import Any
 
 import pytest
 
-from cellulose_forge.energy_drivers.report import compare_reports, load_energy_report
+from cellulose_forge.energy_drivers.report import (
+    EnergyReport,
+    compare_reports,
+    load_energy_report,
+    validate_potential_sum,
+)
 
 
 def _data(engine: str, terms: dict[str, float]) -> dict[str, Any]:
@@ -45,6 +50,23 @@ def test_report_round_trip_preserves_schema_one_data(tmp_path: Path) -> None:
     )
 
     assert report.to_dict() == source
+
+
+def test_round_trip_preserves_integer_terms_and_absent_corrections(tmp_path: Path) -> None:
+    source = _data("gromacs", {"bond": 1, "potential": 1})
+    del source["corrections"]
+    path = tmp_path / "energy.json"
+    path.write_text(json.dumps(source), encoding="utf-8")
+
+    report = load_energy_report(
+        path,
+        expected_engine="gromacs",
+        coordinate_sha256="abc",
+        required_terms={"bond", "potential"},
+    )
+
+    assert report.to_dict() == source
+    assert type(report.to_dict()["terms"]["bond"]) is int
 
 
 def test_comparison_matches_mixed_absolute_relative_rule(tmp_path: Path) -> None:
@@ -98,3 +120,49 @@ def test_comparison_refuses_different_coordinates(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="different coordinates"):
         compare_reports(reference, candidate, absolute_kj_mol=0.0, relative=0.0)
+
+
+def test_direct_construction_is_validated_and_deeply_immutable() -> None:
+    terms = {"bond": 1.0, "potential": 1.0}
+    nested = {"notes": {"values": [1]}}
+    report = EnergyReport("gromacs", "abc", terms, extra=nested)
+    terms["bond"] = 8.0
+    nested["notes"]["values"].append(2)
+
+    assert report.to_dict()["terms"]["bond"] == 1.0
+    assert report.to_dict()["notes"] == {"values": [1]}
+    with pytest.raises(ValueError, match="collide"):
+        EnergyReport(
+            "gromacs",
+            "abc",
+            {"potential": 1.0},
+            extra={"engine": "wrong"},
+        )
+    with pytest.raises(ValueError, match="schema"):
+        EnergyReport("gromacs", "abc", {"potential": 1.0}, schema_version=True)
+
+
+def test_potential_must_equal_component_sum() -> None:
+    report = EnergyReport("gromacs", "abc", {"bond": 1.0, "potential": 2.0})
+
+    with pytest.raises(ValueError, match="component sum"):
+        validate_potential_sum(report, absolute_kj_mol=0.0, relative=0.0)
+
+
+def test_unmatched_terms_fail_comparison() -> None:
+    reference = EnergyReport("gromacs", "abc", {"bond": 1.0, "potential": 1.0})
+    candidate = EnergyReport("openmm", "abc", {"bond": 1.0, "improper": 2.0, "potential": 3.0})
+
+    result = compare_reports(reference, candidate, absolute_kj_mol=0.0, relative=0.0)
+
+    assert result["passed"] is False
+    assert result["unmatched_terms"]["candidate_only"] == ["improper"]
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -1.0])
+def test_invalid_tolerances_are_refused(value: float) -> None:
+    reference = EnergyReport("gromacs", "abc", {"potential": 1.0})
+    candidate = EnergyReport("openmm", "abc", {"potential": 1.0})
+
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        compare_reports(reference, candidate, absolute_kj_mol=value, relative=0.0)

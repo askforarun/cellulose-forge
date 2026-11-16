@@ -19,16 +19,19 @@ term-matched CHARMM36, GLYCAM, and OPLS paths would be a scientific regression.
 1. Add an internal `cellulose_forge.energy_drivers` package. It evaluates files
    produced by existing writers and never changes a Hamiltonian.
 2. Aggregate terms are `bond`, `angle`, `dihedral`, `improper`, `vdw`,
-   `electrostatics`, and `potential`, in kJ/mol. `angle` includes
+   `electrostatics`, `restraint`, `dispersion_correction`, and `potential`, in kJ/mol. `angle` includes
    Urey--Bradley; `dihedral` means proper torsions; `vdw` and `electrostatics`
    include their 1--4 terms. `potential` is independently reported.
 3. A detailed CHARMM view may additionally expose `urey_bradley`, `lj_14`,
    `coulomb_14`, and separate ordinary nonbonded terms. The aggregate schema
    never folds impropers into proper torsions.
-4. Corrections remain visible with raw, correction, and comparable values,
-   reason, and reference. Raw engine output is never overwritten.
+4. In schema 2, corrections remain visible with raw, correction, and
+   comparable values, reason, and reference. Schema 1 validates only that
+   correction entries are objects. Raw engine output is never overwritten.
 5. Comparisons use `max(absolute, relative * scale)`, retaining existing
    CelluloseForge tolerances rather than Interchange's molecular-scale default.
+   Per-term overrides preserve validators with distinct bonded and nonbonded
+   criteria.
 6. Required engines fail validation if unavailable or unsuccessful. Only
    engines declared optional before execution may be skipped, with a reason.
 7. Reports converge on a versioned identity containing coordinate, atom-order,
@@ -39,6 +42,11 @@ term-matched CHARMM36, GLYCAM, and OPLS paths would be a scientific regression.
    and OpenMM representations use those engine adapters.
 9. The package remains internal during migration and is not exported from the
    package root until a separate API-stability decision.
+10. Adapters classify periodic impropers from the CelluloseForge topology, not
+    merely the engine's energy label: OpenMM and Amber combine them with proper
+    torsions, while GROMACS and some LAMMPS styles expose them differently.
+    CHARMM Urey--Bradley terms stored in an OpenMM bond force contribute to the
+    canonical `angle`, not `bond`.
 
 ## Migration
 
