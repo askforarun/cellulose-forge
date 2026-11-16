@@ -6,7 +6,7 @@ import copy
 import json
 import math
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -72,7 +72,9 @@ class EnergyReport:
     coordinate_sha256: str
     terms: Mapping[str, EnergyValue]
     corrections: tuple[Mapping[str, Any], ...] | None = None
-    extra: Mapping[str, Any] = MappingProxyType({})
+    # A factory is required for Python 3.11, whose dataclasses reject a
+    # MappingProxyType instance as a field default even though it is immutable.
+    extra: Mapping[str, Any] = field(default_factory=lambda: MappingProxyType({}))
     schema_version: int = 1
     units: str = "kJ/mol"
 

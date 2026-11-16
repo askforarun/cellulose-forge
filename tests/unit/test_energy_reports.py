@@ -94,6 +94,15 @@ def test_comparison_normalizes_integer_terms_without_changing_report() -> None:
     assert type(reference.to_dict()["terms"]["improper"]) is int
 
 
+def test_default_extra_is_empty_and_instance_local() -> None:
+    first = EnergyReport("gromacs", "abc", {"potential": 0})
+    second = EnergyReport("openmm", "abc", {"potential": 0})
+
+    assert first.extra == {}
+    assert second.extra == {}
+    assert first.extra is not second.extra
+
+
 @pytest.mark.parametrize(
     ("field", "value", "error"),
     [
