@@ -8,8 +8,9 @@ Base: `release/1.3.0-rc` at `bb0c6d7`
 The first milestone adds native NAMD output for existing CHARMM36 cellulose
 and anhydrous alpha/beta-chitin builds. It covers finite and covalently
 periodic chains in the shapes already supported by the CHARMM36 backend.
-GLYCAM, OpenFF, OPLS-AA, mannan, chitin dihydrate, NPT, and NAMD restraints are
-outside this milestone.
+GLYCAM, OpenFF, OPLS-AA, mannan, chitin dihydrate, and NPT are outside this
+milestone. Selective heavy-atom restraints are supported for CHARMM36 through
+a separate coefficient/reference PDB.
 
 Output consists of:
 
@@ -77,9 +78,11 @@ The five review findings against `d674258` are addressed:
    sections. Headless VMD loaded a real 2,592-atom beta-chitin PSF/PDB with all
    192 impropers.
 3. The February 2026 `par_all36_carb.prm` SHA-256 is enforced and recorded.
-4. Missing/wrong parameter files and NAMD restraint requests are rejected
-   before an output directory is created. Supplying the parameter option
-   without requesting NAMD is also rejected.
+4. Missing/wrong parameter files are rejected before an output directory is
+   created. Supplying the parameter option without requesting NAMD is also
+   rejected. Restraints preserve deterministic chain/layer selection and use
+   the required factor-of-two conversion between GROMACS and NAMD harmonic
+   conventions.
 5. A real periodic CHARMM36 integration test compares the expanded NAMD PSF
    with the generated GROMACS topology. The independent script in
    `validation/namd/compare_bundle.py` additionally reproduced exact atom and
@@ -129,8 +132,6 @@ Please review rather than rewrite first. In particular:
 
 ## Deferred items
 
-- NAMD harmonic restraints require a separate constraint PDB and an explicit
-  conversion from GROMACS `1/2 K r^2` to NAMD `k r^2`.
 - GLYCAM has heterogeneous 1-4 scaling and cannot use this backend's single
   CHARMM exclusion/scaling policy without a separate representation.
 - NPT is deferred until periodic-chain cell scaling is independently tested.

@@ -1161,7 +1161,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                     restraint_force=(None if restraints is None else restraints.force_constants),
                 )
                 namd_metadata = {
-                    "status": "written; runtime validation pending",
+                    "status": "written; NAMD interoperability and short-dynamics smoke validated",
                     "explicit_one_four_pair_count_per_chain": validate_namd_one_four_pairs(
                         topology
                     ),
@@ -1237,7 +1237,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         report.update(_polymer_report_fields(args, definition))
         report["charmm36_residue"] = residue
         report["validation_scope"] = {
-            "engines": ["gromacs", "openmm", "lammps", "namd"],
+            "engines": ["gromacs", "openmm", "lammps"],
             "reference": "validation/chitin_charmm36_reference_dp6.json (psfgen, DP6)",
             "gromacs": "validation/chitin_charmm36_gromacs.json "
             "(alpha/beta bulk, periodic and finite (1 0 0) slabs)",
