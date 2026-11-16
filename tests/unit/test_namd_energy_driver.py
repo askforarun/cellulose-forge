@@ -1,0 +1,196 @@
+from pathlib import Path
+
+import pytest
+
+from cellulose_forge.energy_drivers.namd import (
+    KJ_PER_KCAL,
+    normalize_namd_energies,
+    parse_namd_energy_log,
+)
+from cellulose_forge.energy_drivers.report import validate_potential_sum
+
+_STANDARD_TITLES = (
+    "TS",
+    "BOND",
+    "ANGLE",
+    "DIHED",
+    "IMPRP",
+    "ELECT",
+    "VDW",
+    "BOUNDARY",
+    "MISC",
+    "KINETIC",
+    "TOTAL",
+    "TEMP",
+    "POTENTIAL",
+    "VOLUME",
+)
+
+
+def _kcal_terms() -> dict[str, float]:
+    return {
+        "TS": 0,
+        "BOND": 1.0,
+        "ANGLE": 5.0,
+        "DIHED": 3.0,
+        "IMPRP": 4.0,
+        "ELECT": 26.0,
+        "VDW": 19.0,
+        "BOUNDARY": 0.0,
+        "MISC": 0.0,
+        "KINETIC": 12.0,
+        "TOTAL": 70.0,
+        "TEMP": 300.0,
+        "POTENTIAL": 58.0,
+        "VOLUME": 1000.0,
+    }
+
+
+def _energy_log(titles: tuple[str, ...], values: dict[str, float], extra_rows: str = "") -> str:
+    row = " ".join(str(values[name]) for name in titles)
+    return f"ETITLE: {' '.join(titles)}\nENERGY: {row}\n{extra_rows}"
+
+
+def test_normalize_namd_energies_uses_charmm_semantics_and_complete_terms() -> None:
+    report = normalize_namd_energies(_kcal_terms(), coordinate_sha256="abc")
+
+    assert report.engine == "namd"
+    assert report.terms == {
+        "bond": 1.0 * KJ_PER_KCAL,
+        "angle": 5.0 * KJ_PER_KCAL,
+        "dihedral": 3.0 * KJ_PER_KCAL,
+        "improper": 4.0 * KJ_PER_KCAL,
+        "vdw": 19.0 * KJ_PER_KCAL,
+        "electrostatics": 26.0 * KJ_PER_KCAL,
+        "restraint": 0.0,
+        "dispersion_correction": 0.0,
+        "potential": 58.0 * KJ_PER_KCAL,
+    }
+    assert report.extra["raw_units"] == "kcal/mol"
+    validate_potential_sum(report, absolute_kj_mol=1e-9, relative=0.0)
+
+
+def test_namd_angle_is_not_split_from_urey_bradley() -> None:
+    raw = _kcal_terms()
+    report = normalize_namd_energies(raw, coordinate_sha256="abc")
+
+    assert report.terms["angle"] == raw["ANGLE"] * KJ_PER_KCAL
+    assert report.terms["bond"] == raw["BOND"] * KJ_PER_KCAL
+    assert report.terms["dihedral"] == raw["DIHED"] * KJ_PER_KCAL
+    assert report.terms["improper"] == raw["IMPRP"] * KJ_PER_KCAL
+
+
+def test_namd_misc_and_boundary_are_restraints() -> None:
+    raw = _kcal_terms()
+    raw["MISC"] = 2.0
+    raw["BOUNDARY"] = 1.5
+    raw["POTENTIAL"] = 61.5
+
+    report = normalize_namd_energies(raw, coordinate_sha256="abc")
+
+    assert report.terms["restraint"] == 3.5 * KJ_PER_KCAL
+    validate_potential_sum(report, absolute_kj_mol=1e-9, relative=0.0)
+
+
+def test_parse_namd_energy_log_uses_etitle_names_not_fixed_columns() -> None:
+    values = _kcal_terms()
+    shuffled = (
+        "POTENTIAL",
+        "VDW",
+        "TS",
+        "ELECT",
+        "IMPRP",
+        "BOND",
+        "ANGLE",
+        "DIHED",
+        "MISC",
+        "BOUNDARY",
+        "KINETIC",
+        "TOTAL",
+        "TEMP",
+        "VOLUME",
+    )
+
+    parsed = parse_namd_energy_log(_energy_log(shuffled, values))
+    report = normalize_namd_energies(parsed, coordinate_sha256="abc")
+
+    assert parsed["BOND"] == 1.0
+    assert parsed["ANGLE"] == 5.0
+    assert report.terms["bond"] == 1.0 * KJ_PER_KCAL
+    assert report.terms["angle"] == 5.0 * KJ_PER_KCAL
+    assert report.terms["potential"] == 58.0 * KJ_PER_KCAL
+
+
+def test_parse_namd_energy_log_path_and_first_energy_row(tmp_path: Path) -> None:
+    path = tmp_path / "namd.log"
+    extra = "ENERGY: 1 999 999 999 999 999 999 0 0 0 999 300 999 0\n"
+    path.write_text(_energy_log(_STANDARD_TITLES, _kcal_terms(), extra), encoding="utf-8")
+
+    parsed = parse_namd_energy_log(path)
+
+    assert parsed["BOND"] == 1.0
+    assert parsed["POTENTIAL"] == 58.0
+
+
+def test_normalize_preserves_raw_kcal_diagnostics() -> None:
+    raw = _kcal_terms()
+    report = normalize_namd_energies(raw, coordinate_sha256="abc")
+    raw["BOND"] = 999.0
+
+    assert report.extra["raw_terms"]["BOND"] == 1.0
+    assert report.extra["raw_terms"]["KINETIC"] == 12.0
+
+
+def test_crossterm_fails_closed_when_nonzero() -> None:
+    raw = _kcal_terms()
+    raw["CROSSTERM"] = 3.0
+
+    with pytest.raises(ValueError, match=r"unsupported nonzero.*CROSSTERM"):
+        normalize_namd_energies(raw, coordinate_sha256="abc")
+
+
+def test_unknown_zero_and_nonzero_kinetic_diagnostics_are_allowed() -> None:
+    raw = _kcal_terms()
+    raw["CROSSTERM"] = 0.0
+    raw["KINETIC"] = 250.0
+
+    report = normalize_namd_energies(raw, coordinate_sha256="abc")
+
+    assert report.terms["potential"] == 58.0 * KJ_PER_KCAL
+
+
+@pytest.mark.parametrize(
+    "missing", ["BOND", "ANGLE", "DIHED", "IMPRP", "ELECT", "VDW", "POTENTIAL"]
+)
+def test_normalize_rejects_missing_charmm_term(missing: str) -> None:
+    raw = _kcal_terms()
+    del raw[missing]
+
+    with pytest.raises(ValueError, match="missing required CHARMM"):
+        normalize_namd_energies(raw, coordinate_sha256="abc")
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), True, "1.0"])
+def test_normalize_rejects_invalid_values(value: object) -> None:
+    raw: dict[str, object] = dict(_kcal_terms())
+    raw["BOND"] = value
+
+    with pytest.raises((TypeError, ValueError), match="BOND"):
+        normalize_namd_energies(raw, coordinate_sha256="abc")  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("log", "message"),
+    [
+        ("ENERGY: 0 1 2\n", "ENERGY before ETITLE"),
+        ("ETITLE: TS BOND ANGLE\nENERGY: 0 1\n", "field count differs"),
+        ("ETITLE: TS BOND BOND\nENERGY: 0 1 2\n", "duplicate field names"),
+        ("ETITLE:\nENERGY: 0\n", "no fields"),
+        ("ETITLE: TS BOND\nENERGY: 0 not-a-number\n", "not numeric"),
+        ("ETITLE: TS BOND\nENERGY: 0 nan\n", "not finite"),
+        ("# no energy\n", "no ENERGY row"),
+    ],
+)
+def test_parse_namd_energy_log_rejects_malformed_logs(log: str, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        parse_namd_energy_log(log)
