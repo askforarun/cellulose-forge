@@ -92,7 +92,7 @@ def _finite_energy(value: object, term: str) -> EnergyValue:
     return value
 
 
-def parse_namd_energy_log(source: str | Path) -> dict[str, float]:
+def parse_namd_energy_log(source: str | Path) -> dict[str, float]:  # noqa: PLR0912
     """Parse ETITLE-aligned ENERGY fields from a NAMD log or its text.
 
     Columns are identified by the ETITLE names, not by position.  The first
@@ -104,6 +104,7 @@ def parse_namd_energy_log(source: str | Path) -> dict[str, float]:
         text = source
 
     fields: list[str] | None = None
+    rows: list[dict[str, float]] = []
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith("ETITLE:"):
@@ -130,8 +131,12 @@ def parse_namd_energy_log(source: str | Path) -> dict[str, float]:
             if not math.isfinite(value):
                 raise ValueError(f"NAMD ENERGY field {name!r} is not finite")
             values[name] = value
-        return values
-    raise ValueError("NAMD log contains no ENERGY row")
+        rows.append(values)
+    if not rows:
+        raise ValueError("NAMD log contains no ENERGY row")
+    if len(rows) != 1:
+        raise ValueError(f"NAMD single-point log must contain one ENERGY row, found {len(rows)}")
+    return rows[0]
 
 
 def _classification_map(classified_terms: Mapping[str, str] | None) -> dict[str, str]:
@@ -169,10 +174,12 @@ def _namd_category(
     return category
 
 
-def normalize_namd_energies(
+def normalize_namd_energies(  # noqa: PLR0912
     raw_terms: Mapping[str, EnergyValue],
     *,
     coordinate_sha256: str,
+    merge_crossterms: bool,
+    lj_correction: bool,
     classified_terms: Mapping[str, str] | None = None,
 ) -> EnergyReport:
     """Return a complete canonical decomposition of NAMD CHARMM potential energy.
@@ -187,11 +194,16 @@ def normalize_namd_energies(
     ``classified_terms`` (typically ``{"MISC": "restraint"}``).  Zero values
     are inactive.  Nonzero unclassified ``BOUNDARY``/``MISC`` fail closed.
 
-    Future live NAMD runs must use ``mergeCrossterms no`` so CMAP cannot hide
-    inside ``DIHED``.
+    Callers must confirm ``mergeCrossterms no`` so CMAP cannot hide inside
+    ``DIHED``, and ``LJcorrection off`` so an invisible tail correction cannot
+    be folded into ``VDW``.
     """
     if not isinstance(raw_terms, Mapping) or not raw_terms:
         raise ValueError("NAMD energy mapping is empty")
+    if merge_crossterms:
+        raise ValueError("NAMD single-point comparison requires mergeCrossterms no")
+    if lj_correction:
+        raise ValueError("NAMD single-point comparison requires LJcorrection off")
 
     missing = [name for name in _REQUIRED_CHARMM_TERMS if name not in raw_terms]
     if missing:
@@ -227,7 +239,11 @@ def normalize_namd_energies(
 
     terms = {name: value * KJ_PER_KCAL for name, value in grouped_kcal.items()}
     terms["potential"] = potential_kcal * KJ_PER_KCAL
-    extra: dict[str, object] = {"raw_terms": dict(raw_terms), "raw_units": "kcal/mol"}
+    extra: dict[str, object] = {
+        "raw_terms": dict(raw_terms),
+        "raw_units": "kcal/mol",
+        "settings": {"merge_crossterms": False, "lj_correction": False},
+    }
     if classification:
         extra["classified_terms"] = classification
     return EnergyReport(

@@ -16,13 +16,14 @@ from cellulose_forge.energy_drivers.report import EnergyReport, EnergyValue
 
 KJ_PER_KCAL = 4.184
 # Documented GLYCAM Amber vs GROMACS Coulomb constants, in kcal A / mol / e^2.
-# Canonical electrostatics stay on Amber's native convention; the GROMACS
-# convention value is recorded as a correction so comparisons can apply it.
+# Canonical electrostatics use the GROMACS reference convention, matching the
+# LAMMPS adapter. Native Amber values remain visible in correction metadata.
 AMBER_COULOMB_KCAL_ANGSTROM = 332.0522
 GROMACS_COULOMB_KCAL_ANGSTROM = 332.0637
 COULOMB_SCALE_TO_GROMACS = GROMACS_COULOMB_KCAL_ANGSTROM / AMBER_COULOMB_KCAL_ANGSTROM
 
 _ASSIGNMENT = re.compile(r"([A-Za-z0-9()][A-Za-z0-9() .-]*?)\s+=\s+([-+0-9.Ee]+)")
+_MIN_ENERGY_HEADER_FIELDS = 2
 
 _TERM_CATEGORIES: dict[str, str] = {
     "BOND": "bond",
@@ -63,6 +64,7 @@ _DIAGNOSTICS = frozenset(
         "VIRIAL",
         "VOLUME",
         "Density",
+        "MINIMIZATION ENERGY",
     }
 )
 _UNSUPPORTED_IF_NONZERO = frozenset({"EHBOND", "UB", "IMP", "CMAP", "IMPROP", "CROSSTERM"})
@@ -106,7 +108,7 @@ def _parse_assignment(name: str, token: str) -> tuple[str, float]:
     return key, value
 
 
-def parse_amber_energy(source: str | Path) -> dict[str, float]:
+def parse_amber_energy(source: str | Path) -> dict[str, float]:  # noqa: PLR0912
     """Parse the first sander ``mdout`` / ``mdinfo`` potential-energy block.
 
     Assignments without spaces around ``=`` (namelist echoes such as ``imin=1``)
@@ -118,6 +120,30 @@ def parse_amber_energy(source: str | Path) -> dict[str, float]:
     else:
         text = source
 
+    lines = text.splitlines()
+    minimization_energy: float | None = None
+    for line_index, line in enumerate(lines):
+        fields = line.split()
+        if len(fields) < _MIN_ENERGY_HEADER_FIELDS or fields[:_MIN_ENERGY_HEADER_FIELDS] != [
+            "NSTEP",
+            "ENERGY",
+        ]:
+            continue
+        for candidate in lines[line_index + 1 :]:
+            tokens = candidate.split()
+            if not tokens:
+                continue
+            try:
+                int(tokens[0])
+                minimization_energy = float(tokens[1])
+            except (ValueError, IndexError):
+                continue
+            if not math.isfinite(minimization_energy):
+                raise ValueError("Amber minimization ENERGY is not finite")
+            break
+        if minimization_energy is not None:
+            break
+
     blocks: list[dict[str, float]] = []
     current: dict[str, float] = {}
 
@@ -127,7 +153,7 @@ def parse_amber_energy(source: str | Path) -> dict[str, float]:
             blocks.append(current)
             current = {}
 
-    for line in text.splitlines():
+    for line in lines:
         pairs = _ASSIGNMENT.findall(line)
         if not pairs:
             flush()
@@ -142,6 +168,24 @@ def parse_amber_energy(source: str | Path) -> dict[str, float]:
     for block in blocks:
         if "EPtot" in block:
             return block
+    if minimization_energy is not None:
+        for block in blocks:
+            if {"BOND", "ANGLE", "DIHED", "VDWAALS"} <= set(block):
+                component_sum = sum(
+                    value
+                    for name, value in block.items()
+                    if _TERM_CATEGORIES.get(name) not in {None, "potential"}
+                )
+                allowed = max(0.1, 1.0e-5 * abs(component_sum))
+                if abs(minimization_energy - component_sum) > allowed:
+                    raise ValueError(
+                        "Amber minimization ENERGY differs from its printed component sum"
+                    )
+                return {
+                    **block,
+                    "MINIMIZATION ENERGY": minimization_energy,
+                    "EPtot": component_sum,
+                }
     raise ValueError("Amber output contains no EPtot energy block")
 
 
@@ -150,10 +194,13 @@ def _coulomb_correction(
 ) -> dict[str, object]:
     raw_kj = electrostatics_kcal * KJ_PER_KCAL
     return {
-        "kind": "coulomb_constant",
+        "name": "amber_coulomb_constant",
+        "kind": "scale",
+        "factor": COULOMB_SCALE_TO_GROMACS,
         "term": "electrostatics",
         "raw_kcal_mol": electrostatics_kcal,
         "raw_kj_mol": raw_kj,
+        "correction_kj_mol": raw_kj * COULOMB_SCALE_TO_GROMACS - raw_kj,
         "comparable_kj_mol": raw_kj * COULOMB_SCALE_TO_GROMACS,
         "engine_constant_kcal_angstrom_per_mol_e2": AMBER_COULOMB_KCAL_ANGSTROM,
         "reference_constant_kcal_angstrom_per_mol_e2": GROMACS_COULOMB_KCAL_ANGSTROM,
@@ -161,8 +208,8 @@ def _coulomb_correction(
         "scale": COULOMB_SCALE_TO_GROMACS,
         "reason": (
             "Amber's Coulomb constant (332.0522 kcal A/mol/e^2) differs from "
-            "GROMACS (332.0637). Canonical electrostatics remain on Amber's "
-            "native convention; comparable_kj_mol is the GROMACS-convention value."
+            "GROMACS (332.0637). Canonical electrostatics and potential are "
+            "reported on the GROMACS reference convention."
         ),
     }
 
@@ -223,14 +270,13 @@ def normalize_glycam_amber_energies(
     raw_terms: Mapping[str, EnergyValue],
     *,
     coordinate_sha256: str,
-    periodic_improper: EnergyValue = 0,
+    periodic_improper: EnergyValue,
 ) -> EnergyReport:
     """Return a complete canonical decomposition of finite-chain GLYCAM Amber energy.
 
     ``periodic_improper`` is the topology-classified periodic improper energy in
-    kcal/mol.  Amber prints those impropers inside ``DIHED``; when the value is
-    omitted it must be zero (cellulose).  Canonical electrostatics stay on
-    Amber's Coulomb constant; the GROMACS-convention value is in ``corrections``.
+    kcal/mol. Amber prints those impropers inside ``DIHED``; callers must pass
+    zero explicitly for topologies such as cellulose that contain none.
     """
     _require_glycam_terms(raw_terms)
     improper_kcal = _finite_energy(periodic_improper, "periodic_improper")
@@ -246,12 +292,16 @@ def normalize_glycam_amber_energies(
         raise ValueError("Amber output is missing EPtot")
 
     terms = {name: value * KJ_PER_KCAL for name, value in grouped_kcal.items()}
-    terms["potential"] = potential_kcal * KJ_PER_KCAL
+    correction = _coulomb_correction(electrostatics_kcal)
+    delta = correction["correction_kj_mol"]
+    assert isinstance(delta, float)
+    terms["electrostatics"] += delta
+    terms["potential"] = potential_kcal * KJ_PER_KCAL + delta
     return EnergyReport(
         engine="amber",
         coordinate_sha256=coordinate_sha256,
         terms=terms,
-        corrections=(_coulomb_correction(electrostatics_kcal),),
+        corrections=(correction,),
         extra={
             "raw_terms": dict(raw_terms),
             "raw_units": "kcal/mol",

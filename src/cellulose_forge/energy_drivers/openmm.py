@@ -133,6 +133,7 @@ def openmm_classification_from_topology(
     openmm = importlib.import_module("openmm")
     system = openmm.XmlSerializer.deserialize(system_file.read_text(encoding="utf-8"))
     normalized_bonds: set[tuple[int, int]] = set()
+    particle_count = system.getNumParticles()
     for pair in covalent_bonds:
         if len(pair) != _BOND_ATOM_COUNT or any(
             type(index) is not int or index < 0 for index in pair
@@ -141,17 +142,37 @@ def openmm_classification_from_topology(
         first, second = pair[0], pair[1]
         if first == second:
             raise ValueError("OpenMM covalent bonds cannot join an atom to itself")
+        if first >= particle_count or second >= particle_count:
+            raise ValueError("OpenMM covalent bond refers to a missing particle")
         normalized_bonds.add((min(first, second), max(first, second)))
+    neighbours: dict[int, set[int]] = {index: set() for index in range(particle_count)}
+    for first, second in normalized_bonds:
+        neighbours[first].add(second)
+        neighbours[second].add(first)
     urey_bradley: dict[int, tuple[int, ...]] = {}
+    force_pairs: set[tuple[int, int]] = set()
     for force_index, force in enumerate(system.getForces()):
         if force.__class__.__name__ != "HarmonicBondForce":
             continue
         selected = []
         for interaction_index in range(force.getNumBonds()):
             first, second, *_ = force.getBondParameters(interaction_index)
-            if tuple(sorted((int(first), int(second)))) not in normalized_bonds:
-                selected.append(interaction_index)
+            pair = (min(int(first), int(second)), max(int(first), int(second)))
+            force_pairs.add(pair)
+            if pair in normalized_bonds:
+                continue
+            if not neighbours[pair[0]] & neighbours[pair[1]]:
+                raise ValueError(
+                    "OpenMM non-covalent HarmonicBondForce term is not a 1-3 "
+                    "Urey--Bradley pair in the supplied bond graph"
+                )
+            selected.append(interaction_index)
         urey_bradley[force_index] = tuple(selected)
+    missing_bonds = sorted(normalized_bonds - force_pairs)
+    if missing_bonds:
+        raise ValueError(
+            f"OpenMM covalent bonds are absent from HarmonicBondForce: {missing_bonds[:5]}"
+        )
     return OpenMMForceClassification(
         urey_bradley_bonds=urey_bradley,
         periodic_impropers={} if periodic_impropers is None else periodic_impropers,

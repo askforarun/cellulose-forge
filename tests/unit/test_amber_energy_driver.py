@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
@@ -7,10 +8,12 @@ from cellulose_forge.energy_drivers.amber import (
     COULOMB_SCALE_TO_GROMACS,
     GROMACS_COULOMB_KCAL_ANGSTROM,
     KJ_PER_KCAL,
-    normalize_glycam_amber_energies,
     parse_amber_energy,
 )
-from cellulose_forge.energy_drivers.report import validate_potential_sum
+from cellulose_forge.energy_drivers.amber import (
+    normalize_glycam_amber_energies as _normalize_glycam_amber_energies,
+)
+from cellulose_forge.energy_drivers.report import EnergyReport, EnergyValue, validate_potential_sum
 
 _SANDER_BLOCK = """
 imin=1, maxcyc=1000, ncyc=200,
@@ -21,6 +24,19 @@ imin=1, maxcyc=1000, ncyc=200,
  EELEC  =      19.0000  EHBOND  =       0.0000  RESTRAINT  =      12.0000
  EAMBER (non-restraint)  =      69.0000
 """
+
+
+def normalize_glycam_amber_energies(
+    raw_terms: Mapping[str, EnergyValue],
+    *,
+    coordinate_sha256: str,
+    periodic_improper: float = 0.0,
+) -> EnergyReport:
+    return _normalize_glycam_amber_energies(
+        raw_terms,
+        coordinate_sha256=coordinate_sha256,
+        periodic_improper=periodic_improper,
+    )
 
 
 def _kcal_terms() -> dict[str, float]:
@@ -53,31 +69,36 @@ def test_normalize_glycam_amber_energies_uses_canonical_complete_terms() -> None
         "dihedral": 9.0 * KJ_PER_KCAL,
         "improper": 0.0,
         "vdw": 15.0 * KJ_PER_KCAL,
-        "electrostatics": 30.0 * KJ_PER_KCAL,
+        "electrostatics": 30.0 * KJ_PER_KCAL * COULOMB_SCALE_TO_GROMACS,
         "restraint": 12.0 * KJ_PER_KCAL,
         "dispersion_correction": 0.0,
-        "potential": 81.0 * KJ_PER_KCAL,
+        "potential": 81.0 * KJ_PER_KCAL + 30.0 * KJ_PER_KCAL * (COULOMB_SCALE_TO_GROMACS - 1.0),
     }
     validate_potential_sum(report, absolute_kj_mol=1e-9, relative=0.0)
 
 
-def test_coulomb_constant_is_explicit_and_canonical_terms_stay_amber_native() -> None:
+def test_coulomb_constant_is_explicit_and_canonical_terms_are_reference_comparable() -> None:
     report = normalize_glycam_amber_energies(_kcal_terms(), coordinate_sha256="abc")
     assert report.corrections is not None
     correction = report.corrections[0]
     raw_elec_kcal = 30.0
     raw_elec_kj = raw_elec_kcal * KJ_PER_KCAL
 
-    assert correction["kind"] == "coulomb_constant"
+    assert correction["kind"] == "scale"
+    assert correction["factor"] == COULOMB_SCALE_TO_GROMACS
     assert correction["engine_constant_kcal_angstrom_per_mol_e2"] == AMBER_COULOMB_KCAL_ANGSTROM
     assert correction["reference_constant_kcal_angstrom_per_mol_e2"] == (
         GROMACS_COULOMB_KCAL_ANGSTROM
     )
     assert correction["raw_kcal_mol"] == raw_elec_kcal
     assert correction["raw_kj_mol"] == raw_elec_kj
+    assert correction["name"] == "amber_coulomb_constant"
+    assert correction["correction_kj_mol"] == pytest.approx(
+        raw_elec_kj * (COULOMB_SCALE_TO_GROMACS - 1.0)
+    )
     assert correction["comparable_kj_mol"] == pytest.approx(raw_elec_kj * COULOMB_SCALE_TO_GROMACS)
     assert correction["comparable_kj_mol"] != correction["raw_kj_mol"]
-    assert report.terms["electrostatics"] == raw_elec_kj
+    assert report.terms["electrostatics"] == pytest.approx(raw_elec_kj * COULOMB_SCALE_TO_GROMACS)
     gromacs_convention_back_to_amber = (
         correction["comparable_kj_mol"]
         * AMBER_COULOMB_KCAL_ANGSTROM
@@ -126,6 +147,26 @@ def test_parse_amber_energy_path(tmp_path: Path) -> None:
 
     assert parsed["EELEC"] == 19.0
     assert report.terms["bond"] == 10.0 * KJ_PER_KCAL
+
+
+def test_parse_amber_minimization_single_point_without_eptot() -> None:
+    text = """
+   NSTEP       ENERGY          RMS            GMAX         NAME    NUMBER
+      0       81.0000       1.0000       2.0000          C1       1
+ BOND   =      10.0000  ANGLE   =       5.0000  DIHED      =       9.0000
+ 1-4 NB =       7.0000  1-4 EEL =      11.0000  VDWAALS    =       8.0000
+ EELEC  =      19.0000  EHBOND  =       0.0000  RESTRAINT  =      12.0000
+"""
+
+    parsed = parse_amber_energy(text)
+
+    assert parsed["EPtot"] == 81.0
+    assert parsed["BOND"] == 10.0
+
+
+def test_periodic_improper_classification_is_required() -> None:
+    with pytest.raises(TypeError, match="periodic_improper"):
+        _normalize_glycam_amber_energies(_kcal_terms(), coordinate_sha256="abc")  # type: ignore[call-arg]
 
 
 def test_one_four_vdw_alias_is_accepted() -> None:

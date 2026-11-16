@@ -89,6 +89,8 @@ def _write_openmm_fixture(directory: Path) -> tuple[Path, Path, str]:
     bonds = openmm.HarmonicBondForce()
     bonds.addBond(0, 1, 0.14, 1000.0)
     bonds.addBond(0, 2, 0.25, 500.0)  # Urey--Bradley.
+    bonds.addBond(1, 2, 0.14, 1000.0)
+    bonds.addBond(2, 3, 0.14, 1000.0)
     system.addForce(bonds)
     angles = openmm.HarmonicAngleForce()
     angles.addAngle(0, 1, 2, 1.9, 100.0)
@@ -282,13 +284,34 @@ def test_openmm_classification_from_topology_finds_urey_bradley(tmp_path: Path) 
 
     classification = openmm_classification_from_topology(
         system,
-        covalent_bonds={(0, 1)},
+        covalent_bonds={(0, 1), (1, 2), (2, 3)},
         periodic_impropers={2: (1,)},
         rb_impropers={5: ()},
         force_roles={4: "restraint"},
     )
 
     assert classification.urey_bradley_bonds == {0: (1,)}
+
+
+def test_openmm_classification_refuses_non_one_three_pseudo_bond(tmp_path: Path) -> None:
+    openmm = pytest.importorskip("openmm")
+    system_path, _, _ = _write_openmm_fixture(tmp_path)
+    system = openmm.XmlSerializer.deserialize(system_path.read_text(encoding="utf-8"))
+    system.getForce(0).addBond(0, 3, 0.4, 10.0)
+    system_path.write_text(openmm.XmlSerializer.serialize(system), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="not a 1-3 Urey"):
+        openmm_classification_from_topology(system_path, covalent_bonds={(0, 1), (1, 2), (2, 3)})
+
+
+def test_openmm_classification_refuses_graph_bond_missing_from_force(tmp_path: Path) -> None:
+    system_path, _, _ = _write_openmm_fixture(tmp_path)
+
+    with pytest.raises(ValueError, match="absent from HarmonicBondForce"):
+        openmm_classification_from_topology(
+            system_path,
+            covalent_bonds={(0, 1), (1, 2), (2, 3), (0, 3)},
+        )
 
 
 def test_run_openmm_single_point_refuses_constrained_system(tmp_path: Path) -> None:

@@ -4,10 +4,12 @@ import pytest
 
 from cellulose_forge.energy_drivers.namd import (
     KJ_PER_KCAL,
-    normalize_namd_energies,
     parse_namd_energy_log,
 )
-from cellulose_forge.energy_drivers.report import validate_potential_sum
+from cellulose_forge.energy_drivers.namd import (
+    normalize_namd_energies as _normalize_namd_energies,
+)
+from cellulose_forge.energy_drivers.report import EnergyReport, EnergyValue, validate_potential_sum
 
 _STANDARD_TITLES = (
     "TS",
@@ -25,6 +27,21 @@ _STANDARD_TITLES = (
     "POTENTIAL",
     "VOLUME",
 )
+
+
+def normalize_namd_energies(
+    raw_terms: dict[str, EnergyValue],
+    *,
+    coordinate_sha256: str,
+    classified_terms: dict[str, str] | None = None,
+) -> EnergyReport:
+    return _normalize_namd_energies(
+        raw_terms,
+        coordinate_sha256=coordinate_sha256,
+        merge_crossterms=False,
+        lj_correction=False,
+        classified_terms=classified_terms,
+    )
 
 
 def _kcal_terms() -> dict[str, float]:
@@ -115,6 +132,20 @@ def test_zero_boundary_and_misc_do_not_require_classification() -> None:
     validate_potential_sum(report, absolute_kj_mol=1e-9, relative=0.0)
 
 
+@pytest.mark.parametrize(
+    ("settings", "message"),
+    [
+        ({"merge_crossterms": True, "lj_correction": False}, "mergeCrossterms no"),
+        ({"merge_crossterms": False, "lj_correction": True}, "LJcorrection off"),
+    ],
+)
+def test_namd_single_point_settings_fail_closed(settings: dict[str, bool], message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        _normalize_namd_energies(
+            _kcal_terms(), coordinate_sha256="abc", classified_terms=None, **settings
+        )
+
+
 def test_parse_namd_energy_log_uses_etitle_names_not_fixed_columns() -> None:
     values = _kcal_terms()
     shuffled = (
@@ -144,15 +175,13 @@ def test_parse_namd_energy_log_uses_etitle_names_not_fixed_columns() -> None:
     assert report.terms["potential"] == 58.0 * KJ_PER_KCAL
 
 
-def test_parse_namd_energy_log_path_and_first_energy_row(tmp_path: Path) -> None:
+def test_parse_namd_energy_log_refuses_more_than_one_energy_row(tmp_path: Path) -> None:
     path = tmp_path / "namd.log"
     extra = "ENERGY: 1 999 999 999 999 999 999 0 0 0 999 300 999 0\n"
     path.write_text(_energy_log(_STANDARD_TITLES, _kcal_terms(), extra), encoding="utf-8")
 
-    parsed = parse_namd_energy_log(path)
-
-    assert parsed["BOND"] == 1.0
-    assert parsed["POTENTIAL"] == 58.0
+    with pytest.raises(ValueError, match="must contain one ENERGY row"):
+        parse_namd_energy_log(path)
 
 
 def test_normalize_preserves_raw_kcal_diagnostics() -> None:
