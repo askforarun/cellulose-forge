@@ -15,15 +15,19 @@ cross_engine_single_point/
   amber/                 # finite GLYCAM systems only
 ```
 
-GROMACS, OpenMM, NAMD and LAMMPS use the built-in adapters selected in `manifest.json`; they
-do not need a copied runner script. Other engines retain a subfolder runner
-during the staged migration. Each adapter performs an energy evaluation at the
+All five engines use the built-in adapters selected in `manifest.json`; they
+do not need copied runner scripts. Each adapter performs an energy evaluation at the
 supplied coordinates without minimisation or dynamics and writes `energy.json`. Energies use kJ/mol and the
 canonical names listed in `manifest.example.json`. The manifest's
 `required_terms` prevents a false pass based on only a small overlapping
 subset. An adapter is also where a
 documented engine convention is normalized; it must record every correction
 in the JSON rather than silently changing a value.
+
+Each engine entry must select exactly one execution mode. Release bundles use
+an `adapter` plus typed `inputs`. The legacy `command` mode remains available
+only for externally maintained adapters during migration; mixing both modes or
+providing neither is refused.
 
 The OpenMM entry must point to an unconstrained single-point `System` and give
 an explicit force classification. Force and interaction indices are zero-based.

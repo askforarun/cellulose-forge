@@ -9,6 +9,7 @@ import json
 import math
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -179,7 +180,139 @@ def _term_tolerances(value: object) -> dict[str, tuple[float, float]]:
     return result
 
 
-def _run_adapter(  # noqa: PLR0912 - explicit staged engine dispatch
+def _execution_mode(engine: str, specification: dict[str, Any]) -> str:
+    has_adapter = "adapter" in specification
+    has_command = "command" in specification
+    if has_adapter == has_command:
+        raise ValueError(f"{engine}: specify exactly one of adapter or command")
+    if has_adapter:
+        adapter = specification["adapter"]
+        if not isinstance(adapter, str) or adapter not in _ADAPTERS:
+            raise ValueError(f"{engine}: unsupported built-in energy adapter {adapter!r}")
+        if adapter != engine:
+            raise ValueError(f"{engine}: {adapter} adapter cannot write another engine's report")
+        return "adapter"
+    command = specification["command"]
+    if (
+        not isinstance(command, list)
+        or not command
+        or any(not isinstance(item, str) or not item for item in command)
+    ):
+        raise TypeError(f"{engine}: command must be a non-empty list of strings")
+    return "command"
+
+
+def _run_gromacs_adapter(
+    inputs: dict[str, Any], directory: Path, coordinate_sha256: str
+) -> EnergyReport:
+    return run_gromacs_single_point(
+        directory,
+        coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+        topology_file=_path(directory, inputs.get("topology_file"), "topology_file"),
+        mdp_file=_path(directory, inputs.get("mdp_file"), "mdp_file"),
+        coordinate_sha256=coordinate_sha256,
+        executable=str(inputs.get("executable", "gmx")),
+    )
+
+
+def _run_openmm_adapter(
+    inputs: dict[str, Any], directory: Path, coordinate_sha256: str
+) -> EnergyReport:
+    raw_classification = inputs.get("classification")
+    if not isinstance(raw_classification, dict):
+        raise TypeError("openmm: classification must be an object")
+    classification = OpenMMForceClassification(
+        urey_bradley_bonds=_interaction_map(
+            raw_classification.get("urey_bradley_bonds"), "OpenMM Urey--Bradley map"
+        ),
+        periodic_impropers=_interaction_map(
+            raw_classification.get("periodic_impropers"), "OpenMM periodic-improper map"
+        ),
+        rb_impropers=_interaction_map(
+            raw_classification.get("rb_impropers"), "OpenMM RB-improper map"
+        ),
+        force_roles=_force_roles(raw_classification.get("force_roles")),
+    )
+    return run_openmm_single_point(
+        system_file=_path(directory, inputs.get("system_file"), "system_file"),
+        coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+        coordinate_sha256=coordinate_sha256,
+        classification=classification,
+        platform_name=str(inputs.get("platform_name", "Reference")),
+    )
+
+
+def _run_namd_adapter(
+    inputs: dict[str, Any], directory: Path, coordinate_sha256: str
+) -> EnergyReport:
+    threads = inputs.get("threads", 1)
+    if type(threads) is not int:
+        raise TypeError("namd: threads must be an integer")
+    return run_namd_single_point(
+        directory,
+        configuration_file=_path(directory, inputs.get("configuration_file"), "configuration_file"),
+        shared_coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+        binary_coordinate_file=_path(
+            directory, inputs.get("binary_coordinate_file"), "binary_coordinate_file"
+        ),
+        coordinate_sha256=coordinate_sha256,
+        executable=str(inputs.get("executable", "namd3")),
+        threads=threads,
+        classified_terms=_classified_terms(inputs.get("classified_terms")),
+    )
+
+
+def _run_lammps_adapter(
+    inputs: dict[str, Any], directory: Path, coordinate_sha256: str
+) -> EnergyReport:
+    periodic_improper_count = inputs.get("periodic_improper_count")
+    if type(periodic_improper_count) is not int:
+        raise TypeError("lammps: periodic_improper_count must be an integer")
+    return run_lammps_single_point(
+        directory,
+        input_file=_path(directory, inputs.get("input_file"), "input_file"),
+        data_file=_path(directory, inputs.get("data_file"), "data_file"),
+        shared_coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+        coordinate_sha256=coordinate_sha256,
+        periodic_improper_count=periodic_improper_count,
+        periodic_improper_kj_mol=_optional_energy(
+            inputs.get("periodic_improper_kj_mol"), "periodic_improper_kj_mol"
+        ),
+        explicit_pair_kj_mol=_explicit_pair_energy(inputs.get("explicit_pair_kj_mol")),
+        executable=str(inputs.get("executable", "lmp")),
+    )
+
+
+def _run_amber_adapter(
+    inputs: dict[str, Any], directory: Path, coordinate_sha256: str
+) -> EnergyReport:
+    periodic_improper = inputs.get("periodic_improper_kcal_mol")
+    if isinstance(periodic_improper, bool) or not isinstance(periodic_improper, int | float):
+        raise TypeError("amber: periodic_improper_kcal_mol must be explicitly numeric")
+    return run_glycam_amber_single_point(
+        directory,
+        input_file=_path(directory, inputs.get("input_file"), "input_file"),
+        topology_file=_path(directory, inputs.get("topology_file"), "topology_file"),
+        amber_coordinate_file=_path(
+            directory, inputs.get("amber_coordinate_file"), "amber_coordinate_file"
+        ),
+        shared_coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+        coordinate_sha256=coordinate_sha256,
+        periodic_improper=float(periodic_improper),
+        executable=str(inputs.get("executable", "sander")),
+    )
+
+
+_ADAPTERS: dict[str, Callable[[dict[str, Any], Path, str], EnergyReport]] = {
+    "amber": _run_amber_adapter,
+    "gromacs": _run_gromacs_adapter,
+    "lammps": _run_lammps_adapter,
+    "namd": _run_namd_adapter,
+    "openmm": _run_openmm_adapter,
+}
+
+
+def _run_adapter(
     engine: str,
     specification: dict[str, Any],
     directory: Path,
@@ -189,107 +322,11 @@ def _run_adapter(  # noqa: PLR0912 - explicit staged engine dispatch
     inputs = specification.get("inputs")
     if not isinstance(inputs, dict):
         raise TypeError(f"{engine}: adapter inputs must be an object")
-    if adapter == "gromacs":
-        if engine != "gromacs":
-            raise ValueError(f"{engine}: gromacs adapter cannot write another engine's report")
-        report = run_gromacs_single_point(
-            directory,
-            coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
-            topology_file=_path(directory, inputs.get("topology_file"), "topology_file"),
-            mdp_file=_path(directory, inputs.get("mdp_file"), "mdp_file"),
-            coordinate_sha256=coordinate_sha256,
-            executable=str(inputs.get("executable", "gmx")),
-        )
-    elif adapter == "openmm":
-        if engine != "openmm":
-            raise ValueError(f"{engine}: openmm adapter cannot write another engine's report")
-        raw_classification = inputs.get("classification")
-        if not isinstance(raw_classification, dict):
-            raise TypeError("openmm: classification must be an object")
-        classification = OpenMMForceClassification(
-            urey_bradley_bonds=_interaction_map(
-                raw_classification.get("urey_bradley_bonds"), "OpenMM Urey--Bradley map"
-            ),
-            periodic_impropers=_interaction_map(
-                raw_classification.get("periodic_impropers"), "OpenMM periodic-improper map"
-            ),
-            rb_impropers=_interaction_map(
-                raw_classification.get("rb_impropers"), "OpenMM RB-improper map"
-            ),
-            force_roles=_force_roles(raw_classification.get("force_roles")),
-        )
-        report = run_openmm_single_point(
-            system_file=_path(directory, inputs.get("system_file"), "system_file"),
-            coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
-            coordinate_sha256=coordinate_sha256,
-            classification=classification,
-            platform_name=str(inputs.get("platform_name", "Reference")),
-        )
-    elif adapter == "namd":
-        if engine != "namd":
-            raise ValueError(f"{engine}: namd adapter cannot write another engine's report")
-        threads = inputs.get("threads", 1)
-        if type(threads) is not int:
-            raise TypeError("namd: threads must be an integer")
-        report = run_namd_single_point(
-            directory,
-            configuration_file=_path(
-                directory, inputs.get("configuration_file"), "configuration_file"
-            ),
-            shared_coordinate_file=_path(
-                directory, inputs.get("coordinate_file"), "coordinate_file"
-            ),
-            binary_coordinate_file=_path(
-                directory, inputs.get("binary_coordinate_file"), "binary_coordinate_file"
-            ),
-            coordinate_sha256=coordinate_sha256,
-            executable=str(inputs.get("executable", "namd3")),
-            threads=threads,
-            classified_terms=_classified_terms(inputs.get("classified_terms")),
-        )
-    elif adapter == "lammps":
-        if engine != "lammps":
-            raise ValueError(f"{engine}: lammps adapter cannot write another engine's report")
-        periodic_improper_count = inputs.get("periodic_improper_count")
-        if type(periodic_improper_count) is not int:
-            raise TypeError("lammps: periodic_improper_count must be an integer")
-        report = run_lammps_single_point(
-            directory,
-            input_file=_path(directory, inputs.get("input_file"), "input_file"),
-            data_file=_path(directory, inputs.get("data_file"), "data_file"),
-            shared_coordinate_file=_path(
-                directory, inputs.get("coordinate_file"), "coordinate_file"
-            ),
-            coordinate_sha256=coordinate_sha256,
-            periodic_improper_count=periodic_improper_count,
-            periodic_improper_kj_mol=_optional_energy(
-                inputs.get("periodic_improper_kj_mol"), "periodic_improper_kj_mol"
-            ),
-            explicit_pair_kj_mol=_explicit_pair_energy(inputs.get("explicit_pair_kj_mol")),
-            executable=str(inputs.get("executable", "lmp")),
-        )
-    elif adapter == "amber":
-        if engine != "amber":
-            raise ValueError(f"{engine}: amber adapter cannot write another engine's report")
-        periodic_improper = inputs.get("periodic_improper_kcal_mol")
-        if isinstance(periodic_improper, bool) or not isinstance(periodic_improper, int | float):
-            raise TypeError("amber: periodic_improper_kcal_mol must be explicitly numeric")
-        report = run_glycam_amber_single_point(
-            directory,
-            input_file=_path(directory, inputs.get("input_file"), "input_file"),
-            topology_file=_path(directory, inputs.get("topology_file"), "topology_file"),
-            amber_coordinate_file=_path(
-                directory, inputs.get("amber_coordinate_file"), "amber_coordinate_file"
-            ),
-            shared_coordinate_file=_path(
-                directory, inputs.get("coordinate_file"), "coordinate_file"
-            ),
-            coordinate_sha256=coordinate_sha256,
-            periodic_improper=float(periodic_improper),
-            executable=str(inputs.get("executable", "sander")),
-        )
-    else:
+    if not isinstance(adapter, str) or adapter not in _ADAPTERS:
         raise ValueError(f"{engine}: unsupported built-in energy adapter {adapter!r}")
+    if engine != adapter:
+        raise ValueError(f"{engine}: {adapter} adapter cannot write another engine's report")
+    report = _ADAPTERS[adapter](inputs, directory, coordinate_sha256)
     (directory / "energy.json").write_text(
         json.dumps(report.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -309,6 +346,7 @@ def _collect_energies(
     for engine, specification in manifest["engines"].items():
         if engine not in selected:
             continue
+        execution_mode = _execution_mode(engine, specification)
         directory = root / specification["directory"]
         if not directory.is_dir():
             if specification.get("optional", False):
@@ -317,7 +355,7 @@ def _collect_energies(
             raise FileNotFoundError(f"{engine}: missing directory {directory}")
         if not arguments.no_run:
             try:
-                if "adapter" in specification:
+                if execution_mode == "adapter":
                     _run_adapter(engine, specification, directory, checksum)
                 else:
                     command = list(specification["command"])

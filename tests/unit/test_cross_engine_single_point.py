@@ -133,7 +133,7 @@ def test_selected_engines_cannot_omit_required_engine() -> None:
         namespace["_selected_engines"](arguments, manifest)
 
 
-def test_builtin_gromacs_and_openmm_adapters_write_reports(  # noqa: PLR0915
+def test_all_builtin_adapters_write_reports(  # noqa: PLR0915
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     namespace = runpy.run_path(
@@ -308,3 +308,33 @@ def test_builtin_adapter_refuses_noncanonical_force_index(tmp_path: Path) -> Non
             directory,
             "sha",
         )
+
+
+@pytest.mark.parametrize(
+    "specification",
+    [
+        {"directory": "gromacs"},
+        {
+            "directory": "gromacs",
+            "adapter": "gromacs",
+            "command": ["true"],
+            "inputs": {},
+        },
+    ],
+)
+def test_engine_execution_requires_exactly_one_mode(specification: dict[str, object]) -> None:
+    namespace = runpy.run_path(
+        "validation/cross_engine_single_point/run_single_point_validation.py",
+        run_name="energy_runner_execution_mode_test",
+    )
+    with pytest.raises(ValueError, match="exactly one"):
+        namespace["_execution_mode"]("gromacs", specification)
+
+
+def test_engine_command_must_be_nonempty_strings() -> None:
+    namespace = runpy.run_path(
+        "validation/cross_engine_single_point/run_single_point_validation.py",
+        run_name="energy_runner_command_test",
+    )
+    with pytest.raises(TypeError, match="non-empty list of strings"):
+        namespace["_execution_mode"]("gromacs", {"directory": "gromacs", "command": []})
