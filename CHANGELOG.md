@@ -6,6 +6,10 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Added
 
+- Selective heavy-atom chain and layer restraints for CHARMM36/NAMD and for
+  GLYCAM06j-1 or CHARMM36 LAMMPS output. Both backends preserve deterministic
+  chain selection and Cartesian-axis choices, convert the CLI force constants
+  to native units, and include the restraint energy during minimization.
 - Native NAMD output for CHARMM36 cellulose and anhydrous
   alpha/beta-chitin: extended X-PLOR PSF, PSF-ordered PDB, a copied canonical
   CHARMM carbohydrate parameter file, and a PME minimization/NVT input. The

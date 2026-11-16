@@ -66,6 +66,42 @@ def test_writer_records_molecules_and_emits_safe_input(
     assert metadata["atom_count"] == 4
 
 
+def test_writer_restraints_preserve_one_based_atom_ids_and_axes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    topology = tmp_path / "system.top"
+    coordinates = tmp_path / "structure.gro"
+    topology.touch()
+    coordinates.touch()
+
+    def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        request = json.loads(Path(command[-1]).read_text(encoding="utf-8"))
+        Path(str(request["data_path"])).write_text("LAMMPS data\n", encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=0,
+            stdout=json.dumps({"atom_count": 4, "bond_count": 2}),
+            stderr="",
+        )
+
+    monkeypatch.setattr("cellulose_forge.lammps.subprocess.run", run)
+    files, metadata = write_lammps_system(
+        _system(),
+        topology,
+        coordinates,
+        tmp_path / "out",
+        restraint_atom_indices=(0, 2),
+        restraint_force=(1000.0, 0.0, 1000.0),
+    )
+
+    text = files.input.read_text(encoding="utf-8")
+    assert "group cellulose_restraints id 1 3" in text
+    assert "spring/self 2.39005736138 xz" in text
+    assert "fix_modify cellulose_position_restraints energy yes" in text
+    assert "f_cellulose_position_restraints" in text
+    assert metadata["position_restraint_atom_count"] == 2
+
+
 def test_writer_surfaces_converter_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "a.top").write_text("[ pairs ]\n1 2 1\n", encoding="utf-8")
 

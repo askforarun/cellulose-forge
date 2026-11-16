@@ -16,6 +16,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
+
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
 from cellulose_forge.gromacs_pairs import prepare_explicit_pairs
 
@@ -468,7 +470,7 @@ def _resolve_python(executable: str | None) -> str:
     return executable or sys.executable
 
 
-def write_lammps_system(  # noqa: PLR0913
+def write_lammps_system(  # noqa: PLR0913, PLR0915
     system: GlycamMappedSystem,
     gromacs_topology: str | Path,
     gromacs_coordinates: str | Path,
@@ -478,6 +480,8 @@ def write_lammps_system(  # noqa: PLR0913
     dispersion_correction: bool = False,
     python_executable: str | None = None,
     polymer: str = "cellulose",
+    restraint_atom_indices: tuple[int, ...] = (),
+    restraint_force: tuple[float, float, float] | None = None,
 ) -> tuple[LammpsSystemFiles, dict[str, object]]:
     """Write an exact LAMMPS representation or reject unsupported semantics.
 
@@ -552,6 +556,40 @@ def write_lammps_system(  # noqa: PLR0913
     improper_line = "improper_style harmonic\n" if has_impropers else ""
     improper_thermo = " eimp" if has_impropers else ""
     tail_correction = "yes" if dispersion_correction and force_field.lower() == "glycam" else "no"
+    restraint_commands = ""
+    restraint_thermo = ""
+    if restraint_force is not None:
+        active_axes = "".join(
+            axis for axis, value in zip("xyz", restraint_force, strict=True) if value > 0.0
+        )
+        active_values = [value for value in restraint_force if value > 0.0]
+        if active_values and not np.allclose(
+            active_values, active_values[0], atol=1.0e-9, rtol=0.0
+        ):
+            raise ValueError(
+                "LAMMPS position restraints require equal nonzero force constants on selected axes"
+            )
+        if active_values:
+            if not restraint_atom_indices:
+                raise ValueError("LAMMPS position restraints selected no heavy atoms")
+            atom_ids = [index + 1 for index in restraint_atom_indices]
+            id_rows = [
+                " ".join(str(value) for value in atom_ids[start : start + 20])
+                for start in range(0, len(atom_ids), 20)
+            ]
+            group_command = "group cellulose_restraints id " + " &\n  ".join(id_rows)
+            spring_constant = active_values[0] / 418.4
+            restraint_commands = (
+                f"{group_command}\n"
+                f"fix cellulose_position_restraints cellulose_restraints spring/self "
+                f"{spring_constant:.12g} {active_axes}\n"
+                "fix_modify cellulose_position_restraints energy yes\n"
+            )
+            restraint_thermo = " f_cellulose_position_restraints"
+    thermo_style = (
+        "thermo_style custom step temp pe ebond eangle edihed evdwl ecoul elong etail"
+        f"{improper_thermo}{restraint_thermo}"
+    )
     files.input.write_text(
         f"""units real
 atom_style full
@@ -564,8 +602,8 @@ pair_modify mix arithmetic tail {tail_correction}
 special_bonds {special_bonds}
 read_data system.data
 kspace_style pppm 1.0e-5
-thermo 100
-thermo_style custom step temp pe ebond eangle edihed evdwl ecoul elong etail{improper_thermo}
+{restraint_commands}thermo 100
+{thermo_style}
 timestep 1.0
 # This file is an initial-energy validation input, not a dynamics protocol.
 run 0
@@ -580,6 +618,7 @@ quit 0
             "input": files.input.name,
             "dispersion_correction": tail_correction == "yes",
             "input_scope": "single-point run 0 validation; not a dynamics protocol",
+            "position_restraint_atom_count": len(restraint_atom_indices),
         }
     )
     if not explicit_pair_count:

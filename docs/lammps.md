@@ -50,7 +50,12 @@ readiness.
 ## Current boundary
 
 - GLYCAM and CHARMM36 finite and periodic chains are implemented.
-- Position restraints are not yet implemented.
+- Selective GLYCAM and CHARMM36 heavy-atom restraints are written as an
+  explicit atom-ID group plus `fix spring/self`. Chain/layer selection follows
+  the build report's deterministic mapping, and zero-valued axes remain free.
+  All nonzero axis force constants must be equal because `spring/self` uses one
+  coefficient per atom. The generated input enables the restraint energy for
+  minimization and thermodynamic output.
 - `in.cellulose` (or `in.chitin`) performs `run 0` for initial-energy validation. It is not a
   minimization or molecular-dynamics protocol; users must supply simulation
   controls appropriate to their scientific application.

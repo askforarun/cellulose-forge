@@ -25,9 +25,13 @@ _ONE_FOUR_GRAPH_DISTANCE = 3
 _MAXIMUM_SEGMENT_COUNT = 999
 _MAXIMUM_PDB_ATOM_COUNT = 99_999
 _MAXIMUM_PDB_RESIDUE_NAME_LENGTH = 4
+_MAXIMUM_PDB_B_FACTOR = 99.999
 _ORTHORHOMBIC_GRO_BOX_VALUE_COUNT = 3
 _TRICLINIC_GRO_BOX_VALUE_COUNT = 9
 _PDB_RESIDUE_ALIASES = {"BGLCNA": "NAG"}
+# GROMACS uses U = 1/2 k x^2, whereas NAMD's legacy harmonic constraints use
+# U = k x^2.  The additional factor of 1/2 preserves the requested stiffness.
+_KJ_NM2_TO_NAMD_KCAL_A2 = 1.0 / 836.8
 CHARMM36_CARB_PARAMETER_SHA256 = "9acd5f1d887afaf5e2cdc0e420440ab912cc2b584f787120d6845dd077d58ee6"
 
 
@@ -45,6 +49,7 @@ class NamdSystemFiles:
     gromacs_single_point: Path
     single_point_runner: Path
     energy_adapter: Path
+    restraint_reference: Path | None = None
 
 
 def _chain_atoms(topology: CharmmTopology) -> tuple[Charmm36TemplateAtom, ...]:
@@ -294,7 +299,63 @@ def _cell_lines(vectors: FloatArray) -> list[str]:
     ]
 
 
-def render_namd_configuration(system: GlycamMappedSystem, *, periodic_chains: bool) -> str:
+def _restraint_lines(force_constants: tuple[float, float, float] | None) -> list[str]:
+    """Render NAMD harmonic-constraint controls for selected Cartesian axes."""
+    if force_constants is None:
+        return []
+    active = [value for value in force_constants if value > 0.0]
+    if not active:
+        return []
+    if not np.allclose(active, active[0], atol=1.0e-9, rtol=0.0):
+        raise ValueError(
+            "NAMD position restraints require equal nonzero force constants on selected axes"
+        )
+    return [
+        "constraints on",
+        "consRef restraints_namd.pdb",
+        "consKFile restraints_namd.pdb",
+        "consKCol B",
+        "selectConstraints on",
+        *(
+            f"selectConstr{axis} {'on' if value > 0.0 else 'off'}"
+            for axis, value in zip("XYZ", force_constants, strict=True)
+        ),
+    ]
+
+
+def render_namd_restraint_pdb(
+    system: GlycamMappedSystem,
+    topology: CharmmTopology,
+    chain_ids: tuple[int, ...],
+    force_constants: tuple[float, float, float],
+) -> str:
+    """Encode selected heavy atoms and the NAMD force coefficient in the B column."""
+    active = [value for value in force_constants if value > 0.0]
+    coefficient = (active[0] if active else 0.0) * _KJ_NM2_TO_NAMD_KCAL_A2
+    if coefficient > _MAXIMUM_PDB_B_FACTOR:
+        raise ValueError("NAMD restraint force is too large for the PDB B-factor field")
+    selected = set(chain_ids)
+    lines = render_pdb(system, topology).splitlines()
+    atom_lines = iter(
+        coefficient if chain in selected and not name.upper().startswith("H") else 0.0
+        for name, chain in zip(system.atom_names, system.chain_numbers, strict=True)
+    )
+    rendered: list[str] = []
+    for line in lines:
+        rendered_line = line
+        if line.startswith("ATOM"):
+            value = next(atom_lines)
+            rendered_line = f"{line[:60]}{value:6.3f}{line[66:]}"
+        rendered.append(rendered_line)
+    return "\n".join(rendered) + "\n"
+
+
+def render_namd_configuration(
+    system: GlycamMappedSystem,
+    *,
+    periodic_chains: bool,
+    restraint_force: tuple[float, float, float] | None = None,
+) -> str:
     """Render a conservative CHARMM36 PME minimization/NVT smoke-test input."""
     vectors = np.asarray(system.basis_vectors, dtype=float)
     return "\n".join(
@@ -317,6 +378,7 @@ def render_namd_configuration(system: GlycamMappedSystem, *, periodic_chains: bo
             "LJcorrection off",
             "wrapAll off",
             f"# covalently periodic chains: {'yes' if periodic_chains else 'no'}",
+            *_restraint_lines(restraint_force),
             "temperature 300",
             "timestep 2.0",
             "rigidBonds all",
@@ -561,6 +623,8 @@ def write_namd_system(  # noqa: PLR0913
     output_directory: str | Path,
     *,
     periodic_chains: bool,
+    restraint_chain_ids: tuple[int, ...] = (),
+    restraint_force: tuple[float, float, float] | None = None,
 ) -> NamdSystemFiles:
     """Write PSF, PDB, parameter file, and a runnable NAMD smoke-test input."""
     source_parameters, _checksum = validate_charmm_parameter_file(parameter_file)
@@ -576,14 +640,26 @@ def write_namd_system(  # noqa: PLR0913
     gromacs_single_point = directory / "single_point_gromacs.mdp"
     single_point_runner = directory / "run_single_point_comparison.sh"
     energy_adapter = directory / "single_point_energy.py"
+    restraint_reference = directory / "restraints_namd.pdb" if restraint_force else None
     shutil.copy2(gromacs_coordinates, shared_coordinates)
     rounded_coordinates, rounded_vectors = _read_gro_coordinates(shared_coordinates)
     _write_namd_binary_coordinates(single_point_coordinates, rounded_coordinates)
     psf.write_text(render_psf(system, topology), encoding="utf-8")
     pdb.write_text(render_pdb(system, topology), encoding="utf-8")
     configuration.write_text(
-        render_namd_configuration(system, periodic_chains=periodic_chains), encoding="utf-8"
+        render_namd_configuration(
+            system,
+            periodic_chains=periodic_chains,
+            restraint_force=restraint_force,
+        ),
+        encoding="utf-8",
     )
+    if restraint_reference is not None:
+        assert restraint_force is not None
+        restraint_reference.write_text(
+            render_namd_restraint_pdb(system, topology, restraint_chain_ids, restraint_force),
+            encoding="utf-8",
+        )
     single_point_configuration.write_text(
         render_namd_single_point_configuration(rounded_vectors, periodic_chains=periodic_chains),
         encoding="utf-8",
@@ -606,4 +682,5 @@ def write_namd_system(  # noqa: PLR0913
         gromacs_single_point=gromacs_single_point,
         single_point_runner=single_point_runner,
         energy_adapter=energy_adapter,
+        restraint_reference=restraint_reference,
     )

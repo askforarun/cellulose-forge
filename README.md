@@ -841,6 +841,13 @@ structure or topology. Chitin uses `-DPOSRES_CHITIN`. The three values
 supplied to `--restraint-force` are the x, y, and z force constants in
 kJ mol$^{-1}$ nm$^{-2}$.
 
+For LAMMPS output, the selected heavy-atom IDs are written as a LAMMPS group
+and restrained with `fix spring/self`. For CHARMM36/NAMD output, the same
+selectors write `restraints_namd.pdb` and activate NAMD harmonic restraints in
+`run_namd.conf`. Both preserve selected chains and layers, leave zero-valued
+axes free, and require equal nonzero axis force constants because each backend
+uses one coefficient per atom.
+
 ## Output files and run inputs
 
 ### Coordinate-only mode

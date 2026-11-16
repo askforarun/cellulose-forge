@@ -534,11 +534,6 @@ def _validate_namd_options(args: argparse.Namespace, parser: argparse.ArgumentPa
         return
     if args.charmm_parameter_file is None:
         parser.error("--md-engine namd requires --charmm-parameter-file")
-    if any(
-        value is not None
-        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
-    ):
-        parser.error("NAMD position restraints are not implemented yet")
     try:
         validate_charmm_parameter_file(args.charmm_parameter_file)
     except ValueError as error:
@@ -684,8 +679,11 @@ def _write_lammps_output(  # noqa: PLR0913
     parser: argparse.ArgumentParser,
 ) -> tuple[LammpsSystemFiles, dict[str, object]]:
     """Write an exact LAMMPS system through the validated force graph."""
-    if restraints is not None:
-        parser.error("LAMMPS position-restraint output is not implemented yet")
+    selected = (
+        None
+        if restraints is None
+        else heavy_atom_restraints(mapped, restraints.chain_ids, restraints.force_constants)
+    )
     try:
         return write_lammps_system(
             mapped,
@@ -696,6 +694,8 @@ def _write_lammps_output(  # noqa: PLR0913
             dispersion_correction=dispersion_correction(args.force_field, args.shape),
             python_executable=args.openmm_python,
             polymer=args.polymer,
+            restraint_atom_indices=(() if selected is None else selected.atom_indices),
+            restraint_force=(None if selected is None else selected.force_constants_kj_mol_nm2),
         )
     except (FileNotFoundError, RuntimeError, ValueError) as error:
         parser.error(str(error))
@@ -1157,6 +1157,8 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                     gro_path,
                     args.output,
                     periodic_chains=args.chain_boundary == "periodic",
+                    restraint_chain_ids=(() if restraints is None else restraints.chain_ids),
+                    restraint_force=(None if restraints is None else restraints.force_constants),
                 )
                 namd_metadata = {
                     "status": "written; runtime validation pending",
@@ -1166,6 +1168,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                     "force_switch_angstrom": [10.0, 12.0],
                     "pme": True,
                     "parameter_sha256": parameter_checksum,
+                    "position_restraints": restraints is not None,
                 }
             except ValueError as error:
                 parser.error(str(error))
@@ -1215,6 +1218,11 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                     "gromacs_single_point_mdp": namd_files.gromacs_single_point.name,
                     "single_point_runner": namd_files.single_point_runner.name,
                     "single_point_energy_adapter": namd_files.energy_adapter.name,
+                    **(
+                        {"namd_restraint_reference": namd_files.restraint_reference.name}
+                        if namd_files.restraint_reference is not None
+                        else {}
+                    ),
                 }
                 if namd_files is not None
                 else {}
@@ -1229,7 +1237,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         report.update(_polymer_report_fields(args, definition))
         report["charmm36_residue"] = residue
         report["validation_scope"] = {
-            "engines": ["gromacs", "openmm", "lammps"],
+            "engines": ["gromacs", "openmm", "lammps", "namd"],
             "reference": "validation/chitin_charmm36_reference_dp6.json (psfgen, DP6)",
             "gromacs": "validation/chitin_charmm36_gromacs.json "
             "(alpha/beta bulk, periodic and finite (1 0 0) slabs)",

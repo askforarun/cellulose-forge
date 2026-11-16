@@ -23,6 +23,7 @@ from cellulose_forge.glycam_mapping import GlycamMappedSystem
 from cellulose_forge.gromacs import write_gro
 from cellulose_forge.namd import (
     render_namd_configuration,
+    render_namd_restraint_pdb,
     render_pdb,
     render_psf,
     render_single_point_energy_script,
@@ -199,25 +200,6 @@ def test_cli_rejects_namd_inputs_before_creating_output(
     assert "requires an existing CHARMM parameter file" in capsys.readouterr().err
     assert not output.exists()
 
-    parameters = tmp_path / "parameters.prm"
-    parameters.write_text("* test parameters\n", encoding="utf-8")
-    checksum = hashlib.sha256(parameters.read_bytes()).hexdigest()
-    monkeypatch.setattr("cellulose_forge.namd.CHARMM36_CARB_PARAMETER_SHA256", checksum)
-    with pytest.raises(SystemExit, match="2"):
-        main(
-            _cli_arguments(
-                output,
-                "--md-engine",
-                "namd",
-                "--charmm-parameter-file",
-                str(parameters),
-                "--restrain-layers",
-                "1",
-            )
-        )
-    assert "NAMD position restraints are not implemented" in capsys.readouterr().err
-    assert not output.exists()
-
 
 def test_cli_rejects_unused_parameter_file(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
@@ -297,6 +279,53 @@ def test_writer_copies_parameter_file_and_writes_complete_bundle(
     assert files.single_point_runner.stat().st_mode & 0o111
     comparison = files.energy_adapter.read_text(encoding="utf-8")
     compile(comparison, str(files.energy_adapter), "exec")
+
+    restrained = write_namd_system(
+        _system(),
+        _topology(),
+        parameters,
+        gro,
+        tmp_path / "namd_restrained",
+        periodic_chains=False,
+        restraint_chain_ids=(2,),
+        restraint_force=(1000.0, 1000.0, 1000.0),
+    )
+    assert restrained.restraint_reference is not None
+    assert restrained.restraint_reference.is_file()
+    assert "constraints on" in restrained.configuration.read_text(encoding="utf-8")
+    assert "constraints on" not in restrained.single_point_configuration.read_text(encoding="utf-8")
+
+
+def test_namd_restraints_select_only_heavy_atoms_in_requested_chain() -> None:
+    system = replace(
+        _system(),
+        atom_names=("C1", "O5", "C5", "O4", "C1", "O5", "C5", "H4"),
+    )
+    text = render_namd_restraint_pdb(system, _topology(), (2,), (1000.0, 1000.0, 0.0))
+    atom_lines = [line for line in text.splitlines() if line.startswith("ATOM")]
+    coefficients = [float(line[60:66]) for line in atom_lines]
+
+    assert coefficients[:4] == [0.0] * 4
+    assert coefficients[4:7] == pytest.approx([1000.0 / 836.8] * 3, abs=5.0e-4)
+    assert coefficients[7] == 0.0
+
+    configuration = render_namd_configuration(
+        _system(), periodic_chains=True, restraint_force=(1000.0, 1000.0, 0.0)
+    )
+    assert "constraints on" in configuration
+    assert "consRef restraints_namd.pdb" in configuration
+    assert "consKFile restraints_namd.pdb" in configuration
+    assert "consKCol B" in configuration
+    assert "selectConstrX on" in configuration
+    assert "selectConstrY on" in configuration
+    assert "selectConstrZ off" in configuration
+
+
+def test_namd_restraints_require_equal_nonzero_axis_constants() -> None:
+    with pytest.raises(ValueError, match="equal nonzero force constants"):
+        render_namd_configuration(
+            _system(), periodic_chains=True, restraint_force=(1000.0, 500.0, 0.0)
+        )
 
 
 def test_single_point_script_groups_matching_terms(tmp_path: Path) -> None:

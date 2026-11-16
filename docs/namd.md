@@ -68,6 +68,17 @@ correction. `wrapAll off` preserves chains bonded through a periodic boundary.
 The initial configuration is deliberately not GPU-resident because NAMD 3's
 GPU-resident mode does not support this force-switching setting.
 
+Selective heavy-atom position restraints are supported through the same
+`--restrain-chains`, `--restrain-layers`, and `--restraint-force FX FY FZ`
+options used for GROMACS and OpenMM. NAMD writes `restraints_namd.pdb` and
+activates its harmonic-constraint facility in `run_namd.conf`; hydrogens and
+unselected chains receive a zero coefficient. Selected axes may be disabled
+with a zero force constant. Because NAMD uses one per-atom coefficient, all
+nonzero axis force constants must be equal. CelluloseForge converts from
+kJ mol^-1 nm^-2 and includes the factor of one half needed to match NAMD's
+legacy `U = k x^2` convention to the GROMACS `U = 1/2 k x^2` convention. The
+single-point comparison remains deliberately unrestrained.
+
 ## Safety checks and current limits
 
 Before writing, CelluloseForge requires the explicit CHARMM36 1-4 pair list to
@@ -81,8 +92,8 @@ They require no scheduler: users set `NAMD_EXE`, `GMX_EXE`, and optionally
 `NAMD_THREADS`, then run the shell script directly. A scheduler can invoke the
 same command without changing the validation logic.
 
-NAMD restraints, NPT, GLYCAM, OpenFF, OPLS-AA, chitin dihydrate, and mannan are
-outside this first milestone. The current evidence is stored in
+NAMD NPT, GLYCAM, OpenFF, OPLS-AA, chitin dihydrate, and mannan are outside
+this first milestone. The current evidence is stored in
 `validation/results/namd_acceptance_matrix.json`. All three production runs
 reached their final frame with finite energies and intact bonds; heavy-atom
 RMSDs after 1 ps were 0.28--0.51 Angstrom. This is an interoperability and
