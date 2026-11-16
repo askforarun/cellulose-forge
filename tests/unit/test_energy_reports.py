@@ -80,6 +80,20 @@ def test_comparison_matches_mixed_absolute_relative_rule(tmp_path: Path) -> None
     assert result["common_terms"]["potential"]["allowed_difference_kj_mol"] == 0.01
 
 
+def test_comparison_normalizes_integer_terms_without_changing_report() -> None:
+    reference = EnergyReport("gromacs", "abc", {"improper": 0, "potential": 0})
+    candidate = EnergyReport("openmm", "abc", {"improper": 0, "potential": 0})
+
+    result = compare_reports(reference, candidate, absolute_kj_mol=0.0, relative=0.0)
+
+    improper = result["common_terms"]["improper"]
+    assert improper["reference_kj_mol"] == 0.0
+    assert type(improper["reference_kj_mol"]) is float
+    assert type(improper["candidate_kj_mol"]) is float
+    assert type(improper["difference_kj_mol"]) is float
+    assert type(reference.to_dict()["terms"]["improper"]) is int
+
+
 @pytest.mark.parametrize(
     ("field", "value", "error"),
     [

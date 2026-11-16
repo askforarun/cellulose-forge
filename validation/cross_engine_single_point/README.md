@@ -27,7 +27,15 @@ in the JSON rather than silently changing a value.
 The canonical breakdown is deliberately aggregate and has no synonyms:
 `bond`; `angle` (including Urey--Bradley); `dihedral` (proper torsions);
 `improper`; `vdw` (ordinary plus 1--4 Lennard-Jones); `electrostatics`
-(real-space, reciprocal-space, and 1--4); and `potential`.
+(real-space, reciprocal-space, and 1--4); `restraint`;
+`dispersion_correction`; and `potential`.
+
+Every engine report must be a complete decomposition of `potential`, not only
+the subset named in `required_terms`. The potential must equal the sum of all
+other reported canonical terms within the configured numerical tolerance.
+Restraint and dispersion-correction contributions must therefore be reported
+separately whenever they are active and included in `potential`; an unknown
+nonzero contribution is an error rather than being silently absorbed.
 
 Run the bundle with:
 

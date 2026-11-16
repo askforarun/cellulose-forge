@@ -21,7 +21,12 @@ term-matched CHARMM36, GLYCAM, and OPLS paths would be a scientific regression.
 2. Aggregate terms are `bond`, `angle`, `dihedral`, `improper`, `vdw`,
    `electrostatics`, `restraint`, `dispersion_correction`, and `potential`, in kJ/mol. `angle` includes
    Urey--Bradley; `dihedral` means proper torsions; `vdw` and `electrostatics`
-   include their 1--4 terms. `potential` is independently reported.
+   include their 1--4 terms. `potential` is independently reported and must
+   equal the complete sum of every other reported canonical term within the
+   configured numerical tolerance. Consequently, every report is a complete
+   decomposition of its potential: when present in the evaluated Hamiltonian,
+   restraint and dispersion-correction energies must be reported explicitly
+   and included in `potential`. Unclassified nonzero contributions fail closed.
 3. A detailed CHARMM view may additionally expose `urey_bradley`, `lj_14`,
    `coulomb_14`, and separate ordinary nonbonded terms. The aggregate schema
    never folds impropers into proper torsions.

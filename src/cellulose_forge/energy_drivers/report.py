@@ -242,8 +242,12 @@ def compare_reports(
     terms: dict[str, Any] = {}
     passed = not reference_only and not candidate_only
     for name in common:
-        expected = reference.terms[name]
-        observed = candidate.terms[name]
+        # Comparison output historically used JSON floating-point values even
+        # when an adapter supplied an exact integer (most commonly a zero
+        # term).  Keep the source report lossless, but preserve that comparison
+        # schema for byte-compatible migration results.
+        expected = float(reference.terms[name])
+        observed = float(candidate.terms[name])
         difference = observed - expected
         scale = max(abs(expected), abs(observed), 1.0)
         absolute, relative_term = term_tolerances.get(name, (absolute_kj_mol, relative))
