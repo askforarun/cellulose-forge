@@ -184,6 +184,29 @@ def test_parse_namd_energy_log_refuses_more_than_one_energy_row(tmp_path: Path) 
         parse_namd_energy_log(path)
 
 
+def test_namd_attestations_are_required() -> None:
+    with pytest.raises(TypeError, match="merge_crossterms"):
+        _normalize_namd_energies(_kcal_terms(), coordinate_sha256="abc")  # type: ignore[call-arg]
+
+
+@pytest.mark.parametrize(
+    ("arguments", "message"),
+    [
+        ({"merge_crossterms": 0, "lj_correction": False}, "merge_crossterms"),
+        ({"merge_crossterms": False, "lj_correction": 0}, "lj_correction"),
+    ],
+)
+def test_namd_attestations_require_actual_booleans(
+    arguments: dict[str, object], message: str
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        _normalize_namd_energies(  # type: ignore[arg-type]
+            _kcal_terms(),
+            coordinate_sha256="abc",
+            **arguments,
+        )
+
+
 def test_normalize_preserves_raw_kcal_diagnostics() -> None:
     raw = _kcal_terms()
     report = normalize_namd_energies(raw, coordinate_sha256="abc")

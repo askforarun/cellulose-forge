@@ -95,8 +95,8 @@ def _finite_energy(value: object, term: str) -> EnergyValue:
 def parse_namd_energy_log(source: str | Path) -> dict[str, float]:  # noqa: PLR0912
     """Parse ETITLE-aligned ENERGY fields from a NAMD log or its text.
 
-    Columns are identified by the ETITLE names, not by position.  The first
-    ENERGY row after an ETITLE is the single-point / first reported step.
+    Columns are identified by the ETITLE names, not by position. Exactly one
+    ENERGY row is required for a single-point calculation.
     """
     if isinstance(source, Path):
         text = source.read_text(encoding="utf-8", errors="replace")
@@ -200,6 +200,10 @@ def normalize_namd_energies(  # noqa: PLR0912
     """
     if not isinstance(raw_terms, Mapping) or not raw_terms:
         raise ValueError("NAMD energy mapping is empty")
+    if type(merge_crossterms) is not bool:
+        raise TypeError("merge_crossterms must be a boolean attestation")
+    if type(lj_correction) is not bool:
+        raise TypeError("lj_correction must be a boolean attestation")
     if merge_crossterms:
         raise ValueError("NAMD single-point comparison requires mergeCrossterms no")
     if lj_correction:

@@ -121,21 +121,9 @@ def _printed_half_unit(token: str) -> float:
     return float(Decimal("0.5").scaleb(exponent))
 
 
-def parse_amber_energy(source: str | Path) -> dict[str, float]:  # noqa: PLR0912, PLR0915
-    """Parse the first sander ``mdout`` / ``mdinfo`` potential-energy block.
-
-    Assignments without spaces around ``=`` (namelist echoes such as ``imin=1``)
-    are ignored.  Later average or step blocks are not mixed into the first
-    single-point evaluation.
-    """
-    if isinstance(source, Path):
-        text = source.read_text(encoding="utf-8")
-    else:
-        text = source
-
-    lines = text.splitlines()
-    minimization_energy: float | None = None
-    minimization_rounding = 0.0
+def _minimization_energy_row(lines: list[str]) -> tuple[float, float] | None:
+    """Return the sole printed minimization energy and its rounding bound."""
+    rows: list[tuple[float, float]] = []
     for line_index, line in enumerate(lines):
         fields = line.split()
         if len(fields) < _MIN_ENERGY_HEADER_FIELDS or fields[:_MIN_ENERGY_HEADER_FIELDS] != [
@@ -149,15 +137,36 @@ def parse_amber_energy(source: str | Path) -> dict[str, float]:  # noqa: PLR0912
                 continue
             try:
                 int(tokens[0])
-                minimization_energy = float(tokens[1])
+                value = float(tokens[1])
             except (ValueError, IndexError):
-                continue
-            if not math.isfinite(minimization_energy):
+                break
+            if not math.isfinite(value):
                 raise ValueError("Amber minimization ENERGY is not finite")
-            minimization_rounding = _printed_half_unit(tokens[1])
-            break
-        if minimization_energy is not None:
-            break
+            rows.append((value, _printed_half_unit(tokens[1])))
+    if len(rows) > 1:
+        raise ValueError(
+            f"Amber single-point minimization table must contain one ENERGY row, found {len(rows)}"
+        )
+    return rows[0] if rows else None
+
+
+def parse_amber_energy(source: str | Path) -> dict[str, float]:
+    """Parse the first sander ``mdout`` / ``mdinfo`` potential-energy block.
+
+    Assignments without spaces around ``=`` (namelist echoes such as ``imin=1``)
+    are ignored.  Later average or step blocks are not mixed into the first
+    single-point evaluation.
+    """
+    if isinstance(source, Path):
+        text = source.read_text(encoding="utf-8")
+    else:
+        text = source
+
+    lines = text.splitlines()
+    minimization_row = _minimization_energy_row(lines)
+    minimization_energy, minimization_rounding = (
+        minimization_row if minimization_row is not None else (None, 0.0)
+    )
 
     blocks: list[dict[str, float]] = []
     block_rounding: list[dict[str, float]] = []

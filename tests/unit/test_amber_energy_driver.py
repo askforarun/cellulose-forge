@@ -192,6 +192,20 @@ def test_parse_amber_minimization_rejects_difference_beyond_printed_precision() 
         parse_amber_energy(text)
 
 
+def test_parse_amber_minimization_rejects_multiple_energy_rows() -> None:
+    text = """
+   NSTEP       ENERGY          RMS            GMAX         NAME    NUMBER
+      0       81.0000       1.0000       2.0000          C1       1
+      1       80.0000       1.0000       2.0000          C1       1
+ BOND   =      10.0000  ANGLE   =       5.0000  DIHED      =       9.0000
+ 1-4 NB =       7.0000  1-4 EEL =      11.0000  VDWAALS    =       8.0000
+ EELEC  =      19.0000  EHBOND  =       0.0000  RESTRAINT  =      12.0000
+"""
+
+    with pytest.raises(ValueError, match="must contain one ENERGY row, found 2"):
+        parse_amber_energy(text)
+
+
 def test_periodic_improper_classification_is_required() -> None:
     with pytest.raises(TypeError, match="periodic_improper"):
         _normalize_glycam_amber_energies(_kcal_terms(), coordinate_sha256="abc")  # type: ignore[call-arg]
