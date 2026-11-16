@@ -5,6 +5,12 @@ from cellulose_forge.energy_drivers.gromacs import (
     parse_gromacs_xvg,
     run_gromacs_single_point,
 )
+from cellulose_forge.energy_drivers.lammps import (
+    lammps_energy_report,
+    normalize_lammps_energies,
+    parse_lammps_input,
+    parse_lammps_thermo,
+)
 from cellulose_forge.energy_drivers.openmm import (
     OpenMMForceClassification,
     openmm_classification_from_topology,
@@ -24,11 +30,15 @@ __all__ = [
     "EnergyReport",
     "OpenMMForceClassification",
     "compare_reports",
+    "lammps_energy_report",
     "load_energy_report",
     "normalize_gromacs_energies",
+    "normalize_lammps_energies",
     "openmm_classification_from_topology",
     "openmm_energy_report",
     "parse_gromacs_xvg",
+    "parse_lammps_input",
+    "parse_lammps_thermo",
     "run_gromacs_single_point",
     "run_openmm_single_point",
     "validate_potential_sum",
