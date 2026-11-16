@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import tomllib
 from importlib import metadata
 from pathlib import Path
 
@@ -23,7 +24,11 @@ def provenance(packages: tuple[str, ...]) -> dict[str, object]:
         try:
             versions[package] = metadata.version(package)
         except metadata.PackageNotFoundError:
-            versions[package] = "not installed"
+            if package == "cellulose-forge":
+                project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+                versions[package] = str(project["project"]["version"])
+            else:
+                versions[package] = "not installed"
     return {
         "cellulose_forge_commit": git("rev-parse", "HEAD"),
         "tracked_tree_clean": git("status", "--porcelain", "--untracked-files=no") == "",

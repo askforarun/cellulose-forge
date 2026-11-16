@@ -56,6 +56,12 @@ from cellulose_forge.glycam_mapping import (
 )
 from cellulose_forge.gromacs import write_glycam_gromacs_system
 from cellulose_forge.lammps import LammpsSystemFiles, write_lammps_system
+from cellulose_forge.namd import (
+    NamdSystemFiles,
+    validate_charmm_parameter_file,
+    validate_namd_one_four_pairs,
+    write_namd_system,
+)
 from cellulose_forge.openff_sage import (
     SAGE_FORCE_FIELD,
     VALIDATION_SCOPE,
@@ -77,6 +83,7 @@ from cellulose_forge.opls import (
     write_opls_system,
 )
 from cellulose_forge.opls_engines import write_opls_lammps, write_opls_openmm
+from cellulose_forge.polymer_profiles import capability_error, engine_capability_error
 from cellulose_forge.restraints import (
     ChainRestraints,
     group_mapped_chains,
@@ -99,9 +106,7 @@ _CELLULOSE_ALLOMORPHS = {
     "III-I": "iii_i",
 }
 _CHITIN_ALLOMORPHS = {"alpha": "alpha", "beta": "beta"}
-_CHITIN_SHAPES = {"unit-cell", "bulk", "crystal", "slab"}
 _MANNAN_ALLOMORPHS = {"I": "i"}
-_MANNAN_SHAPES = {"unit-cell", "bulk", "crystal"}
 _MINIMUM_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 3.0
 _RECOMMENDED_FINITE_LONGITUDINAL_PADDING_ANGSTROM = 12.0
 _OPLS_FORCE_FIELDS = frozenset({"opls-aa", "opls-aa-sei"})
@@ -249,7 +254,7 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     build.add_argument(
         "--md-engine",
-        choices=["gromacs", "amber", "openmm", "lammps"],
+        choices=["gromacs", "amber", "openmm", "lammps", "namd"],
         action="append",
         help=(
             "target MD engine; repeat for multiple outputs (default: gromacs for "
@@ -265,6 +270,11 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         "--charmm-force-field-directory",
         type=Path,
         help="CHARMM36 GROMACS force-field directory containing forcefield.itp",
+    )
+    build.add_argument(
+        "--charmm-parameter-file",
+        type=Path,
+        help="canonical CHARMM carbohydrate PRM copied into NAMD output",
     )
     build.add_argument(
         "--tleap-executable",
@@ -373,12 +383,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         return 0 if all(check.ok for check in checks if check.name not in optional_engines) else 1
     if args.command == "build":
         _resolve_md_engines(args, build_parser())
-        if args.polymer == "chitin" and args.force_field in _OPLS_FORCE_FIELDS:
-            name = "OPLS-AA-SEI" if args.force_field == "opls-aa-sei" else "OPLS-AA"
-            build_parser().error(
-                f"experimental {name} chitin output is unavailable because no "
-                "published OPLS GlcNAc parameters have been adopted"
-            )
+        _validate_namd_options(args, build_parser())
         if args.padding_longitudinal is not None and args.padding_z is not None:
             build_parser().error(
                 "--padding-longitudinal and deprecated --padding-z are mutually exclusive"
@@ -393,6 +398,15 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
             args.padding_z if args.padding_longitudinal is None else args.padding_longitudinal
         )
         definition = _load_definition(args, build_parser())
+        unsupported = capability_error(
+            args.polymer,
+            args.force_field,
+            args.shape,
+            args.md_engines,
+            args.chain_boundary,
+        )
+        if unsupported is not None:
+            build_parser().error(unsupported)
         if args.shape != "fibril" and any(
             value is not None for value in (args.padding_x, args.padding_y)
         ):
@@ -445,7 +459,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
     return 0
 
 
-def _load_definition(  # noqa: PLR0912 - polymer-specific validation is kept together
+def _load_definition(
     args: argparse.Namespace, parser: argparse.ArgumentParser
 ) -> AllomorphDefinition:
     """Resolve the polymer and allomorph options to a crystal definition."""
@@ -460,26 +474,11 @@ def _load_definition(  # noqa: PLR0912 - polymer-specific validation is kept tog
             parser.error(f"mannan allomorphs are {', '.join(_MANNAN_ALLOMORPHS)}")
         if args.o6_conformation is not None:
             parser.error("--o6-conformation applies only to alpha-chitin")
-        if args.shape not in _MANNAN_SHAPES:
-            parser.error("mannan currently supports --shape unit-cell and bulk")
-        if args.force_field != "none":
-            parser.error("mannan force-field output is not implemented; use --force-field none")
         return load_allomorph(_MANNAN_ALLOMORPHS[args.allomorph], polymer="mannan")
     if args.allomorph not in _CHITIN_ALLOMORPHS:
         parser.error(f"chitin allomorphs are {', '.join(_CHITIN_ALLOMORPHS)}")
     if args.o6_conformation is not None and args.allomorph != "alpha":
         parser.error("--o6-conformation applies only to alpha-chitin")
-    if args.shape not in _CHITIN_SHAPES:
-        parser.error("chitin currently supports --shape unit-cell, bulk, and slab")
-    if args.force_field not in {
-        "none",
-        "charmm36",
-        "glycam",
-        "openff",
-        "opls-aa",
-        "opls-aa-sei",
-    }:
-        parser.error("chitin supports --force-field none, charmm36, glycam, or experimental openff")
     if args.force_field == "charmm36" and args.charmm_template is not None:
         parser.error("--charmm-template is not supported for chitin")
     name = _CHITIN_ALLOMORPHS[args.allomorph]
@@ -519,39 +518,31 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
     else:
         engines = ("gromacs",)
 
-    if args.force_field == "none" and engines:
-        parser.error("--md-engine requires a supported force-field build")
-    if args.force_field == "charmm36" and not set(engines) <= {
-        "gromacs",
-        "openmm",
-        "lammps",
-    }:
-        parser.error("CHARMM36 supports --md-engine gromacs, openmm, and lammps")
-    if args.force_field == "glycam" and not engines:
-        parser.error("GLYCAM builds require at least one --md-engine")
-    if (
-        args.polymer == "chitin"
-        and args.force_field == "glycam"
-        and not set(engines)
-        <= {
-            "gromacs",
-            "amber",
-            "openmm",
-            "lammps",
-        }
-    ):
-        parser.error(
-            "chitin GLYCAM supports --md-engine gromacs, openmm, lammps, and finite-chain amber"
-        )
-    if args.force_field == "openff" and not set(engines) <= {"gromacs", "openmm"}:
-        parser.error("experimental OpenFF supports --md-engine gromacs and openmm only")
-    if args.force_field in _OPLS_FORCE_FIELDS and (
-        not engines or not set(engines) <= {"gromacs", "openmm", "lammps"}
-    ):
-        parser.error(
-            "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps"
-        )
+    unsupported = engine_capability_error(args.polymer, args.force_field, engines)
+    if unsupported is not None:
+        parser.error(unsupported)
+
     args.md_engines = engines
+
+
+def _validate_namd_options(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    """Validate NAMD-only inputs before any output directory is created."""
+    requested = "namd" in args.md_engines
+    if args.charmm_parameter_file is not None and not requested:
+        parser.error("--charmm-parameter-file requires --md-engine namd")
+    if not requested:
+        return
+    if args.charmm_parameter_file is None:
+        parser.error("--md-engine namd requires --charmm-parameter-file")
+    if any(
+        value is not None
+        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
+    ):
+        parser.error("NAMD position restraints are not implemented yet")
+    try:
+        validate_charmm_parameter_file(args.charmm_parameter_file)
+    except ValueError as error:
+        parser.error(str(error))
 
 
 def _polymer_report_fields(
@@ -754,16 +745,34 @@ def _check_force_field_box(
     """
     cutoff = GROMACS_CUTOFF_ANGSTROM[args.force_field]
     required = 2.0 * (cutoff + PAIRLIST_BUFFER_ANGSTROM)
-    if min(periodic_box_heights(crystal.basis_vectors)) <= required:
+    namd_requested = "namd" in args.md_engines
+    if namd_requested:
+        cutoff = 14.0
+        required = 2.0 * cutoff
+    box_heights = periodic_box_heights(crystal.basis_vectors)
+    narrow_axis = min(range(len(box_heights)), key=box_heights.__getitem__)
+    narrow_width = box_heights[narrow_axis]
+    if narrow_width <= required:
         remedy = (
             "increase --cells"
             if args.shape in {"bulk", "crystal", "unit-cell"}
-            else "increase --degree-polymerization, the padding, or the vacuum"
+            else (
+                "increase --chains-per-layer, --layers, --degree-polymerization, "
+                "the padding, or the vacuum as appropriate for the narrow direction"
+            )
+        )
+        reason = (
+            f"twice NAMD's {cutoff:g} angstrom pair-list distance"
+            if namd_requested
+            else (
+                f"twice the {cutoff:g} angstrom nonbonded cutoff plus a "
+                f"{PAIRLIST_BUFFER_ANGSTROM:g} angstrom pair-list buffer on each side"
+            )
         )
         parser.error(
-            f"the periodic box must exceed {required:g} angstrom (twice the {cutoff:g} "
-            f"angstrom nonbonded cutoff plus a {PAIRLIST_BUFFER_ANGSTROM:g} angstrom "
-            f"pair-list buffer on each side) in every direction; {remedy}"
+            f"the periodic box must exceed {required:g} angstrom ({reason}) "
+            f"in every direction; direction {narrow_axis + 1} is {narrow_width:.3f} angstrom; "
+            f"{remedy}"
         )
     if not is_vacuum_shape(args.shape):
         return
@@ -1089,6 +1098,8 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
     openmm_metadata: dict[str, object] | None = None
     lammps_files: LammpsSystemFiles | None = None
     lammps_metadata: dict[str, object] | None = None
+    namd_files: NamdSystemFiles | None = None
+    namd_metadata: dict[str, object] | None = None
     with tempfile.TemporaryDirectory(prefix="cellulose_forge_charmm36_") as temporary:
         gromacs_directory = args.output if write_gromacs else Path(temporary)
         gro_path, itp_path, topology_path, force_field_path = write_charmm36_system(
@@ -1133,6 +1144,31 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                 gromacs_coordinates=gro_path,
                 parser=parser,
             )
+        if "namd" in args.md_engines:
+            assert args.charmm_parameter_file is not None
+            _parameter_path, parameter_checksum = validate_charmm_parameter_file(
+                args.charmm_parameter_file
+            )
+            try:
+                namd_files = write_namd_system(
+                    mapped,
+                    topology,
+                    args.charmm_parameter_file,
+                    gro_path,
+                    args.output,
+                    periodic_chains=args.chain_boundary == "periodic",
+                )
+                namd_metadata = {
+                    "status": "written; runtime validation pending",
+                    "explicit_one_four_pair_count_per_chain": validate_namd_one_four_pairs(
+                        topology
+                    ),
+                    "force_switch_angstrom": [10.0, 12.0],
+                    "pme": True,
+                    "parameter_sha256": parameter_checksum,
+                }
+            except ValueError as error:
+                parser.error(str(error))
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
@@ -1156,15 +1192,33 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         "charmm36_release": CHARMM36_RELEASE,
         "outputs": _engine_outputs(
             coordinate_path,
-            {
-                "gromacs_coordinates": gro_path.name,
-                "gromacs_molecule_topology": itp_path.name,
-                "gromacs_topology": topology_path.name,
-                "gromacs_force_field": force_field_path.name,
-                **gromacs_run_inputs,
-            }
-            if write_gromacs
-            else {},
+            (
+                {
+                    "gromacs_coordinates": gro_path.name,
+                    "gromacs_molecule_topology": itp_path.name,
+                    "gromacs_topology": topology_path.name,
+                    "gromacs_force_field": force_field_path.name,
+                    **gromacs_run_inputs,
+                }
+                if write_gromacs
+                else {}
+            )
+            | (
+                {
+                    "namd_psf": namd_files.psf.name,
+                    "namd_coordinates": namd_files.pdb.name,
+                    "namd_configuration": namd_files.configuration.name,
+                    "namd_single_point_configuration": namd_files.single_point_configuration.name,
+                    "namd_single_point_coordinates": namd_files.single_point_coordinates.name,
+                    "single_point_shared_coordinates": namd_files.shared_coordinates.name,
+                    "namd_parameters": namd_files.parameters.name,
+                    "gromacs_single_point_mdp": namd_files.gromacs_single_point.name,
+                    "single_point_runner": namd_files.single_point_runner.name,
+                    "single_point_energy_adapter": namd_files.energy_adapter.name,
+                }
+                if namd_files is not None
+                else {}
+            ),
             openmm_files,
             lammps_files,
         ),
@@ -1186,6 +1240,8 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         report["openmm_validation"] = openmm_metadata
     if lammps_metadata is not None:
         report["lammps_validation"] = lammps_metadata
+    if namd_metadata is not None:
+        report["namd_validation"] = namd_metadata
     if periodic_image_contact is not None:
         report["closest_longitudinal_periodic_image_contact"] = periodic_image_contact.as_dict()
     if periodic_bond_validation is not None:

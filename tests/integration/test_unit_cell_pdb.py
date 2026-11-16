@@ -399,9 +399,7 @@ def test_cli_writes_named_i_beta_fibril_profiles(
 
     assert result == 0
     lines = output.read_text(encoding="utf-8").splitlines()
-    assert len([line for line in lines if line.startswith("HETATM")]) == (
-        chain_count * 4 * 21
-    )
+    assert len([line for line in lines if line.startswith("HETATM")]) == (chain_count * 4 * 21)
     assert any(f"fibril_model={model}" in line for line in lines)
 
 
@@ -457,7 +455,9 @@ def test_cli_rejects_named_and_custom_fibril_profiles_together(tmp_path: Path) -
         )
 
 
-def test_cli_rejects_native_amber_for_periodic_chains(tmp_path: Path) -> None:
+def test_cli_rejects_native_amber_for_periodic_chains(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     with pytest.raises(SystemExit, match="2"):
         main(
             [
@@ -469,7 +469,7 @@ def test_cli_rejects_native_amber_for_periodic_chains(tmp_path: Path) -> None:
                 "--fibril-model",
                 "18-chain",
                 "--degree-polymerization",
-                "4",
+                "6",
                 "--chain-boundary",
                 "periodic",
                 "--force-field",
@@ -480,6 +480,9 @@ def test_cli_rejects_native_amber_for_periodic_chains(tmp_path: Path) -> None:
                 str(tmp_path / "unsafe_periodic_amber"),
             ]
         )
+    message = capsys.readouterr().err
+    assert "Amber does not minimum-image bonded terms" in message
+    assert "Use --chain-boundary finite with longitudinal padding" in message
 
 
 def test_cli_rejects_md_engine_without_force_field(tmp_path: Path) -> None:
@@ -770,9 +773,7 @@ def test_cli_writes_finite_glycam_slab_system(
     assert report["chain_boundary"] == "finite"
     assert report["chain_count"] == 4
     assert report["force_field_atom_count"] == 1020
-    assert report["closest_longitudinal_periodic_image_contact"][
-        "distance_angstrom"
-    ] >= 1.0
+    assert report["closest_longitudinal_periodic_image_contact"]["distance_angstrom"] >= 1.0
     assert "CELLULOSE_CHAIN  4" in (output / "system.top").read_text(encoding="utf-8")
 
 

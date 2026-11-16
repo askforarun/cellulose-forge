@@ -120,9 +120,7 @@ def test_constructed_terminal_bonds_have_chemical_lengths() -> None:
 
 def test_constructed_finite_end_caps_have_no_subangstrom_nonbonded_clashes() -> None:
     mapped = map_crystal_to_finite_glycam(_dp12_slab(), REFERENCE_PDB)
-    identities = list(
-        zip(mapped.residue_numbers, mapped.atom_names, strict=True)
-    )
+    identities = list(zip(mapped.residue_numbers, mapped.atom_names, strict=True))
     intended_terminal_bonds = {
         frozenset({(1, "HO1"), (1, "O1")}),
         frozenset({(1, "O1"), (2, "C1")}),
@@ -141,8 +139,7 @@ def test_constructed_finite_end_caps_have_no_subangstrom_nonbonded_clashes() -> 
             nonbonded_terminal_distances.append(
                 float(
                     np.linalg.norm(
-                        mapped.cartesian_coordinates[first]
-                        - mapped.cartesian_coordinates[second]
+                        mapped.cartesian_coordinates[first] - mapped.cartesian_coordinates[second]
                     )
                 )
             )

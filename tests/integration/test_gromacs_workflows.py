@@ -193,9 +193,7 @@ def test_charmm36_slab_passes_grompp(
     except FileNotFoundError:
         pytest.skip("the pinned CHARMM36 release is not installed")
     output = tmp_path / f"charmm36_{allomorph}_{chain_boundary}_slab"
-    padding_arguments = (
-        ["--padding-longitudinal", "12"] if chain_boundary == "finite" else []
-    )
+    padding_arguments = ["--padding-longitudinal", "12"] if chain_boundary == "finite" else []
     assert (
         main(
             [

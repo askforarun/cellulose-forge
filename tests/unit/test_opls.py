@@ -126,6 +126,7 @@ def test_sei_table_is_full_lennard_jones_plus_scaled_coulomb() -> None:
     sigma, epsilon, charge_product, scale = 0.3, 0.5, -0.28, 1 / 1.26
     rows = [line.split() for line in _sei_table(sigma, epsilon, charge_product, scale)]
     assert float(rows[0][1]) == SEI_TABLE_RANGE_ANGSTROM[0]
+
     def energy_at(r: float) -> float:
         s6 = (10 * sigma / r) ** 6
         lj = 4 * epsilon / KCAL_TO_KJ * (s6 * s6 - s6)
@@ -185,9 +186,7 @@ def test_cellulose_ii_surface_table_3_acceptors_take_priority(shape: str) -> Non
         for residue in sorted(set(crystal_residues[crystal_chains == chain])):
             for donor, hydrogen in (("O2", "HO2"), ("O6", "HO6")):
                 donor_coordinate = crystal_xyz[
-                    (crystal_chains == chain)
-                    & (crystal_residues == residue)
-                    & (labels == donor)
+                    (crystal_chains == chain) & (crystal_residues == residue) & (labels == donor)
                 ][0]
                 acceptor = cellulose_ii_preferred_acceptor(
                     crystal,
@@ -203,10 +202,7 @@ def test_cellulose_ii_surface_table_3_acceptors_take_priority(shape: str) -> Non
                 donor_candidates = np.flatnonzero((chains == chain) & (names == donor))
                 offsets = np.linalg.norm(
                     np.vstack(
-                        [
-                            minimum_image(xyz[index] - donor_coordinate)
-                            for index in donor_candidates
-                        ]
+                        [minimum_image(xyz[index] - donor_coordinate) for index in donor_candidates]
                     ),
                     axis=1,
                 )
@@ -265,7 +261,10 @@ def test_lammps_sei_energy_equals_plain_plus_scaled_pairs(tmp_path: Path) -> Non
         write_opls_lammps(_bulk_build(variant), directory, dispersion_correction=False)
         output = subprocess.run(
             ["lmp_serial", "-in", "in.cellulose", "-log", "none"],
-            cwd=directory, capture_output=True, text=True, check=True,
+            cwd=directory,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.splitlines()
         header = next(i for i, line in enumerate(output) if line.split()[:2] == ["Step", "Temp"])
         energies[variant] = dict(
@@ -277,15 +276,36 @@ def test_lammps_sei_energy_equals_plain_plus_scaled_pairs(tmp_path: Path) -> Non
 
 def _cli(tmp_path: Path, *extra: str) -> list[str]:
     return [
-        "build", "--allomorph", "II", "--shape", "bulk", "--cells", "3", "3", "3",
-        "--chain-boundary", "periodic", "--output", str(tmp_path / "out"), *extra,
+        "build",
+        "--allomorph",
+        "II",
+        "--shape",
+        "bulk",
+        "--cells",
+        "3",
+        "3",
+        "3",
+        "--chain-boundary",
+        "periodic",
+        "--output",
+        str(tmp_path / "out"),
+        *extra,
     ]
 
 
 def test_cli_writes_gromacs_and_lammps(tmp_path: Path) -> None:
     with pytest.warns(UserWarning, match="experimental"):
-        main(_cli(tmp_path, "--force-field", "opls-aa-sei", "--md-engine", "gromacs",
-                  "--md-engine", "lammps"))
+        main(
+            _cli(
+                tmp_path,
+                "--force-field",
+                "opls-aa-sei",
+                "--md-engine",
+                "gromacs",
+                "--md-engine",
+                "lammps",
+            )
+        )
     report = json.loads((tmp_path / "out" / "build_report.json").read_text())
     assert report["outputs"]["lammps_sei_table"] == "sei_pairs.table"
     assert report["outputs"]["gromacs_topology"] == "system.top"
@@ -300,6 +320,8 @@ def test_cli_writes_openmm(tmp_path: Path) -> None:
     report = json.loads((tmp_path / "out" / "build_report.json").read_text())
     assert report["engine_validation"]["openmm"]["status"] == "passed"
     assert not (tmp_path / "out" / "system.top").exists()
+    assert "<Energies" not in (tmp_path / "out" / "state.xml").read_text(encoding="utf-8")
+    assert report["engine_validation"]["openmm"]["diagnostic_energy_precision_kj_mol"] == 1.0e-6
 
 
 @pytest.mark.parametrize(
@@ -319,8 +341,19 @@ def test_cli_rejects_unsupported_requests(
 
 def test_cli_rejects_unit_cells(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit):
-        main(["build", "--allomorph", "I-beta", "--shape", "unit-cell", "--force-field",
-              "opls-aa", "--output", str(tmp_path / "out")])
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "unit-cell",
+                "--force-field",
+                "opls-aa",
+                "--output",
+                str(tmp_path / "out"),
+            ]
+        )
     # Unit cells fail the box rule before the OPLS shape check; either refusal is
     # correct, and neither writes output.
     error = capsys.readouterr().err

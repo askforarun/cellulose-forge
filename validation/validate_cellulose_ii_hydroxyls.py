@@ -124,9 +124,7 @@ def measure() -> dict[str, object]:
         to_donor = xyz[donor] - xyz[index]
         cosine = (delta @ to_donor) / (distance * np.linalg.norm(to_donor))
         angle = np.degrees(np.arccos(np.clip(cosine, -1.0, 1.0)))
-        valid = (distance <= MAXIMUM_HYDROGEN_ACCEPTOR_ANGSTROM) & (
-            angle >= MINIMUM_ANGLE_DEGREES
-        )
+        valid = (distance <= MAXIMUM_HYDROGEN_ACCEPTOR_ANGSTROM) & (angle >= MINIMUM_ANGLE_DEGREES)
         role = roles[int(chains[index])]
         key = f"{donor_name}-H"
         entry: dict[str, object]

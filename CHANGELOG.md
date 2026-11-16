@@ -6,6 +6,46 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Added
 
+- Native NAMD output for CHARMM36 cellulose and anhydrous
+  alpha/beta-chitin: extended X-PLOR PSF, PSF-ordered PDB, a copied canonical
+  CHARMM carbohydrate parameter file, and a PME minimization/NVT input. The
+  writer expands every chain, preserves periodic closure interactions, checks
+  the complete graph-derived 1-4 pair set, and writes full triclinic cell
+  vectors. It enforces the canonical February 2026 parameter checksum and a
+  28 Angstrom minimum box width set by NAMD's pair list. Generated bundles
+  include a scheduler-neutral runner, matching unconstrained NAMD and GROMACS
+  single-point inputs, and a failing energy-comparison script.
+  Real NAMD 3.0.3/GROMACS single-point validation covers periodic I-beta,
+  triclinic I-alpha, and alpha-chitin, including chitin impropers. The same
+  matrix validates the generated production input through minimization and 1
+  ps NVT, with finite energies, intact bonds, and heavy-atom RMSDs of
+  0.28--0.51 Angstrom.
+- Added a portable cross-engine single-point bundle contract with one subfolder per MD
+  engine, shared-coordinate checksums, required comparable terms, explicit
+  convention corrections, and a machine-readable pass/fail report. Engine
+  subfolders can be selected independently, so unrelated executables are not
+  installation requirements.
+
+## 1.3.0 - 2026-11-15
+
+### Changed
+
+- OpenMM build reports (GLYCAM06j-1, CHARMM36, OPLS-AA, OPLS-AA-SEI) record
+  build-time diagnostic energies to 1e-6 kJ/mol and say so
+  (`diagnostic_energy_precision_kj_mol`); build-time checks still use full
+  precision and validation tolerances are unchanged. The serialized `state.xml` now holds positions and box vectors
+  only, as for OpenFF. OpenMM's Reference `CustomNonbondedForce` energy can
+  differ in its last binary digit between processes for identical
+  coordinates, which previously made repeated OPLS reports differ.
+
+### Added
+
+- `validation/release_gate.py` and `validation/release_manifest.json`: every
+  stored validation result is declared with a role, and the gate checks tree
+  state, cited results, evidence provenance and freshness, version and tag
+  consistency, changelog state, and test reports (including unexpected skips).
+  CI runs it in development mode; release mode is run before tagging.
+
 - Experimental OpenFF Sage 2.3 output for anhydrous alpha- and beta-chitin
   periodic bulk crystals and finite or covalently periodic `(100)` slabs in
   GROMACS and OpenMM. The directly constructed GlcNAc graph, NAGL charges,

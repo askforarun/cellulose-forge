@@ -71,9 +71,7 @@ def _openmm_energy(system: openmm.System, pdbx: app.PDBxFile) -> float:
     context.setPositions(pdbx.positions)
     context.setPeriodicBoxVectors(*pdbx.topology.getPeriodicBoxVectors())
     energy = (
-        context.getState(getEnergy=True)
-        .getPotentialEnergy()
-        .value_in_unit(unit.kilojoule_per_mole)
+        context.getState(getEnergy=True).getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
     )
     del context, integrator
     return float(energy)

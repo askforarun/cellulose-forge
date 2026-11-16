@@ -23,10 +23,7 @@ def _amber_box(basis_vectors: FloatArray) -> list[float]:
         raise ValueError("Amber output requires three nonzero box vectors")
 
     def angle(first: int, second: int) -> float:
-        cosine = float(
-            np.dot(vectors[first], vectors[second])
-            / (lengths[first] * lengths[second])
-        )
+        cosine = float(np.dot(vectors[first], vectors[second]) / (lengths[first] * lengths[second]))
         return float(np.degrees(np.arccos(np.clip(cosine, -1.0, 1.0))))
 
     alpha = angle(1, 2)

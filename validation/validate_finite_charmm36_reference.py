@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 from cellulose_forge.charmm36 import (
@@ -13,6 +14,11 @@ from cellulose_forge.charmm36 import (
     native_finite_charmm36_topology,
     read_charmm36_chain_template,
 )
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "validation"))
+
+from _provenance import provenance  # noqa: E402
 
 
 def _sha256(path: Path) -> str:
@@ -53,9 +59,7 @@ def _generated_interactions(
 
 def validate(force_field_directory: Path, itp_path: Path) -> dict[str, object]:
     """Return exact atom and bonded-graph comparison results."""
-    reference = read_charmm36_chain_template(
-        itp_path, require_uniform_residues=False
-    )
+    reference = read_charmm36_chain_template(itp_path, require_uniform_residues=False)
     generated = native_finite_charmm36_topology(
         force_field_directory, degree_polymerization=reference.degree_polymerization
     )
@@ -69,9 +73,7 @@ def validate(force_field_directory: Path, itp_path: Path) -> dict[str, object]:
     }
     if reference_atoms != generated_atoms:
         common_atoms = reference_atoms.keys() & generated_atoms.keys()
-        changed_atoms = sum(
-            reference_atoms[key] != generated_atoms[key] for key in common_atoms
-        )
+        changed_atoms = sum(reference_atoms[key] != generated_atoms[key] for key in common_atoms)
         raise ValueError(
             "generated finite atoms differ from CHARMM-GUI: "
             f"missing={len(reference_atoms.keys() - generated_atoms.keys())}, "
@@ -111,6 +113,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     result = validate(args.force_field_directory, args.itp)
+    result["provenance"] = provenance(("cellulose-forge", "numpy"))
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output is None:
         print(rendered, end="")

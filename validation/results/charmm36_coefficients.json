@@ -1,7 +1,7 @@
 {
-  "angle_types": 38,
+  "angle_types": 34,
   "atom_types": 10,
-  "bond_types": 16,
+  "bond_types": 15,
   "conversions": {
     "distance": "angstrom to nm",
     "energy": "kcal/mol to kJ/mol",
@@ -9,6 +9,15 @@
     "lj": "CHARMM Rmin/2 and epsilon to GROMACS sigma and epsilon"
   },
   "improper_types": 0,
-  "proper_dihedral_types": 68,
+  "proper_dihedral_types": 58,
+  "provenance": {
+    "cellulose_forge_commit": "eabf364afd724603df83d97698f6b97ec5b59074",
+    "software_versions": {
+      "ParmEd": "4.3.1",
+      "cellulose-forge": "1.2.0",
+      "numpy": "1.26.4"
+    },
+    "tracked_tree_clean": true
+  },
   "status": "passed"
 }

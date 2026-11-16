@@ -108,8 +108,7 @@ DispCorr                = {dispcorr}
             "; PROTOCOL.  The plain 1.0 nm cut-off matches the validated GROMACS/OpenMM\n"
             "; comparison (OpenMM cannot reproduce the CHARMM force switch).  For\n"
             "; production use vdw-modifier = force-switch, rvdw-switch = 1.0 and\n"
-            "; rvdw = rcoulomb = 1.2, which requires every box height above 2.4 nm.\n"
-            + block
+            "; rvdw = rcoulomb = 1.2, which requires every box height above 2.4 nm.\n" + block
         )
     return block
 

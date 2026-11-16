@@ -66,11 +66,7 @@ def closest_longitudinal_periodic_image_contact(
         chain_coordinates = coordinates[global_indices]
         for start in range(0, len(global_indices), 256):
             first = chain_coordinates[start : start + 256]
-            delta = (
-                chain_coordinates[np.newaxis, :, :]
-                + basis[1]
-                - first[:, np.newaxis, :]
-            )
+            delta = chain_coordinates[np.newaxis, :, :] + basis[1] - first[:, np.newaxis, :]
             fractional = delta @ inverse
             fractional[..., 0] -= np.rint(fractional[..., 0])
             fractional[..., 2] -= np.rint(fractional[..., 2])
@@ -102,9 +98,7 @@ def validate_finite_periodic_image_contact(
 ) -> PeriodicImageContact:
     """Reject unphysical finite-chain contacts with longitudinal images."""
     contact = closest_longitudinal_periodic_image_contact(system)
-    hydrogen_contact = contact.atom_name.startswith("H") or contact.image_atom_name.startswith(
-        "H"
-    )
+    hydrogen_contact = contact.atom_name.startswith("H") or contact.image_atom_name.startswith("H")
     threshold = 1.0 if hydrogen_contact else 1.5
     if contact.distance_angstrom < threshold:
         msg = (

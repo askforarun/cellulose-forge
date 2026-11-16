@@ -1,0 +1,24 @@
+{
+  "description": "SHA-256 of mapped (chain, template residue, atom name, x, y, z) rows, coordinates formatted to 1e-6 angstrom. Recorded from the pre-refactor mapper at commit 311be50 (openff_sage._mapped_coordinates) and checked by tests/unit/test_polymer_mapping.py.",
+  "recorded_from_commit": "311be50",
+  "cases": {
+    "cellulose_i_beta_slab_finite": {
+      "opls": "6134112323cc8c5cc238274eb415ea3cbc8e315eefceeff4bb7f20275ef5fcf0",
+      "sage": "6134112323cc8c5cc238274eb415ea3cbc8e315eefceeff4bb7f20275ef5fcf0"
+    },
+    "cellulose_i_beta_slab_periodic": {
+      "opls": "013f952b1f9e1b1826087280021885f5b7679277c6d45c4e9ac228c57e7005e5",
+      "sage": "013f952b1f9e1b1826087280021885f5b7679277c6d45c4e9ac228c57e7005e5"
+    },
+    "cellulose_ii_bulk_periodic": {
+      "opls": "32b53344a0b2bd3aa4ac0c50460e23ab24ff8d78c60ed58bf097ef1c430349bf",
+      "sage": "32b53344a0b2bd3aa4ac0c50460e23ab24ff8d78c60ed58bf097ef1c430349bf"
+    },
+    "chitin_beta_slab_finite": {
+      "sage": "e78b5dfb7e3ee15c92fd9bdb93914038c85ebad91fe592255cad6a79fe3aca9d"
+    },
+    "chitin_beta_slab_periodic": {
+      "sage": "6ef4e3f2a99d73a832f1177f9df9f21e54c2cfab7deba4902aba2d833b686f08"
+    }
+  }
+}

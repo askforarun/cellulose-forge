@@ -75,9 +75,7 @@ def _gmx() -> str:
     return executable
 
 
-def _use_committed_glycam_reference(
-    monkeypatch: pytest.MonkeyPatch, *, periodic: bool
-) -> None:
+def _use_committed_glycam_reference(monkeypatch: pytest.MonkeyPatch, *, periodic: bool) -> None:
     def prepare(**kwargs: object) -> tuple[GlycamChainFiles, dict[str, object]]:
         directory = Path(str(kwargs["directory"]))
         stem = "cellulose_periodic_chain" if periodic else "cellulose_chain"
@@ -99,15 +97,34 @@ def _gromacs_energies(directory: Path, *, periodic: bool) -> dict[str, float]:
         "integrator = md\nnsteps = 0\nconstraints = none\ncutoff-scheme = Verlet\n"
         "coulombtype = PME\nrcoulomb = 1.0\nrvdw = 1.0\nvdw-modifier = None\n"
         "coulomb-modifier = None\newald-rtol = 1e-5\nDispCorr = no\n"
-        "pbc = xyz\nnstenergy = 1\n"
-        + ("periodic-molecules = yes\n" if periodic else ""),
+        "pbc = xyz\nnstenergy = 1\n" + ("periodic-molecules = yes\n" if periodic else ""),
         encoding="utf-8",
     )
     for command in (
-        [gmx, "grompp", "-f", mdp.name, "-c", "structure.gro", "-p", "system.top",
-         "-o", "single_point.tpr"],
-        [gmx, "mdrun", "-s", "single_point.tpr", "-deffnm", "single_point",
-         "-ntmpi", "1", "-ntomp", "1"],
+        [
+            gmx,
+            "grompp",
+            "-f",
+            mdp.name,
+            "-c",
+            "structure.gro",
+            "-p",
+            "system.top",
+            "-o",
+            "single_point.tpr",
+        ],
+        [
+            gmx,
+            "mdrun",
+            "-s",
+            "single_point.tpr",
+            "-deffnm",
+            "single_point",
+            "-ntmpi",
+            "1",
+            "-ntomp",
+            "1",
+        ],
     ):
         completed = subprocess.run(
             command, cwd=directory, check=False, capture_output=True, text=True
@@ -125,9 +142,7 @@ def _gromacs_energies(directory: Path, *, periodic: bool) -> dict[str, float]:
     assert energy.returncode == 0, energy.stdout + energy.stderr
     values: dict[str, float] = {}
     for term in terms:
-        match = re.search(
-            rf"^{re.escape(term)}\s+([-+0-9.eE]+)", energy.stdout, flags=re.MULTILINE
-        )
+        match = re.search(rf"^{re.escape(term)}\s+([-+0-9.eE]+)", energy.stdout, flags=re.MULTILINE)
         if match is not None:
             values[term] = float(match.group(1))
     return values
@@ -136,6 +151,8 @@ def _gromacs_energies(directory: Path, *, periodic: bool) -> dict[str, float]:
 def _assert_openmm_matches_gromacs(output: Path, *, periodic: bool) -> None:
     report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
     openmm_energies = report["openmm_validation"]["initial_energies_kj_mol"]
+    assert "<Energies" not in (output / "state.xml").read_text(encoding="utf-8")
+    assert report["openmm_validation"]["diagnostic_energy_precision_kj_mol"] == 1.0e-6
     gromacs = _gromacs_energies(output, periodic=periodic)
 
     openmm_bonded = sum(openmm_energies.get(name, 0.0) for name in _OPENMM_BONDED_FORCES)
@@ -215,9 +232,7 @@ def test_glycam_openmm_energies_match_gromacs(
 
 
 @pytest.mark.parametrize("chain_boundary", ["finite", "periodic"])
-def test_charmm36_openmm_energies_match_gromacs(
-    tmp_path: Path, chain_boundary: str
-) -> None:
+def test_charmm36_openmm_energies_match_gromacs(tmp_path: Path, chain_boundary: str) -> None:
     python = _openmm_python()
     _gmx()
     try:

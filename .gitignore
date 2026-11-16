@@ -65,3 +65,9 @@ validation/results/force_field_comparison/**/*.cpt
 # Example MD inputs: the CHARMM36 GROMACS port is third-party and is installed
 # with `cellulose-forge forcefield install charmm36`, not redistributed here.
 examples/md_inputs/**/charmm36.ff/
+# Private Apptainer validation payloads and outputs.
+cluster/apptainer/cellulose-forge.gitbundle
+cluster/apptainer/charmm36-feb2026_cgenff-5.0.ff/
+cluster/apptainer/*.sif
+cluster/apptainer/logs/
+cluster/apptainer/results/

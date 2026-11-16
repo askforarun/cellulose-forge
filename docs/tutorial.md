@@ -64,6 +64,17 @@ the creation command from the repository root because the environment installs
 CelluloseForge in editable mode with `-e .`. GROMACS remains a separate,
 optional dependency for preprocessing and simulation validation.
 
+For an Amber-only environment, use the smaller profile instead:
+
+```bash
+conda env create -f environment-amber.yml
+conda activate cellulose-forge-amber
+cellulose-forge doctor
+```
+
+This does not install GROMACS, NAMD, LAMMPS, or OpenMM. Those engines are not
+needed to build or run finite-chain native Amber output.
+
 Update the environment reproducibly with:
 
 ```bash

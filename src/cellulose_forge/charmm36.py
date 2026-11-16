@@ -1068,6 +1068,57 @@ def finite_charmm36_interaction_counts(
     }
 
 
+def charmm36_interaction_indices(
+    topology: PeriodicCharmm36Topology | FiniteCharmm36Topology,
+) -> dict[str, tuple[tuple[int, ...], ...]]:
+    """Return zero-based interaction indices for one generated chain.
+
+    The function exposes the instantiated interaction graph to native engine
+    writers without making them parse the rendered GROMACS ITP.
+    """
+    if isinstance(topology, PeriodicCharmm36Topology):
+        rendered = _instantiate_periodic_interactions(topology)
+        return {
+            section: tuple(
+                tuple(int(value) - 1 for value in row[: _INTERACTION_ARITY[section]])
+                for row in rows
+            )
+            for section, rows in rendered.items()
+        }
+    return {
+        section: tuple(
+            interaction.atom_indices
+            for interaction in topology.interactions
+            if interaction.section == section
+        )
+        for section in _INTERACTION_ARITY
+    }
+
+
+def charmm36_dihedral_kinds(
+    topology: PeriodicCharmm36Topology | FiniteCharmm36Topology,
+) -> tuple[tuple[tuple[int, ...], ...], tuple[tuple[int, ...], ...]]:
+    """Return the proper and improper dihedrals for one generated chain."""
+    if isinstance(topology, PeriodicCharmm36Topology):
+        rows = _instantiate_periodic_interactions(topology)["dihedrals"]
+        proper = tuple(tuple(int(value) - 1 for value in row[:4]) for row in rows if row[4] != "2")
+        improper = tuple(
+            tuple(int(value) - 1 for value in row[:4]) for row in rows if row[4] == "2"
+        )
+        return proper, improper
+    proper = tuple(
+        interaction.atom_indices
+        for interaction in topology.interactions
+        if interaction.section == "dihedrals" and interaction.parameters[0] != "2"
+    )
+    improper = tuple(
+        interaction.atom_indices
+        for interaction in topology.interactions
+        if interaction.section == "dihedrals" and interaction.parameters[0] == "2"
+    )
+    return proper, improper
+
+
 def render_finite_charmm36_itp(topology: FiniteCharmm36Topology) -> str:
     """Render a generated, explicitly terminated CHARMM36 chain."""
     lines = [

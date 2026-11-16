@@ -21,7 +21,7 @@ files alongside the OpenMM system, for example
 - `system.xml`: the complete serialized OpenMM `System`, including every
   force-field term, X--H bond constraints, any position restraints, and the
   periodic settings required by covalently periodic chains;
-- `state.xml`: starting positions and periodic box vectors;
+- `state.xml`: starting positions and periodic box vectors (no energies);
 - `topology.cif`: PDBx/mmCIF atom, residue, and chain identities of the
   force-field-mapped system, including terminal atoms added for finite chains;
 - `run_openmm.py`: a standalone minimization and dynamics runner;
@@ -87,6 +87,19 @@ The build report records the cutoff, the dispersion setting, and both PME
 tolerances. Build-time energies are evaluated with a tighter tolerance
 (1 × 10^-5, GROMACS's default `ewald-rtol`) so that they can be compared with
 other engines.
+
+Build-time checks use these energies in full double precision. The build
+report records every energy to 1 × 10^-6 kJ/mol
+(`diagnostic_energy_precision_kj_mol`): they are diagnostics, not equilibrium
+or force-field-accuracy results, and OpenMM can sum some forces (for example
+the OPLS `CustomNonbondedForce` on the Reference platform) in an order that
+differs between processes, changing the last binary digit of an otherwise
+identical energy. `state.xml` stores positions and box vectors only, so that
+noise never reaches the starting-state file.
+Validation tolerances are unchanged: the tightest cross-engine tolerance
+(1 × 10^-5 relative, for bonded terms) is thousands of times larger than the
+largest possible effect of this rounding, 5 × 10^-7 kJ/mol. The same policy
+applies to the GLYCAM06j-1, CHARMM36, OPLS-AA and OPLS-AA-SEI OpenMM reports.
 
 For CHARMM36, this current OpenMM representation does not reproduce the
 official CHARMM 10--12 angstrom force-switch protocol: OpenMM's built-in

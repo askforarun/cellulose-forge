@@ -14,7 +14,7 @@ import openmm
 from openmm import unit
 from openmm.app import DCDReporter, PDBxFile, Simulation, StateDataReporter
 
-CHAIN_AXIS = 'y'
+CHAIN_AXIS = "y"
 PERIODIC_CHAINS = True
 HAS_RESTRAINTS = False
 AXES = "xyz"
@@ -53,9 +53,7 @@ def main() -> None:
     topology = PDBxFile("topology.cif").topology
 
     if args.pressure_bar is not None:
-        axes = args.pressure_axes or "".join(
-            axis for axis in AXES if axis != CHAIN_AXIS
-        )
+        axes = args.pressure_axes or "".join(axis for axis in AXES if axis != CHAIN_AXIS)
         if HAS_RESTRAINTS and not args.no_restraints:
             parser.error(
                 "position restraints use fixed reference coordinates that a barostat "
@@ -67,13 +65,16 @@ def main() -> None:
                 "OpenMM barostats move molecules rigidly, so that axis must stay fixed"
             )
         box = state.getPeriodicBoxVectors(asNumpy=True).value_in_unit(unit.nanometer)
-        if any(abs(float(box[row][column])) > 1e-9 for row in range(3)
-               for column in range(3) if row != column):
+        if any(
+            abs(float(box[row][column])) > 1e-9
+            for row in range(3)
+            for column in range(3)
+            if row != column
+        ):
             parser.error("the anisotropic barostat requires a rectangular box")
         system.addForce(
             openmm.MonteCarloAnisotropicBarostat(
-                openmm.Vec3(args.pressure_bar, args.pressure_bar, args.pressure_bar)
-                * unit.bar,
+                openmm.Vec3(args.pressure_bar, args.pressure_bar, args.pressure_bar) * unit.bar,
                 args.temperature * unit.kelvin,
                 "x" in axes,
                 "y" in axes,
@@ -86,9 +87,7 @@ def main() -> None:
         args.friction / unit.picosecond,
         args.timestep_fs * unit.femtosecond,
     )
-    platform = (
-        openmm.Platform.getPlatformByName(args.platform) if args.platform else None
-    )
+    platform = openmm.Platform.getPlatformByName(args.platform) if args.platform else None
     simulation = Simulation(topology, system, integrator, platform)
     simulation.context.setState(state)
     if HAS_RESTRAINTS and args.no_restraints:

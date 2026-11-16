@@ -12,7 +12,7 @@ work.
 | Fibril geometry | Literature-defined 36-chain I-alpha, I-beta, and II presets | Geometry tests and force-field fibril matrices |
 | GLYCAM06j-1 | Finite and periodic pristine cellulose with GROMACS output | Mapping/topology tests, allomorph matrix, large-system preprocessing, and dependency-gated `grompp` integration test |
 | CHARMM36 | Finite and periodic pristine cellulose with GROMACS output | Exact periodic and finite topology comparisons, allomorph/fibril matrices, PME/NVT smoke tests, and dependency-gated `grompp` integration tests |
-| Position restraints | Selected deterministic chain IDs for GLYCAM and CHARMM36 builds | Unit tests and `position_restraint_validation.json` |
+| Position restraints | Selected deterministic chain IDs for GLYCAM and CHARMM36 builds | Unit and integration tests; the older JSON is retained as a historical reference |
 | Large coordinates | Automatic mmCIF fallback above the PDB atom-serial limit; GRO for parameterized systems | Unit tests and 102,000-atom GLYCAM validation |
 | Clean installation | Python 3.11 and 3.13 on Linux and macOS | CI wheel-install matrix; local isolated Python 3.13 wheel test |
 

@@ -58,6 +58,7 @@ from cellulose_forge.opls import (
     nonbonded_exceptions,
     rb_coefficients,
 )
+from cellulose_forge.polymer_mapping import reduced_periodic_box
 
 _ANGSTROM_PER_NM = 10.0
 # Coulomb constant of LAMMPS real units (force->qqr2e), kcal mol-1 angstrom e-2.
@@ -84,8 +85,6 @@ def validation_platform(build: OplsBuild) -> str:
 
 def reduced_box_angstrom(build: OplsBuild) -> NDArray[np.float64]:
     """Return the box in the reduced form required by OpenMM and LAMMPS."""
-    from cellulose_forge.openff_sage import reduced_periodic_box  # noqa: PLC0415
-
     return np.asarray(reduced_periodic_box(build.mapped.basis_vectors), dtype=np.float64)
 
 
@@ -264,7 +263,9 @@ minimized = constrained_context.getState(getEnergy=True).getPotentialEnergy()
 with open(request["system_path"], "w", encoding="utf-8") as handle:
     handle.write(openmm.XmlSerializer.serialize(constrained))
 with open(request["state_path"], "w", encoding="utf-8") as handle:
-    handle.write(openmm.XmlSerializer.serialize(initial_state))
+    # Positions and box only: a serialized energy would carry OpenMM's
+    # process-dependent last-digit summation noise into a structural file.
+    handle.write(openmm.XmlSerializer.serialize(context.getState(getPositions=True)))
 topology = app.Topology()
 atoms = []
 for chain_index in range(chains):
@@ -482,8 +483,10 @@ def _chain_records(build: OplsBuild) -> _ChainRecords:
     for a, b, scale, _ in topology.scaled_pairs:
         sigma, epsilon = lj_pair(topology, a, b)
         key = (
-            round(sigma, 9), round(epsilon, 9),
-            round(topology.charges[a] * topology.charges[b], 9), round(scale, 12),
+            round(sigma, 9),
+            round(epsilon, 9),
+            round(topology.charges[a] * topology.charges[b], 9),
+            round(scale, 12),
         )
         bonds.append((_type_id(tables, key, len(harmonic)), a, b))
     angle_types: dict[_FloatKey, int] = {}
@@ -497,8 +500,15 @@ def _chain_records(build: OplsBuild) -> _ChainRecords:
         for a, b, c, d, name in topology.dihedrals
     ]
     return _ChainRecords(
-        atom_types, harmonic, tables, angle_types, dihedral_types,
-        atom_type_of, bonds, angles, dihedrals,
+        atom_types,
+        harmonic,
+        tables,
+        angle_types,
+        dihedral_types,
+        atom_type_of,
+        bonds,
+        angles,
+        dihedrals,
     )
 
 
@@ -606,18 +616,26 @@ def write_opls_lammps(
     )
     bond_type_count = len(records.harmonic_bonds) + len(records.sei_tables)
     lines = [
-        f"CelluloseForge experimental {topology.variant} cellulose", "",
-        f"{chains * per_chain} atoms", f"{chains * len(records.bonds)} bonds",
+        f"CelluloseForge experimental {topology.variant} cellulose",
+        "",
+        f"{chains * per_chain} atoms",
+        f"{chains * len(records.bonds)} bonds",
         f"{chains * len(records.angles)} angles",
-        f"{chains * len(records.dihedrals)} dihedrals", "",
-        f"{len(records.atom_types)} atom types", f"{bond_type_count} bond types",
+        f"{chains * len(records.dihedrals)} dihedrals",
+        "",
+        f"{len(records.atom_types)} atom types",
+        f"{bond_type_count} bond types",
         f"{len(records.angle_types)} angle types",
-        f"{len(records.dihedral_types)} dihedral types", "",
-        f"0.0 {box[0][0]:.12g} xlo xhi", f"0.0 {box[1][1]:.12g} ylo yhi",
+        f"{len(records.dihedral_types)} dihedral types",
+        "",
+        f"0.0 {box[0][0]:.12g} xlo xhi",
+        f"0.0 {box[1][1]:.12g} ylo yhi",
         f"0.0 {box[2][2]:.12g} zlo zhi",
         f"{box[1][0]:.12g} {box[2][0]:.12g} {box[2][1]:.12g} xy xz yz",
         *_coefficient_lines(records),
-        "", "Atoms # full", "",
+        "",
+        "Atoms # full",
+        "",
     ]
     for index, ((x, y, z), (ix, iy, iz)) in enumerate(zip(positions, images, strict=True)):
         atom = index % per_chain
@@ -626,7 +644,9 @@ def write_opls_lammps(
             f"{topology.charges[atom]:.6f} {x:.12g} {y:.12g} {z:.12g} {ix} {iy} {iz}"
         )
     for title, chain_records in (
-        ("Bonds", records.bonds), ("Angles", records.angles), ("Dihedrals", records.dihedrals)
+        ("Bonds", records.bonds),
+        ("Angles", records.angles),
+        ("Dihedrals", records.dihedrals),
     ):
         lines += ["", title, ""]
         lines += [
@@ -647,9 +667,7 @@ def write_opls_lammps(
     if files.table is not None:
         _write_sei_table(files.table, records.sei_tables)
     files.input.write_text(
-        _lammps_input(
-            topology.variant, hybrid=hybrid, dispersion_correction=dispersion_correction
-        ),
+        _lammps_input(topology.variant, hybrid=hybrid, dispersion_correction=dispersion_correction),
         encoding="utf-8",
     )
     metadata: dict[str, object] = {

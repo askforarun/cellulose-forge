@@ -30,10 +30,7 @@ from cellulose_forge.glycam import generate_glycam_gromacs_reference  # noqa: E4
 from cellulose_forge.glycam_mapping import map_crystal_to_finite_glycam  # noqa: E402
 
 CELLODEXTRIN_SMILES = {
-    2: (
-        "C([C@@H]1[C@H]([C@@H]([C@H]([C@@H](O1)O[C@@H]2"
-        "[C@H](O[C@H]([C@@H]([C@H]2O)O)O)CO)O)O)O)O"
-    ),
+    2: ("C([C@@H]1[C@H]([C@@H]([C@H]([C@@H](O1)O[C@@H]2[C@H](O[C@H]([C@@H]([C@H]2O)O)O)CO)O)O)O)O"),
     6: (
         "C([C@@H]1[C@H]([C@@H]([C@H]([C@@H](O1)O[C@@H]2[C@H](O[C@H]"
         "([C@@H]([C@H]2O)O)O[C@@H]3[C@H](O[C@H]([C@@H]([C@H]3O)O)O"
@@ -195,9 +192,7 @@ def main() -> None:  # noqa: PLR0915 - validation stages are intentionally expli
         with tempfile.TemporaryDirectory(
             prefix=f"cellulose_forge_crystal_dp{degree_polymerization}_"
         ) as temporary:
-            molecule = crystallographic_cellodextrin(
-                Path(temporary), degree_polymerization
-            )
+            molecule = crystallographic_cellodextrin(Path(temporary), degree_polymerization)
         openff_method = CHARGE_METHODS[charge_method]["openff_method"]
         if charge_method == "am1bcc":
             molecule.assign_partial_charges(openff_method, use_conformers=None)
@@ -222,9 +217,7 @@ def main() -> None:  # noqa: PLR0915 - validation stages are intentionally expli
             metadata.version("openff-nagl") if charge_method == "nagl" else "not used"
         ),
         "openff_nagl_models_version": (
-            metadata.version("openff-nagl-models")
-            if charge_method == "nagl"
-            else "not used"
+            metadata.version("openff-nagl-models") if charge_method == "nagl" else "not used"
         ),
         "ambertools_version": (
             "26.0 (Conda environment pin)"
@@ -305,9 +298,7 @@ def main() -> None:  # noqa: PLR0915 - validation stages are intentionally expli
         prefix = str(directory / f"cellodextrin_dp{degree_polymerization}")
         interchange.to_gromacs(prefix)
         interchange.to_amber(prefix)
-        exported_files = {
-            path.name: path.stat().st_size for path in sorted(directory.iterdir())
-        }
+        exported_files = {path.name: path.stat().st_size for path in sorted(directory.iterdir())}
 
     result = {
         "molecule": CELLODEXTRIN_METADATA[degree_polymerization][0],
@@ -327,30 +318,21 @@ def main() -> None:  # noqa: PLR0915 - validation stages are intentionally expli
             "openmm": openmm_energies,
             "gromacs": gromacs_energies,
             "comparison": energy_comparison,
-            "nonbonded_tolerance_policy_kj_mol_per_atom": (
-                ENERGY_TOLERANCES_KJ_MOL_PER_ATOM
-            ),
+            "nonbonded_tolerance_policy_kj_mol_per_atom": (ENERGY_TOLERANCES_KJ_MOL_PER_ATOM),
             "passed": not failed_terms,
             "failed_terms": failed_terms,
         },
-        "initial_energy_kj_mol": initial_energy.value_in_unit(
-            openmm.unit.kilojoule_per_mole
-        ),
-        "minimized_energy_kj_mol": minimized_energy.value_in_unit(
-            openmm.unit.kilojoule_per_mole
-        ),
+        "initial_energy_kj_mol": initial_energy.value_in_unit(openmm.unit.kilojoule_per_mole),
+        "minimized_energy_kj_mol": minimized_energy.value_in_unit(openmm.unit.kilojoule_per_mole),
         "minimization_rms_displacement_angstrom": float(
             np.sqrt(np.mean(np.sum(displacement**2, axis=1)))
         ),
-        "minimization_max_displacement_angstrom": float(
-            np.linalg.norm(displacement, axis=1).max()
-        ),
+        "minimization_max_displacement_angstrom": float(np.linalg.norm(displacement, axis=1).max()),
         "openmm_nvt_smoke_test": nvt_result,
         "exported_files": exported_files,
     }
     destination = Path(
-        "validation/results/"
-        f"openff_cellodextrin_dp{degree_polymerization}{cache_infix}_probe.json"
+        f"validation/results/openff_cellodextrin_dp{degree_polymerization}{cache_infix}_probe.json"
     )
     destination.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))

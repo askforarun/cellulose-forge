@@ -29,7 +29,7 @@ GROMACS, OpenMM, LAMMPS and (for finite GLYCAM chains) Amber, and checks that
 every engine evaluates the **same energy** for the same model.
 
 > [!IMPORTANT]
-> ## 🚀 New in 1.2.0, now on PyPI
+> ## 🚀 New in 1.3.0
 >
 > `pip install cellulose-forge`. This release adds **OpenMM output** for GLYCAM06j-1 and CHARMM36
 > with finite or covalently periodic chains; **native Amber output** for finite
@@ -42,7 +42,7 @@ every engine evaluates the **same energy** for the same model.
 > **odd-DP chains** remain planned. Feedback and
 > contributions are welcome.
 
-> **Release status:** CelluloseForge 1.2.0 is the current stable release. Its
+> **Release status:** CelluloseForge 1.3.0 is the release candidate described by this branch. Its
 > supported and validated boundaries are intentionally narrower than the
 > long-term project plan. Every supported combination is validated as
 > described in [Validation](#validation).
@@ -127,6 +127,7 @@ Simulation engines by force field and chain boundary:
 | GROMACS | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | Released |
 | OpenMM | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | Released (1.2.0) |
 | LAMMPS | Finite and periodic | Finite and periodic | Not available | Finite and periodic | Experimental (1.2.0) |
+| NAMD | Not available | Finite and periodic | Not available | Not available | Validated (next release) |
 | Amber | Finite only | Not available | Not available | Not available | Released (1.2.0) |
 
 Native Amber output cannot represent covalently periodic chains because Amber
@@ -212,6 +213,18 @@ AmberTools and ParmEd, OpenMM output needs `openmm`
 (`pip install "cellulose-forge[openmm]"`), and OpenFF Sage needs the conda
 environment described below. To work from the source repository instead, use
 one of the following.
+
+Engine dependencies are deliberately selective. CelluloseForge never installs
+the GROMACS, NAMD, LAMMPS, or Amber executables as hidden dependencies. For an
+Amber/GLYCAM-only installation from a source checkout, use
+`environment-amber.yml`; it installs AmberTools and ParmEd but not GROMACS,
+NAMD, LAMMPS, or OpenMM. The pip extras install Python-side dependencies only:
+
+```bash
+python -m pip install 'cellulose-forge[amber]'   # ParmEd; install AmberTools with conda
+python -m pip install 'cellulose-forge[openmm]'
+python -m pip install 'cellulose-forge[lammps-converter]'  # does not install LAMMPS
+```
 
 ### Coordinate-only installation with uv
 

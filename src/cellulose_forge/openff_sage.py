@@ -7,21 +7,21 @@ CelluloseForge atom names and bonds; no AmberTools or GLYCAM template is used.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import importlib
 import importlib.metadata
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
-from cellulose_forge.cellulose_ii import cellulose_ii_preferred_acceptor
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
-from cellulose_forge.hydroxyl import HydroxylHydrogenPlacer
 from cellulose_forge.openmm import (
     OPENMM_RUNNER_FILE,
     OPENMM_STATE_FILE,
@@ -29,6 +29,13 @@ from cellulose_forge.openmm import (
     render_openmm_runner,
     validation_platform_for_box,
 )
+from cellulose_forge.polymer_mapping import (
+    chain_template,
+    map_crystal_to_chain_template,
+    minimum_image,
+    reduced_periodic_box,
+)
+from cellulose_forge.polymer_profiles import polymer_profile
 from cellulose_forge.run_inputs import dispersion_correction as _dispersion_policy
 from cellulose_forge.run_inputs import write_gromacs_run_inputs
 
@@ -109,11 +116,9 @@ _CHITIN_INTERNAL_BONDS = (
 _STEREOCHEMISTRY = {"C1": "S", "C2": "R", "C3": "R", "C4": "S", "C5": "R"}
 _REFERENCE_PARITY = {"C1": 1, "C2": 1, "C3": -1, "C4": 1, "C5": 1}
 _STEREOCENTRES = frozenset(_STEREOCHEMISTRY)
-_MAX_LINK_ANGSTROM = 2.0
 _MINIMUM_DP = 2
 _CHARGE_TOLERANCE_E = 1.0e-6
 _BOX_DEGENERACY_TOLERANCE = 1.0e-12
-_MISSING_II_HYDROGENS = frozenset({"HO2", "HO3", "HO6"})
 
 
 @dataclass(frozen=True)
@@ -121,73 +126,62 @@ class SagePolymerProfile:
     """Residue graph and validation metadata for one Sage polymer."""
 
     name: str
-    residue_name: str
     internal_atoms: tuple[tuple[str, int], ...]
     internal_bonds: tuple[tuple[str, str], ...]
-    double_bonds: frozenset[frozenset[str]]
+    bond_orders: Mapping[frozenset[str], int]
     stereochemistry: dict[str, str]
-    finite_nonreducing_c3_stereochemistry: str
+    terminal_stereochemistry: Mapping[tuple[str, str], str]
     reference_parity: dict[str, int]
+
+    def __post_init__(self) -> None:
+        """Reject incomplete chemistry profiles at definition time."""
+        try:
+            polymer_profile(self.name)
+        except ValueError as error:
+            raise ValueError(f"Sage profile names unknown polymer {self.name!r}") from error
+        expected_bonds = {frozenset(bond) for bond in self.internal_bonds}
+        recorded_bonds = set(self.bond_orders)
+        missing = expected_bonds - recorded_bonds
+        extra = recorded_bonds - expected_bonds
+        if missing or extra:
+            raise ValueError(
+                "Sage profile bond orders must cover every internal bond exactly; "
+                f"missing={sorted(map(sorted, missing))}, extra={sorted(map(sorted, extra))}"
+            )
+        required_terminal = {("reducing", "C1"), ("nonreducing", "C3")}
+        if set(self.terminal_stereochemistry) != required_terminal:
+            raise ValueError(
+                "Sage profile terminal stereochemistry must define reducing C1 and nonreducing C3"
+            )
+
+    @property
+    def residue_name(self) -> str:
+        """Return the canonical residue name from the shared polymer profile."""
+        return polymer_profile(self.name).residue_name
 
 
 _POLYMER_PROFILES = {
     "cellulose": SagePolymerProfile(
-        "cellulose",
-        "BGC",
-        _INTERNAL_ATOMS,
-        _INTERNAL_BONDS,
-        frozenset(),
-        _STEREOCHEMISTRY,
-        "S",
-        _REFERENCE_PARITY,
+        name="cellulose",
+        internal_atoms=_INTERNAL_ATOMS,
+        internal_bonds=_INTERNAL_BONDS,
+        bond_orders={frozenset(bond): 1 for bond in _INTERNAL_BONDS},
+        stereochemistry=_STEREOCHEMISTRY,
+        terminal_stereochemistry={("reducing", "C1"): "R", ("nonreducing", "C3"): "S"},
+        reference_parity=_REFERENCE_PARITY,
     ),
     "chitin": SagePolymerProfile(
-        "chitin",
-        "NAG",
-        _CHITIN_INTERNAL_ATOMS,
-        _CHITIN_INTERNAL_BONDS,
-        frozenset({frozenset({"C7", "O7"})}),
-        _STEREOCHEMISTRY,
-        "R",
-        _REFERENCE_PARITY,
+        name="chitin",
+        internal_atoms=_CHITIN_INTERNAL_ATOMS,
+        internal_bonds=_CHITIN_INTERNAL_BONDS,
+        bond_orders={
+            frozenset(bond): 2 if frozenset(bond) == frozenset({"C7", "O7"}) else 1
+            for bond in _CHITIN_INTERNAL_BONDS
+        },
+        stereochemistry=_STEREOCHEMISTRY,
+        terminal_stereochemistry={("reducing", "C1"): "R", ("nonreducing", "C3"): "R"},
+        reference_parity=_REFERENCE_PARITY,
     ),
-}
-
-_INTERNAL_REFERENCE = {
-    "C1": (2.720, 11.610, 12.966),
-    "H1": (2.053, 11.447, 12.268),
-    "O5": (3.942, 12.030, 12.413),
-    "C5": (3.939, 13.328, 11.848),
-    "H5": (3.382, 13.347, 11.042),
-    "C6": (5.429, 13.601, 11.483),
-    "H62": (5.837, 12.780, 11.164),
-    "H61": (5.907, 13.890, 12.273),
-    "O6": (5.535, 14.593, 10.478),
-    "HO6": (6.378, 14.431, 10.000),
-    "C4": (3.454, 14.380, 12.860),
-    "H4": (4.094, 14.469, 13.594),
-    "C3": (2.078, 13.975, 13.392),
-    "H3": (1.435, 13.946, 12.653),
-    "O3": (1.602, 14.853, 14.397),
-    "HO3": (1.714, 15.767, 14.053),
-    "C2": (2.194, 12.595, 14.004),
-    "H2": (2.841, 12.639, 14.743),
-    "O2": (0.944, 12.153, 14.530),
-    "HO2": (1.042, 11.190, 14.695),
-    "O4": (3.368, 15.606, 12.110),
-}
-_REDUCING_REFERENCE = {
-    "HO1": (3.163, 4.521, 12.573),
-    "O1": (3.479, 5.230, 12.007),
-    "C1": (3.658, 6.420, 12.839),
-    "H1": (4.325, 6.257, 13.537),
-    "O5": (2.436, 6.840, 13.392),
-}
-_NONREDUCING_REFERENCE = {
-    "O4": (3.368, 36.366, 12.110),
-    "C4": (3.454, 35.140, 12.860),
-    "H4": (4.094, 35.229, 13.594),
-    "HO4": (2.949, 37.032, 12.679),
 }
 
 
@@ -206,19 +200,6 @@ class SageBuild:
 def dispersion_correction_for_shape(shape: str) -> bool:
     """Return the shared dispersion policy for an OpenFF Sage build."""
     return _dispersion_policy("openff", shape)
-
-
-def reduced_periodic_box(box: FloatArray) -> FloatArray:
-    """Return an equivalent triclinic lattice in OpenMM reduced form."""
-    a, b, c = np.asarray(box, dtype=np.float64).copy()
-    if abs(a[0]) < _BOX_DEGENERACY_TOLERANCE or abs(b[1]) < _BOX_DEGENERACY_TOLERANCE:
-        raise ValueError("OpenFF output requires a non-degenerate triclinic box")
-    c -= b * round(float(c[1] / b[1]))
-    c -= a * round(float(c[0] / a[0]))
-    b -= a * round(float(b[0] / a[0]))
-    reduced = np.vstack((a, b, c))
-    reduced.setflags(write=False)
-    return reduced
 
 
 def periodic_box_heights(box: FloatArray) -> tuple[float, float, float]:
@@ -264,99 +245,6 @@ def require_openff() -> tuple[Any, Any, Any]:
     return toolkit.ForceField, toolkit.Molecule, toolkit.Topology
 
 
-def _lookup(crystal: BulkCrystal, chain: int, residue: int) -> dict[str, FloatArray]:
-    return {
-        name: xyz
-        for name, xyz, atom_chain, atom_residue in zip(
-            crystal.atom_labels,
-            crystal.cartesian_coordinates,
-            crystal.chain_numbers,
-            crystal.residue_numbers,
-            strict=True,
-        )
-        if atom_chain == chain and atom_residue == residue
-    }
-
-
-def _minimum_image(delta: FloatArray, box: FloatArray) -> FloatArray:
-    fractional = delta @ np.linalg.inv(box)
-    fractional -= np.round(fractional)
-    return np.asarray(fractional @ box, dtype=np.float64)
-
-
-def _residue_order(crystal: BulkCrystal, chain: int, periodic: bool) -> tuple[int, ...]:
-    residues = tuple(
-        dict.fromkeys(
-            residue
-            for atom_chain, residue in zip(
-                crystal.chain_numbers, crystal.residue_numbers, strict=True
-            )
-            if atom_chain == chain
-        )
-    )
-    lookups = {residue: _lookup(crystal, chain, residue) for residue in residues}
-    successors: dict[int, int] = {}
-    for residue in residues:
-        candidates = []
-        for other in residues:
-            if other == residue:
-                continue
-            delta = lookups[other]["C1"] - lookups[residue]["O4"]
-            if periodic:
-                delta = _minimum_image(delta, crystal.basis_vectors)
-            candidates.append((float(np.linalg.norm(delta)), other))
-        distance, other = min(candidates)
-        if distance <= _MAX_LINK_ANGSTROM:
-            successors[residue] = other
-    if periodic:
-        start = residues[0]
-    else:
-        predecessors = set(successors.values())
-        starts = [residue for residue in residues if residue not in predecessors]
-        if len(starts) != 1:
-            raise ValueError(f"chain {chain} does not form one finite cellulose path")
-        start = starts[0]
-    order = [start]
-    while len(order) < len(residues) and order[-1] in successors:
-        following = successors[order[-1]]
-        if following in order:
-            break
-        order.append(following)
-    if len(order) != len(residues):
-        raise ValueError(f"chain {chain} cellulose connectivity is incomplete")
-    if periodic and successors.get(order[-1]) != order[0]:
-        raise ValueError(f"chain {chain} cellulose connectivity is not cyclic")
-    return tuple(order)
-
-
-def _rigid_transform(
-    reference: dict[str, tuple[float, float, float]],
-    target: dict[str, FloatArray],
-    anchors: tuple[str, str, str],
-) -> tuple[FloatArray, FloatArray, FloatArray]:
-    source = np.vstack([reference[name] for name in anchors])
-    destination = np.vstack([target[name] for name in anchors])
-    source_center = source.mean(axis=0)
-    destination_center = destination.mean(axis=0)
-    left, _, right = np.linalg.svd((source - source_center).T @ (destination - destination_center))
-    rotation = left @ right
-    if np.linalg.det(rotation) < 0:
-        left[:, -1] *= -1
-        rotation = left @ right
-    return rotation, source_center, destination_center
-
-
-def _transform(
-    coordinate: tuple[float, float, float],
-    transform: tuple[FloatArray, FloatArray, FloatArray],
-) -> FloatArray:
-    rotation, source, destination = transform
-    return np.asarray(
-        (np.asarray(coordinate) - source) @ rotation + destination,
-        dtype=np.float64,
-    )
-
-
 def _polymer_profile(polymer: str) -> SagePolymerProfile:
     try:
         return _POLYMER_PROFILES[polymer]
@@ -383,9 +271,9 @@ def build_sage_molecule(  # noqa: PLR0912
         for name, atomic_number in profile.internal_atoms:
             stereo = profile.stereochemistry.get(name)
             if chain_boundary == "finite" and residue == 1 and name == "C1":
-                stereo = "R"
+                stereo = profile.terminal_stereochemistry["reducing", "C1"]
             if chain_boundary == "finite" and residue == degree_polymerization and name == "C3":
-                stereo = profile.finite_nonreducing_c3_stereochemistry
+                stereo = profile.terminal_stereochemistry["nonreducing", "C3"]
             indices[residue, name] = molecule.add_atom(
                 atomic_number,
                 0,
@@ -426,7 +314,12 @@ def build_sage_molecule(  # noqa: PLR0912
                 },
             )
         for left, right in profile.internal_bonds:
-            order = 2 if frozenset({left, right}) in profile.double_bonds else 1
+            try:
+                order = profile.bond_orders[frozenset({left, right})]
+            except KeyError as error:
+                raise ValueError(
+                    f"Sage {profile.name} profile lacks a bond order for {left}-{right}"
+                ) from error
             molecule.add_bond(indices[residue, left], indices[residue, right], order, False)
     for residue in range(1, degree_polymerization):
         molecule.add_bond(indices[residue, "O4"], indices[residue + 1, "C1"], 1, False)
@@ -444,110 +337,11 @@ def build_sage_molecule(  # noqa: PLR0912
     return molecule
 
 
-def _mapped_coordinates(
-    crystal: BulkCrystal,
-    molecule: Any,
-    boundary: str,
-    profile: SagePolymerProfile | None = None,
-) -> GlycamMappedSystem:
-    profile = profile or _polymer_profile("cellulose")
-    periodic = boundary == "periodic"
-    chain_numbers = tuple(dict.fromkeys(crystal.chain_numbers))
-    output: list[FloatArray] = []
-    names: list[str] = []
-    residues: list[int] = []
-    chains: list[int] = []
-    placer = (
-        HydroxylHydrogenPlacer(
-            crystal.atom_labels, crystal.cartesian_coordinates, crystal.basis_vectors
-        )
-        if crystal.allomorph == "II"
-        else None
-    )
-    for chain in chain_numbers:
-        order = _residue_order(crystal, chain, periodic)
-        targets = {
-            index + 1: _lookup(crystal, chain, residue) for index, residue in enumerate(order)
-        }
-        reducing = (
-            _rigid_transform(_REDUCING_REFERENCE, targets[1], ("C1", "H1", "O5"))
-            if not periodic
-            else None
-        )
-        nonreducing = (
-            _rigid_transform(
-                _NONREDUCING_REFERENCE,
-                targets[len(order)],
-                ("O4", "C4", "H4"),
-            )
-            if not periodic
-            else None
-        )
-        hydrogen_transforms = (
-            {
-                residue: _rigid_transform(_INTERNAL_REFERENCE, target, ("C1", "C3", "C5"))
-                for residue, target in targets.items()
-            }
-            if crystal.allomorph == "II"
-            else {}
-        )
-        for atom in molecule.atoms:
-            residue = int(atom.metadata["residue_number"])
-            name = atom.name
-            target = targets[residue]
-            if name in {"O1", "HO1"}:
-                assert reducing is not None
-                coordinate = _transform(_REDUCING_REFERENCE[name], reducing)
-            elif name == "HO4":
-                assert nonreducing is not None
-                coordinate = _transform(_NONREDUCING_REFERENCE[name], nonreducing)
-            elif crystal.allomorph == "II" and name in _MISSING_II_HYDROGENS:
-                oxygen = "O" + name[2]
-                carbon = "C" + name[2]
-                transform = hydrogen_transforms[residue]
-                aligned_h = _transform(_INTERNAL_REFERENCE[name], transform)
-                assert placer is not None
-                placer.request(
-                    len(output),
-                    target[carbon],
-                    target[oxygen],
-                    aligned_h,
-                    donor=oxygen,
-                    preferred_acceptor="O5" if oxygen == "O3" else None,
-                    preferred_acceptor_coordinate=cellulose_ii_preferred_acceptor(
-                        crystal,
-                        chain_number=chain,
-                        residue_number=order[residue - 1],
-                        donor=oxygen,
-                    ),
-                )
-                coordinate = np.zeros(3)
-            else:
-                coordinate = target[name]
-            output.append(coordinate)
-            names.append(name)
-            residues.append(residue)
-            chains.append(chain)
-    if placer is not None:
-        for index, coordinate in placer.resolve().items():
-            output[index] = coordinate
-    coordinates = np.vstack(output)
-    coordinates.setflags(write=False)
-    return GlycamMappedSystem(
-        atom_names=tuple(names),
-        residue_names=tuple(profile.residue_name for _ in names),
-        residue_numbers=tuple(residues),
-        chain_numbers=tuple(chains),
-        cartesian_coordinates=coordinates,
-        basis_vectors=crystal.basis_vectors,
-    )
-
-
 def _centre_parity(positions: FloatArray, atom: Any, box: FloatArray) -> int:
     neighbours = sorted(atom.bonded_atoms, key=lambda item: (item.symbol, item.name))[:3]
     centre = positions[atom.molecule_atom_index]
     vectors = [
-        _minimum_image(positions[item.molecule_atom_index] - centre, box) for item in neighbours
+        minimum_image(positions[item.molecule_atom_index] - centre, box) for item in neighbours
     ]
     value = float(np.dot(vectors[0], np.cross(vectors[1], vectors[2])))
     if not np.isfinite(value) or value == 0.0:
@@ -560,7 +354,7 @@ def validate_sage_stereochemistry(
     mapped: GlycamMappedSystem,
     polymer: str = "cellulose",
 ) -> dict[str, object]:
-    """Check every mapped C1--C5 centre against an independent reference."""
+    """Check mapped C1--C5 centres against the polymer's coordinate reference."""
     profile = _polymer_profile(polymer)
     failures: list[tuple[int, int, str]] = []
     for chain_index, chain in enumerate(dict.fromkeys(mapped.chain_numbers)):
@@ -576,11 +370,7 @@ def validate_sage_stereochemistry(
                     (chain, int(atom.metadata["residue_number"]), atom.name)
                 )
     result: dict[str, object] = {
-        "reference": (
-            "independent beta-D-glucopyranose signed parity"
-            if polymer == "cellulose"
-            else "experimental anhydrous alpha/beta-chitin crystal signed parity"
-        ),
+        "reference": polymer_profile(polymer).validation_reference,
         "centres_checked": mapped.chain_count
         * len({int(atom.metadata["residue_number"]) for atom in molecule.atoms})
         * len(profile.reference_parity),
@@ -592,6 +382,181 @@ def validate_sage_stereochemistry(
     return result
 
 
+def validate_declared_stereochemistry(
+    molecule: Any,
+    mapped: GlycamMappedSystem,
+    chain_boundary: str,
+    polymer: str = "cellulose",
+) -> dict[str, object]:
+    """Confirm every declared R/S label against the mapped coordinates.
+
+    RDKit's global stereo perception treats a covalently periodic chain as one
+    macrocycle and its cost grows explosively with chain length (seconds per
+    chain at DP20), so it is not run on the built chains. Instead the CIP
+    priority order of each centre's four neighbours, which depends only on the
+    chemistry within a few bonds and is therefore the same for every residue
+    of a kind (reducing, internal, non-reducing) at any chain length, is
+    computed once by RDKit on a short chain of the same polymer and boundary.
+    Each centre's handedness is then read from the minimum-image vectors to its
+    bonded neighbours, so wrapped periodic coordinates need no unwrapping. The
+    cost is linear in the number of centres.
+    """
+    if chain_boundary not in _REFERENCE_DEGREE:
+        raise ValueError(
+            "OpenFF stereochemistry validation requires chain_boundary to be 'finite' or 'periodic'"
+        )
+    boundary = chain_boundary
+    degree = len({int(atom.metadata["residue_number"]) for atom in molecule.atoms})
+    priorities = _neighbour_priorities(polymer, boundary)
+    index = {
+        (int(atom.metadata["residue_number"]), atom.name): atom.molecule_atom_index
+        for atom in molecule.atoms
+    }
+    centres: list[int] = []
+    neighbours: list[list[int]] = []
+    declared: list[str] = []
+    keys: list[tuple[int, str]] = []
+    for atom in molecule.atoms:
+        if atom.stereochemistry is None:
+            continue
+        residue = int(atom.metadata["residue_number"])
+        order = priorities.get((_residue_class(residue, degree, boundary), atom.name))
+        if order is None:
+            raise ValueError(
+                f"no CIP priority reference for {polymer} {atom.name} in residue {residue}"
+            )
+        try:
+            ranked = [
+                index[_neighbour_residue(residue, offset, degree, boundary), name]
+                for offset, name in order
+            ]
+        except KeyError as error:
+            raise ValueError(
+                f"OpenFF {polymer} molecular graph is incompatible with chain_boundary={boundary!r}"
+            ) from error
+        bonded = {neighbour.molecule_atom_index for neighbour in atom.bonded_atoms}
+        if set(ranked) != bonded:
+            raise ValueError(
+                f"{polymer} {atom.name} in residue {residue}: CIP reference neighbours "
+                "do not match the molecular graph"
+            )
+        centres.append(atom.molecule_atom_index)
+        neighbours.append(ranked)
+        declared.append(str(atom.stereochemistry))
+        keys.append((residue, atom.name))
+    chain_numbers = tuple(dict.fromkeys(mapped.chain_numbers))
+    coordinates = np.asarray(mapped.cartesian_coordinates, dtype=np.float64).reshape(
+        len(chain_numbers), molecule.n_atoms, 3
+    )
+    centre_xyz = coordinates[:, centres, None, :]
+    neighbour_xyz = coordinates[:, np.asarray(neighbours), :]
+    box = np.asarray(mapped.basis_vectors, dtype=np.float64)
+    fractional = (neighbour_xyz - centre_xyz) @ np.linalg.inv(box)
+    vectors = (fractional - np.round(fractional)) @ box
+    handedness = np.einsum(
+        "...i,...i->...", vectors[..., 0, :], np.cross(vectors[..., 1, :], vectors[..., 2, :])
+    )
+    if not np.all(np.isfinite(handedness)) or np.any(handedness == 0.0):
+        raise ValueError(f"OpenFF {polymer} stereocentre geometry is degenerate")
+    # Priorities 1-3 traversed clockwise with priority 4 pointing away is R,
+    # which is a negative triple product of the three bond vectors.
+    perceived = np.where(handedness < 0.0, "R", "S")
+    failures: list[tuple[int, int, str, str, str]] = []
+    signatures: set[tuple[str, ...]] = set()
+    for chain_index, chain in enumerate(chain_numbers):
+        labels = tuple(str(label) for label in perceived[chain_index])
+        signatures.add(labels)
+        for (residue, name), expected, actual in zip(keys, declared, labels, strict=True):
+            if actual != expected:
+                failures.append((chain, residue, name, expected, actual))
+    if failures:
+        raise ValueError(
+            f"OpenFF {polymer} declared stereochemistry disagrees with mapped "
+            f"coordinates: {failures[:5]}"
+        )
+    return {
+        "method": (
+            "RDKit CIP neighbour priorities from a short reference chain; handedness "
+            "from minimum-image bond vectors of every centre"
+        ),
+        "chains_examined": len(chain_numbers),
+        "distinct_chain_types_checked": len(signatures),
+        "labelled_centres_per_chain": len(centres),
+        "failures": failures,
+        "passed": True,
+    }
+
+
+_REFERENCE_DEGREE = {"finite": 3, "periodic": 5}
+
+
+def _residue_class(residue: int, degree: int, boundary: str) -> str:
+    if boundary == "periodic":
+        return "internal"
+    if residue == 1:
+        return "reducing"
+    return "nonreducing" if residue == degree else "internal"
+
+
+def _neighbour_residue(residue: int, offset: int, degree: int, boundary: str) -> int:
+    target = residue + offset
+    return (target - 1) % degree + 1 if boundary == "periodic" else target
+
+
+@functools.cache
+def _neighbour_priorities(
+    polymer: str, boundary: str
+) -> dict[tuple[str, str], tuple[tuple[int, str], ...]]:
+    """Return each centre's neighbours in descending CIP priority, by residue kind.
+
+    Neighbours are keyed by residue offset (-1, 0 or +1 along the chain) and atom
+    name. RDKit ranks a short reference chain built from the same polymer graph;
+    a ranking that cannot order all four neighbours is refused.
+    """
+    chem = importlib.import_module("rdkit.Chem")
+    degree = _REFERENCE_DEGREE[boundary]
+    reference = build_sage_molecule(degree, boundary, polymer)
+    editable = chem.RWMol()
+    for atom in reference.atoms:
+        rdkit_atom = chem.Atom(int(atom.atomic_number))
+        rdkit_atom.SetNoImplicit(True)
+        editable.AddAtom(rdkit_atom)
+    orders = {1: chem.BondType.SINGLE, 2: chem.BondType.DOUBLE}
+    for bond in reference.bonds:
+        editable.AddBond(
+            int(bond.atom1.molecule_atom_index),
+            int(bond.atom2.molecule_atom_index),
+            orders[int(bond.bond_order)],
+        )
+    ranked = editable.GetMol()
+    chem.SanitizeMol(ranked)
+    chem.AssignStereochemistry(ranked, cleanIt=True, force=True, flagPossibleStereoCenters=True)
+    table: dict[tuple[str, str], tuple[tuple[int, str], ...]] = {}
+    for atom in reference.atoms:
+        if atom.stereochemistry is None:
+            continue
+        residue = int(atom.metadata["residue_number"])
+        bonded = list(atom.bonded_atoms)
+        rank = {
+            neighbour.molecule_atom_index: int(
+                ranked.GetAtomWithIdx(neighbour.molecule_atom_index).GetProp("_CIPRank")
+            )
+            for neighbour in bonded
+        }
+        if len(set(rank.values())) != len(bonded):
+            raise ValueError(f"{polymer} {atom.name} neighbours cannot be CIP-ranked")
+        order = []
+        for neighbour in sorted(bonded, key=lambda item: -rank[item.molecule_atom_index]):
+            offset = int(neighbour.metadata["residue_number"]) - residue
+            if boundary == "periodic" and abs(offset) > 1:
+                offset = -1 if offset > 0 else 1
+            order.append((offset, neighbour.name))
+        key = (_residue_class(residue, degree, boundary), atom.name)
+        if table.setdefault(key, tuple(order)) != tuple(order):
+            raise ValueError(f"{polymer} {atom.name} CIP order differs between equivalent residues")
+    return table
+
+
 def build_sage_system(
     crystal: BulkCrystal,
     chain_boundary: str,
@@ -600,6 +565,11 @@ def build_sage_system(
     """Build, map, charge, and validate one reusable Sage polymer chain."""
     selected_polymer = polymer or ("chitin" if crystal.residue_name == "NAG" else "cellulose")
     profile = _polymer_profile(selected_polymer)
+    if crystal.residue_name != profile.residue_name:
+        raise ValueError(
+            f"OpenFF {selected_polymer} requires crystal residue {profile.residue_name}, "
+            f"not {crystal.residue_name}"
+        )
     if not crystal.chain_numbers or not crystal.residue_numbers:
         raise ValueError("OpenFF mapping requires explicit chain and residue numbers")
     first_chain = next(iter(crystal.chain_numbers))
@@ -611,7 +581,17 @@ def build_sage_system(
         }
     )
     molecule = build_sage_molecule(degree, chain_boundary, selected_polymer)
-    mapped = _mapped_coordinates(crystal, molecule, chain_boundary, profile)
+    mapped = map_crystal_to_chain_template(
+        crystal,
+        chain_template(
+            (atom.name, int(atom.metadata["residue_number"])) for atom in molecule.atoms
+        ),
+        chain_boundary,
+        profile.residue_name,
+    )
+    declared_stereo = validate_declared_stereochemistry(
+        molecule, mapped, chain_boundary, selected_polymer
+    )
     unit = importlib.import_module("openff.units").unit
 
     molecule.add_conformer(mapped.cartesian_coordinates[: molecule.n_atoms] * unit.angstrom)
@@ -632,6 +612,7 @@ def build_sage_system(
         if not periodic_charge_check:
             raise ValueError("periodic OpenFF charges differ between equivalent residues")
     stereo = validate_sage_stereochemistry(molecule, mapped, selected_polymer)
+    stereo["declared_labels"] = declared_stereo
     charge_hash = hashlib.sha256(charges.tobytes()).hexdigest()
     provenance = {
         "method": NAGL_CHARGE_MODEL,

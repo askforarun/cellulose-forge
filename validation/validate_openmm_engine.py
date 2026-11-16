@@ -26,33 +26,54 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 VALIDATION = ROOT / "validation"
+sys.path.insert(0, str(VALIDATION))
+
+from _provenance import provenance  # noqa: E402
 
 SLAB = [
-    "--shape", "slab", "--face", "1", "1", "0",
-    "--layers", "3", "--chains-per-layer", "4",
-    "--degree-polymerization", "8", "--vacuum", "30",
+    "--shape",
+    "slab",
+    "--face",
+    "1",
+    "1",
+    "0",
+    "--layers",
+    "3",
+    "--chains-per-layer",
+    "4",
+    "--degree-polymerization",
+    "8",
+    "--vacuum",
+    "30",
 ]
 ALLOMORPH_SLAB_FACES = {"I-alpha": "0 1 0", "II": "1 1 0", "III-I": "1 1 0"}
 CASES: dict[str, dict[str, Any]] = {
     "glycam_finite_slab": {
-        "force_field": "glycam", "chain_boundary": "finite",
+        "force_field": "glycam",
+        "chain_boundary": "finite",
         "geometry": [*SLAB, "--padding-longitudinal", "12"],
     },
     "glycam_periodic_slab": {
-        "force_field": "glycam", "chain_boundary": "periodic", "geometry": SLAB,
+        "force_field": "glycam",
+        "chain_boundary": "periodic",
+        "geometry": SLAB,
         "npt_axes": "x",
     },
     "charmm36_finite_slab": {
-        "force_field": "charmm36", "chain_boundary": "finite",
+        "force_field": "charmm36",
+        "chain_boundary": "finite",
         "geometry": [*SLAB, "--padding-longitudinal", "12"],
     },
     "charmm36_periodic_slab": {
-        "force_field": "charmm36", "chain_boundary": "periodic", "geometry": SLAB,
+        "force_field": "charmm36",
+        "chain_boundary": "periodic",
+        "geometry": SLAB,
         "npt_axes": "x",
     },
     "glycam_periodic_triclinic_bulk": {
-        "force_field": "glycam", "chain_boundary": "periodic",
-        "geometry": ["--shape", "bulk", "--cells", "3", "3", "2"],
+        "force_field": "glycam",
+        "chain_boundary": "periodic",
+        "geometry": ["--shape", "bulk", "--cells", "4", "4", "4"],
         "dispersion_correction": True,
     },
 }
@@ -63,9 +84,18 @@ for _allomorph, _face in ALLOMORPH_SLAB_FACES.items():
             "force_field": _force_field,
             "chain_boundary": "periodic",
             "geometry": [
-                "--shape", "slab", "--face", *_face.split(),
-                "--layers", "3", "--chains-per-layer", "6",
-                "--degree-polymerization", "8", "--vacuum", "30",
+                "--shape",
+                "slab",
+                "--face",
+                *_face.split(),
+                "--layers",
+                "3",
+                "--chains-per-layer",
+                "6",
+                "--degree-polymerization",
+                "8",
+                "--vacuum",
+                "30",
             ],
         }
 GROMACS_TERMS = {
@@ -75,7 +105,12 @@ GROMACS_TERMS = {
     "one_four": ("LJ-14", "Coulomb-14"),
 }
 GROMACS_NONBONDED = (
-    "LJ (SR)", "Coulomb (SR)", "Coul. recip.", "Disper. corr.", "LJ-14", "Coulomb-14",
+    "LJ (SR)",
+    "Coulomb (SR)",
+    "Coul. recip.",
+    "Disper. corr.",
+    "LJ-14",
+    "Coulomb-14",
 )
 OPENMM_TERMS = {
     "bonds_and_urey_bradley": ("HarmonicBondForce",),
@@ -130,17 +165,44 @@ def _gromacs_energies(
         "coulombtype = PME\nrcoulomb = 1.0\nrvdw = 1.0\nvdw-modifier = None\n"
         "coulomb-modifier = None\newald-rtol = 1e-5\n"
         f"DispCorr = {'EnerPres' if dispersion_correction else 'no'}\n"
-        "pbc = xyz\nnstenergy = 1\n"
-        + ("periodic-molecules = yes\n" if periodic else ""),
+        "pbc = xyz\nnstenergy = 1\n" + ("periodic-molecules = yes\n" if periodic else ""),
         encoding="utf-8",
     )
-    _run([gmx, "grompp", "-f", mdp.name, "-c", "structure.gro", "-p", "system.top",
-          "-o", "single_point.tpr"], directory)
-    _run([gmx, "mdrun", "-s", "single_point.tpr", "-deffnm", "single_point",
-          "-ntmpi", "1", "-ntomp", "1"], directory)
-    names = list(dict.fromkeys(
-        [*(term for terms in GROMACS_TERMS.values() for term in terms), *GROMACS_NONBONDED]
-    ))
+    _run(
+        [
+            gmx,
+            "grompp",
+            "-f",
+            mdp.name,
+            "-c",
+            "structure.gro",
+            "-p",
+            "system.top",
+            "-o",
+            "single_point.tpr",
+        ],
+        directory,
+    )
+    _run(
+        [
+            gmx,
+            "mdrun",
+            "-s",
+            "single_point.tpr",
+            "-deffnm",
+            "single_point",
+            "-ntmpi",
+            "1",
+            "-ntomp",
+            "1",
+        ],
+        directory,
+    )
+    names = list(
+        dict.fromkeys(
+            [*(term for terms in GROMACS_TERMS.values() for term in terms), *GROMACS_NONBONDED]
+        )
+    )
     stdout = _run(
         [gmx, "energy", "-f", "single_point.edr", "-o", "single_point.xvg"],
         directory,
@@ -190,16 +252,29 @@ def _compare(gromacs: dict[str, float], openmm: dict[str, float]) -> dict[str, A
 
 def _runner(args: argparse.Namespace, directory: Path, *extra: str) -> dict[str, Any]:
     stdout = _run(
-        [str(args.openmm_python), "run_openmm.py", "--platform", args.platform,
-         "--minimize-iterations", "200", "--steps", str(args.steps),
-         "--report-interval", str(args.steps // 5), *extra],
+        [
+            str(args.openmm_python),
+            "run_openmm.py",
+            "--platform",
+            args.platform,
+            "--minimize-iterations",
+            "200",
+            "--steps",
+            str(args.steps),
+            "--report-interval",
+            str(args.steps // 5),
+            *extra,
+        ],
         directory,
     )
     match = re.search(r"Final potential energy: ([-+0-9.eE]+)", stdout)
-    rows = [line.split(",") for line in (directory / "state_data.csv").read_text(
-        encoding="utf-8").splitlines()[1:]]
-    bonds = json.loads(_run([str(args.openmm_python), "-c", BOND_CHECK, "final_state.xml"],
-                            directory))
+    rows = [
+        line.split(",")
+        for line in (directory / "state_data.csv").read_text(encoding="utf-8").splitlines()[1:]
+    ]
+    bonds = json.loads(
+        _run([str(args.openmm_python), "-c", BOND_CHECK, "final_state.xml"], directory)
+    )
     return {
         "arguments": list(extra),
         "steps": args.steps,
@@ -213,16 +288,30 @@ def _runner(args: argparse.Namespace, directory: Path, *extra: str) -> dict[str,
 def _validate_case(args: argparse.Namespace, name: str, case: dict[str, Any]) -> dict[str, Any]:
     directory = args.work_directory / name
     build_arguments = [
-        "--allomorph", case.get("allomorph", "I-beta"), *case["geometry"],
-        "--chain-boundary", case["chain_boundary"],
-        "--force-field", case["force_field"],
-        "--md-engine", "gromacs", "--md-engine", "openmm",
+        "--allomorph",
+        case.get("allomorph", "I-beta"),
+        *case["geometry"],
+        "--chain-boundary",
+        case["chain_boundary"],
+        "--force-field",
+        case["force_field"],
+        "--md-engine",
+        "gromacs",
+        "--md-engine",
+        "openmm",
     ]
     command = [
-        sys.executable, "-m", "cellulose_forge.cli", "build", *build_arguments,
-        "--openmm-python", str(args.openmm_python),
-        "--tleap-executable", args.tleap_executable,
-        "--output", str(directory),
+        sys.executable,
+        "-m",
+        "cellulose_forge.cli",
+        "build",
+        *build_arguments,
+        "--openmm-python",
+        str(args.openmm_python),
+        "--tleap-executable",
+        args.tleap_executable,
+        "--output",
+        str(directory),
     ]
     if args.parmed_python:
         command.extend(["--parmed-python", str(args.parmed_python)])
@@ -267,21 +356,31 @@ def main() -> int:
     parser.add_argument("--gmx", default="gmx")
     parser.add_argument("--platform", default="CPU")
     parser.add_argument("--steps", type=int, default=500)
-    parser.add_argument("--work-directory", type=Path,
-                        default=VALIDATION / "work" / "openmm_engine")
-    parser.add_argument("--output", type=Path,
-                        default=VALIDATION / "results" / "openmm_engine_validation.json")
+    parser.add_argument(
+        "--work-directory", type=Path, default=VALIDATION / "work" / "openmm_engine"
+    )
+    parser.add_argument(
+        "--output", type=Path, default=VALIDATION / "results" / "openmm_engine_validation.json"
+    )
     args = parser.parse_args()
     args.work_directory.mkdir(parents=True, exist_ok=True)
 
-    versions = json.loads(_run([str(args.openmm_python), "-c",
-                                "import json, openmm; print(json.dumps(openmm.__version__))"],
-                               ROOT))
+    versions = json.loads(
+        _run(
+            [
+                str(args.openmm_python),
+                "-c",
+                "import json, openmm; print(json.dumps(openmm.__version__))",
+            ],
+            ROOT,
+        )
+    )
     gromacs_version = re.search(r"GROMACS version:\s+(\S+)", _run([args.gmx, "--version"], ROOT))
     commit = _run(["git", "rev-parse", "HEAD"], ROOT).strip()
     dirty = bool(_run(["git", "status", "--porcelain", "--untracked-files=no"], ROOT).strip())
     results = {name: _validate_case(args, name, case) for name, case in CASES.items()}
     summary = {
+        "provenance": provenance(("cellulose-forge", "numpy")),
         "cellulose_forge_commit": commit,
         "cellulose_forge_working_tree_modified": dirty,
         "openmm_version": versions,
@@ -299,17 +398,28 @@ def main() -> int:
             for case in results.values()
         ),
     }
-    args.output.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n",
-                           encoding="utf-8")
-    print(json.dumps({name: {
-        "bonded_14_rel": case["energy_comparison"][
-            "maximum_bonded_and_one_four_relative_difference"],
-        "nonbonded_rel": case["energy_comparison"]["total_nonbonded"]["relative_difference"],
-        "nvt_T": case["nvt"]["final_temperature_k"],
-        "nvt_max_bond_dev_nm": case["nvt"]["maximum_bond_length_deviation_nm"],
-        "npt_max_bond_dev_nm": case.get("npt_fixed_chain_axis", {}).get(
-            "maximum_bond_length_deviation_nm"),
-    } for name, case in results.items()}, indent=1))
+    args.output.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(
+        json.dumps(
+            {
+                name: {
+                    "bonded_14_rel": case["energy_comparison"][
+                        "maximum_bonded_and_one_four_relative_difference"
+                    ],
+                    "nonbonded_rel": case["energy_comparison"]["total_nonbonded"][
+                        "relative_difference"
+                    ],
+                    "nvt_T": case["nvt"]["final_temperature_k"],
+                    "nvt_max_bond_dev_nm": case["nvt"]["maximum_bond_length_deviation_nm"],
+                    "npt_max_bond_dev_nm": case.get("npt_fixed_chain_axis", {}).get(
+                        "maximum_bond_length_deviation_nm"
+                    ),
+                }
+                for name, case in results.items()
+            },
+            indent=1,
+        )
+    )
     return 0
 
 

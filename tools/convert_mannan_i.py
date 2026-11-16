@@ -61,8 +61,27 @@ PUBLISHED = {
 }
 
 ATOM_ORDER = (
-    "C1", "H1", "C2", "H2", "C3", "H3", "C4", "H4", "C5", "H5",
-    "C6", "H61", "H62", "O2", "O3", "O4", "O5", "O6", "HO2", "HO3", "HO6",
+    "C1",
+    "H1",
+    "C2",
+    "H2",
+    "C3",
+    "H3",
+    "C4",
+    "H4",
+    "C5",
+    "H5",
+    "C6",
+    "H61",
+    "H62",
+    "O2",
+    "O3",
+    "O4",
+    "O5",
+    "O6",
+    "HO2",
+    "HO3",
+    "HO6",
 )
 
 
@@ -90,16 +109,13 @@ def _hydrogen(
     acceptor_direction = acceptor - donor
     acceptor_direction /= np.linalg.norm(acceptor_direction)
     perpendicular = (
-        acceptor_direction
-        - np.dot(acceptor_direction, carbon_direction) * carbon_direction
+        acceptor_direction - np.dot(acceptor_direction, carbon_direction) * carbon_direction
     )
     perpendicular /= np.linalg.norm(perpendicular)
     orthogonal = np.cross(carbon_direction, perpendicular)
     angle = np.radians(109.5)
     rotation = np.radians(rotation_deg)
-    cone_direction = (
-        np.cos(rotation) * perpendicular + np.sin(rotation) * orthogonal
-    )
+    cone_direction = np.cos(rotation) * perpendicular + np.sin(rotation) * orthogonal
     oh_direction = np.cos(angle) * carbon_direction + np.sin(angle) * cone_direction
     return donor + OH_LENGTH * oh_direction
 
@@ -118,18 +134,14 @@ def definition() -> dict[str, object]:
     # O6-H...O3. Select the corresponding proper-symmetry images, then place
     # H on a tetrahedral C-O-H cone rather than directly on the O...O line.
     interchain_o5 = _second_chain(_screw(xyz["O5"])) + np.asarray([0.0, 0.0, CELL[2]])
-    xyz["HO2"] = _hydrogen(
-        xyz["O2"], xyz["C2"], interchain_o5, HYDROXYL_TORSIONS_DEG["HO2"]
-    )
+    xyz["HO2"] = _hydrogen(xyz["O2"], xyz["C2"], interchain_o5, HYDROXYL_TORSIONS_DEG["HO2"])
     xyz["HO3"] = _hydrogen(
         xyz["O3"],
         xyz["C3"],
         next_xyz["O5"] - np.asarray([0.0, 0.0, CELL[2]]),
         HYDROXYL_TORSIONS_DEG["HO3"],
     )
-    xyz["HO6"] = _hydrogen(
-        xyz["O6"], xyz["C6"], next_xyz["O3"], HYDROXYL_TORSIONS_DEG["HO6"]
-    )
+    xyz["HO6"] = _hydrogen(xyz["O6"], xyz["C6"], next_xyz["O3"], HYDROXYL_TORSIONS_DEG["HO6"])
 
     first = np.asarray([xyz[name] / CELL for name in ATOM_ORDER])
     second = _second_chain(np.asarray([xyz[name] for name in ATOM_ORDER])) / CELL
@@ -157,8 +169,12 @@ def definition() -> dict[str, object]:
             ),
         },
         "unit_cell": {
-            "a": CELL[0], "b": CELL[1], "c": CELL[2],
-            "alpha_deg": 90.0, "beta_deg": 90.0, "gamma_deg": 90.0,
+            "a": CELL[0],
+            "b": CELL[1],
+            "c": CELL[2],
+            "alpha_deg": 90.0,
+            "beta_deg": 90.0,
+            "gamma_deg": 90.0,
             "length_unit": "angstrom",
         },
         "symmetry_operations": [

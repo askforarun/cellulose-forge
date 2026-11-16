@@ -654,7 +654,6 @@ def build_36_chain_fibril(  # noqa: PLR0912, PLR0913, PLR0915
         chain_axis=allomorph.chain_axis,
     )
 
-
     unit_chain_order = tuple(dict.fromkeys(unit_cell.chain_numbers))
     templates = {
         chain_number: (
@@ -833,8 +832,7 @@ def build_i_beta_profile_fibril(  # noqa: PLR0913, PLR0915
         msg = "custom and 18-/24-chain fibril profiles currently support cellulose I-beta only"
         raise ValueError(msg)
     if not row_counts or any(
-        not isinstance(value, int) or isinstance(value, bool) or value < 1
-        for value in row_counts
+        not isinstance(value, int) or isinstance(value, bool) or value < 1 for value in row_counts
     ):
         msg = "fibril row counts must be a nonempty sequence of positive integers"
         raise ValueError(msg)
@@ -847,9 +845,7 @@ def build_i_beta_profile_fibril(  # noqa: PLR0913, PLR0915
         raise ValueError(msg)
 
     source_start = (len(source_profile) - len(row_counts)) // 2
-    source_layers = tuple(
-        range(source_start + 1, source_start + len(row_counts) + 1)
-    )
+    source_layers = tuple(range(source_start + 1, source_start + len(row_counts) + 1))
     available_counts = tuple(source_profile[layer - 1] for layer in source_layers)
     oversized = [
         (index + 1, requested, available)
@@ -891,9 +887,7 @@ def build_i_beta_profile_fibril(  # noqa: PLR0913, PLR0915
         selection_start = excess // 2
         if excess % 2 and profile_row % 2:
             selection_start += 1
-        selected_chains.extend(
-            layer_chains[selection_start : selection_start + requested]
-        )
+        selected_chains.extend(layer_chains[selection_start : selection_start + requested])
 
     selected_mask = np.isin(chain_numbers, selected_chains)
     selected_coordinates = coordinates[selected_mask].copy()
@@ -924,9 +918,7 @@ def build_i_beta_profile_fibril(  # noqa: PLR0913, PLR0915
             if int(selected_old_layers[selected_old_chains == chain][0]) == source_layer
         ]
         layer_selected.sort(
-            key=lambda chain: float(
-                selected_coordinates[selected_old_chains == chain, 0].mean()
-            )
+            key=lambda chain: float(selected_coordinates[selected_old_chains == chain, 0].mean())
         )
         for old_chain in layer_selected:
             chain_mapping[old_chain] = next_chain
@@ -939,18 +931,13 @@ def build_i_beta_profile_fibril(  # noqa: PLR0913, PLR0915
             "Cellulose_Modeler_v0.8.0 profile=2,3,4,4,3,2; "
             "Kubicki_et_al_2018 doi:10.1038/s41598-018-32211-w"
         ),
-        "24-chain": (
-            "profile=3,4,5,5,4,3; Yang_and_Kubicki_2020 "
-            "doi:10.1007/s10570-020-02970-9"
-        ),
+        "24-chain": ("profile=3,4,5,5,4,3; Yang_and_Kubicki_2020 doi:10.1007/s10570-020-02970-9"),
     }.get(model_name, "user_defined_I-beta_profile")
     selected_labels = tuple(
         label for label, keep in zip(full.atom_labels, selected_mask, strict=True) if keep
     )
     selected_residues = tuple(
-        residue
-        for residue, keep in zip(full.residue_numbers, selected_mask, strict=True)
-        if keep
+        residue for residue, keep in zip(full.residue_numbers, selected_mask, strict=True) if keep
     )
     return BulkCrystal(
         allomorph=full.allomorph,
@@ -1088,9 +1075,7 @@ def build_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             chain_number = chain_index + 1
             chain_id = _PDB_CHAIN_IDENTIFIERS[chain_index % len(_PDB_CHAIN_IDENTIFIERS)]
             lattice_chain = (
-                chains_per_layer - 1 - surface_chain
-                if surface_order_reversed
-                else surface_chain
+                chains_per_layer - 1 - surface_chain if surface_order_reversed else surface_chain
             )
             is_center = bool((crystal_layer + lattice_chain) % 2)
             template = center_template if is_center else origin_template
@@ -1274,8 +1259,7 @@ def build_slab_with_sizing(  # noqa: PLR0913
         annotation
         for annotation in (
             (
-                f"requested_width={width:.6f} angstrom "
-                f"realized_width={realized_width:.6f} angstrom"
+                f"requested_width={width:.6f} angstrom realized_width={realized_width:.6f} angstrom"
                 if width is not None
                 else None
             ),
@@ -1453,9 +1437,7 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             atom_labels.extend(labels)
             chain_ids.extend([chain_id] * len(template))
             chain_numbers.extend([chain_number] * len(template))
-            layer_numbers.extend(
-                [chain_index // chains_per_layer + 1] * len(template)
-            )
+            layer_numbers.extend([chain_index // chains_per_layer + 1] * len(template))
             residue_numbers.extend(residue + 2 * chain_cell for residue in residues)
 
     projected = np.vstack(coordinate_blocks) @ axes.T

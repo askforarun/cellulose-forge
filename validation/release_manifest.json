@@ -1,0 +1,48 @@
+{
+  "description": "Every file under validation/results/ and the role it plays in a release. Read by validation/release_gate.py and tests/unit/test_validation_provenance.py.",
+  "roles": {
+    "evidence": "Cited validation result. Must record provenance; at release it must come from a clean tree, and the source tree and its validator must be unchanged since the recorded commit.",
+    "unprovenanced-evidence": "Cited validation result whose validator does not yet record provenance. Reported in every run; blocks a --release run until the validator records provenance and the result is regenerated.",
+    "reference": "Fixture or probe consumed by other validators or kept for the record. Must exist; not release evidence."
+  },
+  "results": {
+    "cellulose_ii_hydroxyl_network.json": {"role": "evidence", "validator": "validation/validate_cellulose_ii_hydroxyls.py"},
+    "chitin_glycam_cross_engines.json": {"role": "evidence", "validator": "validation/validate_chitin_glycam_cross_engines.py"},
+    "chitin_glycam_engines.json": {"role": "evidence", "validator": "validation/validate_chitin_glycam.py"},
+    "chitin_openff_matrix.json": {"role": "evidence", "validator": "validation/validate_chitin_openff.py"},
+    "force_field_matrix.json": {"role": "evidence", "validator": "validation/validate_force_field_matrix.py"},
+    "namd_acceptance_matrix.json": {"role": "evidence", "validator": "validation/namd/run_acceptance_matrix.py"},
+    "openff_fibril_nagl_matrix.json": {"role": "evidence", "validator": "validation/validate_openff_fibrils.py"},
+    "openff_finite_slab_matrix.json": {"role": "evidence", "validator": "validation/validate_openff_finite_slab.py"},
+    "openff_finite_slab_nagl_matrix.json": {"role": "evidence", "validator": "validation/validate_openff_finite_slab.py"},
+    "openff_mixed_precision_accumulation.json": {"role": "evidence", "validator": "validation/measure_openff_mixed_precision.py"},
+    "openff_periodic_bulk_nagl_matrix.json": {"role": "evidence", "validator": "validation/validate_openff_periodic_bulk.py"},
+    "openff_periodic_slab_nagl_matrix.json": {"role": "evidence", "validator": "validation/validate_openff_periodic_slab.py"},
+    "openff_shipped_outputs.json": {"role": "evidence", "validator": "validation/validate_openff_shipped_outputs.py"},
+    "openmm_engine_validation.json": {"role": "evidence", "validator": "validation/validate_openmm_engine.py"},
+    "openmm_tilted_box.json": {"role": "evidence", "validator": "validation/measure_openmm_tilted_box.py"},
+    "opls_cellulose_matrix.json": {"role": "evidence", "validator": "validation/validate_opls_cellulose.py"},
+
+    "charmm36_coefficients.json": {"role": "evidence", "validator": "validation/audit_charmm36_coefficients.py"},
+    "charmm36_fibril_matrix.json": {"role": "reference", "validator": null},
+    "charmm36_finite_fibril_matrix.json": {"role": "reference", "validator": null},
+    "charmm36_finite_pme_nvt.json": {"role": "reference", "validator": null},
+    "charmm36_finite_reference.json": {"role": "reference", "validator": "validation/validate_finite_charmm36_reference.py"},
+    "charmm36_ibeta_shapes.json": {"role": "reference", "validator": null},
+    "charmm36_reference.json": {"role": "reference", "validator": "validation/validate_charmm36_reference.py"},
+    "high_throughput_coordinate_matrix.json": {"role": "evidence", "validator": "validation/benchmark_coordinate_matrix.py"},
+    "ibeta_110_lattice_validation.json": {"role": "reference", "validator": null},
+    "position_restraint_validation.json": {"role": "reference", "validator": null},
+
+    "openff_cellodextrin_dp2_charged.json": {"role": "reference", "validator": "validation/probe_openff_cellobiose.py"},
+    "openff_cellodextrin_dp2_nagl_charged.json": {"role": "reference", "validator": "validation/probe_openff_cellobiose.py"},
+    "openff_cellodextrin_dp2_nagl_probe.json": {"role": "reference", "validator": "validation/probe_openff_cellobiose.py"},
+    "openff_cellodextrin_dp2_probe.json": {"role": "reference", "validator": "validation/probe_openff_cellobiose.py"},
+    "openff_cellodextrin_dp6_charged.json": {"role": "reference", "validator": "validation/probe_openff_cellobiose.py"},
+    "openff_cellodextrin_dp6_nagl_charged.json": {"role": "reference", "validator": "validation/probe_openff_periodic.py"},
+    "openff_cellodextrin_dp6_nagl_probe.json": {"role": "reference", "validator": "validation/probe_openff_cellobiose.py"},
+    "openff_cellodextrin_dp6_periodic_nagl_charged.json": {"role": "reference", "validator": "validation/probe_openff_periodic.py"},
+    "openff_cellodextrin_dp6_periodic_nagl_probe.json": {"role": "reference", "validator": "validation/probe_openff_periodic.py"},
+    "openff_cellodextrin_dp6_probe.json": {"role": "reference", "validator": "validation/probe_openff_cellobiose.py"}
+  }
+}

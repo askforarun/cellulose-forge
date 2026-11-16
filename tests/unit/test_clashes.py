@@ -94,12 +94,8 @@ CELLULOSE 1
 
 
 def test_written_topology_validation_checks_every_molecule_copy(tmp_path) -> None:
-    first_chain = np.asarray(
-        [[0.0, 0.0, 0.0], [0.0, 9.0, 0.0], [0.0, 8.0, 0.0], [0.0, 1.0, 0.0]]
-    )
-    second_chain = np.asarray(
-        [[5.0, 0.0, 0.0], [5.0, 5.0, 0.0], [5.0, 8.0, 0.0], [5.0, 4.0, 0.0]]
-    )
+    first_chain = np.asarray([[0.0, 0.0, 0.0], [0.0, 9.0, 0.0], [0.0, 8.0, 0.0], [0.0, 1.0, 0.0]])
+    second_chain = np.asarray([[5.0, 0.0, 0.0], [5.0, 5.0, 0.0], [5.0, 8.0, 0.0], [5.0, 4.0, 0.0]])
     system = GlycamMappedSystem(
         atom_names=("O4", "C1", "O4", "C1") * 2,
         residue_names=("4GB",) * 8,

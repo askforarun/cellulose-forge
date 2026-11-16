@@ -26,6 +26,7 @@ from cellulose_forge.openff_sage import (
     dispersion_correction_for_shape,
     reduced_periodic_box,
     require_openff,
+    validate_declared_stereochemistry,
     validate_sage_stereochemistry,
 )
 
@@ -52,6 +53,12 @@ def test_missing_optional_dependency_has_installation_message(
     monkeypatch.setattr(importlib, "import_module", missing)
     with pytest.raises(RuntimeError, match=r"environment-openff\.yml"):
         require_openff()
+
+
+def test_library_api_refuses_mannan_as_cellulose_sage_graph() -> None:
+    crystal = build_bulk_crystal(load_allomorph("i", polymer="mannan"), (2, 2, 2))
+    with pytest.raises(ValueError, match=r"requires crystal residue BGC, not MAN"):
+        build_sage_system(crystal, "periodic", "cellulose")
 
 
 def test_triclinic_box_reduction_preserves_lattice_volume() -> None:
@@ -103,6 +110,14 @@ def test_chitin_direct_graph_has_glcnac_chemistry(boundary: str) -> None:
     assert len(carbonyls) == 6
     assert all(int(bond.bond_order) == 2 for bond in carbonyls)
     assert {atom.metadata["residue_name"] for atom in molecule.atoms} == {"NAG"}
+    terminal = {
+        (int(atom.metadata["residue_number"]), atom.name): atom.stereochemistry
+        for atom in molecule.atoms
+        if atom.name in {"C1", "C3"}
+    }
+    if boundary == "finite":
+        assert terminal[1, "C1"] == "R"
+        assert terminal[6, "C3"] == "R"
 
 
 @pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
@@ -199,6 +214,52 @@ def test_declared_stereochemistry_matches_mapped_3d_coordinates(
                 (int(atom.metadata["residue_number"]), atom.name, atom.stereochemistry, actual)
             )
     assert mismatches == []
+    declared = build.stereochemistry["declared_labels"]
+    assert declared["passed"] is True
+    assert declared["distinct_chain_types_checked"] >= 1
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+def test_build_time_stereochemistry_guard_rejects_wrong_graph_label() -> None:
+    crystal = build_chain_parallel_slab(
+        load_allomorph("beta", polymer="chitin"),
+        MillerIndex(1, 0, 0),
+        layers=2,
+        chains_per_layer=2,
+        degree_polymerization=4,
+        vacuum=30.0,
+        padding_z=12.0,
+        chain_boundary="finite",
+    )
+    build = build_sage_system(crystal, "finite", "chitin")
+    terminal_c3 = next(
+        atom
+        for atom in build.molecule.atoms
+        if atom.name == "C3" and int(atom.metadata["residue_number"]) == 4
+    )
+    terminal_c3.stereochemistry = "S"
+    with pytest.raises(ValueError, match="declared stereochemistry disagrees"):
+        validate_declared_stereochemistry(build.molecule, build.mapped, "finite", "chitin")
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+@pytest.mark.parametrize("polymer", ["cellulose", "chitin"])
+def test_declared_stereo_guard_handles_wrapped_periodic_chains(polymer: str) -> None:
+    if polymer == "cellulose":
+        crystal = build_bulk_crystal(load_allomorph("i_beta"), (3, 3, 3))
+    else:
+        crystal = build_bulk_crystal(load_allomorph("beta", polymer="chitin"), (4, 2, 2))
+    build = build_sage_system(crystal, "periodic", polymer)
+    inverse = np.linalg.inv(build.mapped.basis_vectors)
+    fractional = build.mapped.cartesian_coordinates @ inverse
+    wrapped = (fractional - np.floor(fractional)) @ build.mapped.basis_vectors
+    result = validate_declared_stereochemistry(
+        build.molecule,
+        replace(build.mapped, cartesian_coordinates=wrapped),
+        "periodic",
+        polymer,
+    )
+    assert result["passed"] is True
 
 
 @pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
@@ -382,3 +443,147 @@ def test_glycam_and_openff_place_identical_cellulose_ii_hydrogens() -> None:
     assert from_glycam.keys() == from_openff.keys()
     for oxygen_position, hydrogen in from_glycam.items():
         np.testing.assert_allclose(hydrogen, from_openff[oxygen_position], atol=1e-6)
+
+
+def _guard_case(polymer: str, allomorph: str, boundary: str, degree: int) -> tuple[object, object]:
+    from cellulose_forge.polymer_mapping import (  # noqa: PLC0415
+        chain_template,
+        map_crystal_to_chain_template,
+    )
+
+    if allomorph == "ii":
+        crystal = build_chain_parallel_slab(
+            load_allomorph("ii"),
+            MillerIndex(1, 1, 0),
+            layers=3,
+            chains_per_layer=4,
+            degree_polymerization=degree,
+            vacuum=20.0,
+            chain_boundary=boundary,
+        )
+    else:
+        crystal = build_chain_parallel_slab(
+            load_allomorph(allomorph, polymer),
+            MillerIndex(1, 0, 0),
+            layers=1,
+            chains_per_layer=2,
+            degree_polymerization=degree,
+            vacuum=20.0,
+            chain_boundary=boundary,
+        )
+    molecule = build_sage_molecule(degree, boundary, polymer)
+    template = chain_template(
+        (atom.name, int(atom.metadata["residue_number"])) for atom in molecule.atoms
+    )
+    residue = "NAG" if polymer == "chitin" else "BGC"
+    return molecule, map_crystal_to_chain_template(crystal, template, boundary, residue)
+
+
+def _full_rdkit_label(
+    molecule: object, coordinates: np.ndarray, box: np.ndarray, centre: int
+) -> str | None:
+    """Reference: RDKit's full perception with the chain unwrapped around ``centre``."""
+    chem = importlib.import_module("rdkit.Chem")
+    point_type = importlib.import_module("rdkit.Geometry").Point3D
+    atoms = molecule.n_atoms  # type: ignore[attr-defined]
+    adjacency: list[list[int]] = [[] for _ in range(atoms)]
+    for bond in molecule.bonds:  # type: ignore[attr-defined]
+        left, right = bond.atom1.molecule_atom_index, bond.atom2.molecule_atom_index
+        adjacency[left].append(right)
+        adjacency[right].append(left)
+    inverse = np.linalg.inv(box)
+    unwrapped = np.empty((atoms, 3))
+    unwrapped[centre] = coordinates[centre]
+    seen = {centre}
+    queue = [centre]
+    while queue:
+        parent = queue.pop(0)
+        for child in adjacency[parent]:
+            if child not in seen:
+                fractional = (coordinates[child] - coordinates[parent]) @ inverse
+                unwrapped[child] = unwrapped[parent] + (fractional - np.round(fractional)) @ box
+                seen.add(child)
+                queue.append(child)
+    rdkit_molecule = molecule.to_rdkit()  # type: ignore[attr-defined]
+    conformer = chem.Conformer(atoms)
+    for index, coordinate in enumerate(unwrapped):
+        conformer.SetAtomPosition(index, point_type(*map(float, coordinate)))
+    rdkit_molecule.RemoveAllConformers()
+    rdkit_molecule.AddConformer(conformer)
+    for atom in rdkit_molecule.GetAtoms():
+        atom.SetChiralTag(chem.ChiralType.CHI_UNSPECIFIED)
+        if atom.HasProp("_CIPCode"):
+            atom.ClearProp("_CIPCode")
+    chem.AssignStereochemistryFrom3D(rdkit_molecule, confId=0, replaceExistingTags=True)
+    perceived = rdkit_molecule.GetAtomWithIdx(centre)
+    return perceived.GetProp("_CIPCode") if perceived.HasProp("_CIPCode") else None
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+@pytest.mark.parametrize("degree", [4, 6])
+@pytest.mark.parametrize("boundary", ["finite", "periodic"])
+@pytest.mark.parametrize(
+    ("polymer", "allomorph"), [("cellulose", "i_beta"), ("cellulose", "ii"), ("chitin", "beta")]
+)
+def test_fast_stereo_guard_agrees_with_full_rdkit_perception(
+    polymer: str, allomorph: str, boundary: str, degree: int
+) -> None:
+    """The linear-time guard reads the same R/S as RDKit at every centre, wrapped or not."""
+    molecule, mapped = _guard_case(polymer, allomorph, boundary, degree)
+    fractional = mapped.cartesian_coordinates @ np.linalg.inv(mapped.basis_vectors)  # type: ignore[attr-defined]
+    wrapped = replace(
+        mapped,  # type: ignore[type-var]
+        cartesian_coordinates=(fractional - np.floor(fractional)) @ mapped.basis_vectors,  # type: ignore[attr-defined]
+    )
+    for coordinates in (mapped, wrapped):
+        assert validate_declared_stereochemistry(molecule, coordinates, boundary, polymer)["passed"]
+    chain = wrapped.cartesian_coordinates[: molecule.n_atoms]  # type: ignore[attr-defined]
+    for atom in molecule.atoms:  # type: ignore[attr-defined]
+        if atom.stereochemistry is not None:
+            perceived = _full_rdkit_label(
+                molecule,
+                chain,
+                wrapped.basis_vectors,
+                atom.molecule_atom_index,  # type: ignore[attr-defined]
+            )
+            assert perceived == atom.stereochemistry, (atom.metadata["residue_number"], atom.name)
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+@pytest.mark.parametrize("boundary", ["finite", "periodic"])
+@pytest.mark.parametrize(("polymer", "allomorph"), [("cellulose", "i_beta"), ("chitin", "beta")])
+def test_fast_stereo_guard_catches_every_single_label_flip(
+    polymer: str, allomorph: str, boundary: str
+) -> None:
+    molecule, mapped = _guard_case(polymer, allomorph, boundary, 4)
+    labelled = [atom for atom in molecule.atoms if atom.stereochemistry is not None]  # type: ignore[attr-defined]
+    for atom in labelled:
+        original = atom.stereochemistry
+        atom.stereochemistry = "R" if original == "S" else "S"
+        with pytest.raises(ValueError, match="declared stereochemistry disagrees"):
+            validate_declared_stereochemistry(molecule, mapped, boundary, polymer)
+        atom.stereochemistry = original
+    assert len(labelled) == 20
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+def test_fast_stereo_guard_stays_fast_for_long_periodic_chains() -> None:
+    """RDKit's global perception took seconds per DP20 periodic chain; the guard must not."""
+    molecule, mapped = _guard_case("cellulose", "i_beta", "periodic", 40)
+    validate_declared_stereochemistry(molecule, mapped, "periodic", "cellulose")
+    started = time.perf_counter()
+    result = validate_declared_stereochemistry(molecule, mapped, "periodic", "cellulose")
+    assert time.perf_counter() - started < 1.0
+    assert result["labelled_centres_per_chain"] == 200
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+def test_declared_stereo_guard_requires_explicit_valid_boundary() -> None:
+    molecule, mapped = _guard_case("cellulose", "i_beta", "finite", 4)
+    with pytest.raises(ValueError, match=r"chain_boundary.*'finite' or 'periodic'"):
+        validate_declared_stereochemistry(molecule, mapped, "inferred", "cellulose")
+
+    # The supplied boundary controls the reference graph; it is not inferred
+    # from terminal atom names.
+    with pytest.raises(ValueError, match="molecular graph"):
+        validate_declared_stereochemistry(molecule, mapped, "periodic", "cellulose")

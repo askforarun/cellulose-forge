@@ -78,6 +78,13 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+all-python-engines = [
+    { name = "openmm" },
+    { name = "parmed" },
+]
+amber = [
+    { name = "parmed" },
+]
 dev = [
     { name = "mypy" },
     { name = "pytest" },
@@ -87,6 +94,9 @@ dev = [
 docs = [
     { name = "mkdocs" },
     { name = "mkdocs-material" },
+]
+lammps-converter = [
+    { name = "openmm" },
 ]
 openmm = [
     { name = "openmm" },
@@ -98,12 +108,16 @@ requires-dist = [
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11" },
     { name = "numpy", specifier = ">=1.26,<2.3" },
+    { name = "openmm", marker = "extra == 'all-python-engines'", specifier = ">=8.1" },
+    { name = "openmm", marker = "extra == 'lammps-converter'", specifier = ">=8.1" },
     { name = "openmm", marker = "extra == 'openmm'", specifier = ">=8.1" },
+    { name = "parmed", marker = "extra == 'all-python-engines'", specifier = ">=4.2" },
+    { name = "parmed", marker = "extra == 'amber'", specifier = ">=4.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7" },
 ]
-provides-extras = ["dev", "docs", "openmm"]
+provides-extras = ["dev", "docs", "openmm", "amber", "lammps-converter", "all-python-engines"]
 
 [[package]]
 name = "certifi"
@@ -604,6 +618,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/ec/46/68dde5b6bc00c1296
 wheels = [
     { url = "https://files.pythonhosted.org/packages/90/96/04b8e52da071d28f5e21a805b19cb9390aa17a47462ac87f5e2696b9566d/paginate-0.5.7-py2.py3-none-any.whl", hash = "sha256:b885e2af73abcf01d9559fd5216b57ef722f8c42affbb63942377668e35c7591", size = 13746, upload-time = "2024-08-25T14:17:22.55Z" },
 ]
+
+[[package]]
+name = "parmed"
+version = "4.3.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a0/f5/65d3c930767aece106b97443eda3a37de8b9e6a183b7d999a670b50c161f/parmed-4.3.1.tar.gz", hash = "sha256:1f26bfcad2d9e1344fda343fe0199fd36ae9a02f64669010bf47e30f9ce0918c", size = 20197667, upload-time = "2026-02-04T21:08:21.086Z" }
 
 [[package]]
 name = "pathspec"

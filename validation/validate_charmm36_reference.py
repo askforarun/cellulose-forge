@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +23,11 @@ from cellulose_forge.charmm36 import (
     read_charmm36_chain_template,
     render_periodic_charmm36_itp,
 )
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "validation"))
+
+from _provenance import provenance  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -107,9 +113,7 @@ def validate(rtf_path: Path, itp_path: Path) -> dict[str, object]:
         missing = sorted(expected.keys() - actual.keys())
         extra = sorted(actual.keys() - expected.keys())
         changed = sorted(
-            name
-            for name in expected.keys() & actual.keys()
-            if expected[name] != actual[name]
+            name for name in expected.keys() & actual.keys() if expected[name] != actual[name]
         )
         raise ValueError(
             "periodic ITP repeat does not match BGLC+14bb: "
@@ -121,9 +125,7 @@ def validate(rtf_path: Path, itp_path: Path) -> dict[str, object]:
     )
     with tempfile.TemporaryDirectory() as temporary_directory:
         generated_path = Path(temporary_directory) / "generated.itp"
-        generated_path.write_text(
-            render_periodic_charmm36_itp(generated), encoding="utf-8"
-        )
+        generated_path.write_text(render_periodic_charmm36_itp(generated), encoding="utf-8")
         regenerated = read_charmm36_chain_template(generated_path)
     source_graph = _canonical_interactions(source)
     generated_graph = _canonical_interactions(regenerated)
@@ -162,6 +164,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     result = validate(args.rtf, args.itp)
+    result["provenance"] = provenance(("cellulose-forge", "numpy"))
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output is None:
         print(rendered, end="")
