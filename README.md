@@ -7,7 +7,7 @@
 [![CI](https://github.com/askforarun/cellulose-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/askforarun/cellulose-forge/actions/workflows/ci.yml)
 [![Python 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](#requirements)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
-[![Engines](https://img.shields.io/badge/engines-GROMACS%20%7C%20OpenMM%20%7C%20LAMMPS%20%7C%20Amber-orange)](#-cross-engine-validation-one-model-one-energy)
+[![Engines](https://img.shields.io/badge/engines-GROMACS%20%7C%20OpenMM%20%7C%20LAMMPS%20%7C%20NAMD%20%7C%20Amber-orange)](#-cross-engine-validation-one-model-one-energy)
 [![Cross-engine agreement](https://img.shields.io/badge/cross--engine%20agreement-%E2%89%A41e--6%20per%20term-brightgreen)](#-cross-engine-validation-one-model-one-energy)
 
 [Quick start](#quick-start) ·
@@ -25,8 +25,9 @@ from primary diffraction data: cellulose and chitin crystals, coordinate-only
 Mannan I crystals, chain-parallel surface slabs, and literature-defined
 fibrils. It parameterizes them with GLYCAM06j-1 or CHARMM36, or with
 experimental OpenFF Sage 2.3, OPLS-AA or OPLS-AA-SEI. It then writes them for
-GROMACS, OpenMM, LAMMPS and (for finite GLYCAM chains) Amber, and checks that
-every engine evaluates the **same energy** for the same model.
+GROMACS, OpenMM, LAMMPS, NAMD (for CHARMM36) and, for finite GLYCAM chains,
+Amber, and checks that every engine evaluates the **same energy** for the same
+model.
 
 > [!IMPORTANT]
 > ## 🚀 New in 1.3.0
@@ -37,9 +38,10 @@ every engine evaluates the **same energy** for the same model.
 > coordinate-only **Mannan I**; I-beta **18- and 24-chain fibril presets** and
 > **custom I-beta fibril profiles**; an experimental **OpenFF Sage 2.3**
 > backend; experimental **OPLS-AA and OPLS-AA-SEI** for GROMACS, OpenMM and
-> LAMMPS; **cross-engine energy validation** for every force field; and
-> starting **run inputs for every engine**. **CHARMM/PSF output** and
-> **odd-DP chains** remain planned. Feedback and
+> LAMMPS; **cross-engine energy validation** for every force field; starting
+> **run inputs for every engine**; and validated **NAMD/PSF output for
+> CHARMM36**, including single-point energy comparison and short production
+> dynamics checks. **Odd-DP chains** remain planned. Feedback and
 > contributions are welcome.
 
 > **Release status:** CelluloseForge 1.3.0 is the release candidate described by this branch. Its
@@ -54,7 +56,7 @@ every engine evaluates the **same energy** for the same model.
 | 🔬 **The experimental crystal, exactly** | Cellulose I-alpha, I-beta, II and III-I, and alpha- and beta-chitin, built from primary diffraction data with full triclinic symmetry. The configuration of every stereocentre is checked on every build. |
 | 🧱 **Any crystalline geometry** | Periodic bulk crystals, chain-parallel slabs from signed Miller indices, 36-chain fibrils, and I-beta 18- and 24-chain presets and custom row profiles. Chains can be finite or covalently periodic. |
 | ⚙️ **Five force fields** | GLYCAM06j-1 (via AmberTools) and CHARMM36 (read directly, no VMD or `psfgen`), plus experimental OpenFF Sage 2.3, OPLS-AA and OPLS-AA-SEI. |
-| 🖥️ **Four engines** | GROMACS, OpenMM, LAMMPS and Amber, each with starting minimization and smoke-test run inputs. |
+| 🖥️ **Five engines** | GROMACS, OpenMM, LAMMPS, NAMD and Amber, with engine-appropriate starting run inputs. NAMD is available for CHARMM36; Amber is available for finite GLYCAM chains. |
 | ✅ **Verified, not just converted** | Topologies are compared with independent reference tools, and energies term by term across engines, down to 10⁻⁶ ([details](#-cross-engine-validation-one-model-one-energy)). |
 | 🔁 **Reproducible by design** | Deterministic chain and residue numbering, byte-identical rebuilds, and a machine-readable build report. Every validation result records the commit and software versions that produced it. |
 | 🤖 **Automation-ready** | One scriptable CLI and an importable package, with explicit errors and JSON diagnostics for workflow managers and LLM-based agents. Automatic mmCIF output above 99,999 atoms. |
@@ -127,7 +129,7 @@ Simulation engines by force field and chain boundary:
 | GROMACS | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | Released |
 | OpenMM | Finite and periodic | Finite and periodic | Finite and periodic | Finite and periodic | Released (1.2.0) |
 | LAMMPS | Finite and periodic | Finite and periodic | Not available | Finite and periodic | Experimental (1.2.0) |
-| NAMD | Not available | Finite and periodic | Not available | Not available | Validated (next release) |
+| NAMD | Not available | Finite and periodic | Not available | Not available | Validated on `main` |
 | Amber | Finite only | Not available | Not available | Not available | Released (1.2.0) |
 
 Native Amber output cannot represent covalently periodic chains because Amber
