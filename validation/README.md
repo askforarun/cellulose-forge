@@ -291,16 +291,15 @@ uv run python validation/validate_openmm_engine.py \
   --tleap-executable /path/to/tleap --parmed-python /path/to/python-with-parmed
 ```
 
-Two kinds of energy agreement are recorded separately:
-
-- Bonded and 1-4 categories (bonds, angles, torsions, and combined
-  Lennard-Jones and Coulomb 1-4 terms; CHARMM36 bonds, angles, and Urey-Bradley
-  terms are compared together) agreed within 8 × 10^-6 relative.
-- The total nonbonded energy agreed within 1.3 × 10^-4 relative. For this
-  comparison GROMACS used plain cutoffs (`vdw-modifier` and `coulomb-modifier`
-  `None`), `ewald-rtol` 1 × 10^-5, and the same dispersion correction as the
-  OpenMM system: on for the bulk crystal and off for slabs. The residual
-  difference reflects the engines' different PME grids.
+Both engines now run through the shared schema-1 energy drivers. The result
+contains complete canonical decompositions (`bond`, `angle`, `dihedral`,
+`improper`, `vdw`, `electrostatics`, `restraint`, `dispersion_correction`, and
+`potential`), independent component-sum checks, and a per-term comparison.
+One engine cannot pass by omitting a contribution. GROMACS uses plain cutoffs
+(`vdw-modifier` and `coulomb-modifier` `None`), `ewald-rtol` 1 × 10^-5, and
+the same dispersion correction as OpenMM. The 2 × 10^-4 relative comparison
+gate covers the measured PME-grid summation difference; it is not a
+force-field-accuracy tolerance.
 
 GROMACS used `periodic-molecules = yes` for the periodic systems; OpenMM used
 periodic bonded forces and periodic nonbonded exceptions. After NVT and

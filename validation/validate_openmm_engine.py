@@ -30,6 +30,18 @@ sys.path.insert(0, str(VALIDATION))
 
 from _provenance import provenance  # noqa: E402
 
+from cellulose_forge.energy_drivers import (  # noqa: E402
+    EnergyReport,
+    compare_reports,
+    run_gromacs_single_point,
+    validate_potential_sum,
+)
+from cellulose_forge.energy_drivers.coordinates import (  # noqa: E402
+    read_gro_frame,
+    write_coordinate_reference,
+)
+from cellulose_forge.energy_drivers.report import energy_report_from_dict  # noqa: E402
+
 SLAB = [
     "--shape",
     "slab",
@@ -98,29 +110,6 @@ for _allomorph, _face in ALLOMORPH_SLAB_FACES.items():
                 "30",
             ],
         }
-GROMACS_TERMS = {
-    "bonds_and_urey_bradley": ("Bond", "U-B"),
-    "angles": ("Angle",),
-    "torsions": ("Proper Dih.", "Improper Dih.", "Per. Imp. Dih.", "CMAP Dih."),
-    "one_four": ("LJ-14", "Coulomb-14"),
-}
-GROMACS_NONBONDED = (
-    "LJ (SR)",
-    "Coulomb (SR)",
-    "Coul. recip.",
-    "Disper. corr.",
-    "LJ-14",
-    "Coulomb-14",
-)
-OPENMM_TERMS = {
-    "bonds_and_urey_bradley": ("HarmonicBondForce",),
-    "angles": ("HarmonicAngleForce",),
-    "torsions": ("PeriodicTorsionForce", "CustomTorsionForce", "CMAPTorsionForce"),
-    "one_four": ("NonbondedForce exceptions (1-4)",),
-}
-# CHARMM36 Urey-Bradley terms are one GROMACS angle type but two OpenMM forces.
-COMBINED_UREY_BRADLEY = ("bonds_and_urey_bradley", "angles")
-
 BOND_CHECK = r"""
 import json, sys
 import numpy, openmm
@@ -156,9 +145,15 @@ def _run(command: list[str], cwd: Path, input_text: str | None = None) -> str:
     return completed.stdout
 
 
-def _gromacs_energies(
-    gmx: str, directory: Path, *, periodic: bool, dispersion_correction: bool
-) -> dict[str, float]:
+def _gromacs_energies(  # noqa: PLR0913 - scientific inputs remain explicit
+    gmx: str,
+    directory: Path,
+    *,
+    periodic: bool,
+    dispersion_correction: bool,
+    coordinate_reference: Path,
+    coordinate_sha256: str,
+) -> EnergyReport:
     mdp = directory / "single_point.mdp"
     mdp.write_text(
         "integrator = md\nnsteps = 0\nconstraints = none\ncutoff-scheme = Verlet\n"
@@ -168,86 +163,52 @@ def _gromacs_energies(
         "pbc = xyz\nnstenergy = 1\n" + ("periodic-molecules = yes\n" if periodic else ""),
         encoding="utf-8",
     )
-    _run(
-        [
-            gmx,
-            "grompp",
-            "-f",
-            mdp.name,
-            "-c",
-            "structure.gro",
-            "-p",
-            "system.top",
-            "-o",
-            "single_point.tpr",
-        ],
+    return run_gromacs_single_point(
         directory,
+        coordinate_file=directory / "structure.gro",
+        coordinate_reference_file=coordinate_reference,
+        topology_file=directory / "system.top",
+        mdp_file=mdp,
+        coordinate_sha256=coordinate_sha256,
+        executable=gmx,
     )
-    _run(
-        [
-            gmx,
-            "mdrun",
-            "-s",
-            "single_point.tpr",
-            "-deffnm",
-            "single_point",
-            "-ntmpi",
-            "1",
-            "-ntomp",
-            "1",
-        ],
-        directory,
-    )
-    names = list(
-        dict.fromkeys(
-            [*(term for terms in GROMACS_TERMS.values() for term in terms), *GROMACS_NONBONDED]
-        )
-    )
+
+
+def _openmm_energies(
+    args: argparse.Namespace,
+    directory: Path,
+    coordinate_reference: Path,
+    coordinate_sha256: str,
+) -> EnergyReport:
+    evaluator = VALIDATION / "evaluate_openmm_single_point.py"
     stdout = _run(
-        [gmx, "energy", "-f", "single_point.edr", "-o", "single_point.xvg"],
+        [
+            str(args.openmm_python),
+            str(evaluator),
+            "--system",
+            "validation_system.xml",
+            "--coordinates",
+            "structure.gro",
+            "--coordinate-reference",
+            str(coordinate_reference),
+            "--coordinate-sha256",
+            coordinate_sha256,
+            "--topology",
+            "system.top",
+            "--include-directory",
+            str(directory),
+            "--platform",
+            args.platform,
+        ],
         directory,
-        "\n".join(name.replace(" ", "-") for name in names) + "\n0\n",
     )
-    values: dict[str, float] = {}
-    for name in names:
-        match = re.search(rf"^{re.escape(name)}\s+([-+0-9.eE]+)", stdout, re.MULTILINE)
-        if match:
-            values[name] = float(match.group(1))
-    return values
-
-
-def _compare(gromacs: dict[str, float], openmm: dict[str, float]) -> dict[str, Any]:
-    rows: dict[str, dict[str, float]] = {}
-    for category, gromacs_names in GROMACS_TERMS.items():
-        rows[category] = {
-            "gromacs_kj_mol": sum(gromacs.get(name, 0.0) for name in gromacs_names),
-            "openmm_kj_mol": sum(openmm.get(name, 0.0) for name in OPENMM_TERMS[category]),
-        }
-    if "U-B" in gromacs:
-        merged = {
-            key: sum(rows[category][key] for category in COMBINED_UREY_BRADLEY)
-            for key in ("gromacs_kj_mol", "openmm_kj_mol")
-        }
-        for category in COMBINED_UREY_BRADLEY:
-            del rows[category]
-        rows["bonds_angles_and_urey_bradley"] = merged
-    for row in rows.values():
-        reference = abs(row["gromacs_kj_mol"]) or 1.0
-        row["relative_difference"] = abs(row["openmm_kj_mol"] - row["gromacs_kj_mol"]) / reference
-    nonbonded_reference = sum(gromacs.get(name, 0.0) for name in GROMACS_NONBONDED)
-    nonbonded_openmm = openmm["NonbondedForce"]
-    return {
-        "bonded_and_one_four_categories": rows,
-        "maximum_bonded_and_one_four_relative_difference": max(
-            row["relative_difference"] for row in rows.values()
-        ),
-        "total_nonbonded": {
-            "gromacs_kj_mol": nonbonded_reference,
-            "openmm_kj_mol": nonbonded_openmm,
-            "relative_difference": abs(nonbonded_openmm - nonbonded_reference)
-            / abs(nonbonded_reference),
-        },
-    }
+    payload = json.loads(stdout.strip().splitlines()[-1])
+    return energy_report_from_dict(
+        payload,
+        expected_engine="openmm",
+        coordinate_sha256=coordinate_sha256,
+        required_terms=set(payload["terms"]),
+    )
 
 
 def _runner(args: argparse.Namespace, directory: Path, *extra: str) -> dict[str, Any]:
@@ -319,6 +280,26 @@ def _validate_case(args: argparse.Namespace, name: str, case: dict[str, Any]) ->
     report = json.loads((directory / "build_report.json").read_text(encoding="utf-8"))
     openmm = report["openmm_validation"]
     periodic = case["chain_boundary"] == "periodic"
+    positions, box = read_gro_frame(directory / "structure.gro")
+    coordinate_reference = directory / "coordinate_reference.json"
+    coordinate_sha256 = write_coordinate_reference(coordinate_reference, positions, box)
+    gromacs_report = _gromacs_energies(
+        args.gmx,
+        directory,
+        periodic=periodic,
+        dispersion_correction=openmm["dispersion_correction"],
+        coordinate_reference=coordinate_reference,
+        coordinate_sha256=coordinate_sha256,
+    )
+    openmm_report = _openmm_energies(args, directory, coordinate_reference, coordinate_sha256)
+    for energy_report in (gromacs_report, openmm_report):
+        validate_potential_sum(energy_report, absolute_kj_mol=0.1, relative=1.0e-6)
+    energy_comparison = compare_reports(
+        gromacs_report,
+        openmm_report,
+        absolute_kj_mol=0.1,
+        relative=2.0e-4,
+    )
     result: dict[str, Any] = {
         "allomorph": case.get("allomorph", "I-beta"),
         "force_field": case["force_field"],
@@ -329,15 +310,11 @@ def _validate_case(args: argparse.Namespace, name: str, case: dict[str, Any]) ->
         "periodic_forces": openmm["periodic_forces"],
         "chain_axis": openmm["chain_axis"],
         "initial_maximum_bond_length_deviation_nm": openmm["maximum_bond_length_deviation_nm"],
-        "energy_comparison": _compare(
-            _gromacs_energies(
-                args.gmx,
-                directory,
-                periodic=periodic,
-                dispersion_correction=openmm["dispersion_correction"],
-            ),
-            openmm["initial_energies_kj_mol"],
-        ),
+        "energy_reports": {
+            "gromacs": gromacs_report.to_dict(),
+            "openmm": openmm_report.to_dict(),
+        },
+        "energy_comparison": energy_comparison,
         "nvt": _runner(args, directory),
     }
     if "npt_axes" in case:
@@ -356,6 +333,13 @@ def main() -> int:
     parser.add_argument("--gmx", default="gmx")
     parser.add_argument("--platform", default="CPU")
     parser.add_argument("--steps", type=int, default=500)
+    parser.add_argument(
+        "--case",
+        action="append",
+        dest="selected_cases",
+        choices=sorted(CASES),
+        help="run only this validation case; repeat to select more than one",
+    )
     parser.add_argument(
         "--work-directory", type=Path, default=VALIDATION / "work" / "openmm_engine"
     )
@@ -378,7 +362,10 @@ def main() -> int:
     gromacs_version = re.search(r"GROMACS version:\s+(\S+)", _run([args.gmx, "--version"], ROOT))
     commit = _run(["git", "rev-parse", "HEAD"], ROOT).strip()
     dirty = bool(_run(["git", "status", "--porcelain", "--untracked-files=no"], ROOT).strip())
-    results = {name: _validate_case(args, name, case) for name, case in CASES.items()}
+    selected = set(args.selected_cases or CASES)
+    results = {
+        name: _validate_case(args, name, case) for name, case in CASES.items() if name in selected
+    }
     summary = {
         "provenance": provenance(("cellulose-forge", "numpy")),
         "cellulose_forge_commit": commit,
@@ -389,13 +376,10 @@ def main() -> int:
         "timestep_fs": 2.0,
         "temperature_k": 300.0,
         "cases": results,
-        "maximum_bonded_and_one_four_relative_difference": max(
-            case["energy_comparison"]["maximum_bonded_and_one_four_relative_difference"]
+        "maximum_energy_relative_difference": max(
+            term["relative_difference"]
             for case in results.values()
-        ),
-        "maximum_total_nonbonded_relative_difference": max(
-            case["energy_comparison"]["total_nonbonded"]["relative_difference"]
-            for case in results.values()
+            for term in case["energy_comparison"]["common_terms"].values()
         ),
     }
     args.output.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -403,12 +387,11 @@ def main() -> int:
         json.dumps(
             {
                 name: {
-                    "bonded_14_rel": case["energy_comparison"][
-                        "maximum_bonded_and_one_four_relative_difference"
-                    ],
-                    "nonbonded_rel": case["energy_comparison"]["total_nonbonded"][
-                        "relative_difference"
-                    ],
+                    "energy_comparison_passed": case["energy_comparison"]["passed"],
+                    "maximum_energy_relative_difference": max(
+                        term["relative_difference"]
+                        for term in case["energy_comparison"]["common_terms"].values()
+                    ),
                     "nvt_T": case["nvt"]["final_temperature_k"],
                     "nvt_max_bond_dev_nm": case["nvt"]["maximum_bond_length_deviation_nm"],
                     "npt_max_bond_dev_nm": case.get("npt_fixed_chain_axis", {}).get(

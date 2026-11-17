@@ -153,17 +153,16 @@ with both force fields. For each it compares OpenMM and GROMACS zero-step
 energies and runs 1 ps of NVT; the periodic Iβ slabs also run 1 ps of NPT with
 the chain axis fixed.
 
+The validator uses the common schema-1 energy drivers for both engines. It
+requires complete canonical decompositions and checks each engine's potential
+against its component sum before comparing every term. The matched settings
+use plain cutoffs without potential shifts, `ewald-rtol` 1 × 10^-5, and the
+same dispersion correction. A 2 × 10^-4 relative gate covers the measured
+PME-grid summation difference; it is not a force-field-accuracy tolerance.
 With OpenMM 8.5 and GROMACS 2024.2:
 
-- bonded terms (bonds, angles, Urey-Bradley, and torsions) and the 1--4 terms
-  agreed within 8 × 10^-6 relative. These are force-field definitions, so the
-  agreement is limited only by GROMACS output precision;
-- the total nonbonded energy (short-range Lennard-Jones and Coulomb, PME
-  reciprocal, 1--4, and, for the bulk crystal, dispersion correction) agreed
-  within 1.3 × 10^-4 relative when GROMACS used matching settings: plain
-  cutoffs without potential shifts, `ewald-rtol` 1 × 10^-5, and the same
-  dispersion correction. The remaining difference comes from the engines'
-  different PME grids;
+- bonded terms agreed within 8 × 10^-6 relative and the earlier aggregate
+  nonbonded comparison agreed within 1.3 × 10^-4 relative;
 - after dynamics, every bonded distance stayed within 0.026 nm of its
   equilibrium length, including the boundary-crossing glycosidic bonds.
 
