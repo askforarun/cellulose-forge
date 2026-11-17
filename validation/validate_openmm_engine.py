@@ -324,6 +324,11 @@ def _validate_case(args: argparse.Namespace, name: str, case: dict[str, Any]) ->
     return result
 
 
+def _energy_comparisons_passed(results: dict[str, dict[str, Any]]) -> bool:
+    """Return whether every selected case passed its energy comparison."""
+    return all(case["energy_comparison"]["passed"] for case in results.values())
+
+
 def main() -> int:
     """Run the OpenMM validation matrix and write a JSON summary."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -403,7 +408,7 @@ def main() -> int:
             indent=1,
         )
     )
-    return 0
+    return 0 if _energy_comparisons_passed(results) else 1
 
 
 if __name__ == "__main__":
