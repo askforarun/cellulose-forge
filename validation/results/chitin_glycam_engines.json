@@ -1,9 +1,9 @@
 {
   "provenance": {
-    "cellulose_forge_commit": "222b89b45bc7b8bfd4afd9e08fad5d5d0dd8e0af",
+    "cellulose_forge_commit": "570513ac8704dc0c116d26d8fef8bfff94396bc9",
     "tracked_tree_clean": true,
     "software_versions": {
-      "numpy": "2.2.6"
+      "numpy": "2.5.4"
     }
   },
   "engine_versions": {
@@ -112,11 +112,11 @@
       "periodic_bond_validation": {
         "mapped_geometry": {
           "bond_count": 48,
-          "maximum_distance_angstrom": 1.4639960659350162
+          "maximum_distance_angstrom": 1.4639960659350164
         },
         "written_topology": {
           "bond_count": 48,
-          "maximum_distance_angstrom": 1.4639960659350162,
+          "maximum_distance_angstrom": 1.4639960659350164,
           "molecule_count": 8,
           "molecule_type_count": 1
         }
@@ -187,6 +187,177 @@
         "raw_difference_kcal_mol": 0.2919490917774965,
         "coulomb_constant_corrected_difference_kcal_mol": -6.572996971954126e-05
       }
+    },
+    "canonical_single_point": {
+      "coordinate_sha256": "78881b14e8a26ce2e18b22017abcc866b48014087d07885bcf479f52f90acf6b",
+      "energy_reports": {
+        "gromacs": {
+          "schema_version": 1,
+          "engine": "gromacs",
+          "units": "kJ/mol",
+          "coordinate_sha256": "78881b14e8a26ce2e18b22017abcc866b48014087d07885bcf479f52f90acf6b",
+          "terms": {
+            "bond": 18811.662521,
+            "angle": 4610.04284,
+            "dihedral": -2103.991548,
+            "improper": 7.766027,
+            "vdw": 911.1676120000002,
+            "electrostatics": 13097.052248,
+            "restraint": 0.0,
+            "dispersion_correction": 0.0,
+            "potential": 35333.699702
+          },
+          "raw_terms": {
+            "Bond": 18811.662521,
+            "Angle": 4610.04284,
+            "Proper Dih.": -2103.991548,
+            "Per. Imp. Dih.": 7.766027,
+            "LJ-14": 3353.08158,
+            "Coulomb-14": 35279.314151,
+            "LJ (SR)": -2441.913968,
+            "Coulomb (SR)": -22182.261903,
+            "Potential": 35333.699702
+          }
+        },
+        "amber": {
+          "schema_version": 1,
+          "engine": "amber",
+          "units": "kJ/mol",
+          "coordinate_sha256": "78881b14e8a26ce2e18b22017abcc866b48014087d07885bcf479f52f90acf6b",
+          "terms": {
+            "bond": 18811.6623168,
+            "angle": 4610.0429128000005,
+            "dihedral": -2103.9910302610388,
+            "improper": 7.766027061038785,
+            "vdw": 764.5343704000002,
+            "electrostatics": 13480.865924928421,
+            "restraint": 0.0,
+            "dispersion_correction": 0.0,
+            "potential": 35570.880521728424
+          },
+          "corrections": [
+            {
+              "name": "amber_coulomb_constant",
+              "kind": "scale",
+              "factor": 1.0000346331088905,
+              "term": "electrostatics",
+              "raw_kcal_mol": 3221.8926999999994,
+              "raw_kj_mol": 13480.399056799999,
+              "correction_kj_mol": 0.4668681284219929,
+              "comparable_kj_mol": 13480.865924928421,
+              "engine_constant_kcal_angstrom_per_mol_e2": 332.0522,
+              "reference_constant_kcal_angstrom_per_mol_e2": 332.0637,
+              "reference": "gromacs",
+              "scale": 1.0000346331088905,
+              "reason": "Amber's Coulomb constant (332.0522 kcal A/mol/e^2) differs from GROMACS (332.0637). Canonical electrostatics and potential are reported on the GROMACS reference convention."
+            }
+          ],
+          "raw_terms": {
+            "BOND": 4496.0952,
+            "ANGLE": 1101.8267,
+            "DIHED": -501.0098,
+            "VDWAALS": -618.6777,
+            "EEL": -5209.7738,
+            "HBOND": 0.0,
+            "1-4 VDW": 801.4058,
+            "1-4 EEL": 8431.6665,
+            "RESTRAINT": 0.0,
+            "MINIMIZATION ENERGY": 8501.5,
+            "EPtot": 8501.5329
+          },
+          "raw_units": "kcal/mol",
+          "scope": "finite-chain GLYCAM"
+        }
+      },
+      "amber_periodic_improper_classification": {
+        "count": 96,
+        "energy_kcal_mol": 1.8561250145886197
+      },
+      "comparison": {
+        "passed": false,
+        "common_terms": {
+          "angle": {
+            "reference_kj_mol": 4610.04284,
+            "candidate_kj_mol": 4610.0429128000005,
+            "difference_kj_mol": 7.280000045284396e-05,
+            "relative_difference": 1.579161014981256e-08,
+            "allowed_difference_kj_mol": 0.23050214564000004,
+            "passed": true
+          },
+          "bond": {
+            "reference_kj_mol": 18811.662521,
+            "candidate_kj_mol": 18811.6623168,
+            "difference_kj_mol": -0.00020419999782461673,
+            "relative_difference": 1.0854968166511727e-08,
+            "allowed_difference_kj_mol": 0.9405831260499999,
+            "passed": true
+          },
+          "dihedral": {
+            "reference_kj_mol": -2103.991548,
+            "candidate_kj_mol": -2103.9910302610388,
+            "difference_kj_mol": 0.0005177389612072147,
+            "relative_difference": 2.46074639272845e-07,
+            "allowed_difference_kj_mol": 0.10519957740000001,
+            "passed": true
+          },
+          "dispersion_correction": {
+            "reference_kj_mol": 0.0,
+            "candidate_kj_mol": 0.0,
+            "difference_kj_mol": 0.0,
+            "relative_difference": 0.0,
+            "allowed_difference_kj_mol": 0.1,
+            "passed": true
+          },
+          "electrostatics": {
+            "reference_kj_mol": 13097.052248,
+            "candidate_kj_mol": 13480.865924928421,
+            "difference_kj_mol": 383.81367692842105,
+            "relative_difference": 0.028470995785121196,
+            "allowed_difference_kj_mol": 0.6740432962464211,
+            "passed": false
+          },
+          "improper": {
+            "reference_kj_mol": 7.766027,
+            "candidate_kj_mol": 7.766027061038785,
+            "difference_kj_mol": 6.103878469332358e-08,
+            "relative_difference": 7.859718259230354e-09,
+            "allowed_difference_kj_mol": 0.1,
+            "passed": true
+          },
+          "potential": {
+            "reference_kj_mol": 35333.699702,
+            "candidate_kj_mol": 35570.880521728424,
+            "difference_kj_mol": 237.1808197284263,
+            "relative_difference": 0.006667836619437765,
+            "allowed_difference_kj_mol": 1.7785440260864214,
+            "passed": false
+          },
+          "restraint": {
+            "reference_kj_mol": 0.0,
+            "candidate_kj_mol": 0.0,
+            "difference_kj_mol": 0.0,
+            "relative_difference": 0.0,
+            "allowed_difference_kj_mol": 0.1,
+            "passed": true
+          },
+          "vdw": {
+            "reference_kj_mol": 911.1676120000002,
+            "candidate_kj_mol": 764.5343704000002,
+            "difference_kj_mol": -146.63324160000002,
+            "relative_difference": 0.16092894399323754,
+            "allowed_difference_kj_mol": 0.1,
+            "passed": false
+          }
+        }
+      },
+      "comparable_terms": [
+        "bond",
+        "angle",
+        "dihedral",
+        "improper"
+      ],
+      "nonbonded_scope": "ordinary nonbonded terms and total potential are reported but not used for pass/fail because this probe uses different Amber and GROMACS nonbonded protocols; the explicit 1-4 terms are compared separately",
+      "passed": true
     },
     "maximum_corrected_absolute_difference_kcal_mol": 0.00012375717011536835,
     "status": "passed"

@@ -1,11 +1,11 @@
 {
   "test": "cellulose CHARMM36 term-by-term energies: GROMACS vs OpenMM and LAMMPS",
   "provenance": {
-    "cellulose_forge_version": "1.1.2",
-    "git_commit": "73fd223a687a9a0f8304b463414bedb06c46a3e6",
+    "cellulose_forge_version": "1.3.0",
+    "git_commit": "73525209d4a03dd4b855b25cb581f7eafd7b1221",
     "git_tracked_tree_clean": true,
     "gromacs_version": "2024.2-Homebrew",
-    "openmm_version": "8.1.1",
+    "openmm_version": "8.6.1",
     "lammps_version": "22 Jul 2025 - Update 4"
   },
   "tolerances": {
@@ -176,6 +176,201 @@
           "match": true
         }
       },
+      "lammps_canonical_single_point": {
+        "coordinate_sha256": "846080f0efba83fac8db66b4c856ee149c2d3fe173d2020c4d7fd7b930b43595",
+        "energy_reports": {
+          "gromacs": {
+            "schema_version": 1,
+            "engine": "gromacs",
+            "units": "kJ/mol",
+            "coordinate_sha256": "846080f0efba83fac8db66b4c856ee149c2d3fe173d2020c4d7fd7b930b43595",
+            "terms": {
+              "bond": 13182.668945,
+              "angle": 2466.900635,
+              "dihedral": 10060.204102,
+              "improper": 0.0,
+              "vdw": -295.986572,
+              "electrostatics": 19192.981780000002,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 44606.769531
+            },
+            "raw_terms": {
+              "Bond": 13182.668945,
+              "U-B": 2466.900635,
+              "Proper-Dih.": 10060.204102,
+              "LJ-14": 1720.843994,
+              "Coulomb-14": 43417.164062,
+              "LJ-(SR)": -2016.830566,
+              "Coulomb-(SR)": -24589.591797,
+              "Coul.-recip.": 365.409515,
+              "Potential": 44606.769531
+            }
+          },
+          "lammps": {
+            "schema_version": 1,
+            "engine": "lammps",
+            "units": "kJ/mol",
+            "coordinate_sha256": "846080f0efba83fac8db66b4c856ee149c2d3fe173d2020c4d7fd7b930b43595",
+            "terms": {
+              "bond": 13182.6409312,
+              "angle": 2466.9038891200003,
+              "dihedral": 10060.212105600001,
+              "improper": 0.0,
+              "vdw": -295.9847086080656,
+              "electrostatics": 19193.671384589255,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 44607.442216997195
+            },
+            "corrections": [
+              {
+                "name": "lammps_charmm_coulomb_constant",
+                "kind": "scale",
+                "term": "electrostatics",
+                "factor": 0.9999762525586038,
+                "raw_kj_mol": 19194.127195999994,
+                "correction_kj_mol": -0.4558114107385336,
+                "comparable_kj_mol": 19193.671384589255,
+                "reason": "LAMMPS CHARMM Coulomb constant 332.0716 vs GROMACS 332.0637 kcal A/mol/e^2; applied to ecoul and elong",
+                "reference": "validation/validate_charmm36_engines.py"
+              },
+              {
+                "name": "charmmfsw_one_four_lj_offset",
+                "kind": "additive",
+                "term": "vdw",
+                "raw_kj_mol": -287.618825016,
+                "correction_kj_mol": -1.26787801200993,
+                "comparable_kj_mol": -288.88670302800995,
+                "reason": "constant per-pair energy offset of dihedral_style charmmfsw, computed analytically and subtracted",
+                "reference": "validation/validate_charmm36_engines.py"
+              },
+              {
+                "name": "charmmfsw_force_switch_potential_shift",
+                "kind": "additive",
+                "term": "vdw",
+                "raw_kj_mol": -288.88670302800995,
+                "correction_kj_mol": -7.098005580055664,
+                "comparable_kj_mol": -295.9847086080656,
+                "reason": "CHARMM vfswitch (lj/charmmfsw) and GROMACS force-switch differ by a constant potential shift, evaluated over every non-excluded pair and subtracted",
+                "reference": "validation/validate_charmm36_engines.py"
+              }
+            ],
+            "raw_thermo_kcal_mol": {
+              "PotEng": 10663.543,
+              "E_bond": 3150.7268,
+              "E_angle": 589.60418,
+              "E_dihed": 2404.4484,
+              "E_vdwl": -68.742549,
+              "E_coul": 12248.738,
+              "E_long": -7661.2315,
+              "E_tail": 0.0
+            },
+            "raw_terms_kj_mol": {
+              "bond": 13182.6409312,
+              "angle": 2466.9038891200003,
+              "dihedral": 10060.212105600001,
+              "improper": 0.0,
+              "vdw": -287.618825016,
+              "electrostatics": 19194.127195999994,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 44616.263912
+            },
+            "decompositions": [],
+            "lammps_settings": {
+              "units": "real",
+              "pair_style": "lj/charmmfsw/coul/long 10.0 12.0",
+              "dihedral_style": "charmmfsw",
+              "special_bonds": "charmm",
+              "bond_style": "harmonic",
+              "improper_style": null,
+              "tail_correction": false,
+              "kspace": true,
+              "energy_fixes": []
+            },
+            "unit_conversion": "LAMMPS real kcal/mol x 4.184"
+          }
+        },
+        "comparison": {
+          "passed": true,
+          "common_terms": {
+            "angle": {
+              "reference_kj_mol": 2466.900635,
+              "candidate_kj_mol": 2466.9038891200003,
+              "difference_kj_mol": 0.0032541200002924597,
+              "relative_difference": 1.3191109773852102e-06,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "bond": {
+              "reference_kj_mol": 13182.668945,
+              "candidate_kj_mol": 13182.6409312,
+              "difference_kj_mol": -0.028013799999826006,
+              "relative_difference": 2.1250476756037513e-06,
+              "allowed_difference_kj_mol": 0.2636533789,
+              "passed": true
+            },
+            "dihedral": {
+              "reference_kj_mol": 10060.204102,
+              "candidate_kj_mol": 10060.212105600001,
+              "difference_kj_mol": 0.00800360000175715,
+              "relative_difference": 7.955697074519888e-07,
+              "allowed_difference_kj_mol": 0.20120424211200005,
+              "passed": true
+            },
+            "dispersion_correction": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "electrostatics": {
+              "reference_kj_mol": 19192.981780000002,
+              "candidate_kj_mol": 19193.671384589255,
+              "difference_kj_mol": 0.6896045892535767,
+              "relative_difference": 3.59287483585483e-05,
+              "allowed_difference_kj_mol": 3.6054919967000005,
+              "passed": true
+            },
+            "improper": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "potential": {
+              "reference_kj_mol": 44606.769531,
+              "candidate_kj_mol": 44607.442216997195,
+              "difference_kj_mol": 0.6726859971968224,
+              "relative_difference": 1.5080129318432486e-05,
+              "allowed_difference_kj_mol": 3.6054919967000005,
+              "passed": true
+            },
+            "restraint": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "vdw": {
+              "reference_kj_mol": -295.986572,
+              "candidate_kj_mol": -295.9847086080656,
+              "difference_kj_mol": 0.001863391934421088,
+              "relative_difference": 6.2955286174978504e-06,
+              "allowed_difference_kj_mol": 3.6054919967000005,
+              "passed": true
+            }
+          }
+        },
+        "passed": true
+      },
       "lammps_raw": {
         "dynamics_final_step": 2000.0,
         "dynamics_final_temperature_k": 291.1305,
@@ -198,10 +393,12 @@
         "special_bonds": "charmm",
         "urey_bradley_count": 1152,
         "weighted_one_four_count": 4536,
+        "explicit_pair_override_count": 0,
         "data": "system.data",
         "input": "in.cellulose",
         "dispersion_correction": false,
-        "input_scope": "single-point run 0 validation; not a dynamics protocol"
+        "input_scope": "single-point run 0 validation; not a dynamics protocol",
+        "position_restraint_atom_count": 0
       },
       "checks": {
         "gromacs_angle_split_reproduces_u_b": true,
@@ -211,7 +408,8 @@
         "lammps_all_expected_terms_present": true,
         "lammps_dynamics_smoke_test_completed": true,
         "openmm_terms_match": true,
-        "lammps_terms_match": true
+        "lammps_terms_match": true,
+        "lammps_canonical_energy_report_matches": true
       },
       "passed": true
     },
@@ -250,12 +448,12 @@
         "Coulomb-14": 41528.039062,
         "LJ-(SR)": -2191.916748,
         "Coulomb-(SR)": -24212.15625,
-        "Coul.-recip.": 268.321686,
+        "Coul.-recip.": 268.321747,
         "Potential": 42367.359375
       },
       "gromacs_angle_split": {
-        "angle": 1382.5097357139362,
-        "urey_bradley": 1102.922489365465
+        "angle": 1382.5097357139366,
+        "urey_bradley": 1102.9224893654648
       },
       "openmm_vs_gromacs_plain_cutoff": {
         "bond": {
@@ -369,6 +567,201 @@
           "match": true
         }
       },
+      "lammps_canonical_single_point": {
+        "coordinate_sha256": "6e29174c0f78a48b68862ceba0dbb637d5d3f08f0e56e2278e5d79eb0c9ce023",
+        "energy_reports": {
+          "gromacs": {
+            "schema_version": 1,
+            "engine": "gromacs",
+            "units": "kJ/mol",
+            "coordinate_sha256": "6e29174c0f78a48b68862ceba0dbb637d5d3f08f0e56e2278e5d79eb0c9ce023",
+            "terms": {
+              "bond": 12754.265625,
+              "angle": 2485.433594,
+              "dihedral": 10068.794922,
+              "improper": 0.0,
+              "vdw": -525.3442380000001,
+              "electrostatics": 17584.204559000005,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 42367.359375
+            },
+            "raw_terms": {
+              "Bond": 12754.265625,
+              "U-B": 2485.433594,
+              "Proper-Dih.": 10068.794922,
+              "LJ-14": 1666.57251,
+              "Coulomb-14": 41528.039062,
+              "LJ-(SR)": -2191.916748,
+              "Coulomb-(SR)": -24212.15625,
+              "Coul.-recip.": 268.321747,
+              "Potential": 42367.359375
+            }
+          },
+          "lammps": {
+            "schema_version": 1,
+            "engine": "lammps",
+            "units": "kJ/mol",
+            "coordinate_sha256": "6e29174c0f78a48b68862ceba0dbb637d5d3f08f0e56e2278e5d79eb0c9ce023",
+            "terms": {
+              "bond": 12754.235732000001,
+              "angle": 2485.43315152,
+              "dihedral": 10068.8031128,
+              "improper": 0.0,
+              "vdw": -525.3424545260577,
+              "electrostatics": 17585.27872790668,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 42368.40793498062
+            },
+            "corrections": [
+              {
+                "name": "lammps_charmm_coulomb_constant",
+                "kind": "scale",
+                "term": "electrostatics",
+                "factor": 0.9999762525586038,
+                "raw_kj_mol": 17585.6963432,
+                "correction_kj_mol": -0.41761529332143255,
+                "comparable_kj_mol": 17585.27872790668,
+                "reason": "LAMMPS CHARMM Coulomb constant 332.0716 vs GROMACS 332.0637 kcal A/mol/e^2; applied to ecoul and elong",
+                "reference": "validation/validate_charmm36_engines.py"
+              },
+              {
+                "name": "charmmfsw_one_four_lj_offset",
+                "kind": "additive",
+                "term": "vdw",
+                "raw_kj_mol": -516.0470288,
+                "correction_kj_mol": -1.2400190915489162,
+                "comparable_kj_mol": -517.2870478915489,
+                "reason": "constant per-pair energy offset of dihedral_style charmmfsw, computed analytically and subtracted",
+                "reference": "validation/validate_charmm36_engines.py"
+              },
+              {
+                "name": "charmmfsw_force_switch_potential_shift",
+                "kind": "additive",
+                "term": "vdw",
+                "raw_kj_mol": -517.2870478915489,
+                "correction_kj_mol": -8.055406634508863,
+                "comparable_kj_mol": -525.3424545260577,
+                "reason": "CHARMM vfswitch (lj/charmmfsw) and GROMACS force-switch differ by a constant potential shift, evaluated over every non-excluded pair and subtracted",
+                "reference": "validation/validate_charmm36_engines.py"
+              }
+            ],
+            "raw_thermo_kcal_mol": {
+              "PotEng": 10128.614,
+              "E_bond": 3048.3355,
+              "E_angle": 594.03278,
+              "E_dihed": 2406.5017,
+              "E_vdwl": -123.3382,
+              "E_coul": 11292.667,
+              "E_long": -7089.5847,
+              "E_tail": 0.0
+            },
+            "raw_terms_kj_mol": {
+              "bond": 12754.235732000001,
+              "angle": 2485.43315152,
+              "dihedral": 10068.8031128,
+              "improper": 0.0,
+              "vdw": -516.0470288,
+              "electrostatics": 17585.6963432,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 42378.120976
+            },
+            "decompositions": [],
+            "lammps_settings": {
+              "units": "real",
+              "pair_style": "lj/charmmfsw/coul/long 10.0 12.0",
+              "dihedral_style": "charmmfsw",
+              "special_bonds": "charmm",
+              "bond_style": "harmonic",
+              "improper_style": null,
+              "tail_correction": false,
+              "kspace": true,
+              "energy_fixes": []
+            },
+            "unit_conversion": "LAMMPS real kcal/mol x 4.184"
+          }
+        },
+        "comparison": {
+          "passed": true,
+          "common_terms": {
+            "angle": {
+              "reference_kj_mol": 2485.433594,
+              "candidate_kj_mol": 2485.43315152,
+              "difference_kj_mol": -0.0004424799999469542,
+              "relative_difference": 1.7802929879725211e-07,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "bond": {
+              "reference_kj_mol": 12754.265625,
+              "candidate_kj_mol": 12754.235732000001,
+              "difference_kj_mol": -0.02989299999899231,
+              "relative_difference": 2.34376489230381e-06,
+              "allowed_difference_kj_mol": 0.2550853125,
+              "passed": true
+            },
+            "dihedral": {
+              "reference_kj_mol": 10068.794922,
+              "candidate_kj_mol": 10068.8031128,
+              "difference_kj_mol": 0.008190800001102616,
+              "relative_difference": 8.13482983959636e-07,
+              "allowed_difference_kj_mol": 0.20137606225600002,
+              "passed": true
+            },
+            "dispersion_correction": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "electrostatics": {
+              "reference_kj_mol": 17584.204559000005,
+              "candidate_kj_mol": 17585.27872790668,
+              "difference_kj_mol": 1.0741689066744584,
+              "relative_difference": 6.10834166062903e-05,
+              "allowed_difference_kj_mol": 3.4933503158500003,
+              "passed": true
+            },
+            "improper": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "potential": {
+              "reference_kj_mol": 42367.359375,
+              "candidate_kj_mol": 42368.40793498062,
+              "difference_kj_mol": 1.048559980619757,
+              "relative_difference": 2.474862832299239e-05,
+              "allowed_difference_kj_mol": 3.4933503158500003,
+              "passed": true
+            },
+            "restraint": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "vdw": {
+              "reference_kj_mol": -525.3442380000001,
+              "candidate_kj_mol": -525.3424545260577,
+              "difference_kj_mol": 0.0017834739423960855,
+              "relative_difference": 3.394867238262324e-06,
+              "allowed_difference_kj_mol": 3.4933503158500003,
+              "passed": true
+            }
+          }
+        },
+        "passed": true
+      },
       "lammps_raw": {
         "dynamics_final_step": 2000.0,
         "dynamics_final_temperature_k": 293.4472,
@@ -391,10 +784,12 @@
         "special_bonds": "charmm",
         "urey_bradley_count": 1152,
         "weighted_one_four_count": 4536,
+        "explicit_pair_override_count": 0,
         "data": "system.data",
         "input": "in.cellulose",
         "dispersion_correction": false,
-        "input_scope": "single-point run 0 validation; not a dynamics protocol"
+        "input_scope": "single-point run 0 validation; not a dynamics protocol",
+        "position_restraint_atom_count": 0
       },
       "checks": {
         "gromacs_angle_split_reproduces_u_b": true,
@@ -404,7 +799,8 @@
         "lammps_all_expected_terms_present": true,
         "lammps_dynamics_smoke_test_completed": true,
         "openmm_terms_match": true,
-        "lammps_terms_match": true
+        "lammps_terms_match": true,
+        "lammps_canonical_energy_report_matches": true
       },
       "passed": true
     },
@@ -447,8 +843,8 @@
         "Potential": 47364.722656
       },
       "gromacs_angle_split": {
-        "angle": 2333.41477291465,
-        "urey_bradley": 1123.1436130936163
+        "angle": 2333.4147729146493,
+        "urey_bradley": 1123.143613093616
       },
       "openmm_vs_gromacs_plain_cutoff": {
         "bond": {
@@ -562,6 +958,201 @@
           "match": true
         }
       },
+      "lammps_canonical_single_point": {
+        "coordinate_sha256": "c1782fd11e2f9d0d54c40f248baef72b8e1b40bf2290db5c2d574b6297fc0450",
+        "energy_reports": {
+          "gromacs": {
+            "schema_version": 1,
+            "engine": "gromacs",
+            "units": "kJ/mol",
+            "coordinate_sha256": "c1782fd11e2f9d0d54c40f248baef72b8e1b40bf2290db5c2d574b6297fc0450",
+            "terms": {
+              "bond": 12459.341797,
+              "angle": 3456.554932,
+              "dihedral": 10019.464844,
+              "improper": 0.0,
+              "vdw": 2987.0620120000003,
+              "electrostatics": 18442.299804000006,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 47364.722656
+            },
+            "raw_terms": {
+              "Bond": 12459.341797,
+              "U-B": 3456.554932,
+              "Proper-Dih.": 10019.464844,
+              "LJ-14": 1655.399292,
+              "Coulomb-14": 42523.820312,
+              "LJ-(SR)": 1331.66272,
+              "Coulomb-(SR)": -24440.455078,
+              "Coul.-recip.": 358.93457,
+              "Potential": 47364.722656
+            }
+          },
+          "lammps": {
+            "schema_version": 1,
+            "engine": "lammps",
+            "units": "kJ/mol",
+            "coordinate_sha256": "c1782fd11e2f9d0d54c40f248baef72b8e1b40bf2290db5c2d574b6297fc0450",
+            "terms": {
+              "bond": 12459.355780000002,
+              "angle": 3456.5593000000003,
+              "dihedral": 10019.457016800001,
+              "improper": 0.0,
+              "vdw": 2987.0621710604623,
+              "electrostatics": 18443.0218718179,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 47365.45484263837
+            },
+            "corrections": [
+              {
+                "name": "lammps_charmm_coulomb_constant",
+                "kind": "scale",
+                "term": "electrostatics",
+                "factor": 0.9999762525586038,
+                "raw_kj_mol": 18443.459856799993,
+                "correction_kj_mol": -0.4379849820943491,
+                "comparable_kj_mol": 18443.0218718179,
+                "reason": "LAMMPS CHARMM Coulomb constant 332.0716 vs GROMACS 332.0637 kcal A/mol/e^2; applied to ecoul and elong",
+                "reference": "validation/validate_charmm36_engines.py"
+              },
+              {
+                "name": "charmmfsw_one_four_lj_offset",
+                "kind": "additive",
+                "term": "vdw",
+                "raw_kj_mol": 2996.8607514400005,
+                "correction_kj_mol": -1.2400190915489162,
+                "comparable_kj_mol": 2995.6207323484514,
+                "reason": "constant per-pair energy offset of dihedral_style charmmfsw, computed analytically and subtracted",
+                "reference": "validation/validate_charmm36_engines.py"
+              },
+              {
+                "name": "charmmfsw_force_switch_potential_shift",
+                "kind": "additive",
+                "term": "vdw",
+                "raw_kj_mol": 2995.6207323484514,
+                "correction_kj_mol": -8.558561287988924,
+                "comparable_kj_mol": 2987.0621710604623,
+                "reason": "CHARMM vfswitch (lj/charmmfsw) and GROMACS force-switch differ by a constant potential shift, evaluated over every non-excluded pair and subtracted",
+                "reference": "validation/validate_charmm36_engines.py"
+              }
+            ],
+            "raw_thermo_kcal_mol": {
+              "PotEng": 11323.062,
+              "E_bond": 2977.8575,
+              "E_angle": 826.1375,
+              "E_dihed": 2394.7077,
+              "E_vdwl": 716.26691,
+              "E_coul": 11524.927,
+              "E_long": -7116.8343,
+              "E_tail": 0.0
+            },
+            "raw_terms_kj_mol": {
+              "bond": 12459.355780000002,
+              "angle": 3456.5593000000003,
+              "dihedral": 10019.457016800001,
+              "improper": 0.0,
+              "vdw": 2996.8607514400005,
+              "electrostatics": 18443.459856799993,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 47375.691408
+            },
+            "decompositions": [],
+            "lammps_settings": {
+              "units": "real",
+              "pair_style": "lj/charmmfsw/coul/long 10.0 12.0",
+              "dihedral_style": "charmmfsw",
+              "special_bonds": "charmm",
+              "bond_style": "harmonic",
+              "improper_style": null,
+              "tail_correction": false,
+              "kspace": true,
+              "energy_fixes": []
+            },
+            "unit_conversion": "LAMMPS real kcal/mol x 4.184"
+          }
+        },
+        "comparison": {
+          "passed": true,
+          "common_terms": {
+            "angle": {
+              "reference_kj_mol": 3456.554932,
+              "candidate_kj_mol": 3456.5593000000003,
+              "difference_kj_mol": 0.004368000000340544,
+              "relative_difference": 1.2636843812691261e-06,
+              "allowed_difference_kj_mol": 0.06913118600000001,
+              "passed": true
+            },
+            "bond": {
+              "reference_kj_mol": 12459.341797,
+              "candidate_kj_mol": 12459.355780000002,
+              "difference_kj_mol": 0.013983000002554036,
+              "relative_difference": 1.1222891656244232e-06,
+              "allowed_difference_kj_mol": 0.24918711560000006,
+              "passed": true
+            },
+            "dihedral": {
+              "reference_kj_mol": 10019.464844,
+              "candidate_kj_mol": 10019.457016800001,
+              "difference_kj_mol": -0.00782719999915571,
+              "relative_difference": 7.811994074556692e-07,
+              "allowed_difference_kj_mol": 0.20038929688,
+              "passed": true
+            },
+            "dispersion_correction": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "electrostatics": {
+              "reference_kj_mol": 18442.299804000006,
+              "candidate_kj_mol": 18443.0218718179,
+              "difference_kj_mol": 0.722067817892821,
+              "relative_difference": 3.9151274824229656e-05,
+              "allowed_difference_kj_mol": 3.5155135986,
+              "passed": true
+            },
+            "improper": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "potential": {
+              "reference_kj_mol": 47364.722656,
+              "candidate_kj_mol": 47365.45484263837,
+              "difference_kj_mol": 0.7321866383717861,
+              "relative_difference": 1.5458241471644685e-05,
+              "allowed_difference_kj_mol": 3.5155135986,
+              "passed": true
+            },
+            "restraint": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "vdw": {
+              "reference_kj_mol": 2987.0620120000003,
+              "candidate_kj_mol": 2987.0621710604623,
+              "difference_kj_mol": 0.0001590604620105296,
+              "relative_difference": 5.324979960295242e-08,
+              "allowed_difference_kj_mol": 3.5155135986,
+              "passed": true
+            }
+          }
+        },
+        "passed": true
+      },
       "lammps_raw": {
         "dynamics_final_step": 2000.0,
         "dynamics_final_temperature_k": 284.1117,
@@ -584,10 +1175,12 @@
         "special_bonds": "charmm",
         "urey_bradley_count": 1152,
         "weighted_one_four_count": 4536,
+        "explicit_pair_override_count": 0,
         "data": "system.data",
         "input": "in.cellulose",
         "dispersion_correction": false,
-        "input_scope": "single-point run 0 validation; not a dynamics protocol"
+        "input_scope": "single-point run 0 validation; not a dynamics protocol",
+        "position_restraint_atom_count": 0
       },
       "checks": {
         "gromacs_angle_split_reproduces_u_b": true,
@@ -597,7 +1190,8 @@
         "lammps_all_expected_terms_present": true,
         "lammps_dynamics_smoke_test_completed": true,
         "openmm_terms_match": true,
-        "lammps_terms_match": true
+        "lammps_terms_match": true,
+        "lammps_canonical_energy_report_matches": true
       },
       "passed": true
     },
@@ -618,36 +1212,36 @@
       "atoms": 1512,
       "impropers": 0,
       "gromacs_plain_cutoff": {
-        "Bond": 12477.216797,
-        "U-B": 3271.759766,
-        "Proper-Dih.": 9316.702148,
-        "LJ-14": 1947.575073,
-        "Coulomb-14": 44881.761719,
-        "LJ-(SR)": -1551.887085,
-        "Coulomb-(SR)": -24949.738281,
-        "Coul.-recip.": 1244.670898,
-        "Potential": 46638.058594
+        "Bond": 12320.172852,
+        "U-B": 2306.667969,
+        "Proper-Dih.": 9543.65625,
+        "LJ-14": 1950.578735,
+        "Coulomb-14": 44483.007812,
+        "LJ-(SR)": -1548.585815,
+        "Coulomb-(SR)": -26016.916016,
+        "Coul.-recip.": 1329.481201,
+        "Potential": 44368.058594
       },
       "gromacs_force_switch": {
-        "Bond": 12477.216797,
-        "U-B": 3271.759766,
-        "Proper-Dih.": 9316.702148,
-        "LJ-14": 1947.575073,
-        "Coulomb-14": 44881.761719,
-        "LJ-(SR)": -1485.229126,
-        "Coulomb-(SR)": -24297.955078,
-        "Coul.-recip.": 593.585571,
-        "Potential": 46705.421875
+        "Bond": 12320.172852,
+        "U-B": 2306.667969,
+        "Proper-Dih.": 9543.65625,
+        "LJ-14": 1950.578735,
+        "Coulomb-14": 44483.007812,
+        "LJ-(SR)": -1481.915649,
+        "Coulomb-(SR)": -25359.384766,
+        "Coul.-recip.": 672.639282,
+        "Potential": 44435.421875
       },
       "gromacs_angle_split": {
-        "angle": 1833.1232710161034,
-        "urey_bradley": 1438.6415480229844
+        "angle": 868.0235309776848,
+        "urey_bradley": 1438.6415480229841
       },
       "openmm_vs_gromacs_plain_cutoff": {
         "bond": {
-          "engine_kj_mol": 12477.2113,
-          "gromacs_kj_mol": 12477.2168,
-          "difference_kj_mol": -0.0055,
+          "engine_kj_mol": 12320.1749,
+          "gromacs_kj_mol": 12320.1729,
+          "difference_kj_mol": 0.0021,
           "match": true
         },
         "urey_bradley": {
@@ -657,39 +1251,39 @@
           "match": true
         },
         "nonbonded": {
-          "engine_kj_mol": 21573.1033,
-          "gromacs_kj_mol": 21572.3823,
-          "difference_kj_mol": 0.7209,
+          "engine_kj_mol": 20198.3354,
+          "gromacs_kj_mol": 20197.5659,
+          "difference_kj_mol": 0.7695,
           "match": true
         },
         "angle": {
-          "engine_kj_mol": 1833.1232,
-          "gromacs_kj_mol": 1833.1233,
+          "engine_kj_mol": 868.0234,
+          "gromacs_kj_mol": 868.0235,
           "difference_kj_mol": -0.0001,
           "match": true
         },
         "proper_dihedral": {
-          "engine_kj_mol": 9316.7166,
-          "gromacs_kj_mol": 9316.7021,
-          "difference_kj_mol": 0.0144,
+          "engine_kj_mol": 9543.6637,
+          "gromacs_kj_mol": 9543.6562,
+          "difference_kj_mol": 0.0074,
           "match": true
         },
         "potential": {
-          "engine_kj_mol": 46638.7973,
-          "gromacs_kj_mol": 46638.0586,
-          "difference_kj_mol": 0.7387,
+          "engine_kj_mol": 44368.8404,
+          "gromacs_kj_mol": 44368.0586,
+          "difference_kj_mol": 0.7818,
           "match": true
         },
         "lj_14": {
-          "engine_kj_mol": 1947.5851,
-          "gromacs_kj_mol": 1947.5751,
-          "difference_kj_mol": 0.01,
+          "engine_kj_mol": 1950.5873,
+          "gromacs_kj_mol": 1950.5787,
+          "difference_kj_mol": 0.0086,
           "match": true
         },
         "coulomb_14": {
-          "engine_kj_mol": 44881.5754,
-          "gromacs_kj_mol": 44881.7617,
-          "difference_kj_mol": -0.1864,
+          "engine_kj_mol": 44482.8185,
+          "gromacs_kj_mol": 44483.0078,
+          "difference_kj_mol": -0.1893,
           "match": true
         },
         "improper": {
@@ -701,14 +1295,14 @@
       },
       "lammps_vs_gromacs_force_switch": {
         "bond": {
-          "engine_kj_mol": 12477.2114,
-          "gromacs_kj_mol": 12477.2168,
-          "difference_kj_mol": -0.0054,
+          "engine_kj_mol": 12320.175,
+          "gromacs_kj_mol": 12320.1729,
+          "difference_kj_mol": 0.0022,
           "match": true
         },
         "angle": {
-          "engine_kj_mol": 1833.1232,
-          "gromacs_kj_mol": 1833.1233,
+          "engine_kj_mol": 868.0234,
+          "gromacs_kj_mol": 868.0235,
           "difference_kj_mol": -0.0001,
           "match": true
         },
@@ -719,9 +1313,9 @@
           "match": true
         },
         "proper_dihedral": {
-          "engine_kj_mol": 9316.7166,
-          "gromacs_kj_mol": 9316.7021,
-          "difference_kj_mol": 0.0144,
+          "engine_kj_mol": 9543.6638,
+          "gromacs_kj_mol": 9543.6562,
+          "difference_kj_mol": 0.0076,
           "match": true
         },
         "improper": {
@@ -731,40 +1325,235 @@
           "match": true
         },
         "lj_14": {
-          "engine_kj_mol": 1947.585,
-          "gromacs_kj_mol": 1947.5751,
-          "difference_kj_mol": 0.01,
+          "engine_kj_mol": 1950.5873,
+          "gromacs_kj_mol": 1950.5787,
+          "difference_kj_mol": 0.0086,
           "match": true
         },
         "coulomb_14": {
-          "engine_kj_mol": 44881.5766,
-          "gromacs_kj_mol": 44881.7617,
-          "difference_kj_mol": -0.1851,
+          "engine_kj_mol": 44482.8199,
+          "gromacs_kj_mol": 44483.0078,
+          "difference_kj_mol": -0.1879,
           "match": true
         },
         "nonbonded": {
-          "engine_kj_mol": 21640.2,
-          "gromacs_kj_mol": 21639.7382,
-          "difference_kj_mol": 0.4619,
+          "engine_kj_mol": 20264.941,
+          "gromacs_kj_mol": 20264.9254,
+          "difference_kj_mol": 0.0155,
           "match": true
         },
         "potential": {
-          "engine_kj_mol": 46705.8948,
-          "gromacs_kj_mol": 46705.4219,
-          "difference_kj_mol": 0.4729,
+          "engine_kj_mol": 44435.4464,
+          "gromacs_kj_mol": 44435.4219,
+          "difference_kj_mol": 0.0245,
           "match": true
         }
       },
+      "lammps_canonical_single_point": {
+        "coordinate_sha256": "a9dfb525cedbcff29f2951a56c08c11e815fb15124fa03fab9ce8a5aa3b088e1",
+        "energy_reports": {
+          "gromacs": {
+            "schema_version": 1,
+            "engine": "gromacs",
+            "units": "kJ/mol",
+            "coordinate_sha256": "a9dfb525cedbcff29f2951a56c08c11e815fb15124fa03fab9ce8a5aa3b088e1",
+            "terms": {
+              "bond": 12320.172852,
+              "angle": 2306.667969,
+              "dihedral": 9543.65625,
+              "improper": 0.0,
+              "vdw": 468.663086,
+              "electrostatics": 19796.262328000004,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 44435.421875
+            },
+            "raw_terms": {
+              "Bond": 12320.172852,
+              "U-B": 2306.667969,
+              "Proper-Dih.": 9543.65625,
+              "LJ-14": 1950.578735,
+              "Coulomb-14": 44483.007812,
+              "LJ-(SR)": -1481.915649,
+              "Coulomb-(SR)": -25359.384766,
+              "Coul.-recip.": 672.639282,
+              "Potential": 44435.421875
+            }
+          },
+          "lammps": {
+            "schema_version": 1,
+            "engine": "lammps",
+            "units": "kJ/mol",
+            "coordinate_sha256": "a9dfb525cedbcff29f2951a56c08c11e815fb15124fa03fab9ce8a5aa3b088e1",
+            "terms": {
+              "bond": 12320.17502,
+              "angle": 2306.666396,
+              "dihedral": 9543.663833600001,
+              "improper": 0.0,
+              "vdw": 468.6690625582394,
+              "electrostatics": 19796.27189962901,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 44435.446379147244
+            },
+            "corrections": [
+              {
+                "name": "lammps_charmm_coulomb_constant",
+                "kind": "scale",
+                "term": "electrostatics",
+                "factor": 0.9999762525586038,
+                "raw_kj_mol": 19796.742021600003,
+                "correction_kj_mol": -0.47012197099320474,
+                "comparable_kj_mol": 19796.27189962901,
+                "reason": "LAMMPS CHARMM Coulomb constant 332.0716 vs GROMACS 332.0637 kcal A/mol/e^2; applied to ecoul and elong",
+                "reference": "validation/validate_charmm36_engines.py"
+              },
+              {
+                "name": "charmmfsw_one_four_lj_offset",
+                "kind": "additive",
+                "term": "vdw",
+                "raw_kj_mol": 476.96202544000005,
+                "correction_kj_mol": -1.2400190915489162,
+                "comparable_kj_mol": 475.72200634845115,
+                "reason": "constant per-pair energy offset of dihedral_style charmmfsw, computed analytically and subtracted",
+                "reference": "validation/validate_charmm36_engines.py"
+              },
+              {
+                "name": "charmmfsw_force_switch_potential_shift",
+                "kind": "additive",
+                "term": "vdw",
+                "raw_kj_mol": 475.72200634845115,
+                "correction_kj_mol": -7.0529437902117476,
+                "comparable_kj_mol": 468.6690625582394,
+                "reason": "CHARMM vfswitch (lj/charmmfsw) and GROMACS force-switch differ by a constant potential shift, evaluated over every non-excluded pair and subtracted",
+                "reference": "validation/validate_charmm36_engines.py"
+              }
+            ],
+            "raw_thermo_kcal_mol": {
+              "PotEng": 10622.421,
+              "E_bond": 2944.5925,
+              "E_angle": 551.3065,
+              "E_dihed": 2280.9904,
+              "E_vdwl": 113.99666,
+              "E_coul": 11854.928,
+              "E_long": -7123.3931,
+              "E_tail": 0.0
+            },
+            "raw_terms_kj_mol": {
+              "bond": 12320.17502,
+              "angle": 2306.666396,
+              "dihedral": 9543.663833600001,
+              "improper": 0.0,
+              "vdw": 476.96202544000005,
+              "electrostatics": 19796.742021600003,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 44444.209464
+            },
+            "decompositions": [],
+            "lammps_settings": {
+              "units": "real",
+              "pair_style": "lj/charmmfsw/coul/long 10.0 12.0",
+              "dihedral_style": "charmmfsw",
+              "special_bonds": "charmm",
+              "bond_style": "harmonic",
+              "improper_style": null,
+              "tail_correction": false,
+              "kspace": true,
+              "energy_fixes": []
+            },
+            "unit_conversion": "LAMMPS real kcal/mol x 4.184"
+          }
+        },
+        "comparison": {
+          "passed": true,
+          "common_terms": {
+            "angle": {
+              "reference_kj_mol": 2306.667969,
+              "candidate_kj_mol": 2306.666396,
+              "difference_kj_mol": -0.001573000000007596,
+              "relative_difference": 6.819360311703344e-07,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "bond": {
+              "reference_kj_mol": 12320.172852,
+              "candidate_kj_mol": 12320.17502,
+              "difference_kj_mol": 0.002168000000892789,
+              "relative_difference": 1.7597152616528242e-07,
+              "allowed_difference_kj_mol": 0.24640350040000003,
+              "passed": true
+            },
+            "dihedral": {
+              "reference_kj_mol": 9543.65625,
+              "candidate_kj_mol": 9543.663833600001,
+              "difference_kj_mol": 0.007583600001453306,
+              "relative_difference": 7.946214508053001e-07,
+              "allowed_difference_kj_mol": 0.19087327667200005,
+              "passed": true
+            },
+            "dispersion_correction": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "electrostatics": {
+              "reference_kj_mol": 19796.262328000004,
+              "candidate_kj_mol": 19796.27189962901,
+              "difference_kj_mol": 0.009571629005222348,
+              "relative_difference": 4.835066447739448e-07,
+              "allowed_difference_kj_mol": 3.6973763122000007,
+              "passed": true
+            },
+            "improper": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "potential": {
+              "reference_kj_mol": 44435.421875,
+              "candidate_kj_mol": 44435.446379147244,
+              "difference_kj_mol": 0.02450414724444272,
+              "relative_difference": 5.514549586237999e-07,
+              "allowed_difference_kj_mol": 3.6973763122000007,
+              "passed": true
+            },
+            "restraint": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "vdw": {
+              "reference_kj_mol": 468.663086,
+              "candidate_kj_mol": 468.6690625582394,
+              "difference_kj_mol": 0.005976558239353835,
+              "relative_difference": 1.2752192787658468e-05,
+              "allowed_difference_kj_mol": 3.6973763122000007,
+              "passed": true
+            }
+          }
+        },
+        "passed": true
+      },
       "lammps_raw": {
         "dynamics_final_step": 2000.0,
-        "dynamics_final_temperature_k": 293.192,
-        "dynamics_final_potential": 31187.382,
+        "dynamics_final_temperature_k": 290.6322,
+        "dynamics_final_potential": 32059.8812,
         "dynamics_final_improper": 0.0,
-        "raw_lj_14": 1948.8251,
-        "raw_coulomb_14": 44882.6425,
-        "raw_potential": 46714.6905,
+        "raw_lj_14": 1951.8273,
+        "raw_coulomb_14": 44483.8763,
+        "raw_potential": 44444.2095,
         "charmmfsw_one_four_lj_offset": 1.24,
-        "charmmfsw_minus_gromacs_force_switch_lj": 7.0528
+        "charmmfsw_minus_gromacs_force_switch_lj": 7.0529
       },
       "lammps_conversion": {
         "atom_count": 1512,
@@ -777,10 +1566,12 @@
         "special_bonds": "charmm",
         "urey_bradley_count": 1152,
         "weighted_one_four_count": 4536,
+        "explicit_pair_override_count": 0,
         "data": "system.data",
         "input": "in.cellulose",
         "dispersion_correction": false,
-        "input_scope": "single-point run 0 validation; not a dynamics protocol"
+        "input_scope": "single-point run 0 validation; not a dynamics protocol",
+        "position_restraint_atom_count": 0
       },
       "checks": {
         "gromacs_angle_split_reproduces_u_b": true,
@@ -790,7 +1581,8 @@
         "lammps_all_expected_terms_present": true,
         "lammps_dynamics_smoke_test_completed": true,
         "openmm_terms_match": true,
-        "lammps_terms_match": true
+        "lammps_terms_match": true,
+        "lammps_canonical_energy_report_matches": true
       },
       "passed": true
     },
@@ -833,7 +1625,7 @@
         "Potential": 44470.027344
       },
       "gromacs_angle_split": {
-        "angle": 1539.715960376398,
+        "angle": 1539.7159603763976,
         "urey_bradley": 1606.933573449442
       },
       "openmm_vs_gromacs_plain_cutoff": {
@@ -948,6 +1740,201 @@
           "match": true
         }
       },
+      "lammps_canonical_single_point": {
+        "coordinate_sha256": "0dc45a2fec5011367f65e98a77d07a8a5a927e28d6586d896375de063b8fc76e",
+        "energy_reports": {
+          "gromacs": {
+            "schema_version": 1,
+            "engine": "gromacs",
+            "units": "kJ/mol",
+            "coordinate_sha256": "0dc45a2fec5011367f65e98a77d07a8a5a927e28d6586d896375de063b8fc76e",
+            "terms": {
+              "bond": 12471.325195,
+              "angle": 3146.65918,
+              "dihedral": 9530.146484,
+              "improper": 0.0,
+              "vdw": 406.394898,
+              "electrostatics": 18915.499512000002,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 44470.027344
+            },
+            "raw_terms": {
+              "Bond": 12471.325195,
+              "U-B": 3146.65918,
+              "Proper-Dih.": 9530.146484,
+              "LJ-14": 2135.958008,
+              "Coulomb-14": 43998.542969,
+              "LJ-(SR)": -1729.56311,
+              "Coulomb-(SR)": -25409.712891,
+              "Coul.-recip.": 326.669434,
+              "Potential": 44470.027344
+            }
+          },
+          "lammps": {
+            "schema_version": 1,
+            "engine": "lammps",
+            "units": "kJ/mol",
+            "coordinate_sha256": "0dc45a2fec5011367f65e98a77d07a8a5a927e28d6586d896375de063b8fc76e",
+            "terms": {
+              "bond": 12471.2931504,
+              "angle": 3146.6508384,
+              "dihedral": 9530.1160416,
+              "improper": 0.0,
+              "vdw": 406.39098552915834,
+              "electrostatics": 18916.77038043579,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 44471.21986083694
+            },
+            "corrections": [
+              {
+                "name": "lammps_charmm_coulomb_constant",
+                "kind": "scale",
+                "term": "electrostatics",
+                "factor": 0.9999762525586038,
+                "raw_kj_mol": 18917.219616000002,
+                "correction_kj_mol": -0.44923556421053945,
+                "comparable_kj_mol": 18916.77038043579,
+                "reason": "LAMMPS CHARMM Coulomb constant 332.0716 vs GROMACS 332.0637 kcal A/mol/e^2; applied to ecoul and elong",
+                "reference": "validation/validate_charmm36_engines.py"
+              },
+              {
+                "name": "charmmfsw_one_four_lj_offset",
+                "kind": "additive",
+                "term": "vdw",
+                "raw_kj_mol": 412.650209128,
+                "correction_kj_mol": -1.2400190915489162,
+                "comparable_kj_mol": 411.41019003645107,
+                "reason": "constant per-pair energy offset of dihedral_style charmmfsw, computed analytically and subtracted",
+                "reference": "validation/validate_charmm36_engines.py"
+              },
+              {
+                "name": "charmmfsw_force_switch_potential_shift",
+                "kind": "additive",
+                "term": "vdw",
+                "raw_kj_mol": 411.41019003645107,
+                "correction_kj_mol": -5.019204507292728,
+                "comparable_kj_mol": 406.39098552915834,
+                "reason": "CHARMM vfswitch (lj/charmmfsw) and GROMACS force-switch differ by a constant potential shift, evaluated over every non-excluded pair and subtracted",
+                "reference": "validation/validate_charmm36_engines.py"
+              }
+            ],
+            "raw_thermo_kcal_mol": {
+              "PotEng": 10630.48,
+              "E_bond": 2980.7106,
+              "E_angle": 752.0676,
+              "E_dihed": 2277.7524,
+              "E_vdwl": 98.625767,
+              "E_coul": 11568.731,
+              "E_long": -7047.407,
+              "E_tail": 0.0
+            },
+            "raw_terms_kj_mol": {
+              "bond": 12471.2931504,
+              "angle": 3146.6508384,
+              "dihedral": 9530.1160416,
+              "improper": 0.0,
+              "vdw": 412.650209128,
+              "electrostatics": 18917.219616000002,
+              "restraint": 0.0,
+              "dispersion_correction": 0.0,
+              "potential": 44477.92832
+            },
+            "decompositions": [],
+            "lammps_settings": {
+              "units": "real",
+              "pair_style": "lj/charmmfsw/coul/long 10.0 12.0",
+              "dihedral_style": "charmmfsw",
+              "special_bonds": "charmm",
+              "bond_style": "harmonic",
+              "improper_style": null,
+              "tail_correction": false,
+              "kspace": true,
+              "energy_fixes": []
+            },
+            "unit_conversion": "LAMMPS real kcal/mol x 4.184"
+          }
+        },
+        "comparison": {
+          "passed": true,
+          "common_terms": {
+            "angle": {
+              "reference_kj_mol": 3146.65918,
+              "candidate_kj_mol": 3146.6508384,
+              "difference_kj_mol": -0.00834160000022166,
+              "relative_difference": 2.6509385106720267e-06,
+              "allowed_difference_kj_mol": 0.06293318360000001,
+              "passed": true
+            },
+            "bond": {
+              "reference_kj_mol": 12471.325195,
+              "candidate_kj_mol": 12471.2931504,
+              "difference_kj_mol": -0.032044599998698686,
+              "relative_difference": 2.569462306343034e-06,
+              "allowed_difference_kj_mol": 0.2494265039,
+              "passed": true
+            },
+            "dihedral": {
+              "reference_kj_mol": 9530.146484,
+              "candidate_kj_mol": 9530.1160416,
+              "difference_kj_mol": -0.030442400000538328,
+              "relative_difference": 3.194326556433057e-06,
+              "allowed_difference_kj_mol": 0.19060292968000003,
+              "passed": true
+            },
+            "dispersion_correction": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "electrostatics": {
+              "reference_kj_mol": 18915.499512000002,
+              "candidate_kj_mol": 18916.77038043579,
+              "difference_kj_mol": 1.2708684357894526,
+              "relative_difference": 6.718210403948325e-05,
+              "allowed_difference_kj_mol": 3.6800223206000005,
+              "passed": true
+            },
+            "improper": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "potential": {
+              "reference_kj_mol": 44470.027344,
+              "candidate_kj_mol": 44471.21986083694,
+              "difference_kj_mol": 1.1925168369416497,
+              "relative_difference": 2.681547393288003e-05,
+              "allowed_difference_kj_mol": 3.6800223206000005,
+              "passed": true
+            },
+            "restraint": {
+              "reference_kj_mol": 0.0,
+              "candidate_kj_mol": 0.0,
+              "difference_kj_mol": 0.0,
+              "relative_difference": 0.0,
+              "allowed_difference_kj_mol": 0.05,
+              "passed": true
+            },
+            "vdw": {
+              "reference_kj_mol": 406.394898,
+              "candidate_kj_mol": 406.39098552915834,
+              "difference_kj_mol": -0.0039124708416693466,
+              "relative_difference": 9.627263681025214e-06,
+              "allowed_difference_kj_mol": 3.6800223206000005,
+              "passed": true
+            }
+          }
+        },
+        "passed": true
+      },
       "lammps_raw": {
         "dynamics_final_step": 2000.0,
         "dynamics_final_temperature_k": 298.0071,
@@ -970,10 +1957,12 @@
         "special_bonds": "charmm",
         "urey_bradley_count": 1152,
         "weighted_one_four_count": 4536,
+        "explicit_pair_override_count": 0,
         "data": "system.data",
         "input": "in.cellulose",
         "dispersion_correction": false,
-        "input_scope": "single-point run 0 validation; not a dynamics protocol"
+        "input_scope": "single-point run 0 validation; not a dynamics protocol",
+        "position_restraint_atom_count": 0
       },
       "checks": {
         "gromacs_angle_split_reproduces_u_b": true,
@@ -983,7 +1972,8 @@
         "lammps_all_expected_terms_present": true,
         "lammps_dynamics_smoke_test_completed": true,
         "openmm_terms_match": true,
-        "lammps_terms_match": true
+        "lammps_terms_match": true,
+        "lammps_canonical_energy_report_matches": true
       },
       "passed": true
     }
