@@ -417,6 +417,33 @@ def test_run_namd_single_point_refuses_comment_continuation(tmp_path: Path) -> N
         )
 
 
+def test_run_namd_single_point_refuses_multiline_quoted_directive(tmp_path: Path) -> None:
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+    )
+    binary = tmp_path / "single_point.coor"
+    binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.0))
+    configuration = tmp_path / "single_point_namd.conf"
+    configuration.write_text(
+        'outputName "single_point\n'
+        "binCoordinates single_point.coor\n"
+        'wrapAll off"\n'
+        "cellBasisVector1 10 0 0\ncellBasisVector2 0 10 0\n"
+        "cellBasisVector3 0 0 10\nmergeCrossterms no\nLJcorrection off\n"
+        "rigidBonds none\nrun 0\n"
+    )
+
+    with pytest.raises(ValueError, match="Tcl metacharacters"):
+        run_namd_single_point(
+            tmp_path,
+            configuration_file=configuration,
+            coordinate_reference_file=reference,
+            binary_coordinate_file=binary,
+            coordinate_sha256=checksum,
+        )
+
+
 def test_run_namd_single_point_requires_configuration_in_engine_directory(tmp_path: Path) -> None:
     engine = tmp_path / "namd"
     engine.mkdir()

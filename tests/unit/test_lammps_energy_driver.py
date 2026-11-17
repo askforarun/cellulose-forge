@@ -326,6 +326,44 @@ def test_run_lammps_single_point_refuses_comment_continuation_bypass(
 
 
 @pytest.mark.parametrize(
+    "intervening",
+    ["# accuracy", ""],
+)
+@pytest.mark.parametrize(
+    "mutation",
+    ["displace_atoms all random 0.4 0.4 0.4 4928", "set atom 1 x 2.0"],
+)
+def test_run_lammps_single_point_refuses_interrupted_continuation(
+    tmp_path: Path, intervening: str, mutation: str
+) -> None:
+    input_file = tmp_path / "in.cellulose"
+    input_file.write_text(
+        _PLAIN_INPUT.replace(
+            "kspace_style pppm 1.0e-5",
+            f"kspace_style pppm 1.0e-5 &\n{intervening}\n{mutation}",
+        )
+    )
+    data_file = tmp_path / "system.data"
+    data_file.write_text(_data())
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference,
+        [[1, 1, 1], [2.5, 1, 1], [4, 1, 1], [5.5, 1, 1], [7, 1, 1], [8.5, 1, 1], [1, 1, 22]],
+        [[30, 0, 0], [1.5, 30, 0], [0, 0, 30]],
+    )
+
+    with pytest.raises(ValueError, match="blank or comment line"):
+        run_lammps_single_point(
+            tmp_path,
+            input_file=input_file,
+            data_file=data_file,
+            coordinate_reference_file=reference,
+            coordinate_sha256=checksum,
+            periodic_improper_count=0,
+        )
+
+
+@pytest.mark.parametrize(
     "extra",
     [
         "fix move_atoms all move linear 1.0 0.0 0.0 units box",
