@@ -218,6 +218,77 @@ def test_run_lammps_single_point_requires_checked_read_data_target(tmp_path: Pat
         )
 
 
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "displace_atoms all random 0.4 0.4 0.4 12345",
+        "set atom 1 x 2.0",
+        "change_box all x scale 1.1",
+        "read_dump altered.dump 0 x y z box yes replace yes",
+        "replicate 2 1 1",
+        "create_atoms 1 single 2 2 2",
+        "delete_atoms group all",
+        "include override.in",
+        "jump SELF altered",
+    ],
+)
+def test_run_lammps_single_point_refuses_coordinate_mutation_commands(
+    tmp_path: Path, mutation: str
+) -> None:
+    input_file = tmp_path / "in.cellulose"
+    input_file.write_text(_PLAIN_INPUT.replace("run 0", f"{mutation}\nrun 0"))
+    data_file = tmp_path / "system.data"
+    data_file.write_text(_data())
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference,
+        [[1, 1, 1], [2.5, 1, 1], [4, 1, 1], [5.5, 1, 1], [7, 1, 1], [8.5, 1, 1], [1, 1, 22]],
+        [[30, 0, 0], [1.5, 30, 0], [0, 0, 30]],
+    )
+
+    with pytest.raises(ValueError, match="outside the verified subset"):
+        run_lammps_single_point(
+            tmp_path,
+            input_file=input_file,
+            data_file=data_file,
+            coordinate_reference_file=reference,
+            coordinate_sha256=checksum,
+            periodic_improper_count=0,
+        )
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        "fix move_atoms all move linear 1.0 0.0 0.0 units box",
+        "run 0 every 1 'set atom 1 x 2.0'",
+    ],
+)
+def test_run_lammps_single_point_refuses_mutation_hidden_in_allowed_command(
+    tmp_path: Path, extra: str
+) -> None:
+    input_file = tmp_path / "in.cellulose"
+    input_file.write_text(_PLAIN_INPUT.replace("run 0", f"{extra}\nrun 0"))
+    data_file = tmp_path / "system.data"
+    data_file.write_text(_data())
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference,
+        [[1, 1, 1], [2.5, 1, 1], [4, 1, 1], [5.5, 1, 1], [7, 1, 1], [8.5, 1, 1], [1, 1, 22]],
+        [[30, 0, 0], [1.5, 30, 0], [0, 0, 30]],
+    )
+
+    with pytest.raises(ValueError, match=r"run 0|spring/self"):
+        run_lammps_single_point(
+            tmp_path,
+            input_file=input_file,
+            data_file=data_file,
+            coordinate_reference_file=reference,
+            coordinate_sha256=checksum,
+            periodic_improper_count=0,
+        )
+
+
 def _validator() -> ModuleType:
     sys.path.insert(0, str(_VALIDATOR.parent))
     spec = importlib.util.spec_from_file_location("validate_charmm36_engines", _VALIDATOR)

@@ -809,7 +809,7 @@ def _data_box_angstrom(data: str) -> npt.NDArray[np.float64]:
     )
 
 
-def run_lammps_single_point(  # noqa: PLR0913
+def run_lammps_single_point(  # noqa: PLR0912, PLR0913
     directory: Path,
     *,
     input_file: Path,
@@ -837,6 +837,62 @@ def run_lammps_single_point(  # noqa: PLR0913
         raise ValueError("LAMMPS input file must be inside its engine directory")
     data_text = data_file.read_text(encoding="utf-8")
     input_text = input_file.read_text(encoding="utf-8")
+    # This adapter proves that the engine evaluates the checked data-file
+    # coordinates.  Accept only the declarative commands emitted by
+    # CelluloseForge; LAMMPS commands such as displace_atoms, set, read_dump,
+    # replicate, include or jump can otherwise alter atoms after read_data.
+    allowed_commands = {
+        "angle_style",
+        "atom_style",
+        "bond_style",
+        "boundary",
+        "dihedral_style",
+        "fix",
+        "fix_modify",
+        "group",
+        "improper_style",
+        "kspace_style",
+        "pair_modify",
+        "pair_style",
+        "quit",
+        "read_data",
+        "run",
+        "special_bonds",
+        "thermo",
+        "thermo_style",
+        "timestep",
+        "units",
+    }
+    unsupported_commands: set[str] = set()
+    for raw_line in input_text.splitlines():
+        line = raw_line.split("#", 1)[0].strip()
+        if not line or not line[0].isalpha():
+            continue
+        command = line.split()[0].lower()
+        if command not in allowed_commands:
+            unsupported_commands.add(command)
+    if unsupported_commands:
+        raise ValueError(
+            "LAMMPS single-point input contains commands outside the verified subset: "
+            f"{sorted(unsupported_commands)}"
+        )
+    active_lines = [
+        line.split("#", 1)[0].strip()
+        for line in input_text.splitlines()
+        if line.split("#", 1)[0].strip()
+    ]
+    run_rows = [line for line in active_lines if line.lower().startswith("run ")]
+    if len(run_rows) != 1 or run_rows[0].lower() != "run 0":
+        raise ValueError("LAMMPS single-point input must contain exactly one plain run 0 command")
+    for line in active_lines:
+        fields = line.split()
+        if fields[0].lower() == "fix" and (not fields[3:] or fields[3].lower() != "spring/self"):
+            raise ValueError("LAMMPS single-point input may only use spring/self fixes")
+        if fields[0].lower() == "fix_modify" and [item.lower() for item in fields[2:]] != [
+            "energy",
+            "yes",
+        ]:
+            raise ValueError("LAMMPS single-point fix_modify must only enable restraint energy")
     read_data_rows = [
         line.split("#", 1)[0].split()[1]
         for line in input_text.splitlines()
@@ -858,8 +914,6 @@ def run_lammps_single_point(  # noqa: PLR0913
         allow_periodic_wrapping=True,
     )
     settings = parse_lammps_input(input_text)
-    if "run 0" not in (line.split("#", 1)[0].strip().lower() for line in input_text.splitlines()):
-        raise ValueError("LAMMPS single-point input must contain run 0")
     completed = subprocess.run(
         [executable, "-in", input_file.name, "-log", "none"],
         cwd=directory,

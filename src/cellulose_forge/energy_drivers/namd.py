@@ -26,6 +26,48 @@ KJ_PER_KCAL = 4.184
 _NAMD_BINARY_HEADER_BYTES = 4
 _VECTOR_COMPONENTS = 3
 _COORDINATE_TOLERANCE_ANGSTROM = 1.0e-9
+_CHECKED_CONFIGURATION_KEYS = frozenset(
+    {
+        "bincoordinates",
+        "cellbasisvector1",
+        "cellbasisvector2",
+        "cellbasisvector3",
+        "mergecrossterms",
+        "ljcorrection",
+        "rigidbonds",
+        "run",
+    }
+)
+_SINGLE_POINT_CONFIGURATION_COMMANDS = frozenset(
+    {
+        "bincoordinates",
+        "cellbasisvector1",
+        "cellbasisvector2",
+        "cellbasisvector3",
+        "cellorigin",
+        "coordinates",
+        "cutoff",
+        "exclude",
+        "ljcorrection",
+        "mergecrossterms",
+        "onefourscaling",
+        "outputenergies",
+        "outputname",
+        "pairlistdist",
+        "parameters",
+        "paratypecharmm",
+        "pme",
+        "pmegridspacing",
+        "pmetolerance",
+        "rigidbonds",
+        "run",
+        "structure",
+        "switching",
+        "temperature",
+        "vdwforceswitching",
+        "wrapall",
+    }
+)
 
 # NAMD prints one ETITLE row and then ENERGY rows whose columns follow those
 # names.  Mapping is by name, never by fixed column index: CUDA/CPU builds and
@@ -165,6 +207,33 @@ def _configuration_value(text: str, name: str) -> str | None:
     return None if value is None else value.lower()
 
 
+def _validate_configuration_scope(text: str) -> None:
+    """Refuse directives that can bypass the native-input identity checks."""
+    counts: dict[str, int] = {}
+    for raw_line in text.splitlines():
+        line = raw_line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        command = line.split()[0].lower()
+        if command not in _SINGLE_POINT_CONFIGURATION_COMMANDS:
+            raise ValueError(
+                "NAMD single-point configuration contains a command outside the verified "
+                f"subset: {line.split()[0]}"
+            )
+        counts[command] = counts.get(command, 0) + 1
+    invalid_counts = sorted(
+        name
+        for name, count in counts.items()
+        if count > 1 or (name in _CHECKED_CONFIGURATION_KEYS and count != 1)
+    )
+    missing = sorted(_CHECKED_CONFIGURATION_KEYS - counts.keys())
+    if invalid_counts or missing:
+        raise ValueError(
+            "NAMD single-point configuration must set every directive at most once and each "
+            f"checked directive exactly once (invalid={invalid_counts}, missing={missing})"
+        )
+
+
 def _configuration_box(text: str) -> npt.NDArray[np.float64]:
     vectors = []
     for index in range(1, 4):
@@ -218,9 +287,12 @@ def run_namd_single_point(  # noqa: PLR0913
     ):
         if not path.is_file():
             raise FileNotFoundError(f"NAMD {description} file does not exist: {path}")
+    if configuration_file.parent != directory:
+        raise ValueError("NAMD configuration file must be inside its engine directory")
     if type(threads) is not int or threads < 1:
         raise ValueError("NAMD thread count must be a positive integer")
     configuration = configuration_file.read_text(encoding="utf-8")
+    _validate_configuration_scope(configuration)
     configured_coordinates = _configuration_raw_value(configuration, "binCoordinates")
     if configured_coordinates is None:
         raise ValueError("NAMD configuration is missing binCoordinates")

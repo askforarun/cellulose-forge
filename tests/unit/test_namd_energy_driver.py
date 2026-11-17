@@ -290,6 +290,83 @@ def test_run_namd_single_point_checks_configured_native_files(
         )
 
 
+@pytest.mark.parametrize(
+    "directive", ["cwd elsewhere", "extendedSystem state.xsc", "source override.tcl"]
+)
+def test_run_namd_single_point_refuses_configuration_indirection(
+    tmp_path: Path, directive: str
+) -> None:
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+    )
+    binary = tmp_path / "single_point.coor"
+    binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.0))
+    configuration = tmp_path / "single_point_namd.conf"
+    configuration.write_text(
+        "binCoordinates single_point.coor\ncellBasisVector1 10 0 0\n"
+        "cellBasisVector2 0 10 0\ncellBasisVector3 0 0 10\n"
+        "mergeCrossterms no\nLJcorrection off\nrigidBonds none\n"
+        f"{directive}\nrun 0\n"
+    )
+
+    with pytest.raises(ValueError, match="outside the verified subset"):
+        run_namd_single_point(
+            tmp_path,
+            configuration_file=configuration,
+            coordinate_reference_file=reference,
+            binary_coordinate_file=binary,
+            coordinate_sha256=checksum,
+        )
+
+
+def test_run_namd_single_point_requires_configuration_in_engine_directory(tmp_path: Path) -> None:
+    engine = tmp_path / "namd"
+    engine.mkdir()
+    reference = engine / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+    )
+    binary = engine / "single_point.coor"
+    binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.0))
+    configuration = tmp_path / "single_point_namd.conf"
+    configuration.write_text("binCoordinates single_point.coor\n")
+
+    with pytest.raises(ValueError, match="inside its engine directory"):
+        run_namd_single_point(
+            engine,
+            configuration_file=configuration,
+            coordinate_reference_file=reference,
+            binary_coordinate_file=binary,
+            coordinate_sha256=checksum,
+        )
+
+
+def test_run_namd_single_point_refuses_repeated_checked_directive(tmp_path: Path) -> None:
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+    )
+    binary = tmp_path / "single_point.coor"
+    binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.0))
+    configuration = tmp_path / "single_point_namd.conf"
+    configuration.write_text(
+        "binCoordinates single_point.coor\nbinCoordinates other.coor\n"
+        "cellBasisVector1 10 0 0\ncellBasisVector2 0 10 0\n"
+        "cellBasisVector3 0 0 10\nmergeCrossterms no\nLJcorrection off\n"
+        "rigidBonds none\nrun 0\n"
+    )
+
+    with pytest.raises(ValueError, match="exactly once"):
+        run_namd_single_point(
+            tmp_path,
+            configuration_file=configuration,
+            coordinate_reference_file=reference,
+            binary_coordinate_file=binary,
+            coordinate_sha256=checksum,
+        )
+
+
 def test_namd_attestations_are_required() -> None:
     with pytest.raises(TypeError, match="merge_crossterms"):
         _normalize_namd_energies(_kcal_terms(), coordinate_sha256="abc")  # type: ignore[call-arg]
