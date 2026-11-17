@@ -78,6 +78,8 @@ assessment of GLYCAM force-field accuracy for crystalline chitin.
 
 The same probe records schema-1 canonical reports for both engines on a shared,
 checksummed coordinate reference and verifies each report's component sum.
+Amber periodic impropers are classified and evaluated directly from the native
+`prmtop` and identical `inpcrd`; their value is not taken from GROMACS.
 Only bond, angle, dihedral, and improper categories enter the canonical
 cross-engine pass/fail result because the probe intentionally uses different
 ordinary nonbonded protocols; the separately resolved 1--4 comparison above

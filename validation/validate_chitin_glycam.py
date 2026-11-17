@@ -33,6 +33,53 @@ _KJ_PER_KCAL = 4.184
 _GROMACS_COULOMB_KCAL_ANGSTROM = 332.0637
 _AMBER_COULOMB_KCAL_ANGSTROM = 332.0522
 _ENERGY_DIFFERENCE_TOLERANCE_KCAL_MOL = 5.0e-3
+_AMBER_IMPROPER_MARKER = "CELLULOSE_FORGE_AMBER_IMPROPERS="
+
+
+def _amber_periodic_improper_energy(
+    directory: Path,
+    parmed_python: str,
+    topology: Path,
+    coordinates: Path,
+) -> dict[str, int | float]:
+    """Classify and evaluate periodic impropers from the native Amber topology."""
+    script = f"""
+import json
+import sys
+
+import parmed
+
+structure = parmed.load_file(sys.argv[1], xyz=sys.argv[2])
+energies = []
+for dihedral in structure.dihedrals:
+    if not dihedral.improper:
+        continue
+    energy = dihedral.energy()
+    if energy is None:
+        raise RuntimeError("Amber periodic improper has no coordinates or parameters")
+    energies.append(float(energy))
+result = {{"count": len(energies), "energy_kcal_mol": sum(energies)}}
+print({_AMBER_IMPROPER_MARKER!r} + json.dumps(result))
+"""
+    output = _run(
+        [parmed_python, "-c", script, str(topology), str(coordinates)],
+        directory,
+    )
+    matches = [
+        line.removeprefix(_AMBER_IMPROPER_MARKER)
+        for line in output.splitlines()
+        if line.startswith(_AMBER_IMPROPER_MARKER)
+    ]
+    if len(matches) != 1:
+        raise RuntimeError("could not parse Amber periodic-improper classification")
+    result = json.loads(matches[0])
+    count = result.get("count")
+    energy = result.get("energy_kcal_mol")
+    if type(count) is not int or count < 0:
+        raise RuntimeError("Amber periodic-improper count is invalid")
+    if isinstance(energy, bool) or not isinstance(energy, int | float):
+        raise RuntimeError("Amber periodic-improper energy is invalid")
+    return {"count": count, "energy_kcal_mol": float(energy)}
 
 
 def _run(command: list[str], directory: Path) -> str:
@@ -477,6 +524,12 @@ nstenergy = 1
         coordinate_sha256=coordinate_sha256,
         executable=gmx_double,
     )
+    amber_impropers = _amber_periodic_improper_energy(
+        directory,
+        parmed_python,
+        directory / "structure.prmtop",
+        directory / "identical.inpcrd",
+    )
     amber_report = run_glycam_amber_single_point(
         directory,
         input_file=directory / "amber_sp.in",
@@ -484,7 +537,7 @@ nstenergy = 1
         amber_coordinate_file=directory / "identical.inpcrd",
         coordinate_reference_file=coordinate_reference,
         coordinate_sha256=coordinate_sha256,
-        periodic_improper=gromacs["Per. Imp. Dih."],
+        periodic_improper=amber_impropers["energy_kcal_mol"],
         executable=sander,
     )
     for report in (gromacs_report, amber_report):
@@ -517,6 +570,7 @@ nstenergy = 1
                 "gromacs": gromacs_report.to_dict(),
                 "amber": amber_report.to_dict(),
             },
+            "amber_periodic_improper_classification": amber_impropers,
             "comparison": canonical_comparison,
             "comparable_terms": list(comparable_canonical_terms),
             "nonbonded_scope": (
