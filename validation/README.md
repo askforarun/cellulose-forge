@@ -308,21 +308,24 @@ One engine cannot pass by omitting a contribution. GROMACS uses plain cutoffs
 (`vdw-modifier` and `coulomb-modifier` `None`), `ewald-rtol` 1 × 10^-5, and
 the same dispersion correction as OpenMM. The 2 × 10^-4 relative comparison
 gate covers the measured PME-grid summation difference; it is not a
-force-field-accuracy tolerance. GROMACS and OpenMM partition their analytical
-long-range Lennard-Jones corrections slightly differently, so the isolated
-dispersion-correction term has a 1 × 10^-3 gate. Their combined van der Waals
-plus dispersion contribution must still pass the 2 × 10^-4 gate.
+force-field-accuracy tolerance. In the one case with an analytical long-range
+Lennard-Jones correction, the GROMACS and OpenMM correction energies differ by
+about 1.10 kJ/mol (8.46 × 10^-4 relative), while the van der Waals term agrees
+to 1.64 × 10^-6 relative. The cause of the isolated correction difference has
+not yet been characterized. The isolated correction therefore has a
+1 × 10^-3 gate, while the combined van der Waals plus correction contribution
+must still pass the 2 × 10^-4 gate.
 
 GROMACS used `periodic-molecules = yes` for the periodic systems; OpenMM used
 periodic bonded forces and periodic nonbonded exceptions. After NVT and
 fixed-chain-axis NPT, every bonded distance remained within 0.026 nm of its
 equilibrium length, so the boundary-crossing glycosidic bonds stayed intact.
 The results file, `results/openmm_engine_validation.json`, records the
-CelluloseForge commit (`c0574c3`, clean working tree), OpenMM 8.5, and GROMACS
-2024.2. These are engine-equivalence and short-run integration checks, not
-material-property validation. GitHub Actions installs OpenMM and GROMACS in a
-dedicated Linux job and runs the four finite/periodic, GLYCAM/CHARMM36
-cross-engine integration tests for every push and pull request.
+CelluloseForge commit (`7352520`, clean working tree), OpenMM 8.6.1, and
+GROMACS 2024.2-Homebrew. These are engine-equivalence and short-run integration
+checks, not material-property validation. GitHub Actions installs OpenMM and
+GROMACS in a dedicated Linux job and runs the four finite/periodic,
+GLYCAM/CHARMM36 cross-engine integration tests for every push and pull request.
 
 ## Experimental OPLS-AA and OPLS-AA-SEI matrix
 

@@ -103,6 +103,6 @@ NAMD NPT, GLYCAM, OpenFF, OPLS-AA, chitin dihydrate, and mannan are outside
 this first milestone. The current evidence is stored in
 `validation/results/namd_acceptance_matrix.json`. All three production runs
 reached their final frame with finite energies and intact bonds; heavy-atom
-RMSDs after 1 ps were 0.28--0.51 Angstrom. This is an interoperability and
+RMSDs after 1 ps were 0.28--0.49 Angstrom. This is an interoperability and
 short-dynamics smoke test, not a claim of long-timescale stability or
 force-field accuracy. NPT remains outside this first milestone.
