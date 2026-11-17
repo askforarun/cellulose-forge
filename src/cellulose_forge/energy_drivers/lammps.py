@@ -814,6 +814,10 @@ def _single_point_input_commands(input_text: str) -> list[tuple[str, list[str]]]
     logical_lines: list[str] = []
     continuation = ""
     for raw_line in input_text.splitlines():
+        if "&" in raw_line and "#" in raw_line:
+            raise ValueError(
+                "LAMMPS single-point input may not combine & continuation and comments"
+            )
         line = raw_line.split("#", 1)[0].strip()
         if not line:
             continue

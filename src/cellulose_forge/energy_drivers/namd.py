@@ -211,10 +211,17 @@ def _validate_configuration_scope(text: str) -> None:
     """Refuse directives that can bypass the native-input identity checks."""
     counts: dict[str, int] = {}
     for raw_line in text.splitlines():
-        line = raw_line.split("#", 1)[0].strip()
+        stripped = raw_line.strip()
+        if stripped.startswith("#"):
+            if "\\" in raw_line:
+                raise ValueError(
+                    "NAMD single-point comment lines may not use backslash continuation"
+                )
+            continue
+        line = stripped
         if not line:
             continue
-        metacharacters = sorted(set(line) & set(";[]${}\\"))
+        metacharacters = sorted(set(raw_line) & set("#;[]${}\\"))
         if metacharacters:
             raise ValueError(
                 f"NAMD single-point configuration may not use Tcl metacharacters: {metacharacters}"

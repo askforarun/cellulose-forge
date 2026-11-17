@@ -358,6 +358,65 @@ def test_run_namd_single_point_refuses_tcl_command_injection(
         )
 
 
+@pytest.mark.parametrize(
+    "injection",
+    [
+        "exclude scaled1-4 # note ; cd /elsewhere",
+        "cutoff 12.0 # [cd /elsewhere]",
+    ],
+)
+def test_run_namd_single_point_checks_metacharacters_after_midline_hash(
+    tmp_path: Path, injection: str
+) -> None:
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+    )
+    binary = tmp_path / "single_point.coor"
+    binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.0))
+    configuration = tmp_path / "single_point_namd.conf"
+    configuration.write_text(
+        "binCoordinates single_point.coor\ncellBasisVector1 10 0 0\n"
+        "cellBasisVector2 0 10 0\ncellBasisVector3 0 0 10\n"
+        "mergeCrossterms no\nLJcorrection off\nrigidBonds none\n"
+        f"{injection}\nrun 0\n"
+    )
+
+    with pytest.raises(ValueError, match="Tcl metacharacters"):
+        run_namd_single_point(
+            tmp_path,
+            configuration_file=configuration,
+            coordinate_reference_file=reference,
+            binary_coordinate_file=binary,
+            coordinate_sha256=checksum,
+        )
+
+
+def test_run_namd_single_point_refuses_comment_continuation(tmp_path: Path) -> None:
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+    )
+    binary = tmp_path / "single_point.coor"
+    binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.0))
+    configuration = tmp_path / "single_point_namd.conf"
+    configuration.write_text(
+        "# input files \\\n"
+        "binCoordinates single_point.coor\ncellBasisVector1 10 0 0\n"
+        "cellBasisVector2 0 10 0\ncellBasisVector3 0 0 10\n"
+        "mergeCrossterms no\nLJcorrection off\nrigidBonds none\nrun 0\n"
+    )
+
+    with pytest.raises(ValueError, match="comment lines may not use backslash"):
+        run_namd_single_point(
+            tmp_path,
+            configuration_file=configuration,
+            coordinate_reference_file=reference,
+            binary_coordinate_file=binary,
+            coordinate_sha256=checksum,
+        )
+
+
 def test_run_namd_single_point_requires_configuration_in_engine_directory(tmp_path: Path) -> None:
     engine = tmp_path / "namd"
     engine.mkdir()
