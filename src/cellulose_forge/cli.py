@@ -713,6 +713,7 @@ def _engine_outputs(
         outputs.update(
             {
                 "openmm_system": openmm_files.system.name,
+                "openmm_validation_system": openmm_files.validation_system.name,
                 "openmm_state": openmm_files.state.name,
                 "openmm_topology": openmm_files.topology.name,
                 "openmm_runner": openmm_files.runner.name,

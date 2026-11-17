@@ -795,11 +795,18 @@ def _record_openmm_writer(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
         directory = Path(output_directory)
         files = OpenMMSystemFiles(
             system=directory / "system.xml",
+            validation_system=directory / "validation_system.xml",
             state=directory / "state.xml",
             topology=directory / "topology.cif",
             runner=directory / "run_openmm.py",
         )
-        for path in (files.system, files.state, files.topology, files.runner):
+        for path in (
+            files.system,
+            files.validation_system,
+            files.state,
+            files.topology,
+            files.runner,
+        ):
             path.touch()
         return files, {"status": "passed", "chain_axis": "y"}
 

@@ -170,7 +170,13 @@ def _assert_openmm_matches_gromacs(output: Path, *, periodic: bool) -> None:
     assert report["openmm_validation"]["maximum_bond_length_deviation_nm"] < 0.05
     if periodic:
         assert "NonbondedForce exceptions" in report["openmm_validation"]["periodic_forces"]
-    for name in ("system.xml", "state.xml", "topology.cif", "run_openmm.py"):
+    for name in (
+        "system.xml",
+        "validation_system.xml",
+        "state.xml",
+        "topology.cif",
+        "run_openmm.py",
+    ):
         assert (output / name).is_file()
 
 

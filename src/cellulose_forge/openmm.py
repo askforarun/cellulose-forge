@@ -26,6 +26,7 @@ from cellulose_forge.glycam_mapping import GlycamMappedSystem
 from cellulose_forge.gromacs_pairs import prepare_explicit_pairs
 
 OPENMM_SYSTEM_FILE = "system.xml"
+OPENMM_VALIDATION_SYSTEM_FILE = "validation_system.xml"
 OPENMM_STATE_FILE = "state.xml"
 # Build-report energies are rounded to this many decimals of kJ/mol.
 DIAGNOSTIC_ENERGY_DECIMALS = 6
@@ -58,6 +59,7 @@ class OpenMMSystemFiles:
     """Paths of a serialized OpenMM system written by CelluloseForge."""
 
     system: Path
+    validation_system: Path
     state: Path
     topology: Path
     runner: Path
@@ -221,6 +223,8 @@ minimized = constrained_context.getState(getEnergy=True).getPotentialEnergy()
 
 with open(request["system_path"], "w", encoding="utf-8") as handle:
     handle.write(openmm.XmlSerializer.serialize(constrained))
+with open(request["validation_system_path"], "w", encoding="utf-8") as handle:
+    handle.write(openmm.XmlSerializer.serialize(system))
 with open(request["state_path"], "w", encoding="utf-8") as handle:
     # Positions and box only: a serialized energy would carry OpenMM's
     # process-dependent last-digit summation noise into a structural file.
@@ -577,6 +581,7 @@ def write_openmm_system(  # noqa: PLR0913
     directory.mkdir(parents=True, exist_ok=True)
     files = OpenMMSystemFiles(
         system=directory / OPENMM_SYSTEM_FILE,
+        validation_system=directory / OPENMM_VALIDATION_SYSTEM_FILE,
         state=directory / OPENMM_STATE_FILE,
         topology=directory / OPENMM_TOPOLOGY_FILE,
         runner=directory / OPENMM_RUNNER_FILE,
@@ -606,6 +611,7 @@ def write_openmm_system(  # noqa: PLR0913
         "minimization_iterations": minimization_iterations,
         "validation_platform": validation_platform_for_box(system.basis_vectors),
         "system_path": str(files.system.resolve()),
+        "validation_system_path": str(files.validation_system.resolve()),
         "state_path": str(files.state.resolve()),
         "topology_path": str(files.topology.resolve()),
     }

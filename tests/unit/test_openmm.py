@@ -127,12 +127,14 @@ def test_write_openmm_system_sends_request_and_writes_runner(
     assert request["expected_atom_count"] == 12
     assert request["dispersion_correction"] is False
     assert request["validation_ewald_error_tolerance"] < request["ewald_error_tolerance"]
+    assert request["validation_system_path"].endswith("validation_system.xml")
     assert request["include_directory"] == str(tmp_path.resolve())
     assert request["position_restraints"] == {
         "atom_indices": [0, 2],
         "force_constants_kj_mol_nm2": [1000.0, 1000.0, 1000.0],
     }
     assert files.runner.is_file()
+    assert files.validation_system.name == "validation_system.xml"
     assert "PERIODIC_CHAINS = True" in files.runner.read_text(encoding="utf-8")
     assert metadata["status"] == "passed"
     assert metadata["chain_axis"] == "y"

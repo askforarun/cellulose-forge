@@ -171,6 +171,12 @@ The results file records the CelluloseForge commit, OpenMM and GROMACS
 versions, and every per-category value. These are engine-equivalence and
 short-run integration checks, not material-property validation.
 
+GLYCAM06j-1 and CHARMM36 builds write both `system.xml` and
+`validation_system.xml`. The former is the hydrogen-constrained production
+system. The latter is an unconstrained system for matched single-point energy
+evaluation, so validation includes X--H bond energies without changing the
+production dynamics configuration.
+
 The OpenMM integration tests run only when OpenMM is importable by the test
 interpreter or by the interpreter named in `CELLULOSE_FORGE_OPENMM_PYTHON`.
 
