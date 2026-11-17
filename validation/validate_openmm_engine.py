@@ -89,6 +89,9 @@ CASES: dict[str, dict[str, Any]] = {
         "dispersion_correction": True,
     },
 }
+_ENERGY_ABSOLUTE_TOLERANCE_KJ_MOL = 0.1
+_ENERGY_RELATIVE_TOLERANCE = 2.0e-4
+_DISPERSION_CORRECTION_RELATIVE_TOLERANCE = 1.0e-3
 for _allomorph, _face in ALLOMORPH_SLAB_FACES.items():
     for _force_field in ("glycam", "charmm36"):
         CASES[f"{_force_field}_periodic_{_allomorph.lower().replace('-', '_')}_slab"] = {
@@ -246,6 +249,43 @@ def _runner(args: argparse.Namespace, directory: Path, *extra: str) -> dict[str,
     }
 
 
+def _compare_openmm_gromacs_reports(
+    gromacs_report: EnergyReport, openmm_report: EnergyReport
+) -> dict[str, Any]:
+    """Compare complete reports while guarding the combined Lennard-Jones energy."""
+    energy_comparison = compare_reports(
+        gromacs_report,
+        openmm_report,
+        absolute_kj_mol=_ENERGY_ABSOLUTE_TOLERANCE_KJ_MOL,
+        relative=_ENERGY_RELATIVE_TOLERANCE,
+        term_tolerances={
+            "dispersion_correction": (
+                _ENERGY_ABSOLUTE_TOLERANCE_KJ_MOL,
+                _DISPERSION_CORRECTION_RELATIVE_TOLERANCE,
+            )
+        },
+    )
+    reference_vdw = gromacs_report.terms["vdw"] + gromacs_report.terms["dispersion_correction"]
+    candidate_vdw = openmm_report.terms["vdw"] + openmm_report.terms["dispersion_correction"]
+    difference = candidate_vdw - reference_vdw
+    scale = max(abs(reference_vdw), abs(candidate_vdw), 1.0)
+    allowed = max(
+        _ENERGY_ABSOLUTE_TOLERANCE_KJ_MOL,
+        _ENERGY_RELATIVE_TOLERANCE * scale,
+    )
+    combined_vdw = {
+        "reference_kj_mol": reference_vdw,
+        "candidate_kj_mol": candidate_vdw,
+        "difference_kj_mol": difference,
+        "relative_difference": abs(difference) / scale,
+        "allowed_difference_kj_mol": allowed,
+        "passed": abs(difference) <= allowed,
+    }
+    energy_comparison["combined_vdw_and_dispersion_correction"] = combined_vdw
+    energy_comparison["passed"] &= combined_vdw["passed"]
+    return energy_comparison
+
+
 def _validate_case(args: argparse.Namespace, name: str, case: dict[str, Any]) -> dict[str, Any]:
     directory = args.work_directory / name
     build_arguments = [
@@ -294,12 +334,7 @@ def _validate_case(args: argparse.Namespace, name: str, case: dict[str, Any]) ->
     openmm_report = _openmm_energies(args, directory, coordinate_reference, coordinate_sha256)
     for energy_report in (gromacs_report, openmm_report):
         validate_potential_sum(energy_report, absolute_kj_mol=0.1, relative=1.0e-6)
-    energy_comparison = compare_reports(
-        gromacs_report,
-        openmm_report,
-        absolute_kj_mol=0.1,
-        relative=2.0e-4,
-    )
+    energy_comparison = _compare_openmm_gromacs_reports(gromacs_report, openmm_report)
     result: dict[str, Any] = {
         "allomorph": case.get("allomorph", "I-beta"),
         "force_field": case["force_field"],
@@ -378,6 +413,12 @@ def main() -> int:
         "openmm_version": versions,
         "gromacs_version": gromacs_version.group(1) if gromacs_version else None,
         "platform": args.platform,
+        "energy_tolerances": {
+            "default_absolute_kj_mol": _ENERGY_ABSOLUTE_TOLERANCE_KJ_MOL,
+            "default_relative": _ENERGY_RELATIVE_TOLERANCE,
+            "dispersion_correction_relative": _DISPERSION_CORRECTION_RELATIVE_TOLERANCE,
+            "combined_vdw_and_dispersion_correction_relative": _ENERGY_RELATIVE_TOLERANCE,
+        },
         "timestep_fs": 2.0,
         "temperature_k": 300.0,
         "cases": results,

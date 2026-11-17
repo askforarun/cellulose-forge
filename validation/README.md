@@ -308,7 +308,10 @@ One engine cannot pass by omitting a contribution. GROMACS uses plain cutoffs
 (`vdw-modifier` and `coulomb-modifier` `None`), `ewald-rtol` 1 × 10^-5, and
 the same dispersion correction as OpenMM. The 2 × 10^-4 relative comparison
 gate covers the measured PME-grid summation difference; it is not a
-force-field-accuracy tolerance.
+force-field-accuracy tolerance. GROMACS and OpenMM partition their analytical
+long-range Lennard-Jones corrections slightly differently, so the isolated
+dispersion-correction term has a 1 × 10^-3 gate. Their combined van der Waals
+plus dispersion contribution must still pass the 2 × 10^-4 gate.
 
 GROMACS used `periodic-molecules = yes` for the periodic systems; OpenMM used
 periodic bonded forces and periodic nonbonded exceptions. After NVT and
