@@ -138,6 +138,46 @@ _COMPONENT_LABELS = frozenset(
     {"PotEng", "E_bond", "E_angle", "E_dihed", "E_impro", "E_vdwl", "E_coul", "E_long", "E_tail"}
 )
 _ALWAYS_REQUIRED = ("PotEng", "E_bond", "E_angle", "E_dihed", "E_vdwl", "E_coul")
+_SINGLE_POINT_COMMANDS = frozenset(
+    {
+        "angle_style",
+        "atom_style",
+        "bond_style",
+        "boundary",
+        "dihedral_style",
+        "fix",
+        "fix_modify",
+        "group",
+        "improper_style",
+        "kspace_style",
+        "pair_modify",
+        "pair_style",
+        "quit",
+        "read_data",
+        "run",
+        "special_bonds",
+        "thermo",
+        "thermo_style",
+        "timestep",
+        "units",
+    }
+)
+_REQUIRED_SINGLE_POINT_COMMANDS = frozenset(
+    {
+        "angle_style",
+        "atom_style",
+        "bond_style",
+        "dihedral_style",
+        "kspace_style",
+        "pair_modify",
+        "pair_style",
+        "read_data",
+        "run",
+        "special_bonds",
+        "thermo_style",
+        "units",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -231,6 +271,145 @@ def _keyword_value(tokens: list[str], keyword: str) -> str | None:
         if token == keyword:
             return tokens[index + 1]
     return None
+
+
+def _positive_float(value: str) -> bool:
+    try:
+        return math.isfinite(float(value)) and float(value) > 0.0
+    except ValueError:
+        return False
+
+
+_EXACT_SINGLE_POINT_ARGUMENTS: dict[str, frozenset[tuple[str, ...]]] = {
+    "angle_style": frozenset({("harmonic",), ("charmm",)}),
+    "atom_style": frozenset({("full",)}),
+    "boundary": frozenset({("p", "p", "p")}),
+    "dihedral_style": frozenset({("charmm",), ("charmmfsw",), ("opls",)}),
+    "fix_modify": frozenset({("cellulose_position_restraints", "energy", "yes")}),
+    "improper_style": frozenset({("harmonic",)}),
+    "kspace_style": frozenset({("pppm", "1.0e-5")}),
+    "pair_modify": frozenset(
+        {
+            ("mix", mixing, "tail", tail)
+            for mixing in ("arithmetic", "geometric")
+            for tail in ("yes", "no")
+        }
+    ),
+    "pair_style": frozenset(
+        {
+            ("lj/charmmfsw/coul/long", "10.0", "12.0"),
+            ("lj/cut/coul/long", "10.0"),
+        }
+    ),
+    "quit": frozenset({("0",)}),
+    "run": frozenset({("0",)}),
+    "special_bonds": frozenset(
+        {
+            ("charmm",),
+            ("lj/coul", "0.0", "0.0", "1.0"),
+            ("lj/coul", "0.0", "0.0", "1.0", "angle", "yes", "dihedral", "yes"),
+            ("lj/coul", "0.0", "0.0", "0.5", "angle", "yes", "dihedral", "yes"),
+        }
+    ),
+    "thermo": frozenset({("100",)}),
+    "timestep": frozenset({("1.0",)}),
+    "units": frozenset({("real",)}),
+}
+
+
+def _variable_arguments_are_valid(  # noqa: PLR0911
+    command: str, arguments: list[str]
+) -> bool:
+    lowered = [value.lower() for value in arguments]
+    if command == "bond_style":
+        return lowered == ["harmonic"] or (
+            lowered[:4] == ["hybrid", "harmonic", "table", "linear"]
+            and lowered[4:] in (["9901"], ["7001"])
+        )
+    if command == "read_data":
+        return len(arguments) == 1
+    if command == "group":
+        return (
+            lowered[:2] == ["cellulose_restraints", "id"]
+            and bool(arguments[2:])
+            and all(value.isdigit() and int(value) > 0 for value in arguments[2:])
+        )
+    if command == "fix":
+        match lowered:
+            case [
+                "cellulose_position_restraints",
+                "cellulose_restraints",
+                "spring/self",
+                force,
+                axes,
+            ]:
+                return _positive_float(force) and axes in {
+                    "x",
+                    "y",
+                    "z",
+                    "xy",
+                    "xz",
+                    "yz",
+                    "xyz",
+                }
+            case _:
+                return False
+    if command == "thermo_style":
+        required = (
+            "custom",
+            "step",
+            "temp",
+            "pe",
+            "ebond",
+            "eangle",
+            "edihed",
+            "evdwl",
+            "ecoul",
+            "elong",
+        )
+        optional = {"etail", "eimp", "f_cellulose_position_restraints"}
+        remainder = lowered[len(required) :]
+        return (
+            tuple(lowered[: len(required)]) == required
+            and set(remainder) <= optional
+            and len(remainder) == len(set(remainder))
+        )
+    return False
+
+
+def _validate_lammps_single_point_contract(
+    commands: list[tuple[str, list[str]]],
+) -> None:
+    """Validate arguments for the LAMMPS commands emitted by CelluloseForge."""
+    unsupported = sorted({command for command, _ in commands} - _SINGLE_POINT_COMMANDS)
+    if unsupported:
+        raise ValueError(
+            "LAMMPS single-point input contains commands outside the verified subset: "
+            f"{unsupported}"
+        )
+    counts: dict[str, int] = {}
+    for command, _ in commands:
+        counts[command] = counts.get(command, 0) + 1
+    repeated = sorted(command for command, count in counts.items() if count > 1)
+    if repeated:
+        raise ValueError(f"LAMMPS single-point commands may occur only once: {repeated}")
+    missing = sorted(_REQUIRED_SINGLE_POINT_COMMANDS - counts.keys())
+    if missing:
+        raise ValueError(f"LAMMPS single-point input is missing required commands: {missing}")
+
+    for command, arguments in commands:
+        lowered = tuple(value.lower() for value in arguments)
+        accepted = _EXACT_SINGLE_POINT_ARGUMENTS.get(command)
+        valid = (
+            lowered in accepted
+            if accepted is not None
+            else _variable_arguments_are_valid(command, arguments)
+        )
+        if not valid:
+            raise ValueError(
+                f"LAMMPS single-point command has unsupported arguments: {command} "
+                f"{' '.join(arguments)}"
+            )
 
 
 def parse_lammps_input(text: str) -> LammpsSettings:  # noqa: PLR0912
@@ -825,7 +1004,7 @@ def _data_box_angstrom(data: str) -> npt.NDArray[np.float64]:
     )
 
 
-def run_lammps_single_point(  # noqa: PLR0912, PLR0913
+def run_lammps_single_point(  # noqa: PLR0913
     directory: Path,
     *,
     input_file: Path,
@@ -853,57 +1032,9 @@ def run_lammps_single_point(  # noqa: PLR0912, PLR0913
         raise ValueError("LAMMPS input file must be inside its engine directory")
     data_text = data_file.read_text(encoding="utf-8")
     input_text = input_file.read_text(encoding="utf-8")
-    # This adapter proves that the engine evaluates the checked data-file
-    # coordinates.  Accept only the declarative commands emitted by
-    # CelluloseForge; LAMMPS commands such as displace_atoms, set, read_dump,
-    # replicate, include or jump can otherwise alter atoms after read_data.
-    allowed_commands = {
-        "angle_style",
-        "atom_style",
-        "bond_style",
-        "boundary",
-        "dihedral_style",
-        "fix",
-        "fix_modify",
-        "group",
-        "improper_style",
-        "kspace_style",
-        "pair_modify",
-        "pair_style",
-        "quit",
-        "read_data",
-        "run",
-        "special_bonds",
-        "thermo",
-        "thermo_style",
-        "timestep",
-        "units",
-    }
     commands = _lammps_commands(input_text)
-    unsupported_commands = {command for command, _ in commands if command not in allowed_commands}
-    if unsupported_commands:
-        raise ValueError(
-            "LAMMPS single-point input contains commands outside the verified subset: "
-            f"{sorted(unsupported_commands)}"
-        )
-    run_rows = [arguments for command, arguments in commands if command == "run"]
-    if len(run_rows) != 1 or [item.lower() for item in run_rows[0]] != ["0"]:
-        raise ValueError("LAMMPS single-point input must contain exactly one plain run 0 command")
-    for command, arguments in commands:
-        if command == "fix" and (not arguments[2:] or arguments[2].lower() != "spring/self"):
-            raise ValueError("LAMMPS single-point input may only use spring/self fixes")
-        if command == "fix_modify" and [item.lower() for item in arguments[1:]] != [
-            "energy",
-            "yes",
-        ]:
-            raise ValueError("LAMMPS single-point fix_modify must only enable restraint energy")
-        if command == "boundary" and [item.lower() for item in arguments] != ["p", "p", "p"]:
-            raise ValueError("LAMMPS single-point input requires boundary p p p")
+    _validate_lammps_single_point_contract(commands)
     read_data_rows = [arguments for command, arguments in commands if command == "read_data"]
-    if len(read_data_rows) != 1:
-        raise ValueError("LAMMPS input must contain exactly one read_data command")
-    if not read_data_rows[0] or read_data_rows[0][1:]:
-        raise ValueError("LAMMPS single-point read_data may not use keywords")
     configured_data = (directory / read_data_rows[0][0]).resolve()
     if configured_data != data_file:
         raise ValueError("LAMMPS read_data does not name the checked data file")

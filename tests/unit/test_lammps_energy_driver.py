@@ -262,17 +262,18 @@ def test_run_lammps_single_point_refuses_coordinate_mutation_commands(
 @pytest.mark.parametrize(
     ("replacement", "message"),
     [
-        ("read_data system.data shift 1 0 0", "may not use keywords"),
-        ("boundary s p p", "requires boundary p p p"),
+        ("read_data system.data shift 1 0 0", "unsupported arguments: read_data"),
+        ("boundary s p p", "unsupported arguments: boundary"),
     ],
 )
 def test_run_lammps_single_point_refuses_identity_changing_loader_options(
     tmp_path: Path, replacement: str, message: str
 ) -> None:
     input_file = tmp_path / "in.cellulose"
-    input_text = _PLAIN_INPUT.replace("read_data system.data", replacement)
     if replacement.startswith("boundary"):
-        input_text = input_text.replace("atom_style full", f"atom_style full\n{replacement}")
+        input_text = _PLAIN_INPUT.replace("atom_style full", f"atom_style full\n{replacement}")
+    else:
+        input_text = _PLAIN_INPUT.replace("read_data system.data", replacement)
     input_file.write_text(input_text)
     data_file = tmp_path / "system.data"
     data_file.write_text(_data())
@@ -384,7 +385,7 @@ def test_run_lammps_single_point_refuses_mutation_hidden_in_allowed_command(
         [[30, 0, 0], [1.5, 30, 0], [0, 0, 30]],
     )
 
-    with pytest.raises(ValueError, match=r"run 0|spring/self"):
+    with pytest.raises(ValueError, match=r"occur only once|unsupported arguments"):
         run_lammps_single_point(
             tmp_path,
             input_file=input_file,
