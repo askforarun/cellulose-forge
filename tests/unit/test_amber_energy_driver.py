@@ -1,4 +1,3 @@
-import hashlib
 from collections.abc import Mapping
 from pathlib import Path
 from types import SimpleNamespace
@@ -16,6 +15,7 @@ from cellulose_forge.energy_drivers.amber import (
 from cellulose_forge.energy_drivers.amber import (
     normalize_glycam_amber_energies as _normalize_glycam_amber_energies,
 )
+from cellulose_forge.energy_drivers.coordinates import write_coordinate_reference
 from cellulose_forge.energy_drivers.report import EnergyReport, EnergyValue, validate_potential_sum
 
 _SANDER_BLOCK = """
@@ -161,11 +161,8 @@ def test_run_glycam_amber_single_point_uses_shared_coordinates(
     topology.write_text("test topology\n", encoding="utf-8")
     amber_coordinates = tmp_path / "structure.inpcrd"
     amber_coordinates.write_text("test\n 1\n 1.0000 2.0000 3.0000\n", encoding="utf-8")
-    shared = tmp_path / "coordinates.gro"
-    shared.write_text(
-        "shared\n1\n    1BGLC    C1    1   0.100   0.200   0.300\n1.0 1.0 1.0\n",
-        encoding="utf-8",
-    )
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(reference, [[1.0, 2.0, 3.0]], None)
 
     def fake_sander(command: list[str], **kwargs: object) -> SimpleNamespace:
         output = Path(command[command.index("-o") + 1])
@@ -181,12 +178,36 @@ def test_run_glycam_amber_single_point_uses_shared_coordinates(
         input_file=input_file,
         topology_file=topology,
         amber_coordinate_file=amber_coordinates,
-        shared_coordinate_file=shared,
-        coordinate_sha256=hashlib.sha256(shared.read_bytes()).hexdigest(),
+        coordinate_reference_file=reference,
+        coordinate_sha256=checksum,
         periodic_improper=0.0,
     )
 
     assert report.terms["bond"] == 10.0 * KJ_PER_KCAL
+
+
+def test_run_glycam_amber_single_point_rejects_native_box_change(tmp_path: Path) -> None:
+    input_file = tmp_path / "single_point.in"
+    input_file.write_text("&cntrl\n imin=1, maxcyc=0,\n/\n")
+    topology = tmp_path / "structure.prmtop"
+    topology.write_text("topology\n")
+    coordinates = tmp_path / "structure.inpcrd"
+    coordinates.write_text("test\n 1\n 1.0 2.0 3.0\n 9.0 10.0 10.0 90.0 90.0 90.0\n")
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+    )
+
+    with pytest.raises(ValueError, match="box differs"):
+        run_glycam_amber_single_point(
+            tmp_path,
+            input_file=input_file,
+            topology_file=topology,
+            amber_coordinate_file=coordinates,
+            coordinate_reference_file=reference,
+            coordinate_sha256=checksum,
+            periodic_improper=0.0,
+        )
 
 
 def test_parse_amber_minimization_single_point_without_eptot() -> None:

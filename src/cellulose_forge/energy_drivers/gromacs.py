@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-import hashlib
 import math
 import subprocess
 from collections.abc import Mapping
 from pathlib import Path
 
+from cellulose_forge.energy_drivers.coordinates import (
+    assert_coordinate_identity,
+    load_coordinate_reference,
+    read_gro_frame,
+)
 from cellulose_forge.energy_drivers.report import EnergyReport, EnergyValue
 
 # GROMACS may report more than one functional form in a category.  Keeping the
@@ -231,6 +235,7 @@ def run_gromacs_single_point(  # noqa: PLR0913 - scientific inputs stay explicit
     directory: Path,
     *,
     coordinate_file: Path,
+    coordinate_reference_file: Path,
     topology_file: Path,
     mdp_file: Path,
     coordinate_sha256: str,
@@ -244,18 +249,20 @@ def run_gromacs_single_point(  # noqa: PLR0913 - scientific inputs stay explicit
     """
     directory = directory.resolve()
     coordinate_file = coordinate_file.resolve()
+    coordinate_reference_file = coordinate_reference_file.resolve()
     topology_file = topology_file.resolve()
     mdp_file = mdp_file.resolve()
     for path, description in (
         (coordinate_file, "coordinate"),
+        (coordinate_reference_file, "coordinate reference"),
         (topology_file, "topology"),
         (mdp_file, "MDP"),
     ):
         if not path.is_file():
             raise FileNotFoundError(f"GROMACS {description} file does not exist: {path}")
-    actual_sha256 = hashlib.sha256(coordinate_file.read_bytes()).hexdigest()
-    if actual_sha256 != coordinate_sha256:
-        raise ValueError("GROMACS coordinate file does not match the shared checksum")
+    positions, box = read_gro_frame(coordinate_file)
+    reference = load_coordinate_reference(coordinate_reference_file, coordinate_sha256)
+    assert_coordinate_identity(reference, positions, engine="GROMACS", box_vectors=box)
     _validate_single_point_mdp(mdp_file)
 
     tpr = directory / "single_point.tpr"

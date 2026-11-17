@@ -9,7 +9,6 @@ isolates those contributions before calling this normalization layer.
 
 from __future__ import annotations
 
-import hashlib
 import importlib
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
@@ -17,6 +16,12 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, cast
 
+import numpy as np
+
+from cellulose_forge.energy_drivers.coordinates import (
+    assert_coordinate_identity,
+    load_coordinate_reference,
+)
 from cellulose_forge.energy_drivers.report import EnergyReport, EnergyValue
 
 OPENMM_COMPONENTS = frozenset(
@@ -347,10 +352,11 @@ def _add(components: dict[str, float], name: str, value: float) -> None:
     components[name] = components.get(name, 0.0) + value
 
 
-def run_openmm_single_point(  # noqa: PLR0912, PLR0915
+def run_openmm_single_point(  # noqa: PLR0912, PLR0913, PLR0915
     *,
     system_file: Path,
     coordinate_file: Path,
+    coordinate_reference_file: Path,
     coordinate_sha256: str,
     classification: OpenMMForceClassification,
     platform_name: str = "Reference",
@@ -363,13 +369,14 @@ def run_openmm_single_point(  # noqa: PLR0912, PLR0915
     """
     system_file = system_file.resolve()
     coordinate_file = coordinate_file.resolve()
-    for path, description in ((system_file, "system"), (coordinate_file, "coordinate")):
+    coordinate_reference_file = coordinate_reference_file.resolve()
+    for path, description in (
+        (system_file, "system"),
+        (coordinate_file, "coordinate"),
+        (coordinate_reference_file, "coordinate reference"),
+    ):
         if not path.is_file():
             raise FileNotFoundError(f"OpenMM {description} file does not exist: {path}")
-    actual_sha256 = hashlib.sha256(coordinate_file.read_bytes()).hexdigest()
-    if actual_sha256 != coordinate_sha256:
-        raise ValueError("OpenMM coordinate file does not match the shared checksum")
-
     openmm = importlib.import_module("openmm")
     app = importlib.import_module("openmm.app")
     unit = importlib.import_module("openmm.unit")
@@ -384,6 +391,16 @@ def run_openmm_single_point(  # noqa: PLR0912, PLR0915
         raise ValueError("OpenMM coordinate and system particle counts differ")
     if system.usesPeriodicBoundaryConditions() and box is None:
         raise ValueError("periodic OpenMM systems require box vectors in the coordinate file")
+    reference = load_coordinate_reference(coordinate_reference_file, coordinate_sha256)
+    native_positions = np.asarray(
+        [list(vector) for vector in positions.value_in_unit(unit.angstrom)], dtype=np.float64
+    )
+    native_box = None
+    if box is not None:
+        native_box = np.asarray(
+            [list(vector.value_in_unit(unit.angstrom)) for vector in box], dtype=np.float64
+        )
+    assert_coordinate_identity(reference, native_positions, engine="OpenMM", box_vectors=native_box)
     try:
         platform = openmm.Platform.getPlatformByName(platform_name)
     except Exception as error:

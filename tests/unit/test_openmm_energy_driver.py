@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from cellulose_forge.energy_drivers.coordinates import write_coordinate_reference
 from cellulose_forge.energy_drivers.openmm import (
     OpenMMForceClassification,
     openmm_classification_from_topology,
@@ -71,7 +72,7 @@ def test_openmm_extra_metadata_is_copied() -> None:
     assert report.extra["platform"] == "CPU"
 
 
-def _write_openmm_fixture(directory: Path) -> tuple[Path, Path, str]:
+def _write_openmm_fixture(directory: Path) -> tuple[Path, Path, Path, str]:
     openmm = pytest.importorskip("openmm")
     app = pytest.importorskip("openmm.app")
 
@@ -132,15 +133,21 @@ def _write_openmm_fixture(directory: Path) -> tuple[Path, Path, str]:
         " -0.1000000  0.0000000  0.0000000  0.0000000\n",
         encoding="utf-8",
     )
-    checksum = hashlib.sha256(coordinate_path.read_bytes()).hexdigest()
-    return system_path, coordinate_path, checksum
+    reference = directory / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference,
+        [[0.1, 0.0, 0.0], [1.6, 0.0, 0.0], [2.7, 0.8, 0.0], [3.9, 1.0, 0.8]],
+        [[20.0, 0.0, 0.0], [-1.0, 21.0, 0.0], [0.0, 0.0, 22.0]],
+    )
+    return system_path, coordinate_path, reference, checksum
 
 
 def test_run_openmm_single_point_splits_mixed_forces(tmp_path: Path) -> None:
-    system, coordinates, checksum = _write_openmm_fixture(tmp_path)
+    system, coordinates, reference, checksum = _write_openmm_fixture(tmp_path)
     report = run_openmm_single_point(
         system_file=system,
         coordinate_file=coordinates,
+        coordinate_reference_file=reference,
         coordinate_sha256=checksum,
         classification=OpenMMForceClassification(
             urey_bradley_bonds={0: (1,)},
@@ -162,12 +169,13 @@ def test_run_openmm_single_point_splits_mixed_forces(tmp_path: Path) -> None:
 
 
 def test_run_openmm_single_point_refuses_unclassified_custom_force(tmp_path: Path) -> None:
-    system, coordinates, checksum = _write_openmm_fixture(tmp_path)
+    system, coordinates, reference, checksum = _write_openmm_fixture(tmp_path)
 
     with pytest.raises(ValueError, match="requires an explicit role"):
         run_openmm_single_point(
             system_file=system,
             coordinate_file=coordinates,
+            coordinate_reference_file=reference,
             coordinate_sha256=checksum,
             classification=OpenMMForceClassification(
                 urey_bradley_bonds={0: (1,)},
@@ -178,12 +186,13 @@ def test_run_openmm_single_point_refuses_unclassified_custom_force(tmp_path: Pat
 
 
 def test_run_openmm_single_point_checks_coordinate_hash(tmp_path: Path) -> None:
-    system, coordinates, _ = _write_openmm_fixture(tmp_path)
+    system, coordinates, reference, _ = _write_openmm_fixture(tmp_path)
 
-    with pytest.raises(ValueError, match="shared checksum"):
+    with pytest.raises(ValueError, match="manifest checksum"):
         run_openmm_single_point(
             system_file=system,
             coordinate_file=coordinates,
+            coordinate_reference_file=reference,
             coordinate_sha256="wrong",
             classification=OpenMMForceClassification(),
         )
@@ -192,12 +201,13 @@ def test_run_openmm_single_point_checks_coordinate_hash(tmp_path: Path) -> None:
 def test_run_openmm_single_point_requires_every_mixed_force_classification(
     tmp_path: Path,
 ) -> None:
-    system, coordinates, checksum = _write_openmm_fixture(tmp_path)
+    system, coordinates, reference, checksum = _write_openmm_fixture(tmp_path)
 
     with pytest.raises(ValueError, match="every HarmonicBondForce"):
         run_openmm_single_point(
             system_file=system,
             coordinate_file=coordinates,
+            coordinate_reference_file=reference,
             coordinate_sha256=checksum,
             classification=OpenMMForceClassification(
                 periodic_impropers={2: ()}, rb_impropers={5: ()}
@@ -206,12 +216,13 @@ def test_run_openmm_single_point_requires_every_mixed_force_classification(
 
 
 def test_run_openmm_single_point_refuses_wrong_force_classification(tmp_path: Path) -> None:
-    system, coordinates, checksum = _write_openmm_fixture(tmp_path)
+    system, coordinates, reference, checksum = _write_openmm_fixture(tmp_path)
 
     with pytest.raises(ValueError, match="every HarmonicBondForce"):
         run_openmm_single_point(
             system_file=system,
             coordinate_file=coordinates,
+            coordinate_reference_file=reference,
             coordinate_sha256=checksum,
             classification=OpenMMForceClassification(
                 urey_bradley_bonds={2: ()},
@@ -225,7 +236,7 @@ def test_run_openmm_single_point_refuses_periodic_system_without_coordinate_box(
     tmp_path: Path,
 ) -> None:
     openmm = pytest.importorskip("openmm")
-    system_path, _, _ = _write_openmm_fixture(tmp_path)
+    system_path, _, reference, _ = _write_openmm_fixture(tmp_path)
     system = openmm.XmlSerializer.deserialize(system_path.read_text(encoding="utf-8"))
     system.setDefaultPeriodicBoxVectors(
         openmm.Vec3(2, 0, 0), openmm.Vec3(0, 2, 0), openmm.Vec3(0, 0, 2)
@@ -246,6 +257,7 @@ def test_run_openmm_single_point_refuses_periodic_system_without_coordinate_box(
         run_openmm_single_point(
             system_file=system_path,
             coordinate_file=coordinates,
+            coordinate_reference_file=reference,
             coordinate_sha256=hashlib.sha256(coordinates.read_bytes()).hexdigest(),
             classification=OpenMMForceClassification(
                 urey_bradley_bonds={0: (1,)},
@@ -258,7 +270,7 @@ def test_run_openmm_single_point_refuses_periodic_system_without_coordinate_box(
 
 def test_run_openmm_single_point_refuses_nonbonded_parameter_offsets(tmp_path: Path) -> None:
     openmm = pytest.importorskip("openmm")
-    system_path, coordinates, checksum = _write_openmm_fixture(tmp_path)
+    system_path, coordinates, reference, checksum = _write_openmm_fixture(tmp_path)
     system = openmm.XmlSerializer.deserialize(system_path.read_text(encoding="utf-8"))
     nonbonded = system.getForce(3)
     nonbonded.addGlobalParameter("lambda", 0.0)
@@ -269,6 +281,7 @@ def test_run_openmm_single_point_refuses_nonbonded_parameter_offsets(tmp_path: P
         run_openmm_single_point(
             system_file=system_path,
             coordinate_file=coordinates,
+            coordinate_reference_file=reference,
             coordinate_sha256=checksum,
             classification=OpenMMForceClassification(
                 urey_bradley_bonds={0: (1,)},
@@ -280,7 +293,7 @@ def test_run_openmm_single_point_refuses_nonbonded_parameter_offsets(tmp_path: P
 
 
 def test_openmm_classification_from_topology_finds_urey_bradley(tmp_path: Path) -> None:
-    system, _, _ = _write_openmm_fixture(tmp_path)
+    system, _, _, _ = _write_openmm_fixture(tmp_path)
 
     classification = openmm_classification_from_topology(
         system,
@@ -295,7 +308,7 @@ def test_openmm_classification_from_topology_finds_urey_bradley(tmp_path: Path) 
 
 def test_openmm_classification_refuses_non_one_three_pseudo_bond(tmp_path: Path) -> None:
     openmm = pytest.importorskip("openmm")
-    system_path, _, _ = _write_openmm_fixture(tmp_path)
+    system_path, _, _, _ = _write_openmm_fixture(tmp_path)
     system = openmm.XmlSerializer.deserialize(system_path.read_text(encoding="utf-8"))
     system.getForce(0).addBond(0, 3, 0.4, 10.0)
     system_path.write_text(openmm.XmlSerializer.serialize(system), encoding="utf-8")
@@ -305,7 +318,7 @@ def test_openmm_classification_refuses_non_one_three_pseudo_bond(tmp_path: Path)
 
 
 def test_openmm_classification_refuses_graph_bond_missing_from_force(tmp_path: Path) -> None:
-    system_path, _, _ = _write_openmm_fixture(tmp_path)
+    system_path, _, _, _ = _write_openmm_fixture(tmp_path)
 
     with pytest.raises(ValueError, match="absent from HarmonicBondForce"):
         openmm_classification_from_topology(
@@ -316,7 +329,7 @@ def test_openmm_classification_refuses_graph_bond_missing_from_force(tmp_path: P
 
 def test_run_openmm_single_point_refuses_constrained_system(tmp_path: Path) -> None:
     openmm = pytest.importorskip("openmm")
-    system_path, coordinates, checksum = _write_openmm_fixture(tmp_path)
+    system_path, coordinates, reference, checksum = _write_openmm_fixture(tmp_path)
     system = openmm.XmlSerializer.deserialize(system_path.read_text(encoding="utf-8"))
     system.addConstraint(0, 1, 0.14)
     system_path.write_text(openmm.XmlSerializer.serialize(system), encoding="utf-8")
@@ -325,6 +338,7 @@ def test_run_openmm_single_point_refuses_constrained_system(tmp_path: Path) -> N
         run_openmm_single_point(
             system_file=system_path,
             coordinate_file=coordinates,
+            coordinate_reference_file=reference,
             coordinate_sha256=checksum,
             classification=OpenMMForceClassification(
                 urey_bradley_bonds={0: (1,)},

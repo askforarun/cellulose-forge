@@ -1,10 +1,10 @@
-import hashlib
 import struct
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from cellulose_forge.energy_drivers.coordinates import write_coordinate_reference
 from cellulose_forge.energy_drivers.namd import (
     KJ_PER_KCAL,
     parse_namd_energy_log,
@@ -191,15 +191,16 @@ def test_parse_namd_energy_log_refuses_more_than_one_energy_row(tmp_path: Path) 
 def test_run_namd_single_point_checks_shared_binary_coordinates(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    gro = tmp_path / "coordinates.gro"
-    gro.write_text(
-        "shared\n1\n    1BGLC    C1    1   0.100   0.200   0.300\n1.0 1.0 1.0\n",
-        encoding="utf-8",
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
     )
     binary = tmp_path / "single_point.coor"
     binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.0))
     configuration = tmp_path / "single_point_namd.conf"
     configuration.write_text(
+        "binCoordinates single_point.coor\ncellBasisVector1 10 0 0\n"
+        "cellBasisVector2 0 10 0\ncellBasisVector3 0 0 10\n"
         "mergeCrossterms no\nLJcorrection off\nrigidBonds none\nrun 0\n",
         encoding="utf-8",
     )
@@ -212,9 +213,9 @@ def test_run_namd_single_point_checks_shared_binary_coordinates(
     report = run_namd_single_point(
         tmp_path,
         configuration_file=configuration,
-        shared_coordinate_file=gro,
+        coordinate_reference_file=reference,
         binary_coordinate_file=binary,
-        coordinate_sha256=hashlib.sha256(gro.read_bytes()).hexdigest(),
+        coordinate_sha256=checksum,
     )
 
     assert report.terms["potential"] == 58.0 * KJ_PER_KCAL
@@ -222,26 +223,70 @@ def test_run_namd_single_point_checks_shared_binary_coordinates(
 
 
 def test_run_namd_single_point_rejects_unmatched_binary_coordinates(tmp_path: Path) -> None:
-    gro = tmp_path / "coordinates.gro"
-    gro.write_text(
-        "shared\n1\n    1BGLC    C1    1   0.100   0.200   0.300\n1.0 1.0 1.0\n",
-        encoding="utf-8",
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
     )
     binary = tmp_path / "single_point.coor"
     binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.1))
     configuration = tmp_path / "single_point_namd.conf"
     configuration.write_text(
+        "binCoordinates single_point.coor\ncellBasisVector1 10 0 0\n"
+        "cellBasisVector2 0 10 0\ncellBasisVector3 0 0 10\n"
         "mergeCrossterms no\nLJcorrection off\nrigidBonds none\nrun 0\n",
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="differ from the shared GRO"):
+    with pytest.raises(ValueError, match="coordinate reference"):
         run_namd_single_point(
             tmp_path,
             configuration_file=configuration,
-            shared_coordinate_file=gro,
+            coordinate_reference_file=reference,
             binary_coordinate_file=binary,
-            coordinate_sha256=hashlib.sha256(gro.read_bytes()).hexdigest(),
+            coordinate_sha256=checksum,
+        )
+
+
+@pytest.mark.parametrize(
+    ("replacement", "message"),
+    [
+        ("binCoordinates other.coor", "binCoordinates does not name"),
+        ("cellBasisVector1 11 0 0", "box differs"),
+    ],
+)
+def test_run_namd_single_point_checks_configured_native_files(
+    tmp_path: Path, replacement: str, message: str
+) -> None:
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+    )
+    binary = tmp_path / "single_point.coor"
+    binary.write_bytes(struct.pack("=i3d", 1, 1.0, 2.0, 3.0))
+    configuration = tmp_path / "single_point_namd.conf"
+    lines = [
+        "binCoordinates single_point.coor",
+        "cellBasisVector1 10 0 0",
+        "cellBasisVector2 0 10 0",
+        "cellBasisVector3 0 0 10",
+        "mergeCrossterms no",
+        "LJcorrection off",
+        "rigidBonds none",
+        "run 0",
+    ]
+    if replacement.startswith("binCoordinates"):
+        lines[0] = replacement
+    else:
+        lines[1] = replacement
+    configuration.write_text("\n".join(lines) + "\n")
+
+    with pytest.raises(ValueError, match=message):
+        run_namd_single_point(
+            tmp_path,
+            configuration_file=configuration,
+            coordinate_reference_file=reference,
+            binary_coordinate_file=binary,
+            coordinate_sha256=checksum,
         )
 
 

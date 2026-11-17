@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import math
 import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
+import numpy as np
 import pytest
 
 from cellulose_forge.energy_drivers import lammps
+from cellulose_forge.energy_drivers.coordinates import write_coordinate_reference
 from cellulose_forge.energy_drivers.lammps import (
     CHARMM_COULOMB_RATIO,
     KJ_PER_KCAL,
@@ -172,8 +173,12 @@ def test_run_lammps_single_point_checks_and_normalizes_shared_coordinates(
     input_file.write_text(_PLAIN_INPUT, encoding="utf-8")
     data_file = tmp_path / "system.data"
     data_file.write_text(_data(), encoding="utf-8")
-    coordinates = tmp_path / "coordinates.gro"
-    coordinates.write_text(_matching_gro(), encoding="utf-8")
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference,
+        [[1, 1, 1], [2.5, 1, 1], [4, 1, 1], [5.5, 1, 1], [7, 1, 1], [8.5, 1, 1], [1, 1, 22]],
+        [[30, 0, 0], [1.5, 30, 0], [0, 0, 30]],
+    )
     log = _log(_PLAIN_LABELS, _PLAIN_ROW)
     monkeypatch.setattr(
         "cellulose_forge.energy_drivers.lammps.subprocess.run",
@@ -184,13 +189,33 @@ def test_run_lammps_single_point_checks_and_normalizes_shared_coordinates(
         tmp_path,
         input_file=input_file,
         data_file=data_file,
-        shared_coordinate_file=coordinates,
-        coordinate_sha256=hashlib.sha256(coordinates.read_bytes()).hexdigest(),
+        coordinate_reference_file=reference,
+        coordinate_sha256=checksum,
         periodic_improper_count=0,
     )
 
     assert report.terms["potential"] == pytest.approx(_PLAIN_ROW["PotEng"] * KJ_PER_KCAL)
     assert (tmp_path / "single_point_lammps.log").read_text() == log
+
+
+def test_run_lammps_single_point_requires_checked_read_data_target(tmp_path: Path) -> None:
+    input_file = tmp_path / "in.cellulose"
+    input_file.write_text(_PLAIN_INPUT.replace("read_data system.data", "read_data other.data"))
+    data_file = tmp_path / "system.data"
+    data_file.write_text(_data())
+    (tmp_path / "other.data").write_text(_data().replace("1.0 1.0 1.0", "1.3 1.0 1.0", 1))
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(reference, [[0.0, 0.0, 0.0]], np.eye(3))
+
+    with pytest.raises(ValueError, match="read_data does not name"):
+        run_lammps_single_point(
+            tmp_path,
+            input_file=input_file,
+            data_file=data_file,
+            coordinate_reference_file=reference,
+            coordinate_sha256=checksum,
+            periodic_improper_count=0,
+        )
 
 
 def _validator() -> ModuleType:

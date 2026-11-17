@@ -1,9 +1,9 @@
-import hashlib
 from pathlib import Path
 
 import pytest
 
 import cellulose_forge.energy_drivers.gromacs as gromacs_driver
+from cellulose_forge.energy_drivers.coordinates import write_coordinate_reference
 from cellulose_forge.energy_drivers.gromacs import (
     normalize_gromacs_energies,
     parse_gromacs_xvg,
@@ -145,13 +145,19 @@ def test_parse_gromacs_xvg_rejects_invalid_single_point_data(text: str, message:
 def test_run_gromacs_single_point_uses_explicit_matched_inputs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    coordinates = tmp_path / "coordinates.g96"
+    coordinates = tmp_path / "coordinates.gro"
+    reference = tmp_path / "coordinate_reference.json"
     topology = tmp_path / "system.top"
     mdp = tmp_path / "single_point.mdp"
-    coordinates.write_text("shared coordinates\n", encoding="utf-8")
+    coordinates.write_text(
+        "native\n1\n    1BGLC    C1    1   0.100   0.200   0.300\n1.0 1.0 1.0\n",
+        encoding="utf-8",
+    )
     topology.write_text("topology\n", encoding="utf-8")
     mdp.write_text("nsteps = 0\nconstraints = none\n", encoding="utf-8")
-    checksum = hashlib.sha256(coordinates.read_bytes()).hexdigest()
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+    )
     commands: list[list[str]] = []
 
     def fake_run(command: list[str], *, directory: Path, stdin: str | None = None) -> str:
@@ -169,6 +175,7 @@ def test_run_gromacs_single_point_uses_explicit_matched_inputs(
     report = run_gromacs_single_point(
         tmp_path,
         coordinate_file=coordinates,
+        coordinate_reference_file=reference,
         topology_file=topology,
         mdp_file=mdp,
         coordinate_sha256=checksum,
@@ -181,27 +188,35 @@ def test_run_gromacs_single_point_uses_explicit_matched_inputs(
 
 
 def test_run_gromacs_single_point_rejects_checksum_or_constrained_mdp(tmp_path: Path) -> None:
-    coordinates = tmp_path / "coordinates.g96"
+    coordinates = tmp_path / "coordinates.gro"
+    reference = tmp_path / "coordinate_reference.json"
     topology = tmp_path / "system.top"
     mdp = tmp_path / "single_point.mdp"
-    coordinates.write_text("shared coordinates\n", encoding="utf-8")
+    coordinates.write_text(
+        "native\n1\n    1BGLC    C1    1   0.100   0.200   0.300\n1.0 1.0 1.0\n",
+        encoding="utf-8",
+    )
     topology.write_text("topology\n", encoding="utf-8")
     mdp.write_text("nsteps = 0\nconstraints = h-bonds\n", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="shared checksum"):
+    checksum = write_coordinate_reference(
+        reference, [[1.0, 2.0, 3.0]], [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+    )
+    with pytest.raises(ValueError, match="manifest checksum"):
         run_gromacs_single_point(
             tmp_path,
             coordinate_file=coordinates,
+            coordinate_reference_file=reference,
             topology_file=topology,
             mdp_file=mdp,
             coordinate_sha256="wrong",
         )
 
-    checksum = hashlib.sha256(coordinates.read_bytes()).hexdigest()
     with pytest.raises(ValueError, match="constraints = none"):
         run_gromacs_single_point(
             tmp_path,
             coordinate_file=coordinates,
+            coordinate_reference_file=reference,
             topology_file=topology,
             mdp_file=mdp,
             coordinate_sha256=checksum,

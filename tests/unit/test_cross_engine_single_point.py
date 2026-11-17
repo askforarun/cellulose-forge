@@ -45,7 +45,7 @@ def test_cross_engine_single_point_runner_compares_subfolders(tmp_path: Path) ->
     manifest = {
         "schema_version": 1,
         "system": "test system",
-        "coordinate_file": "shared/coordinates.g96",
+        "coordinate_reference_file": "shared/coordinates.g96",
         "coordinate_sha256": checksum,
         "reference_engine": "gromacs",
         "absolute_tolerance_kj_mol": 0.05,
@@ -89,7 +89,7 @@ def test_cross_engine_single_point_runner_rejects_energy_difference(tmp_path: Pa
     manifest = {
         "schema_version": 1,
         "system": "test system",
-        "coordinate_file": "coordinates.g96",
+        "coordinate_reference_file": "coordinates.g96",
         "coordinate_sha256": checksum,
         "reference_engine": "gromacs",
         "absolute_tolerance_kj_mol": 0.05,
@@ -111,6 +111,47 @@ def test_cross_engine_single_point_runner_rejects_energy_difference(tmp_path: Pa
     )
     assert report["passed"] is False
     assert report["comparisons"]["openmm"]["common_terms"]["bond"]["passed"] is False
+
+
+def test_evaluate_only_allows_one_nonreference_engine(tmp_path: Path) -> None:
+    source = Path("validation/cross_engine_single_point/run_single_point_validation.py").resolve()
+    runner = tmp_path / "run_single_point_validation.py"
+    runner.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    reference = tmp_path / "coordinate_reference.json"
+    reference.write_text("neutral reference\n")
+    checksum = hashlib.sha256(reference.read_bytes()).hexdigest()
+    amber = tmp_path / "amber"
+    amber.mkdir()
+    (amber / "energy.json").write_text(json.dumps(_energy("amber", checksum)) + "\n")
+    manifest = {
+        "schema_version": 1,
+        "system": "Amber-only test",
+        "coordinate_reference_file": reference.name,
+        "coordinate_sha256": checksum,
+        "reference_engine": "gromacs",
+        "absolute_tolerance_kj_mol": 0.05,
+        "relative_tolerance": 1.0e-5,
+        "required_terms": ["bond", "potential"],
+        "engines": {
+            "gromacs": {"directory": "gromacs", "command": ["true"]},
+            "amber": {"directory": "amber", "command": ["true"]},
+        },
+    }
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest) + "\n")
+
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--no-run", "--evaluate-only", "--engine", "amber"],
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(Path("src").resolve())},
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    report = json.loads((tmp_path / "single_point_energy_comparison.json").read_text())
+    assert report["evaluation_only"] is True
+    assert set(report["energies"]) == {"amber"}
+    assert report["comparisons"] == {}
 
 
 def test_selected_engines_cannot_omit_required_engine() -> None:
@@ -180,6 +221,8 @@ def test_all_builtin_adapters_write_reports(  # noqa: PLR0915
     lammps.mkdir()
     amber = tmp_path / "amber"
     amber.mkdir()
+    reference = tmp_path / "coordinate_reference.json"
+    reference.write_text("{}\n", encoding="utf-8")
     run_adapter(
         "gromacs",
         {
@@ -191,6 +234,7 @@ def test_all_builtin_adapters_write_reports(  # noqa: PLR0915
             },
         },
         gromacs,
+        reference,
         "sha",
     )
     run_adapter(
@@ -209,6 +253,7 @@ def test_all_builtin_adapters_write_reports(  # noqa: PLR0915
             },
         },
         openmm,
+        reference,
         "sha",
     )
     run_adapter(
@@ -224,6 +269,7 @@ def test_all_builtin_adapters_write_reports(  # noqa: PLR0915
             },
         },
         namd,
+        reference,
         "sha",
     )
     run_adapter(
@@ -240,6 +286,7 @@ def test_all_builtin_adapters_write_reports(  # noqa: PLR0915
             },
         },
         lammps,
+        reference,
         "sha",
     )
     run_adapter(
@@ -255,6 +302,7 @@ def test_all_builtin_adapters_write_reports(  # noqa: PLR0915
             },
         },
         amber,
+        reference,
         "sha",
     )
 
@@ -306,6 +354,7 @@ def test_builtin_adapter_refuses_noncanonical_force_index(tmp_path: Path) -> Non
                 },
             },
             directory,
+            tmp_path / "coordinate_reference.json",
             "sha",
         )
 

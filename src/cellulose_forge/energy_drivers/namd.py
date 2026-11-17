@@ -7,18 +7,24 @@ This module does not write NAMD configuration.
 
 from __future__ import annotations
 
-import hashlib
 import math
 import struct
 import subprocess
 from collections.abc import Mapping
 from pathlib import Path
 
+import numpy as np
+import numpy.typing as npt
+
+from cellulose_forge.energy_drivers.coordinates import (
+    assert_coordinate_identity,
+    load_coordinate_reference,
+)
 from cellulose_forge.energy_drivers.report import CANONICAL_TERMS, EnergyReport, EnergyValue
 
 KJ_PER_KCAL = 4.184
-_GRO_MINIMUM_LINES = 3
 _NAMD_BINARY_HEADER_BYTES = 4
+_VECTOR_COMPONENTS = 3
 _COORDINATE_TOLERANCE_ANGSTROM = 1.0e-9
 
 # NAMD prints one ETITLE row and then ENERGY rows whose columns follow those
@@ -145,36 +151,34 @@ def parse_namd_energy_log(source: str | Path) -> dict[str, float]:  # noqa: PLR0
     return rows[0]
 
 
-def _configuration_value(text: str, name: str) -> str | None:
+def _configuration_raw_value(text: str, name: str) -> str | None:
     for raw_line in text.splitlines():
         line = raw_line.split("#", 1)[0].strip()
         fields = line.split()
         if fields and fields[0].lower() == name.lower():
-            return " ".join(fields[1:]).lower()
+            return " ".join(fields[1:])
     return None
 
 
-def _gro_positions_angstrom(path: Path) -> list[tuple[float, float, float]]:
-    lines = path.read_text(encoding="utf-8").splitlines()
-    if len(lines) < _GRO_MINIMUM_LINES:
-        raise ValueError("shared GRO coordinate file is truncated")
-    try:
-        count = int(lines[1].strip())
-    except ValueError as error:
-        raise ValueError("shared GRO atom count is invalid") from error
-    if len(lines) < count + 3:
-        raise ValueError("shared GRO coordinate file is truncated")
-    try:
-        return [
-            (
-                10.0 * float(line[20:28]),
-                10.0 * float(line[28:36]),
-                10.0 * float(line[36:44]),
-            )
-            for line in lines[2 : 2 + count]
-        ]
-    except ValueError as error:
-        raise ValueError("shared GRO positions are invalid") from error
+def _configuration_value(text: str, name: str) -> str | None:
+    value = _configuration_raw_value(text, name)
+    return None if value is None else value.lower()
+
+
+def _configuration_box(text: str) -> npt.NDArray[np.float64]:
+    vectors = []
+    for index in range(1, 4):
+        value = _configuration_value(text, f"cellBasisVector{index}")
+        if value is None:
+            raise ValueError(f"NAMD configuration is missing cellBasisVector{index}")
+        try:
+            vector = [float(item) for item in value.split()]
+        except ValueError as error:
+            raise ValueError(f"NAMD cellBasisVector{index} is invalid") from error
+        if len(vector) != _VECTOR_COMPONENTS:
+            raise ValueError(f"NAMD cellBasisVector{index} is invalid")
+        vectors.append(vector)
+    return np.asarray(vectors)
 
 
 def _namd_binary_positions(path: Path) -> list[tuple[float, float, float]]:
@@ -195,7 +199,7 @@ def run_namd_single_point(  # noqa: PLR0913
     directory: Path,
     *,
     configuration_file: Path,
-    shared_coordinate_file: Path,
+    coordinate_reference_file: Path,
     binary_coordinate_file: Path,
     coordinate_sha256: str,
     executable: str = "namd3",
@@ -205,30 +209,32 @@ def run_namd_single_point(  # noqa: PLR0913
     """Run a matched NAMD single point and return canonical CHARMM energies."""
     directory = directory.resolve()
     configuration_file = configuration_file.resolve()
-    shared_coordinate_file = shared_coordinate_file.resolve()
+    coordinate_reference_file = coordinate_reference_file.resolve()
     binary_coordinate_file = binary_coordinate_file.resolve()
     for path, description in (
         (configuration_file, "configuration"),
-        (shared_coordinate_file, "shared coordinate"),
+        (coordinate_reference_file, "coordinate reference"),
         (binary_coordinate_file, "binary coordinate"),
     ):
         if not path.is_file():
             raise FileNotFoundError(f"NAMD {description} file does not exist: {path}")
     if type(threads) is not int or threads < 1:
         raise ValueError("NAMD thread count must be a positive integer")
-    actual_sha256 = hashlib.sha256(shared_coordinate_file.read_bytes()).hexdigest()
-    if actual_sha256 != coordinate_sha256:
-        raise ValueError("NAMD shared coordinate file does not match the shared checksum")
-    gro_positions = _gro_positions_angstrom(shared_coordinate_file)
-    binary_positions = _namd_binary_positions(binary_coordinate_file)
-    if len(gro_positions) != len(binary_positions) or any(
-        abs(left - right) > _COORDINATE_TOLERANCE_ANGSTROM
-        for gro, binary in zip(gro_positions, binary_positions, strict=True)
-        for left, right in zip(gro, binary, strict=True)
-    ):
-        raise ValueError("NAMD binary coordinates differ from the shared GRO coordinates")
-
     configuration = configuration_file.read_text(encoding="utf-8")
+    configured_coordinates = _configuration_raw_value(configuration, "binCoordinates")
+    if configured_coordinates is None:
+        raise ValueError("NAMD configuration is missing binCoordinates")
+    if (directory / configured_coordinates).resolve() != binary_coordinate_file:
+        raise ValueError("NAMD binCoordinates does not name the checked binary coordinate file")
+    binary_positions = _namd_binary_positions(binary_coordinate_file)
+    reference = load_coordinate_reference(coordinate_reference_file, coordinate_sha256)
+    assert_coordinate_identity(
+        reference,
+        binary_positions,
+        engine="NAMD",
+        box_vectors=_configuration_box(configuration),
+        tolerance_angstrom=_COORDINATE_TOLERANCE_ANGSTROM,
+    )
     required = {
         "mergeCrossterms": "no",
         "LJcorrection": "off",

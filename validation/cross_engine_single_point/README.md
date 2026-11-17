@@ -7,13 +7,19 @@ engine:
 cross_engine_single_point/
   manifest.json
   run_single_point_validation.py
-  shared/
+  shared/coordinate_reference.json
   gromacs/
   openmm/
   lammps/
   namd/
   amber/                 # finite GLYCAM systems only
 ```
+
+The shared JSON contains only ordered positions and full box vectors in
+angstrom. It is owned by the validation bundle, not by any MD engine. Each
+adapter reads its own native coordinate file and proves that the exact file
+named by the engine input matches this neutral reference. Consequently an
+Amber evaluation never needs a GRO file or a GROMACS installation.
 
 All five engines use the built-in adapters selected in `manifest.json`; they
 do not need copied runner scripts. Each adapter performs an energy evaluation at the
@@ -35,18 +41,20 @@ Every harmonic-bond and torsion force must be represented, even when its list
 of special interactions is empty. Production `system.xml` files with hydrogen
 constraints are intentionally refused.
 
-The NAMD adapter verifies that its binary coordinates reproduce the shared GRO
-coordinates and that the input explicitly sets `mergeCrossterms no`,
+The NAMD adapter resolves the configuration's `binCoordinates`, verifies that
+binary file and all three `cellBasisVector` values against the neutral reference,
+and requires the input to set `mergeCrossterms no`,
 `LJcorrection off`, `rigidBonds none` and `run 0`. Nonzero `BOUNDARY` or `MISC`
 terms require an explicit classification in the manifest.
 
-The LAMMPS adapter checks that `system.data` contains the shared GRO
-coordinates before executing `run 0`. Periodic impropers and GLYCAM explicit
+The LAMMPS adapter resolves the input's `read_data` command and checks that
+native data file against the neutral positions and box before executing `run 0`.
+Periodic impropers and GLYCAM explicit
 pair energies must be supplied from the topology when present; they cannot be
 recovered uniquely from a LAMMPS thermo row.
 
 The Amber adapter is limited to finite-chain GLYCAM systems. It verifies the
-Amber coordinates against the shared GRO file and requires an `imin=1`,
+native `inpcrd` positions and six-value box against the neutral reference and requires an `imin=1`,
 `maxcyc=0` input. The periodic-improper contribution must be supplied
 explicitly in kcal/mol, including an explicit zero for cellulose.
 
@@ -84,6 +92,14 @@ without installing OpenMM, LAMMPS, or NAMD:
 
 ```bash
 python run_single_point_validation.py --engine gromacs --engine amber
+```
+
+To evaluate one installed engine without comparing it to another, use
+`--evaluate-only`. For example, this requires only CelluloseForge and
+AmberTools:
+
+```bash
+python run_single_point_validation.py --evaluate-only --engine amber
 ```
 
 Not every force field has every engine. Amber is finite-chain GLYCAM only;

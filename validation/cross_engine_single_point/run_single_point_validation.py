@@ -38,6 +38,11 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=Path("single_point_energy_comparison.json"))
     parser.add_argument("--no-run", action="store_true", help="compare existing energy.json files")
     parser.add_argument(
+        "--evaluate-only",
+        action="store_true",
+        help="evaluate selected engines and validate each report without cross-engine comparison",
+    )
+    parser.add_argument(
         "--engine",
         action="append",
         dest="selected_engines",
@@ -74,14 +79,15 @@ def _selected_engines(arguments: argparse.Namespace, manifest: dict[str, Any]) -
     if unknown:
         raise ValueError(f"selected engines are absent from the manifest: {sorted(unknown)}")
     reference = manifest["reference_engine"]
-    if arguments.selected_engines and reference not in selected:
+    evaluate_only = bool(getattr(arguments, "evaluate_only", False))
+    if arguments.selected_engines and reference not in selected and not evaluate_only:
         raise ValueError(f"selected engines must include reference engine {reference!r}")
     required = {
         engine
         for engine, specification in manifest["engines"].items()
         if not specification.get("optional", False)
     }
-    omitted = required - selected
+    omitted = set() if evaluate_only else required - selected
     if omitted:
         raise ValueError(f"selected engines omit required engines: {sorted(omitted)}")
     return selected
@@ -203,11 +209,12 @@ def _execution_mode(engine: str, specification: dict[str, Any]) -> str:
 
 
 def _run_gromacs_adapter(
-    inputs: dict[str, Any], directory: Path, coordinate_sha256: str
+    inputs: dict[str, Any], directory: Path, reference: Path, coordinate_sha256: str
 ) -> EnergyReport:
     return run_gromacs_single_point(
         directory,
         coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+        coordinate_reference_file=reference,
         topology_file=_path(directory, inputs.get("topology_file"), "topology_file"),
         mdp_file=_path(directory, inputs.get("mdp_file"), "mdp_file"),
         coordinate_sha256=coordinate_sha256,
@@ -216,7 +223,7 @@ def _run_gromacs_adapter(
 
 
 def _run_openmm_adapter(
-    inputs: dict[str, Any], directory: Path, coordinate_sha256: str
+    inputs: dict[str, Any], directory: Path, reference: Path, coordinate_sha256: str
 ) -> EnergyReport:
     raw_classification = inputs.get("classification")
     if not isinstance(raw_classification, dict):
@@ -236,6 +243,7 @@ def _run_openmm_adapter(
     return run_openmm_single_point(
         system_file=_path(directory, inputs.get("system_file"), "system_file"),
         coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+        coordinate_reference_file=reference,
         coordinate_sha256=coordinate_sha256,
         classification=classification,
         platform_name=str(inputs.get("platform_name", "Reference")),
@@ -243,7 +251,7 @@ def _run_openmm_adapter(
 
 
 def _run_namd_adapter(
-    inputs: dict[str, Any], directory: Path, coordinate_sha256: str
+    inputs: dict[str, Any], directory: Path, reference: Path, coordinate_sha256: str
 ) -> EnergyReport:
     threads = inputs.get("threads", 1)
     if type(threads) is not int:
@@ -251,7 +259,7 @@ def _run_namd_adapter(
     return run_namd_single_point(
         directory,
         configuration_file=_path(directory, inputs.get("configuration_file"), "configuration_file"),
-        shared_coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+        coordinate_reference_file=reference,
         binary_coordinate_file=_path(
             directory, inputs.get("binary_coordinate_file"), "binary_coordinate_file"
         ),
@@ -263,7 +271,7 @@ def _run_namd_adapter(
 
 
 def _run_lammps_adapter(
-    inputs: dict[str, Any], directory: Path, coordinate_sha256: str
+    inputs: dict[str, Any], directory: Path, reference: Path, coordinate_sha256: str
 ) -> EnergyReport:
     periodic_improper_count = inputs.get("periodic_improper_count")
     if type(periodic_improper_count) is not int:
@@ -272,7 +280,7 @@ def _run_lammps_adapter(
         directory,
         input_file=_path(directory, inputs.get("input_file"), "input_file"),
         data_file=_path(directory, inputs.get("data_file"), "data_file"),
-        shared_coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+        coordinate_reference_file=reference,
         coordinate_sha256=coordinate_sha256,
         periodic_improper_count=periodic_improper_count,
         periodic_improper_kj_mol=_optional_energy(
@@ -284,7 +292,7 @@ def _run_lammps_adapter(
 
 
 def _run_amber_adapter(
-    inputs: dict[str, Any], directory: Path, coordinate_sha256: str
+    inputs: dict[str, Any], directory: Path, reference: Path, coordinate_sha256: str
 ) -> EnergyReport:
     periodic_improper = inputs.get("periodic_improper_kcal_mol")
     if isinstance(periodic_improper, bool) or not isinstance(periodic_improper, int | float):
@@ -296,14 +304,14 @@ def _run_amber_adapter(
         amber_coordinate_file=_path(
             directory, inputs.get("amber_coordinate_file"), "amber_coordinate_file"
         ),
-        shared_coordinate_file=_path(directory, inputs.get("coordinate_file"), "coordinate_file"),
+        coordinate_reference_file=reference,
         coordinate_sha256=coordinate_sha256,
         periodic_improper=float(periodic_improper),
         executable=str(inputs.get("executable", "sander")),
     )
 
 
-_ADAPTERS: dict[str, Callable[[dict[str, Any], Path, str], EnergyReport]] = {
+_ADAPTERS: dict[str, Callable[[dict[str, Any], Path, Path, str], EnergyReport]] = {
     "amber": _run_amber_adapter,
     "gromacs": _run_gromacs_adapter,
     "lammps": _run_lammps_adapter,
@@ -316,6 +324,7 @@ def _run_adapter(
     engine: str,
     specification: dict[str, Any],
     directory: Path,
+    coordinate_reference_file: Path,
     coordinate_sha256: str,
 ) -> EnergyReport:
     adapter = specification.get("adapter")
@@ -326,17 +335,18 @@ def _run_adapter(
         raise ValueError(f"{engine}: unsupported built-in energy adapter {adapter!r}")
     if engine != adapter:
         raise ValueError(f"{engine}: {adapter} adapter cannot write another engine's report")
-    report = _ADAPTERS[adapter](inputs, directory, coordinate_sha256)
+    report = _ADAPTERS[adapter](inputs, directory, coordinate_reference_file, coordinate_sha256)
     (directory / "energy.json").write_text(
         json.dumps(report.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     return report
 
 
-def _collect_energies(
+def _collect_energies(  # noqa: PLR0913, PLR0917 - explicit runner state
     arguments: argparse.Namespace,
     root: Path,
     manifest: dict[str, Any],
+    coordinate_reference_file: Path,
     checksum: str,
     required_terms: set[str],
 ) -> tuple[dict[str, EnergyReport], dict[str, str]]:
@@ -356,7 +366,13 @@ def _collect_energies(
         if not arguments.no_run:
             try:
                 if execution_mode == "adapter":
-                    _run_adapter(engine, specification, directory, checksum)
+                    _run_adapter(
+                        engine,
+                        specification,
+                        directory,
+                        coordinate_reference_file,
+                        checksum,
+                    )
                 else:
                     command = list(specification["command"])
                     if command and command[0] in {"python", "python3"}:
@@ -376,8 +392,8 @@ def main() -> int:
     manifest_path = args.manifest.resolve()
     root = manifest_path.parent
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    coordinate = root / manifest["coordinate_file"]
-    actual_checksum = _sha256(coordinate)
+    coordinate_reference = root / manifest["coordinate_reference_file"]
+    actual_checksum = _sha256(coordinate_reference)
     expected_checksum = manifest["coordinate_sha256"]
     if actual_checksum != expected_checksum:
         raise ValueError("shared coordinate checksum does not match manifest")
@@ -398,30 +414,46 @@ def main() -> int:
 
     reference_name = manifest["reference_engine"]
     term_tolerances = _term_tolerances(manifest.get("term_tolerances"))
-    energies, skipped = _collect_energies(args, root, manifest, expected_checksum, required_terms)
+    energies, skipped = _collect_energies(
+        args,
+        root,
+        manifest,
+        coordinate_reference,
+        expected_checksum,
+        required_terms,
+    )
 
-    if reference_name not in energies:
+    if reference_name not in energies and not args.evaluate_only:
         raise ValueError(f"reference engine {reference_name!r} did not produce energies")
     for energy in energies.values():
         validate_potential_sum(energy, absolute_kj_mol=absolute, relative=relative)
-    comparisons = {
-        engine: compare_reports(
-            energies[reference_name],
-            values,
-            absolute_kj_mol=absolute,
-            relative=relative,
-            term_tolerances=term_tolerances,
-        )
-        for engine, values in energies.items()
-        if engine != reference_name
-    }
-    passed = bool(comparisons) and all(item["passed"] for item in comparisons.values())
+    comparisons = (
+        {}
+        if args.evaluate_only
+        else {
+            engine: compare_reports(
+                energies[reference_name],
+                values,
+                absolute_kj_mol=absolute,
+                relative=relative,
+                term_tolerances=term_tolerances,
+            )
+            for engine, values in energies.items()
+            if engine != reference_name
+        }
+    )
+    passed = (
+        bool(energies)
+        if args.evaluate_only
+        else bool(comparisons) and all(item["passed"] for item in comparisons.values())
+    )
     report = {
         "schema_version": 1,
         "system": manifest["system"],
-        "coordinate_file": manifest["coordinate_file"],
+        "coordinate_reference_file": manifest["coordinate_reference_file"],
         "coordinate_sha256": expected_checksum,
         "reference_engine": reference_name,
+        "evaluation_only": args.evaluate_only,
         "tolerances": {"absolute_kj_mol": absolute, "relative": relative},
         "term_tolerances": {
             name: {"absolute_kj_mol": values[0], "relative": values[1]}
