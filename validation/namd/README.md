@@ -46,7 +46,12 @@ python validation/namd/run_acceptance_matrix.py \
 
 The launcher refuses missing executables or parameters and stops at the first
 failed build, topology audit, energy comparison, or dynamics smoke test. It
-does not create mock NAMD output.
+does not create mock NAMD output. Its live single-point check now runs the
+shared schema-1 GROMACS and NAMD energy drivers on a neutral coordinate
+reference, requires complete canonical decompositions and independent
+potential-sum checks, and then compares every canonical term. The generated
+shell runner remains available as a portable compatibility entry point until
+the consolidated downloadable runner replaces it.
 
 The stored acceptance matrix now records successful NAMD 3.0.3 single-point
 comparisons against GROMACS for cellulose Ibeta, triclinic cellulose Ialpha,

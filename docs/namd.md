@@ -92,6 +92,13 @@ They require no scheduler: users set `NAMD_EXE`, `GMX_EXE`, and optionally
 `NAMD_THREADS`, then run the shell script directly. A scheduler can invoke the
 same command without changing the validation logic.
 
+The acceptance matrix itself uses the shared schema-1 GROMACS and NAMD energy
+drivers. Both engines must reproduce the neutral coordinate reference, report
+a complete canonical energy decomposition, and pass an independent
+component-sum check before their terms are compared. Electrostatics retains
+the earlier cancellation-aware tolerance based on the absolute real-space,
+reciprocal-space, and 1--4 GROMACS contributions.
+
 NAMD NPT, GLYCAM, OpenFF, OPLS-AA, chitin dihydrate, and mannan are outside
 this first milestone. The current evidence is stored in
 `validation/results/namd_acceptance_matrix.json`. All three production runs

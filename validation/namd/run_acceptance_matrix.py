@@ -10,12 +10,25 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
+
+from cellulose_forge.energy_drivers import (  # noqa: E402
+    compare_reports,
+    run_gromacs_single_point,
+    run_namd_single_point,
+    validate_potential_sum,
+)
+from cellulose_forge.energy_drivers.coordinates import (  # noqa: E402
+    read_gro_frame,
+    write_coordinate_reference,
+)
 
 CASES = (
     ("cellulose_ibeta", "cellulose", "I-beta", (4, 4, 3)),
@@ -49,6 +62,13 @@ def main() -> None:  # noqa: PLR0915 - linear fail-fast acceptance workflow
         help="Python interpreter containing ParmEd for compare_bundle.py",
     )
     parser.add_argument("--namd-threads", type=int, default=8)
+    parser.add_argument(
+        "--case",
+        action="append",
+        dest="selected_cases",
+        choices=[name for name, *_ in CASES],
+        help="run only this acceptance case; repeat to select more than one",
+    )
     arguments = parser.parse_args()
 
     forge = _executable(arguments.cellulose_forge)
@@ -62,7 +82,7 @@ def main() -> None:  # noqa: PLR0915 - linear fail-fast acceptance workflow
     if not parameter_file.is_file():
         raise SystemExit(f"CHARMM parameter file does not exist: {parameter_file}")
 
-    root = Path(__file__).resolve().parents[2]
+    root = ROOT
     output = arguments.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     commit = subprocess.run(
@@ -113,7 +133,10 @@ def main() -> None:  # noqa: PLR0915 - linear fail-fast acceptance workflow
         },
         "cases": case_results,
     }
+    selected = set(arguments.selected_cases or (name for name, *_ in CASES))
     for name, polymer, allomorph, cells in CASES:
+        if name not in selected:
+            continue
         directory = output / name
         command = [
             forge,
@@ -151,20 +174,54 @@ def main() -> None:  # noqa: PLR0915 - linear fail-fast acceptance workflow
             cwd=root,
             check=True,
         )
-        environment = os.environ.copy()
-        environment.update(
-            {
-                "NAMD_EXE": namd,
-                "GMX_EXE": gmx,
-                "PYTHON_EXE": sys.executable,
-                "NAMD_THREADS": str(arguments.namd_threads),
-            }
+        positions, box = read_gro_frame(directory / "single_point_coordinates.gro")
+        coordinate_reference = directory / "coordinate_reference.json"
+        coordinate_sha256 = write_coordinate_reference(coordinate_reference, positions, box)
+        gromacs_report = run_gromacs_single_point(
+            directory,
+            coordinate_file=directory / "single_point_coordinates.gro",
+            coordinate_reference_file=coordinate_reference,
+            topology_file=directory / "system.top",
+            mdp_file=directory / "single_point_gromacs.mdp",
+            coordinate_sha256=coordinate_sha256,
+            executable=gmx,
         )
-        subprocess.run(
-            ["bash", "run_single_point_comparison.sh"],
-            cwd=directory,
-            env=environment,
-            check=True,
+        namd_report = run_namd_single_point(
+            directory,
+            configuration_file=directory / "single_point_namd.conf",
+            coordinate_reference_file=coordinate_reference,
+            binary_coordinate_file=directory / "single_point.coor",
+            coordinate_sha256=coordinate_sha256,
+            executable=namd,
+            threads=arguments.namd_threads,
+        )
+        for energy_report in (gromacs_report, namd_report):
+            validate_potential_sum(energy_report, absolute_kj_mol=0.1, relative=1.0e-6)
+        raw_gromacs = gromacs_report.extra["raw_terms"]
+        electrostatic_scale = sum(
+            abs(float(raw_gromacs.get(term, 0.0)))
+            for term in ("Coulomb-14", "Coulomb (SR)", "Coul. recip.")
+        )
+        comparison_rows = compare_reports(
+            gromacs_report,
+            namd_report,
+            absolute_kj_mol=0.1,
+            relative=5.0e-5,
+            term_tolerances={"electrostatics": (max(0.1, 5.0e-5 * electrostatic_scale), 5.0e-5)},
+        )
+        comparison = {
+            "schema_version": 1,
+            "coordinate_sha256": coordinate_sha256,
+            "reference_engine": "gromacs",
+            "energy_reports": {
+                "gromacs": gromacs_report.to_dict(),
+                "namd": namd_report.to_dict(),
+            },
+            "comparison": comparison_rows,
+            "passed": comparison_rows["passed"],
+        }
+        (directory / "single_point_energy_comparison.json").write_text(
+            json.dumps(comparison, indent=2) + "\n", encoding="utf-8"
         )
         with (directory / "production_dynamics.log").open("w", encoding="utf-8") as log:
             subprocess.run(
@@ -184,9 +241,6 @@ def main() -> None:  # noqa: PLR0915 - linear fail-fast acceptance workflow
             ],
             cwd=root,
             check=True,
-        )
-        comparison = json.loads(
-            (directory / "single_point_energy_comparison.json").read_text(encoding="utf-8")
         )
         bundle_comparison = json.loads(
             (directory / "bundle_comparison.json").read_text(encoding="utf-8")
