@@ -41,7 +41,7 @@ def test_cross_engine_single_point_runner_compares_subfolders(tmp_path: Path) ->
         (directory / "energy.json").write_text(
             json.dumps(_energy(engine, checksum)) + "\n", encoding="utf-8"
         )
-        engines[engine] = {"directory": engine, "command": ["true"]}
+        engines[engine] = {"directory": engine, "adapter": engine, "inputs": {}}
     manifest = {
         "schema_version": 1,
         "system": "test system",
@@ -85,7 +85,7 @@ def test_cross_engine_single_point_runner_rejects_energy_difference(tmp_path: Pa
         (directory / "energy.json").write_text(
             json.dumps(_energy(engine, checksum, bond)) + "\n", encoding="utf-8"
         )
-        engines[engine] = {"directory": engine, "command": ["true"]}
+        engines[engine] = {"directory": engine, "adapter": engine, "inputs": {}}
     manifest = {
         "schema_version": 1,
         "system": "test system",
@@ -133,8 +133,8 @@ def test_evaluate_only_allows_one_nonreference_engine(tmp_path: Path) -> None:
         "relative_tolerance": 1.0e-5,
         "required_terms": ["bond", "potential"],
         "engines": {
-            "gromacs": {"directory": "gromacs", "command": ["true"]},
-            "amber": {"directory": "amber", "command": ["true"]},
+            "gromacs": {"directory": "gromacs", "adapter": "gromacs", "inputs": {}},
+            "amber": {"directory": "amber", "adapter": "amber", "inputs": {}},
         },
     }
     (tmp_path / "manifest.json").write_text(json.dumps(manifest) + "\n")
@@ -371,19 +371,19 @@ def test_builtin_adapter_refuses_noncanonical_force_index(tmp_path: Path) -> Non
         },
     ],
 )
-def test_engine_execution_requires_exactly_one_mode(specification: dict[str, object]) -> None:
+def test_engine_execution_requires_builtin_adapter(specification: dict[str, object]) -> None:
     namespace = runpy.run_path(
         "validation/cross_engine_single_point/run_single_point_validation.py",
         run_name="energy_runner_execution_mode_test",
     )
-    with pytest.raises(ValueError, match="exactly one"):
+    with pytest.raises(ValueError, match="adapter"):
         namespace["_execution_mode"]("gromacs", specification)
 
 
-def test_engine_command_must_be_nonempty_strings() -> None:
+def test_engine_command_mode_is_no_longer_supported() -> None:
     namespace = runpy.run_path(
         "validation/cross_engine_single_point/run_single_point_validation.py",
         run_name="energy_runner_command_test",
     )
-    with pytest.raises(TypeError, match="non-empty list of strings"):
+    with pytest.raises(ValueError, match="no longer supported"):
         namespace["_execution_mode"]("gromacs", {"directory": "gromacs", "command": []})

@@ -7,7 +7,6 @@ import argparse
 import hashlib
 import json
 import math
-import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -189,23 +188,18 @@ def _term_tolerances(value: object) -> dict[str, tuple[float, float]]:
 def _execution_mode(engine: str, specification: dict[str, Any]) -> str:
     has_adapter = "adapter" in specification
     has_command = "command" in specification
-    if has_adapter == has_command:
-        raise ValueError(f"{engine}: specify exactly one of adapter or command")
-    if has_adapter:
-        adapter = specification["adapter"]
-        if not isinstance(adapter, str) or adapter not in _ADAPTERS:
-            raise ValueError(f"{engine}: unsupported built-in energy adapter {adapter!r}")
-        if adapter != engine:
-            raise ValueError(f"{engine}: {adapter} adapter cannot write another engine's report")
-        return "adapter"
-    command = specification["command"]
-    if (
-        not isinstance(command, list)
-        or not command
-        or any(not isinstance(item, str) or not item for item in command)
-    ):
-        raise TypeError(f"{engine}: command must be a non-empty list of strings")
-    return "command"
+    if has_command:
+        raise ValueError(
+            f"{engine}: external command adapters are no longer supported; use the built-in adapter"
+        )
+    if not has_adapter:
+        raise ValueError(f"{engine}: built-in adapter is required")
+    adapter = specification["adapter"]
+    if not isinstance(adapter, str) or adapter not in _ADAPTERS:
+        raise ValueError(f"{engine}: unsupported built-in energy adapter {adapter!r}")
+    if adapter != engine:
+        raise ValueError(f"{engine}: {adapter} adapter cannot write another engine's report")
+    return "adapter"
 
 
 def _run_gromacs_adapter(
@@ -356,7 +350,7 @@ def _collect_energies(  # noqa: PLR0913, PLR0917 - explicit runner state
     for engine, specification in manifest["engines"].items():
         if engine not in selected:
             continue
-        execution_mode = _execution_mode(engine, specification)
+        _execution_mode(engine, specification)
         directory = root / specification["directory"]
         if not directory.is_dir():
             if specification.get("optional", False):
@@ -365,20 +359,14 @@ def _collect_energies(  # noqa: PLR0913, PLR0917 - explicit runner state
             raise FileNotFoundError(f"{engine}: missing directory {directory}")
         if not arguments.no_run:
             try:
-                if execution_mode == "adapter":
-                    _run_adapter(
-                        engine,
-                        specification,
-                        directory,
-                        coordinate_reference_file,
-                        checksum,
-                    )
-                else:
-                    command = list(specification["command"])
-                    if command and command[0] in {"python", "python3"}:
-                        command[0] = sys.executable
-                    subprocess.run(command, cwd=directory, check=True)
-            except (FileNotFoundError, subprocess.CalledProcessError) as error:
+                _run_adapter(
+                    engine,
+                    specification,
+                    directory,
+                    coordinate_reference_file,
+                    checksum,
+                )
+            except FileNotFoundError as error:
                 if specification.get("optional", False):
                     skipped[engine] = str(error)
                     continue

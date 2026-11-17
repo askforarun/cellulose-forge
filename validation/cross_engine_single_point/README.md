@@ -30,10 +30,10 @@ subset. An adapter is also where a
 documented engine convention is normalized; it must record every correction
 in the JSON rather than silently changing a value.
 
-Each engine entry must select exactly one execution mode. Release bundles use
-an `adapter` plus typed `inputs`. The legacy `command` mode remains available
-only for externally maintained adapters during migration; mixing both modes or
-providing neither is refused.
+Each engine entry must select its matching built-in `adapter` plus typed
+`inputs`. External command adapters were removed after the five live engine
+validators migrated to this schema; a `command` entry, a missing adapter, or
+an adapter named for another engine is refused.
 
 The OpenMM entry must point to an unconstrained single-point `System` and give
 an explicit force classification. Force and interaction indices are zero-based.
