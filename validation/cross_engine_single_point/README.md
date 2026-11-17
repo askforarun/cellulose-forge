@@ -73,6 +73,10 @@ nonzero contribution is an error rather than being silently absorbed.
 The manifest may define per-term `[absolute_kj_mol, relative]` tolerances;
 this is useful for net electrostatics, whose real-space and reciprocal-space
 components can be much larger than their sum.
+The example uses the live-tested global gate of 0.1 kJ/mol or 1e-4 relative,
+with a 2e-4 relative electrostatics override for the documented PME/PPPM
+summation difference. These are validation tolerances, not claims about
+force-field accuracy.
 
 Run the bundle with:
 

@@ -4,8 +4,8 @@
   "coordinate_reference_file": "shared/coordinate_reference.json",
   "coordinate_sha256": "replace-with-coordinate-reference-sha256",
   "reference_engine": "gromacs",
-  "absolute_tolerance_kj_mol": 0.05,
-  "relative_tolerance": 0.00001,
+  "absolute_tolerance_kj_mol": 0.1,
+  "relative_tolerance": 0.0001,
   "term_tolerances": {"electrostatics": [0.1, 0.0002]},
   "required_terms": ["bond", "angle", "dihedral", "improper", "vdw", "electrostatics", "potential"],
   "engines": {

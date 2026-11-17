@@ -80,6 +80,32 @@ def test_comparison_matches_mixed_absolute_relative_rule(tmp_path: Path) -> None
     assert result["common_terms"]["potential"]["allowed_difference_kj_mol"] == 0.01
 
 
+def test_comparison_applies_only_the_named_term_tolerance(tmp_path: Path) -> None:
+    reference = _load(
+        tmp_path,
+        "gromacs",
+        {"bond": 0.0, "electrostatics": 1000.0, "potential": 1000.0},
+    )
+    candidate = _load(
+        tmp_path,
+        "lammps",
+        {"bond": 0.0, "electrostatics": 1000.15, "potential": 1000.15},
+    )
+
+    result = compare_reports(
+        reference,
+        candidate,
+        absolute_kj_mol=0.1,
+        relative=1.0e-4,
+        term_tolerances={"electrostatics": (0.1, 2.0e-4)},
+    )
+
+    assert result["common_terms"]["electrostatics"]["passed"] is True
+    assert result["common_terms"]["electrostatics"]["allowed_difference_kj_mol"] > 0.15
+    assert result["common_terms"]["potential"]["passed"] is False
+    assert result["common_terms"]["potential"]["allowed_difference_kj_mol"] < 0.15
+
+
 def test_comparison_normalizes_integer_terms_without_changing_report() -> None:
     reference = EnergyReport("gromacs", "abc", {"improper": 0, "potential": 0})
     candidate = EnergyReport("openmm", "abc", {"improper": 0, "potential": 0})
