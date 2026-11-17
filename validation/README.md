@@ -76,6 +76,13 @@ is 0.000124 kcal/mol. Compact evidence is stored in
 `results/chitin_glycam_engines.json`. These are topology and runtime tests, not an
 assessment of GLYCAM force-field accuracy for crystalline chitin.
 
+The same probe records schema-1 canonical reports for both engines on a shared,
+checksummed coordinate reference and verifies each report's component sum.
+Only bond, angle, dihedral, and improper categories enter the canonical
+cross-engine pass/fail result because the probe intentionally uses different
+ordinary nonbonded protocols; the separately resolved 1--4 comparison above
+remains the nonbonded topology check.
+
 `validate_chitin_glycam_cross_engines.py` independently compares alpha- and
 beta-chitin periodic bulk crystals and `(100)` slabs with finite and covalently
 periodic chains in double-precision GROMACS, OpenMM, and LAMMPS. Bonds, angles,

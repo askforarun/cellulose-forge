@@ -17,6 +17,13 @@ from pathlib import Path
 from _provenance import provenance
 
 from cellulose_forge.cli import main
+from cellulose_forge.energy_drivers import (
+    compare_reports,
+    run_glycam_amber_single_point,
+    run_gromacs_single_point,
+    validate_potential_sum,
+)
+from cellulose_forge.energy_drivers.coordinates import read_gro_frame, write_coordinate_reference
 from cellulose_forge.glycam import find_parmed_python
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -458,6 +465,42 @@ nstenergy = 1
         raise RuntimeError(
             f"Amber/GROMACS bonded or 1-4 energy difference is too large: {maximum_corrected}"
         )
+    positions, box = read_gro_frame(directory / "structure.gro")
+    coordinate_reference = directory / "coordinate_reference.json"
+    coordinate_sha256 = write_coordinate_reference(coordinate_reference, positions, box)
+    gromacs_report = run_gromacs_single_point(
+        directory,
+        coordinate_file=directory / "structure.gro",
+        coordinate_reference_file=coordinate_reference,
+        topology_file=directory / "system.top",
+        mdp_file=directory / "gromacs_sp.mdp",
+        coordinate_sha256=coordinate_sha256,
+        executable=gmx_double,
+    )
+    amber_report = run_glycam_amber_single_point(
+        directory,
+        input_file=directory / "amber_sp.in",
+        topology_file=directory / "structure.prmtop",
+        amber_coordinate_file=directory / "identical.inpcrd",
+        coordinate_reference_file=coordinate_reference,
+        coordinate_sha256=coordinate_sha256,
+        periodic_improper=gromacs["Per. Imp. Dih."],
+        executable=sander,
+    )
+    for report in (gromacs_report, amber_report):
+        validate_potential_sum(report, absolute_kj_mol=0.1, relative=1.0e-6)
+    canonical_comparison = compare_reports(
+        gromacs_report,
+        amber_report,
+        absolute_kj_mol=0.1,
+        relative=5.0e-5,
+    )
+    comparable_canonical_terms = ("bond", "angle", "dihedral", "improper")
+    canonical_bonded_passed = all(
+        canonical_comparison["common_terms"][term]["passed"] for term in comparable_canonical_terms
+    )
+    if not canonical_bonded_passed:
+        raise RuntimeError("canonical Amber/GROMACS bonded-energy comparison did not pass")
     return {
         "system": "finite beta-chitin (100) slab, 8 chains, DP6",
         "coordinates": "identical GROMACS-rounded coordinates",
@@ -468,6 +511,21 @@ nstenergy = 1
             "ratio": coulomb_ratio,
         },
         "terms": result_terms,
+        "canonical_single_point": {
+            "coordinate_sha256": coordinate_sha256,
+            "energy_reports": {
+                "gromacs": gromacs_report.to_dict(),
+                "amber": amber_report.to_dict(),
+            },
+            "comparison": canonical_comparison,
+            "comparable_terms": list(comparable_canonical_terms),
+            "nonbonded_scope": (
+                "ordinary nonbonded terms and total potential are reported but not used for "
+                "pass/fail because this probe uses different Amber and GROMACS nonbonded "
+                "protocols; the explicit 1-4 terms are compared separately"
+            ),
+            "passed": canonical_bonded_passed,
+        },
         "maximum_corrected_absolute_difference_kcal_mol": maximum_corrected,
         "status": "passed",
     }
