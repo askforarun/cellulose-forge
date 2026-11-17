@@ -222,6 +222,8 @@ def test_run_lammps_single_point_requires_checked_read_data_target(tmp_path: Pat
     "mutation",
     [
         "displace_atoms all random 0.4 0.4 0.4 12345",
+        '"displace_atoms" all random 0.4 0.4 0.4 4928',
+        "'set' atom 1 x 2.0",
         "set atom 1 x 2.0",
         "change_box all x scale 1.1",
         "read_dump altered.dump 0 x y z box yes replace yes",
@@ -247,6 +249,41 @@ def test_run_lammps_single_point_refuses_coordinate_mutation_commands(
     )
 
     with pytest.raises(ValueError, match="outside the verified subset"):
+        run_lammps_single_point(
+            tmp_path,
+            input_file=input_file,
+            data_file=data_file,
+            coordinate_reference_file=reference,
+            coordinate_sha256=checksum,
+            periodic_improper_count=0,
+        )
+
+
+@pytest.mark.parametrize(
+    ("replacement", "message"),
+    [
+        ("read_data system.data shift 1 0 0", "may not use keywords"),
+        ("boundary s p p", "requires boundary p p p"),
+    ],
+)
+def test_run_lammps_single_point_refuses_identity_changing_loader_options(
+    tmp_path: Path, replacement: str, message: str
+) -> None:
+    input_file = tmp_path / "in.cellulose"
+    input_text = _PLAIN_INPUT.replace("read_data system.data", replacement)
+    if replacement.startswith("boundary"):
+        input_text = input_text.replace("atom_style full", f"atom_style full\n{replacement}")
+    input_file.write_text(input_text)
+    data_file = tmp_path / "system.data"
+    data_file.write_text(_data())
+    reference = tmp_path / "coordinate_reference.json"
+    checksum = write_coordinate_reference(
+        reference,
+        [[1, 1, 1], [2.5, 1, 1], [4, 1, 1], [5.5, 1, 1], [7, 1, 1], [8.5, 1, 1], [1, 1, 22]],
+        [[30, 0, 0], [1.5, 30, 0], [0, 0, 30]],
+    )
+
+    with pytest.raises(ValueError, match=message):
         run_lammps_single_point(
             tmp_path,
             input_file=input_file,

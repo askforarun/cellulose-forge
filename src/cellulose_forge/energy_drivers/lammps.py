@@ -809,6 +809,32 @@ def _data_box_angstrom(data: str) -> npt.NDArray[np.float64]:
     )
 
 
+def _single_point_input_commands(input_text: str) -> list[tuple[str, list[str]]]:
+    """Return logical LAMMPS commands after joining ``&`` continuations."""
+    logical_lines: list[str] = []
+    continuation = ""
+    for raw_line in input_text.splitlines():
+        line = raw_line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        combined = f"{continuation} {line}".strip() if continuation else line
+        if combined.endswith("&"):
+            continuation = combined[:-1].rstrip()
+            continue
+        logical_lines.append(combined)
+        continuation = ""
+    if continuation:
+        raise ValueError("LAMMPS single-point input has an unfinished & continuation")
+    commands: list[tuple[str, list[str]]] = []
+    for line in logical_lines:
+        fields = line.split()
+        command = fields[0].strip("\"'").lower()
+        if not command or not command[0].isalpha():
+            raise ValueError(f"LAMMPS single-point input has an invalid command: {fields[0]}")
+        commands.append((command, fields))
+    return commands
+
+
 def run_lammps_single_point(  # noqa: PLR0912, PLR0913
     directory: Path,
     *,
@@ -863,44 +889,32 @@ def run_lammps_single_point(  # noqa: PLR0912, PLR0913
         "timestep",
         "units",
     }
-    unsupported_commands: set[str] = set()
-    for raw_line in input_text.splitlines():
-        line = raw_line.split("#", 1)[0].strip()
-        if not line or not line[0].isalpha():
-            continue
-        command = line.split()[0].lower()
-        if command not in allowed_commands:
-            unsupported_commands.add(command)
+    commands = _single_point_input_commands(input_text)
+    unsupported_commands = {command for command, _ in commands if command not in allowed_commands}
     if unsupported_commands:
         raise ValueError(
             "LAMMPS single-point input contains commands outside the verified subset: "
             f"{sorted(unsupported_commands)}"
         )
-    active_lines = [
-        line.split("#", 1)[0].strip()
-        for line in input_text.splitlines()
-        if line.split("#", 1)[0].strip()
-    ]
-    run_rows = [line for line in active_lines if line.lower().startswith("run ")]
-    if len(run_rows) != 1 or run_rows[0].lower() != "run 0":
+    run_rows = [fields for command, fields in commands if command == "run"]
+    if len(run_rows) != 1 or [item.lower() for item in run_rows[0][1:]] != ["0"]:
         raise ValueError("LAMMPS single-point input must contain exactly one plain run 0 command")
-    for line in active_lines:
-        fields = line.split()
-        if fields[0].lower() == "fix" and (not fields[3:] or fields[3].lower() != "spring/self"):
+    for command, fields in commands:
+        if command == "fix" and (not fields[3:] or fields[3].lower() != "spring/self"):
             raise ValueError("LAMMPS single-point input may only use spring/self fixes")
-        if fields[0].lower() == "fix_modify" and [item.lower() for item in fields[2:]] != [
+        if command == "fix_modify" and [item.lower() for item in fields[2:]] != [
             "energy",
             "yes",
         ]:
             raise ValueError("LAMMPS single-point fix_modify must only enable restraint energy")
-    read_data_rows = [
-        line.split("#", 1)[0].split()[1]
-        for line in input_text.splitlines()
-        if line.split("#", 1)[0].strip().lower().startswith("read_data ")
-    ]
+        if command == "boundary" and [item.lower() for item in fields[1:]] != ["p", "p", "p"]:
+            raise ValueError("LAMMPS single-point input requires boundary p p p")
+    read_data_rows = [fields for command, fields in commands if command == "read_data"]
     if len(read_data_rows) != 1:
         raise ValueError("LAMMPS input must contain exactly one read_data command")
-    configured_data = (directory / read_data_rows[0]).resolve()
+    if not read_data_rows[0][1:] or read_data_rows[0][2:]:
+        raise ValueError("LAMMPS single-point read_data may not use keywords")
+    configured_data = (directory / read_data_rows[0][1]).resolve()
     if configured_data != data_file:
         raise ValueError("LAMMPS read_data does not name the checked data file")
     data_positions = _data_positions_angstrom(data_text)

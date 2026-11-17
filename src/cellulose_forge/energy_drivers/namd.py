@@ -214,6 +214,11 @@ def _validate_configuration_scope(text: str) -> None:
         line = raw_line.split("#", 1)[0].strip()
         if not line:
             continue
+        metacharacters = sorted(set(line) & set(";[]${}\\"))
+        if metacharacters:
+            raise ValueError(
+                f"NAMD single-point configuration may not use Tcl metacharacters: {metacharacters}"
+            )
         command = line.split()[0].lower()
         if command not in _SINGLE_POINT_CONFIGURATION_COMMANDS:
             raise ValueError(
