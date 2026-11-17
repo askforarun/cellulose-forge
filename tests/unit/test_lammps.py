@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from cellulose_forge.energy_drivers.lammps import _validate_lammps_single_point_input
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
 from cellulose_forge.lammps import write_lammps_system
 
@@ -63,6 +64,7 @@ def test_writer_records_molecules_and_emits_safe_input(
     assert "read_data system.data" in text
     assert "pair_modify mix arithmetic tail no" in text
     assert "not a dynamics protocol" in text
+    _validate_lammps_single_point_input(text)
     assert metadata["atom_count"] == 4
 
 
@@ -99,6 +101,7 @@ def test_writer_restraints_preserve_one_based_atom_ids_and_axes(
     assert "spring/self 2.39005736138 xz" in text
     assert "fix_modify cellulose_position_restraints energy yes" in text
     assert "f_cellulose_position_restraints" in text
+    _validate_lammps_single_point_input(text)
     assert metadata["position_restraint_atom_count"] == 2
 
 
@@ -155,6 +158,7 @@ def test_charmm36_writer_uses_exact_lammps_styles(
     assert "dihedral_style charmmfsw" in text
     assert "pair_style lj/charmmfsw/coul/long 10.0 12.0" in text
     assert "special_bonds charmm" in text
+    _validate_lammps_single_point_input(text)
 
 
 def test_glycam_bulk_enables_lennard_jones_tail_correction(
@@ -185,3 +189,4 @@ def test_glycam_bulk_enables_lennard_jones_tail_correction(
     )
     assert "pair_modify mix arithmetic tail yes" in files.input.read_text(encoding="utf-8")
     assert metadata["dispersion_correction"] is True
+    _validate_lammps_single_point_input(files.input.read_text(encoding="utf-8"))

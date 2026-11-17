@@ -106,6 +106,19 @@ AmberTools:
 python run_single_point_validation.py --evaluate-only --engine amber
 ```
 
+Any engine can be evaluated independently with
+`--evaluate-only --engine ENGINE`; no other MD engine is required. If
+`--engine` is omitted, the runner attempts every engine listed in the
+manifest. A missing executable is then a failure for a required entry and a
+recorded skip only for an entry explicitly marked optional.
+
+For NAMD and LAMMPS, evaluation is deliberately limited to the declarative
+single-point command subset emitted by CelluloseForge. The adapters validate
+both command names and their energy-relevant arguments before execution and
+refuse includes, scripting, coordinate mutation, dynamics, or unverified
+settings. This is a validation contract for generated inputs, not a general
+parser for arbitrary user-written NAMD or LAMMPS scripts.
+
 Not every force field has every engine. Amber is finite-chain GLYCAM only;
 native NAMD currently applies to CHARMM36. A downloadable validation release
 therefore contains several system bundles rather than claiming that one

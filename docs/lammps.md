@@ -59,6 +59,11 @@ readiness.
 - `in.cellulose` (or `in.chitin`) performs `run 0` for initial-energy validation. It is not a
   minimization or molecular-dynamics protocol; users must supply simulation
   controls appropriate to their scientific application.
+- Cross-engine single-point evaluation accepts only the command names and
+  energy-relevant argument forms emitted by the CelluloseForge writer. It
+  fails closed on additional commands, altered nonbonded settings, dynamics,
+  includes, or coordinate-changing operations; it is not a validator for
+  arbitrary user-authored LAMMPS scripts.
 - The backend rejects unsupported OpenMM force classes and non-equivalent 1--4
   exceptions rather than approximating them.
 

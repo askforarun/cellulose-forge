@@ -412,6 +412,11 @@ def _validate_lammps_single_point_contract(
             )
 
 
+def _validate_lammps_single_point_input(text: str) -> None:
+    """Validate that *text* stays within the generated single-point contract."""
+    _validate_lammps_single_point_contract(_lammps_commands(text))
+
+
 def parse_lammps_input(text: str) -> LammpsSettings:  # noqa: PLR0912
     """Parse the energy-relevant commands of a single-point LAMMPS input."""
     units = "lj"  # LAMMPS default when no units command is present

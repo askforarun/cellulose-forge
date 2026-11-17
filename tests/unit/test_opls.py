@@ -15,6 +15,7 @@ import pytest
 from cellulose_forge.cellulose_ii import cellulose_ii_preferred_acceptor
 from cellulose_forge.cli import main
 from cellulose_forge.crystallography import MillerIndex, load_allomorph
+from cellulose_forge.energy_drivers.lammps import _validate_lammps_single_point_input
 from cellulose_forge.geometry import (
     build_36_chain_fibril,
     build_bulk_crystal,
@@ -235,6 +236,7 @@ def test_lammps_files_use_opls_styles(tmp_path: Path, variant: str) -> None:
     build = _bulk_build(variant)
     files, metadata = write_opls_lammps(build, tmp_path, dispersion_correction=True)
     text = files.input.read_text()
+    _validate_lammps_single_point_input(text)
     assert "pair_modify mix geometric tail yes" in text
     assert "special_bonds lj/coul 0.0 0.0 0.5 angle yes dihedral yes" in text
     assert "dihedral_style opls" in text
