@@ -58,6 +58,13 @@ from cellulose_forge.charmm36 import (
     write_charmm36_system,
 )
 from cellulose_forge.crystallography import MillerIndex, load_allomorph
+from cellulose_forge.energy_drivers import (
+    EnergyReport,
+    compare_reports,
+    run_lammps_single_point,
+    validate_potential_sum,
+)
+from cellulose_forge.energy_drivers.coordinates import read_gro_frame, write_coordinate_reference
 from cellulose_forge.forcefields import discover_charmm36_directory
 from cellulose_forge.geometry import BulkCrystal, build_slab_with_sizing
 from cellulose_forge.lammps import write_lammps_system
@@ -598,6 +605,28 @@ def _reference(gromacs: dict[str, float], split: dict[str, float]) -> dict[str, 
     }
 
 
+def _canonical_gromacs_report(gromacs: dict[str, float], coordinate_sha256: str) -> EnergyReport:
+    """Return the canonical CHARMM decomposition already evaluated by GROMACS."""
+    return EnergyReport(
+        engine="gromacs",
+        coordinate_sha256=coordinate_sha256,
+        terms={
+            "bond": gromacs["Bond"],
+            "angle": gromacs["U-B"],
+            "dihedral": gromacs["Proper-Dih."],
+            "improper": gromacs.get("Improper-Dih.", 0.0),
+            "vdw": gromacs["LJ-14"] + gromacs["LJ-(SR)"],
+            "electrostatics": (
+                gromacs["Coulomb-14"] + gromacs["Coulomb-(SR)"] + gromacs["Coul.-recip."]
+            ),
+            "restraint": 0.0,
+            "dispersion_correction": 0.0,
+            "potential": gromacs["Potential"],
+        },
+        extra={"raw_terms": gromacs},
+    )
+
+
 _CELLULOSE_CASES = (
     ("I-beta", (1, 1, 0), "finite"),
     ("I-beta", (1, 1, 0), "periodic"),
@@ -718,6 +747,35 @@ def _case(  # noqa: PLR0913, PLR0917
         polymer=polymer,
     )
     input_name = "in.chitin" if chitin else "in.cellulose"
+    positions, box = read_gro_frame(directory / "structure.gro")
+    coordinate_reference = lammps_directory / "coordinate_reference.json"
+    coordinate_sha256 = write_coordinate_reference(coordinate_reference, positions, box)
+    gromacs_report = _canonical_gromacs_report(switched, coordinate_sha256)
+    lammps_report = run_lammps_single_point(
+        lammps_directory,
+        input_file=lammps_directory / input_name,
+        data_file=lammps_directory / "system.data",
+        coordinate_reference_file=coordinate_reference,
+        coordinate_sha256=coordinate_sha256,
+        periodic_improper_count=0,
+        executable=lammps,
+    )
+    validate_potential_sum(gromacs_report, absolute_kj_mol=0.1, relative=1.0e-6)
+    validate_potential_sum(lammps_report, absolute_kj_mol=0.1, relative=1.0e-6)
+    nonbonded_tolerance = max(
+        _BONDED_ABSOLUTE_TOLERANCE,
+        _NONBONDED_RELATIVE_TOLERANCE * _nonbonded_scale(switched),
+    )
+    canonical_comparison = compare_reports(
+        gromacs_report,
+        lammps_report,
+        absolute_kj_mol=_BONDED_ABSOLUTE_TOLERANCE,
+        relative=_BONDED_RELATIVE_TOLERANCE,
+        term_tolerances=dict.fromkeys(
+            ("vdw", "electrostatics", "potential"),
+            (nonbonded_tolerance, _NONBONDED_RELATIVE_TOLERANCE),
+        ),
+    )
     lammps_energies = _lammps(lammps_directory, lammps, input_name)
 
     openmm_comparison = _compare(openmm_energies, _reference(plain, split), _nonbonded_scale(plain))
@@ -743,6 +801,7 @@ def _case(  # noqa: PLR0913, PLR0917
         ),
         "openmm_terms_match": all(bool(row["match"]) for row in openmm_comparison.values()),
         "lammps_terms_match": all(bool(row["match"]) for row in lammps_comparison.values()),
+        "lammps_canonical_energy_report_matches": canonical_comparison["passed"],
     }
     return {
         "case": directory.name,
@@ -757,6 +816,15 @@ def _case(  # noqa: PLR0913, PLR0917
         "gromacs_angle_split": split,
         "openmm_vs_gromacs_plain_cutoff": openmm_comparison,
         "lammps_vs_gromacs_force_switch": lammps_comparison,
+        "lammps_canonical_single_point": {
+            "coordinate_sha256": coordinate_sha256,
+            "energy_reports": {
+                "gromacs": gromacs_report.to_dict(),
+                "lammps": lammps_report.to_dict(),
+            },
+            "comparison": canonical_comparison,
+            "passed": canonical_comparison["passed"],
+        },
         "lammps_raw": {
             key: round(value, 4)
             for key, value in lammps_energies.items()

@@ -97,6 +97,11 @@ same audit for chitin is in `validation/chitin_charmm36_engines.json`. Each
 results file records the CelluloseForge commit, whether the tracked tree was
 clean, and the GROMACS, OpenMM, and LAMMPS versions used.
 
+The validator also emits schema-1 canonical energy reports for GROMACS and
+LAMMPS on a checksummed neutral coordinate reference. It verifies the complete
+nine-term decomposition and its component sum; the finer Urey--Bradley and
+1--4 diagnostics above remain as additional CHARMM-specific checks.
+
 Reproduce the cross-engine checks with:
 
 ```bash
