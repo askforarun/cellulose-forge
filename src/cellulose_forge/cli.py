@@ -31,6 +31,7 @@ from cellulose_forge.clashes import (
 from cellulose_forge.coordinates import write_coordinates
 from cellulose_forge.crystallography import AllomorphDefinition, MillerIndex, load_allomorph
 from cellulose_forge.doctor import render_json, render_text, run_diagnostics
+from cellulose_forge.drude import DRUDE_RELEASE, write_drude_namd_system
 from cellulose_forge.forcefields import (
     CHARMM36_RELEASE,
     discover_charmm36_directory,
@@ -240,7 +241,7 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     build.add_argument(
         "--force-field",
-        choices=["none", "glycam", "charmm36", "openff", "opls-aa", "opls-aa-sei"],
+        choices=["none", "glycam", "charmm36", "charmm-drude", "openff", "opls-aa", "opls-aa-sei"],
         default="none",
         help=(
             "write coordinates only or a force-field system; openff, opls-aa and "
@@ -275,6 +276,16 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         "--charmm-parameter-file",
         type=Path,
         help="canonical CHARMM carbohydrate PRM copied into NAMD output",
+    )
+    build.add_argument(
+        "--drude-toppar-directory",
+        type=Path,
+        help="official CHARMM Drude 2023 directory containing the main and carbohydrate streams",
+    )
+    build.add_argument(
+        "--vmd-executable",
+        type=Path,
+        help="VMD executable containing psfgen 2.0, required for CHARMM Drude output",
     )
     build.add_argument(
         "--tleap-executable",
@@ -432,6 +443,9 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         elif args.force_field == "charmm36":
             _check_force_field_box(args, crystal, build_parser())
             _write_charmm36_build(args, crystal, build_parser(), definition)
+        elif args.force_field == "charmm-drude":
+            _check_force_field_box(args, crystal, build_parser())
+            _write_drude_build(args, crystal, build_parser(), definition)
         elif args.force_field == "openff":
             _check_force_field_box(args, crystal, build_parser())
             _write_openff_build(args, crystal, build_parser(), definition)
@@ -515,6 +529,8 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         engines = tuple(dict.fromkeys(args.md_engine))
     elif args.force_field == "none":
         engines = ()
+    elif args.force_field == "charmm-drude":
+        engines = ("namd",)
     else:
         engines = ("gromacs",)
 
@@ -531,6 +547,14 @@ def _validate_namd_options(args: argparse.Namespace, parser: argparse.ArgumentPa
     if args.charmm_parameter_file is not None and not requested:
         parser.error("--charmm-parameter-file requires --md-engine namd")
     if not requested:
+        return
+    if args.force_field == "charmm-drude":
+        if args.charmm_parameter_file is not None:
+            parser.error("--charmm-parameter-file is not used by --force-field charmm-drude")
+        if args.drude_toppar_directory is None or args.vmd_executable is None:
+            parser.error(
+                "--force-field charmm-drude requires --drude-toppar-directory and --vmd-executable"
+            )
         return
     if args.charmm_parameter_file is None:
         parser.error("--md-engine namd requires --charmm-parameter-file")
@@ -1280,6 +1304,71 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
     (args.output / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
+    )
+
+
+def _write_drude_build(
+    args: argparse.Namespace,
+    crystal: BulkCrystal,
+    parser: argparse.ArgumentParser,
+    definition: AllomorphDefinition,
+) -> None:
+    """Write the experimental finite-chain CHARMM Drude NAMD bundle."""
+    if args.output.suffix:
+        parser.error("--output must be a directory for --force-field charmm-drude")
+    if args.polymer != "cellulose":
+        parser.error("experimental CHARMM Drude output currently supports cellulose only")
+    if any(
+        value is not None
+        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
+    ):
+        parser.error("position restraints are not implemented for CHARMM Drude output")
+    assert args.drude_toppar_directory is not None
+    assert args.vmd_executable is not None
+    args.output.mkdir(parents=True, exist_ok=True)
+    coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
+    try:
+        files = write_drude_namd_system(
+            crystal,
+            args.drude_toppar_directory,
+            args.output,
+            vmd_executable=args.vmd_executable,
+        )
+    except ValueError as error:
+        parser.error(str(error))
+    report = {
+        "cellulose_forge_version": __version__,
+        "allomorph": crystal.allomorph,
+        "shape": args.shape,
+        "force_field": "CHARMM Drude polarizable carbohydrate force field",
+        "force_field_release": DRUDE_RELEASE,
+        "status": "experimental; topology construction implemented, production validation pending",
+        "md_engines": ["namd"],
+        "chain_boundary": "finite",
+        "degree_polymerization": _crystal_degree_polymerization(crystal),
+        "chain_count": len(set(crystal.chain_numbers)),
+        "crystallographic_atom_count": crystal.atom_count,
+        "source_sha256": files.source_sha256,
+        "topology_method": "VMD psfgen 2.0 using official BGLC and 14bb definitions",
+        "outputs": {
+            "crystal_coordinates": coordinate_path.name,
+            "namd_psf": files.psf.name,
+            "namd_coordinates": files.pdb.name,
+            "namd_configuration": files.configuration.name,
+            "psfgen_script": files.build_script.name,
+            "drude_main_stream": files.main_stream.name,
+            "drude_carbohydrate_stream": files.carbohydrate_stream.name,
+        },
+        "geometry_annotations": list(crystal.annotations),
+        "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),
+        "crystallographic_source": {
+            "definition": f"{definition.polymer}/{definition.name}",
+            "citation": definition.citation,
+            "doi": definition.doi,
+        },
+    }
+    (args.output / "build_report.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
 
 

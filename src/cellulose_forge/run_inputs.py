@@ -18,7 +18,9 @@ from pathlib import Path
 
 _HOMOGENEOUS_SHAPES = frozenset({"bulk", "crystal", "unit-cell"})
 _VACUUM_SHAPES = frozenset({"slab", "fibril"})
-_FORCE_FIELDS = frozenset({"glycam", "charmm36", "openff", "opls-aa", "opls-aa-sei"})
+_FORCE_FIELDS = frozenset(
+    {"glycam", "charmm36", "charmm-drude", "openff", "opls-aa", "opls-aa-sei"}
+)
 
 # Longest nonbonded interaction range of any generated engine input, in
 # angstrom (CHARMM36 reaches 12 A in the LAMMPS 10--12 A force switch).  Used
@@ -26,6 +28,7 @@ _FORCE_FIELDS = frozenset({"glycam", "charmm36", "openff", "opls-aa", "opls-aa-s
 INTERACTION_RANGE_ANGSTROM = {
     "glycam": 10.0,
     "charmm36": 12.0,
+    "charmm-drude": 12.0,
     "openff": 9.0,
     "opls-aa": 10.0,
     "opls-aa-sei": 10.0,
@@ -48,6 +51,7 @@ PAIRLIST_BUFFER_ANGSTROM = 0.5
 GROMACS_CUTOFF_ANGSTROM = {
     "glycam": 10.0,
     "charmm36": 10.0,
+    "charmm-drude": 12.0,
     "openff": 9.0,
     "opls-aa": 10.0,
     "opls-aa-sei": 10.0,
@@ -66,7 +70,7 @@ def dispersion_correction(force_field: str, shape: str) -> bool:
     name = _require_force_field(force_field)
     if shape not in _HOMOGENEOUS_SHAPES | _VACUUM_SHAPES:
         raise ValueError(f"dispersion policy is undefined for shape {shape!r}")
-    if name == "charmm36":
+    if name in {"charmm36", "charmm-drude"}:
         return False
     return shape in _HOMOGENEOUS_SHAPES
 

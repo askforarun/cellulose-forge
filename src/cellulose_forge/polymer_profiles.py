@@ -47,6 +47,10 @@ POLYMER_PROFILES: Mapping[str, PolymerProfile] = {
                 _CELLULOSE_FORCE_FIELD_SHAPES,
                 frozenset({"gromacs", "openmm", "lammps", "namd"}),
             ),
+            "charmm-drude": ForceFieldCapability(
+                frozenset({"slab", "fibril"}),
+                frozenset({"namd"}),
+            ),
             "openff": ForceFieldCapability(
                 _CELLULOSE_FORCE_FIELD_SHAPES,
                 frozenset({"gromacs", "openmm"}),
@@ -137,6 +141,8 @@ def capability_error(  # noqa: PLR0911 - each capability refusal stays explicit
         return f"{polymer} with --force-field {force_field} supports --shape {supported}"
     if force_field == "openff" and shape in {"bulk", "crystal"} and chain_boundary != "periodic":
         return "experimental OpenFF Sage bulk crystals require periodic chains"
+    if force_field == "charmm-drude" and chain_boundary != "finite":
+        return "experimental CHARMM Drude output currently requires finite chains"
     if force_field in {"opls-aa", "opls-aa-sei"}:
         name = "OPLS-AA-SEI" if force_field == "opls-aa-sei" else "OPLS-AA"
         if shape in {"bulk", "crystal"} and chain_boundary != "periodic":
@@ -144,7 +150,7 @@ def capability_error(  # noqa: PLR0911 - each capability refusal stays explicit
     return None
 
 
-def engine_capability_error(  # noqa: PLR0911 - preserve specific historical diagnostics
+def engine_capability_error(  # noqa: PLR0911,PLR0912 - explicit historical diagnostics
     polymer: str, force_field: str, engines: tuple[str, ...]
 ) -> str | None:
     """Return the historical, actionable MD-engine refusal for a request."""
@@ -154,6 +160,8 @@ def engine_capability_error(  # noqa: PLR0911 - preserve specific historical dia
         return "--md-engine requires a supported force-field build"
     if force_field == "glycam" and not engines:
         return "GLYCAM builds require at least one --md-engine"
+    if force_field == "charmm-drude" and not engines:
+        return "experimental CHARMM Drude builds require --md-engine namd"
     if force_field in {"opls-aa", "opls-aa-sei"} and not engines:
         return (
             "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps"
