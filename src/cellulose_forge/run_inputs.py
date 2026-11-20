@@ -5,9 +5,9 @@ engine is selected:
 
 * Long-range dispersion correction is used only for homogeneous periodic
   systems (bulk crystals and unit cells) and only for force fields fitted with
-  it (GLYCAM06, OPLS-AA and OpenFF Sage).  CHARMM36 is parameterized without it, and
-  slabs and fibrils contain vacuum, which the isotropic correction does not
-  describe.
+  it (GLYCAM06, OPLS-AA and OpenFF Sage). CHARMM36 is parameterized without it;
+  the current AMOEBA scope is vacuum-surrounded slabs and fibrils, for which
+  the isotropic correction is disabled.
 * Each engine receives a short minimization and a 1 ps NVT smoke-test input in
   its native format.  These are starting protocols, not production settings.
 """
@@ -19,7 +19,7 @@ from pathlib import Path
 _HOMOGENEOUS_SHAPES = frozenset({"bulk", "crystal", "unit-cell"})
 _VACUUM_SHAPES = frozenset({"slab", "fibril"})
 _FORCE_FIELDS = frozenset(
-    {"glycam", "charmm36", "charmm-drude", "openff", "opls-aa", "opls-aa-sei"}
+    {"glycam", "charmm36", "charmm-drude", "amoeba", "openff", "opls-aa", "opls-aa-sei"}
 )
 
 # Longest nonbonded interaction range of any generated engine input, in
@@ -29,6 +29,7 @@ INTERACTION_RANGE_ANGSTROM = {
     "glycam": 10.0,
     "charmm36": 12.0,
     "charmm-drude": 12.0,
+    "amoeba": 12.0,
     "openff": 9.0,
     "opls-aa": 10.0,
     "opls-aa-sei": 10.0,
@@ -54,6 +55,7 @@ GROMACS_CUTOFF_ANGSTROM = {
     # Box rule only: GROMACS has no CHARMM Drude output.  NAMD builds override
     # this with their 14 A pair-list distance.
     "charmm-drude": 12.0,
+    "amoeba": 12.0,
     "openff": 9.0,
     "opls-aa": 10.0,
     "opls-aa-sei": 10.0,
@@ -72,7 +74,7 @@ def dispersion_correction(force_field: str, shape: str) -> bool:
     name = _require_force_field(force_field)
     if shape not in _HOMOGENEOUS_SHAPES | _VACUUM_SHAPES:
         raise ValueError(f"dispersion policy is undefined for shape {shape!r}")
-    if name == "charmm36":
+    if name in {"charmm36", "amoeba"}:
         return False
     return shape in _HOMOGENEOUS_SHAPES
 

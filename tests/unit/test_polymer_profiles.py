@@ -21,6 +21,7 @@ def test_capability_table_records_supported_force_fields_and_engines() -> None:
         "glycam",
         "charmm36",
         "charmm-drude",
+        "amoeba",
         "openff",
         "opls-aa",
         "opls-aa-sei",

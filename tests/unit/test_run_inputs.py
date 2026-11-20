@@ -30,9 +30,12 @@ def test_fitted_force_fields_use_dispersion_correction_only_without_vacuum(
         assert dispersion_correction(force_field, shape) is False
 
 
+@pytest.mark.parametrize("force_field", ["charmm36", "amoeba"])
 @pytest.mark.parametrize("shape", ["bulk", "crystal", "unit-cell", "slab", "fibril"])
-def test_charmm36_never_uses_dispersion_correction(shape: str) -> None:
-    assert dispersion_correction("charmm36", shape) is False
+def test_force_fields_without_lrc_never_use_dispersion_correction(
+    force_field: str, shape: str
+) -> None:
+    assert dispersion_correction(force_field, shape) is False
 
 
 def test_policy_rejects_unknown_inputs() -> None:

@@ -11,6 +11,12 @@ from pathlib import Path
 
 from cellulose_forge import __version__
 from cellulose_forge.amber import write_glycam_amber_system
+from cellulose_forge.amoeba import (
+    AMOEBA_SOURCE_COMMIT,
+    AMOEBA_SOURCE_REPOSITORY,
+    validate_amoeba_source_directory,
+    write_amoeba_system,
+)
 from cellulose_forge.charmm36 import (
     FiniteCharmm36Topology,
     PeriodicCharmm36Topology,
@@ -245,7 +251,16 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     build.add_argument(
         "--force-field",
-        choices=["none", "glycam", "charmm36", "charmm-drude", "openff", "opls-aa", "opls-aa-sei"],
+        choices=[
+            "none",
+            "glycam",
+            "charmm36",
+            "charmm-drude",
+            "amoeba",
+            "openff",
+            "opls-aa",
+            "opls-aa-sei",
+        ],
         default="none",
         help=(
             "write coordinates only or a force-field system; openff, opls-aa and "
@@ -259,7 +274,7 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     build.add_argument(
         "--md-engine",
-        choices=["gromacs", "amber", "openmm", "lammps", "namd"],
+        choices=["gromacs", "amber", "openmm", "lammps", "namd", "tinker"],
         action="append",
         help=(
             "target MD engine; repeat for multiple outputs (default: gromacs for "
@@ -287,6 +302,14 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         help=(
             "official CHARMM Drude 2023 directory containing the audited 2023a main and "
             "carbohydrate streams"
+        ),
+    )
+    build.add_argument(
+        "--amoeba-source-directory",
+        type=Path,
+        help=(
+            "user-supplied checkout of WelbornGroup/Newman_D-Glucose_2026 at the "
+            "audited source commit; CelluloseForge does not redistribute these files"
         ),
     )
     build.add_argument(
@@ -406,6 +429,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
     if args.command == "build":
         _resolve_md_engines(args, build_parser())
         _validate_namd_options(args, build_parser())
+        _validate_amoeba_options(args, build_parser())
         if args.padding_longitudinal is not None and args.padding_z is not None:
             build_parser().error(
                 "--padding-longitudinal and deprecated --padding-z are mutually exclusive"
@@ -457,6 +481,9 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         elif args.force_field == "charmm-drude":
             _check_force_field_box(args, crystal, build_parser())
             _write_drude_build(args, crystal, build_parser(), definition)
+        elif args.force_field == "amoeba":
+            _check_force_field_box(args, crystal, build_parser())
+            _write_amoeba_build(args, crystal, build_parser(), definition)
         elif args.force_field == "openff":
             _check_force_field_box(args, crystal, build_parser())
             _write_openff_build(args, crystal, build_parser(), definition)
@@ -542,6 +569,8 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         engines = ()
     elif args.force_field == "charmm-drude":
         engines = ("namd",)
+    elif args.force_field == "amoeba":
+        engines = ("openmm",)
     else:
         engines = ("gromacs",)
 
@@ -550,6 +579,26 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
         parser.error(unsupported)
 
     args.md_engines = engines
+
+
+def _validate_amoeba_options(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    """Validate experimental AMOEBA inputs before crystal construction."""
+    if args.force_field != "amoeba":
+        if args.amoeba_source_directory is not None:
+            parser.error("--amoeba-source-directory requires --force-field amoeba")
+        return
+    if args.amoeba_source_directory is None:
+        parser.error("--force-field amoeba requires --amoeba-source-directory")
+    if args.polymer != "cellulose" or args.allomorph != "I-beta":
+        parser.error("experimental AMOEBA output currently supports cellulose I-beta only")
+    if args.shape not in {"slab", "fibril"} or args.chain_boundary != "finite":
+        parser.error("experimental AMOEBA output currently supports finite slabs and fibrils only")
+    if args.degree_polymerization is None:
+        parser.error("experimental AMOEBA output requires --degree-polymerization")
+    try:
+        validate_amoeba_source_directory(args.amoeba_source_directory, args.degree_polymerization)
+    except ValueError as error:
+        parser.error(str(error))
 
 
 def _validate_namd_options(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
@@ -1405,6 +1454,82 @@ def _write_drude_build(
             "openmm_runner": (None if files.openmm_runner is None else files.openmm_runner.name),
             "drude_main_stream": files.main_stream.name,
             "drude_carbohydrate_stream": files.carbohydrate_stream.name,
+        },
+        "geometry_annotations": list(crystal.annotations),
+        "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),
+        "crystallographic_source": {
+            "definition": f"{definition.polymer}/{definition.name}",
+            "citation": definition.citation,
+            "doi": definition.doi,
+        },
+    }
+    (args.output / "build_report.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
+def _write_amoeba_build(
+    args: argparse.Namespace,
+    crystal: BulkCrystal,
+    parser: argparse.ArgumentParser,
+    definition: AllomorphDefinition,
+) -> None:
+    """Write the first finite-cellulose AMOEBA Tinker/OpenMM bundle."""
+    if args.output.suffix:
+        parser.error("--output must be a directory for --force-field amoeba")
+    if any(
+        value is not None
+        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
+    ):
+        parser.error("position restraints are not implemented for AMOEBA output")
+    assert args.amoeba_source_directory is not None
+    assert args.degree_polymerization is not None
+    try:
+        files = write_amoeba_system(
+            crystal,
+            args.amoeba_source_directory,
+            args.output,
+            args.degree_polymerization,
+            write_openmm_runner="openmm" in args.md_engines,
+        )
+    except ValueError as error:
+        parser.error(str(error))
+    report = {
+        "cellulose_forge_version": __version__,
+        "polymer": "cellulose",
+        "allomorph": crystal.allomorph,
+        "shape": args.shape,
+        "force_field": "AMOEBA beta-(1->4)-D-glucose",
+        "status": (
+            "experimental construction milestone; parameter transfer to crystalline "
+            "cellulose and force-field accuracy have not been validated"
+        ),
+        "source_repository": AMOEBA_SOURCE_REPOSITORY,
+        "source_commit": AMOEBA_SOURCE_COMMIT,
+        "source_sha256": files.source_sha256,
+        "md_engines": list(args.md_engines),
+        "chain_boundary": args.chain_boundary,
+        "degree_polymerization": args.degree_polymerization,
+        "chain_count": len(set(crystal.chain_numbers)),
+        "crystallographic_atom_count": crystal.atom_count,
+        "topology_method": (
+            "atom types and connectivity copied from the audited same-DP published "
+            "Tinker oligomer; coordinates replaced by CelluloseForge crystal coordinates"
+        ),
+        "known_limitations": [
+            "only finite cellulose I-beta slabs and fibrils with even DP 2 through 10 "
+            "are supported",
+            "the public source repository has no explicit licence file, so parameters are "
+            "never bundled with CelluloseForge",
+            "Tinker-versus-OpenMM energies have not yet been compared",
+            "water, periodic chains, other allomorphs and production validation are not "
+            "implemented",
+        ],
+        "outputs": {
+            "tinker_coordinates": files.xyz.name,
+            "tinker_key": files.key.name,
+            "amoeba_parameters": files.parameter.name,
+            "openmm_runner": None if files.openmm_runner is None else files.openmm_runner.name,
         },
         "geometry_annotations": list(crystal.annotations),
         "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),

@@ -118,9 +118,9 @@ of these:
 |---|---|---|
 | Unit cell | Cellulose I-alpha, I-beta, II, III-I; alpha- and beta-chitin; Mannan I | Coordinate-only: a single cell is narrower than twice any force-field cutoff, so use a periodic bulk crystal for force-field output |
 | Periodic bulk | Cellulose I-alpha, I-beta, II, III-I; alpha- and beta-chitin; Mannan I | GLYCAM06j-1 and CHARMM36 (cellulose and chitin), plus experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI (cellulose); coordinate-only (Mannan I) |
-| Slab | Chain-parallel faces of the four cellulose allomorphs and of alpha- and beta-chitin | GLYCAM06j-1 and CHARMM36 (cellulose and chitin), plus experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI (cellulose) |
+| Slab | Chain-parallel faces of the four cellulose allomorphs and of alpha- and beta-chitin | GLYCAM06j-1 and CHARMM36 (cellulose and chitin), plus experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI (cellulose); experimental AMOEBA for finite cellulose I-beta |
 | 36-chain fibril | Cellulose I-alpha, I-beta, II | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI |
-| 18- and 24-chain fibril, custom profiles (`main`) | Cellulose I-beta | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI |
+| 18- and 24-chain fibril, custom profiles (`main`) | Cellulose I-beta | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI; experimental AMOEBA for finite chains |
 
 Simulation engines by force field and chain boundary:
 
@@ -131,6 +131,11 @@ Simulation engines by force field and chain boundary:
 | LAMMPS | Finite and periodic | Finite and periodic | Not available | Finite and periodic | Experimental (1.2.0) |
 | NAMD | Not available | Finite and periodic | Not available | Not available | Validated on `main` |
 | Amber | Finite only | Not available | Not available | Not available | Released (1.2.0) |
+
+The experimental polarizable backends have narrower engine support: CHARMM
+Drude writes NAMD and OpenMM bundles, while AMOEBA writes a native Tinker
+bundle and an optional OpenMM runner. See their workflow sections and decision
+records for the current scientific limitations.
 
 Native Amber output cannot represent covalently periodic chains because Amber
 does not minimum-image bonded terms across the box boundary; use GROMACS or
@@ -728,6 +733,49 @@ directly without a reference-chain ITP, VMD, or `psfgen`. See
 the [full tutorial](docs/tutorial.md#11-generate-charmm36gromacs-systems) for
 finite and periodic examples and [`docs/charmm36.md`](docs/charmm36.md) for
 the implementation.
+
+### Experimental AMOEBA
+
+CelluloseForge can construct dry, finite cellulose I-beta slabs and fibrils
+with the published AMOEBA beta-(1->4)-D-glucose model. Supported chain lengths
+are DP 2, 4, 6, 8 and 10. The output is a native Tinker XYZ/key/parameter
+bundle; OpenMM can consume the same bundle directly. The generated OpenMM
+smoke run is NVT so that pressure coupling cannot collapse the vacuum around a
+slab or fibril.
+
+The source repository has no explicit licence file, so CelluloseForge neither
+bundles nor downloads its parameter files. Supply a local checkout of the
+audited source commit; the accepted parameter and topology files are pinned by
+SHA-256 and modified files are refused.
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape fibril \
+  --fibril-model 18-chain \
+  --degree-polymerization 6 \
+  --chain-boundary finite \
+  --vacuum 30 \
+  --padding-longitudinal 20 \
+  --force-field amoeba \
+  --md-engine tinker \
+  --md-engine openmm \
+  --amoeba-source-directory /path/to/Newman_D-Glucose_2026 \
+  --output amoeba_ibeta_fibril
+```
+
+The output contains `structure.xyz`, `amoeba.key`, a local copy of the
+user-supplied cleaned parameter file, `build_report.json`, and (when OpenMM is
+selected) `run_amoeba_openmm.py`. This is an experimental construction
+milestone: periodic chains, water, other allomorphs, force-field accuracy and
+Tinker-versus-OpenMM energy agreement remain outside the validated scope. See
+[`ADR 0009`](docs/decisions/0009-polarizable-amoeba.md).
+
+For the native Tinker bundle, pass the non-default key name explicitly, for
+example `dynamic structure.xyz -k amoeba.key`. Both that key and the OpenMM
+runner disable the isotropic vdW long-range correction because slabs and
+fibrils contain transverse vacuum; OpenMM's Tinker reader enables it by
+default, so the runner overrides the resulting force explicitly.
 
 ### Experimental OpenFF Sage
 
