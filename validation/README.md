@@ -267,6 +267,40 @@ all 21 nonbonded and 21 one-four parameter combinations, and produced a valid
 run-input file. This validates preprocessing and file interoperability; it is
 not a claim that a production simulation of the large slab has been completed.
 
+## Experimental CHARMM Drude NAMD/OpenMM comparison
+
+`validate_drude_cross_engine.py` compares finite I-beta `(110)`, I-beta
+`(100)`, and cellulose II `(110)` slabs between NAMD 3.0.3 and OpenMM 8.6.1.
+Both engines read the same native PSF, audited user-supplied CHARMM Drude 2023a
+streams, full-precision binary coordinates, and box. Validation-only inputs
+use a 1.2 nm cutoff, PME tolerance 1 x 10^-6, and disable Lennard-Jones
+switching and tail corrections in both engines.
+
+Zero-length parent--Drude vectors are not used because NAMD can initialize
+them nondeterministically at `run 0`. The validator instead evaluates
+deterministic 0.01 and 0.02 A displacements and gates their energy difference.
+It keeps engine bookkeeping explicit: NAMD includes spring/anisotropy in
+`BOND` and Thole screening in `ELECT`, while OpenMM exposes those contributions
+through `DrudeForce`. Spring/anisotropy and the total polarization response are
+therefore compared as physically equivalent sums. The small remaining response
+difference is recorded as uncharacterized and is gated against the response,
+not against the much larger absolute potential.
+
+Run it with:
+
+```bash
+PYTHONPATH=src python validation/validate_drude_cross_engine.py \
+  --drude-toppar-directory /path/to/drude_toppar_2023 \
+  --namd /path/to/namd3 \
+  --openmm-python /path/to/python-with-openmm \
+  --work-directory /path/to/empty/work-directory \
+  --output /path/to/results.json
+```
+
+This validates the finite-chain engine translation, not CHARMM reference
+generation, periodic-chain lone pairs, production dynamics, or force-field
+accuracy for crystalline cellulose.
+
 ## NAMD CHARMM36 acceptance matrix
 
 `namd/run_acceptance_matrix.py` builds periodic cellulose I-beta, triclinic

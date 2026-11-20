@@ -5,8 +5,10 @@ generator is implemented and checked against psfgen and OpenMM. In review,
 NAMD 3.0.3 minimized a finite native bundle and completed a short dynamics run
 with the corrected writer. The same finite I-beta case is retained as a gated
 regression test that passes with NAMD 3.0.3 and the audited official streams.
-The topology has not been compared with a CHARMM-generated reference, and no
-cross-engine energy comparison has been performed.
+Matched NAMD 3.0.3/OpenMM 8.6.1 single points pass for finite I-beta (110),
+I-beta (100), and cellulose II (110) slabs. The topology has not been compared
+with a CHARMM-generated reference, and production-length validation remains
+open.
 
 ## Scientific source
 
@@ -218,8 +220,8 @@ it does not replace production validation of the resulting Drude excursions.
 
 | Engine | Status | Requirement before enabling |
 | --- | --- | --- |
-| NAMD | finite I-beta regression passes; periodic construction-only | production and energy validation; engine support for periodic lone-pair hosts |
-| OpenMM | finite I-beta 1 ps regression passes; periodic construction-only | production and energy validation; a solution for periodic-chain lone pairs |
+| NAMD | finite regression and matched OpenMM single points pass; periodic construction-only | production validation; engine support for periodic lone-pair hosts |
+| OpenMM | finite regression and matched NAMD single points pass; periodic construction-only | production validation; a solution for periodic-chain lone pairs |
 | GROMACS | blocked upstream | general anisotropic polarization and Thole screening in mainline |
 | LAMMPS | blocked upstream | anisotropic polarization and general lone-pair sites |
 | Amber | unsupported | no verified CHARMM Drude execution route |
@@ -237,14 +239,29 @@ cross-engine comparison.
 ## Energy schema
 
 Schema 1 of the energy report has nine terms and no slot for polarization.
-New canonical terms are probably unnecessary: per the review, NAMD reports the
-Drude spring and anisotropy energies in `BOND` and the lone-pair and Thole
-contributions in `ELECT`. The proposed mapping is therefore `bond` and
-`electrostatics`, with Drude-specific diagnostics (spring, anisotropy, Thole)
-carried as report metadata where an engine exposes them. This mapping must be
-confirmed for each engine before a Drude validator is written. The NAMD
-command allowlist of the single-point driver must gain the Drude keywords at
-that point.
+The matched validator therefore preserves engine-native bookkeeping instead
+of forcing unlike terms into the same category. NAMD includes Drude spring and
+anisotropy energy in `BOND` and Thole screening in `ELECT`; its `DRUDEBOND`
+column is a thermostat temperature, not an energy. OpenMM includes spring,
+anisotropy, and screened-pair contributions in `DrudeForce`.
+
+`validate_drude_cross_engine.py` evaluates identical native PSF parameters,
+full-precision binary coordinates, and boxes with validation-only matched
+nonbonded settings. A zero-length parent--Drude vector is not used because
+NAMD can initialize it nondeterministically even for `run 0`. Every Drude is
+instead displaced deterministically by 0.01 and 0.02 A on cycling Cartesian
+axes. The validator compares ordinary bonded terms, NAMD `BOND` against
+OpenMM covalent bond plus spring/anisotropy energy, NAMD nonbonded energy
+against OpenMM nonbonded plus Thole energy, total potential, and the 0.01 to
+0.02 A polarization response.
+
+Spring and anisotropy responses agree within 2.5 x 10^-5 relative. The total
+polarization-response difference is 3.9 x 10^-5 to 2.5 x 10^-4 relative for
+the three slabs. The remaining difference is small but currently
+uncharacterized; it is recorded explicitly and gated against the response
+itself at 1 x 10^-3, not hidden by scaling the tolerance to the much larger
+absolute potential. These checks validate engine translation, not the force
+field's accuracy for crystalline cellulose.
 
 ## Validation gates
 
