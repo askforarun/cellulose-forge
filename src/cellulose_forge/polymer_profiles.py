@@ -26,7 +26,7 @@ class PolymerProfile:
 
 _CELLULOSE_FORCE_FIELD_SHAPES = frozenset({"unit-cell", "bulk", "crystal", "slab", "fibril"})
 _CHITIN_FORCE_FIELD_SHAPES = frozenset({"unit-cell", "bulk", "crystal", "slab"})
-_ENGINE_ORDER = ("gromacs", "openmm", "lammps", "namd", "amber", "tinker")
+_ENGINE_ORDER = ("gromacs", "openmm", "lammps", "namd", "amber")
 _SHAPE_ORDER = ("unit-cell", "bulk", "crystal", "slab", "fibril")
 
 POLYMER_PROFILES: Mapping[str, PolymerProfile] = {
@@ -53,7 +53,7 @@ POLYMER_PROFILES: Mapping[str, PolymerProfile] = {
             ),
             "amoeba": ForceFieldCapability(
                 frozenset({"slab", "fibril"}),
-                frozenset({"openmm", "tinker"}),
+                frozenset({"openmm"}),
             ),
             "openff": ForceFieldCapability(
                 _CELLULOSE_FORCE_FIELD_SHAPES,
@@ -171,7 +171,7 @@ def engine_capability_error(  # noqa: PLR0911,PLR0912 - explicit historical diag
     if force_field == "charmm-drude" and not engines:
         return "experimental CHARMM Drude builds require --md-engine namd or openmm"
     if force_field == "amoeba" and not engines:
-        return "experimental AMOEBA builds require --md-engine openmm or tinker"
+        return "experimental AMOEBA builds require --md-engine openmm"
     if force_field in {"opls-aa", "opls-aa-sei"} and not engines:
         return (
             "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps"

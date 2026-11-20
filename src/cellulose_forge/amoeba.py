@@ -97,12 +97,11 @@ class TinkerAtom:
 
 @dataclass(frozen=True)
 class AmoebaSystemFiles:
-    """Files written for one experimental AMOEBA system."""
+    """Files written for one experimental AMOEBA/OpenMM system."""
 
     xyz: Path
-    key: Path
     parameter: Path
-    openmm_runner: Path | None
+    openmm_runner: Path
     source_sha256: dict[str, str]
 
 
@@ -197,7 +196,9 @@ def _require_orthorhombic(box: FloatArray) -> None:
     vectors = np.asarray(box, dtype=np.float64)
     products = [abs(float(np.dot(vectors[i], vectors[j]))) for i, j in ((0, 1), (0, 2), (1, 2))]
     if max(products) > _ORTHOGONAL_TOLERANCE:
-        raise ValueError("experimental AMOEBA output currently requires an orthorhombic slab box")
+        raise ValueError(
+            "experimental AMOEBA output currently requires an orthorhombic slab or fibril box"
+        )
 
 
 def render_tinker_xyz(
@@ -230,24 +231,38 @@ def render_tinker_xyz(
     return "\n".join(lines) + "\n"
 
 
-def render_tinker_key() -> str:
-    """Return a conservative AMOEBA single-point/dynamics key."""
-    return """parameters amoeba_cellulose.prm
-integrator stochastic
-neighbor-list
-polar-eps 0.00001
-vdw-cutoff 12.0
-ewald
-ewald-cutoff 7.0
-polarization mutual
-"""
+def amoeba_heavy_atom_restraint_indices(
+    crystal: BulkCrystal,
+    degree_polymerization: int,
+    chain_ids: tuple[int, ...],
+) -> tuple[int, ...]:
+    """Return zero-based real-heavy-atom indices in generated Tinker order."""
+    layout = _atom_layout(degree_polymerization)
+    template = chain_template((name, residue) for name, _, residue in layout)
+    mapped = map_crystal_to_chain_template(crystal, template, "finite", "BGC")
+    selected = set(chain_ids)
+    return tuple(
+        index
+        for index, (name, chain) in enumerate(
+            zip(mapped.atom_names, mapped.chain_numbers, strict=True)
+        )
+        if chain in selected and not name.upper().startswith("H")
+    )
 
 
-def render_openmm_runner() -> str:
-    """Return an OpenMM runner that consumes the same native Tinker bundle."""
-    return """from openmm import AmoebaVdwForce, LangevinMiddleIntegrator, unit
+def render_openmm_runner(
+    *,
+    restraint_atom_indices: tuple[int, ...] = (),
+    restraint_force: tuple[float, float, float] | None = None,
+) -> str:
+    """Return an OpenMM runner that consumes the Tinker-format input files."""
+    return f"""from openmm import (
+    AmoebaVdwForce, CustomExternalForce, LangevinMiddleIntegrator, unit
+)
 from openmm.app import PME, Simulation, StateDataReporter, TinkerFiles
 
+RESTRAINT_ATOM_INDICES = {list(restraint_atom_indices)!r}
+RESTRAINT_FORCE_KJ_MOL_NM2 = {restraint_force!r}
 tinker = TinkerFiles("structure.xyz", ["amoeba_cellulose.prm"])
 system = tinker.createSystem(
     nonbondedMethod=PME,
@@ -257,8 +272,20 @@ system = tinker.createSystem(
 )
 vdw_forces = [force for force in system.getForces() if isinstance(force, AmoebaVdwForce)]
 if len(vdw_forces) != 1:
-    raise RuntimeError(f"expected one AmoebaVdwForce, found {len(vdw_forces)}")
+    raise RuntimeError(f"expected one AmoebaVdwForce, found {{len(vdw_forces)}}")
 vdw_forces[0].setUseDispersionCorrection(False)
+if RESTRAINT_FORCE_KJ_MOL_NM2 is not None:
+    restraint = CustomExternalForce(
+        "0.5*(kx*(x-x0)^2+ky*(y-y0)^2+kz*(z-z0)^2)"
+    )
+    for name in ("x0", "y0", "z0", "kx", "ky", "kz"):
+        restraint.addPerParticleParameter(name)
+    kx, ky, kz = RESTRAINT_FORCE_KJ_MOL_NM2
+    for index in RESTRAINT_ATOM_INDICES:
+        x0, y0, z0 = tinker.positions[index].value_in_unit(unit.nanometer)
+        restraint.addParticle(index, [x0, y0, z0, kx, ky, kz])
+    restraint.setName("CellulosePositionRestraints")
+    system.addForce(restraint)
 integrator = LangevinMiddleIntegrator(
     300.0 * unit.kelvin, 1.0 / unit.picosecond, 0.001 * unit.picoseconds
 )
@@ -280,39 +307,49 @@ simulation.step(1000)
 """
 
 
-def write_amoeba_system(
+def write_amoeba_system(  # noqa: PLR0913 - explicit build and restraint inputs
     crystal: BulkCrystal,
     source_directory: str | Path,
     output_directory: str | Path,
     degree_polymerization: int,
     *,
-    write_openmm_runner: bool,
+    restraint_chain_ids: tuple[int, ...] = (),
+    restraint_force: tuple[float, float, float] | None = None,
 ) -> AmoebaSystemFiles:
-    """Write a finite cellulose Tinker bundle and optional OpenMM runner."""
+    """Write a finite cellulose AMOEBA/OpenMM bundle."""
+    if restraint_force is not None and not any(value > 0.0 for value in restraint_force):
+        raise ValueError("position restraints require at least one positive force constant")
     parameter, reference_path = validate_amoeba_source_directory(
         source_directory, degree_polymerization
     )
     reference = _read_reference_topology(reference_path, degree_polymerization)
     xyz_text = render_tinker_xyz(crystal, reference, degree_polymerization)
+    restraint_indices = amoeba_heavy_atom_restraint_indices(
+        crystal, degree_polymerization, restraint_chain_ids
+    )
+    if restraint_force is not None and not restraint_indices:
+        raise ValueError("AMOEBA position restraints selected no real heavy atoms")
     output = Path(output_directory)
     output.mkdir(parents=True, exist_ok=True)
     xyz = output / "structure.xyz"
-    key = output / "amoeba.key"
     copied_parameter = output / "amoeba_cellulose.prm"
     xyz.write_text(xyz_text, encoding="utf-8")
-    key.write_text(render_tinker_key(), encoding="utf-8")
     shutil.copyfile(parameter, copied_parameter)
     runner_path = output / "run_amoeba_openmm.py"
-    runner = runner_path if write_openmm_runner else None
-    if runner is None:
-        runner_path.unlink(missing_ok=True)
-    else:
-        runner.write_text(render_openmm_runner(), encoding="utf-8")
+    runner_path.write_text(
+        render_openmm_runner(
+            restraint_atom_indices=restraint_indices,
+            restraint_force=restraint_force,
+        ),
+        encoding="utf-8",
+    )
+    # Tinker was an early prototype output target. Remove a stale key when an
+    # existing directory is rebuilt as the supported OpenMM-only bundle.
+    (output / "amoeba.key").unlink(missing_ok=True)
     return AmoebaSystemFiles(
         xyz,
-        key,
         copied_parameter,
-        runner,
+        runner_path,
         {
             AMOEBA_PARAMETER_FILE: _sha256(parameter),
             f"beta_dp{degree_polymerization}_topology": _sha256(reference_path),

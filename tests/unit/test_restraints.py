@@ -56,6 +56,17 @@ def test_rejects_unknown_chain_id() -> None:
         )
 
 
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_rejects_nonfinite_force_constants(value: float) -> None:
+    crystal = build_36_chain_fibril(load_allomorph("i_beta"), degree_polymerization=4, vacuum=0.0)
+    with pytest.raises(ValueError, match="must be finite"):
+        resolve_chain_restraints(
+            crystal,
+            chain_ids=[1],
+            force_constants=[1000.0, value, 0.0],
+        )
+
+
 def test_resolves_layers() -> None:
     crystal = build_chain_parallel_slab(
         load_allomorph("i_beta"),

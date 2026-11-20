@@ -77,6 +77,8 @@ def resolve_chain_restraints(
         return None
     if force_constants is None:
         raise ValueError("--restraint-force FX FY FZ is required with chain restraints")
+    if not all(np.isfinite(value) for value in force_constants):
+        raise ValueError("position-restraint force constants must be finite")
     if any(value < 0 for value in force_constants):
         raise ValueError("position-restraint force constants must be nonnegative")
 

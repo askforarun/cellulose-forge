@@ -36,6 +36,7 @@ _PDB_SERIAL_MODULUS = 100_000
 _PDB_RESIDUE_MODULUS = 10_000
 _PSF_KIND_FLAG = {"atom": 0, "lonepair": -1, "drude": -2}
 _DEGENERATE_GEOMETRY = 1.0e-8
+_KJ_NM2_TO_NAMD_KCAL_A2 = 1.0 / 836.8
 
 
 @dataclass(frozen=True)
@@ -67,10 +68,26 @@ class DrudeSystemFiles:
     binary_coordinates: Path
     configuration: Path | None
     openmm_runner: Path | None
+    restraint_reference: Path | None
     main_stream: Path
     carbohydrate_stream: Path
     source_sha256: dict[str, str]
     counts: dict[str, int]
+
+
+def drude_heavy_atom_restraint_indices(
+    system: DrudeSystem, chain_ids: tuple[int, ...]
+) -> tuple[int, ...]:
+    """Return zero-based real-heavy-atom indices for selected crystal chains."""
+    selected = set(chain_ids)
+    per_chain = len(system.topology.sites)
+    return tuple(
+        chain_index * per_chain + site_index
+        for chain_index, chain_id in enumerate(system.chain_numbers)
+        if chain_id in selected
+        for site_index, site in enumerate(system.topology.sites)
+        if site.kind == "atom" and not site.name.upper().startswith("H")
+    )
 
 
 def validate_drude_toppar_directory(directory: str | Path) -> tuple[Path, Path]:
@@ -326,7 +343,12 @@ def write_namd_binary_coordinates(path: Path, coordinates: FloatArray) -> None:
 
 
 def _write_run_configuration(
-    directory: Path, system: DrudeSystem, *, lj_correction: bool, write_run_input: bool
+    directory: Path,
+    system: DrudeSystem,
+    *,
+    lj_correction: bool,
+    write_run_input: bool,
+    restraint_force: tuple[float, float, float] | None = None,
 ) -> Path | None:
     """Write the NAMD input, or remove a stale one for construction-only output."""
     path = directory / "run_drude_namd.conf"
@@ -334,13 +356,82 @@ def _write_run_configuration(
         path.unlink(missing_ok=True)
         return None
     path.write_text(
-        render_drude_namd_configuration(system.basis_vectors, lj_correction=lj_correction),
+        render_drude_namd_configuration(
+            system.basis_vectors,
+            lj_correction=lj_correction,
+            restraint_force=restraint_force,
+        ),
         encoding="utf-8",
     )
     return path
 
 
-def render_drude_namd_configuration(vectors: FloatArray, *, lj_correction: bool) -> str:
+def _namd_restraint_lines(
+    force_constants: tuple[float, float, float] | None,
+) -> list[str]:
+    """Render NAMD harmonic constraints with matched Cartesian stiffness."""
+    if force_constants is None:
+        return []
+    coefficient = validate_namd_restraint_force(force_constants)
+    assert coefficient is not None
+    return [
+        "constraints on",
+        "consRef restraints_namd.pdb",
+        "consKFile restraints_namd.pdb",
+        "consKCol B",
+        f"constraintScaling {coefficient:.12g}",
+        "selectConstraints on",
+        *(
+            f"selectConstr{axis} {'on' if value > 0.0 else 'off'}"
+            for axis, value in zip("XYZ", force_constants, strict=True)
+        ),
+    ]
+
+
+def validate_namd_restraint_force(
+    force_constants: tuple[float, float, float] | None,
+) -> float | None:
+    """Return the exact NAMD scale or reject an unrepresentable request."""
+    if force_constants is None:
+        return None
+    active = [value for value in force_constants if value > 0.0]
+    if not active:
+        raise ValueError("position restraints require at least one positive force constant")
+    if not np.allclose(active, active[0], atol=1.0e-9, rtol=0.0):
+        raise ValueError(
+            "NAMD position restraints require equal nonzero force constants on selected axes"
+        )
+    # NAMD uses U=k*d^2, while the public contract is U=1/2*K*d^2.
+    # Convert K from kJ mol^-1 nm^-2 to kcal mol^-1 A^-2 and include 1/2.
+    return active[0] * _KJ_NM2_TO_NAMD_KCAL_A2
+
+
+def render_drude_restraint_pdb(
+    system: DrudeSystem,
+    atom_indices: tuple[int, ...],
+    force_constants: tuple[float, float, float],
+) -> str:
+    """Encode selected real heavy atoms and the NAMD coefficient in the B column."""
+    validate_namd_restraint_force(force_constants)
+    selected = set(atom_indices)
+    particle = 0
+    rendered: list[str] = []
+    for line in render_drude_pdb(system).splitlines():
+        rendered_line = line
+        if line.startswith("ATOM"):
+            value = 1.0 if particle in selected else 0.0
+            rendered_line = f"{line[:60]}{value:6.3f}{line[66:]}"
+            particle += 1
+        rendered.append(rendered_line)
+    return "\n".join(rendered) + "\n"
+
+
+def render_drude_namd_configuration(
+    vectors: FloatArray,
+    *,
+    lj_correction: bool,
+    restraint_force: tuple[float, float, float] | None = None,
+) -> str:
     """Render a conservative minimization and 1 ps dual-thermostat smoke test.
 
     The Drude streams specify a 10--12 A potential switch (``vswitch``), not the
@@ -392,6 +483,7 @@ def render_drude_namd_configuration(vectors: FloatArray, *, lj_correction: bool)
             "drudeHardWall on",
             "drudeBondLen 0.25",
             "drudeNbTholeCut 5.0",
+            *_namd_restraint_lines(restraint_force),
             "temperature 300",
             "outputEnergies 100",
             "outputName drude",
@@ -403,7 +495,13 @@ def render_drude_namd_configuration(vectors: FloatArray, *, lj_correction: bool)
     )
 
 
-def render_drude_openmm_runner(vectors: FloatArray, *, lj_correction: bool) -> str:
+def render_drude_openmm_runner(
+    vectors: FloatArray,
+    *,
+    lj_correction: bool,
+    restraint_atom_indices: tuple[int, ...] = (),
+    restraint_force: tuple[float, float, float] | None = None,
+) -> str:
     """Render an OpenMM Drude minimization and 1 ps dynamics runner."""
     box = [[float(value) / 10.0 for value in row] for row in np.asarray(vectors)]
     return f'''#!/usr/bin/env python3
@@ -418,6 +516,8 @@ from openmm.app import (
 )
 
 BOX_NM = {box!r}
+RESTRAINT_ATOM_INDICES = {list(restraint_atom_indices)!r}
+RESTRAINT_FORCE_KJ_MOL_NM2 = {restraint_force!r}
 psf = CharmmPsfFile("system.psf")
 parameters = CharmmParameterSet("{DRUDE_MAIN_FILE}", "{DRUDE_CARBOHYDRATE_FILE}")
 with open("structure_namd.coor", "rb") as handle:
@@ -451,6 +551,18 @@ if system.getNumParticles() != count:
 for force in system.getForces():
     if isinstance(force, openmm.NonbondedForce):
         force.setUseDispersionCorrection({lj_correction!r})
+if RESTRAINT_FORCE_KJ_MOL_NM2 is not None:
+    restraint = openmm.CustomExternalForce(
+        "0.5*(kx*(x-x0)^2+ky*(y-y0)^2+kz*(z-z0)^2)"
+    )
+    for name in ("x0", "y0", "z0", "kx", "ky", "kz"):
+        restraint.addPerParticleParameter(name)
+    kx, ky, kz = RESTRAINT_FORCE_KJ_MOL_NM2
+    for index in RESTRAINT_ATOM_INDICES:
+        x0, y0, z0 = positions[index].value_in_unit(unit.nanometer)
+        restraint.addParticle(index, [x0, y0, z0, kx, ky, kz])
+    restraint.setName("CellulosePositionRestraints")
+    system.addForce(restraint)
 integrator = openmm.DrudeLangevinIntegrator(
     300*unit.kelvin, 1/unit.picosecond, 1*unit.kelvin,
     20/unit.picosecond, 0.001*unit.picoseconds,
@@ -481,6 +593,8 @@ def write_drude_namd_system(  # noqa: PLR0913 - explicit build options
     lj_correction: bool,
     write_run_input: bool = True,
     write_openmm_runner: bool = False,
+    restraint_chain_ids: tuple[int, ...] = (),
+    restraint_force: tuple[float, float, float] | None = None,
 ) -> DrudeSystemFiles:
     """Write a native CHARMM Drude PSF and coordinates, and optionally a NAMD input.
 
@@ -494,6 +608,11 @@ def write_drude_namd_system(  # noqa: PLR0913 - explicit build options
             "periodic CHARMM Drude chains are construction-only; no NAMD or OpenMM run input "
             "is written because neither engine images cross-boundary lone-pair hosts correctly"
         )
+    if restraint_force is not None:
+        if not any(value > 0.0 for value in restraint_force):
+            raise ValueError("position restraints require at least one positive force constant")
+        if write_run_input:
+            validate_namd_restraint_force(restraint_force)
     main_source, carbohydrate_source = validate_drude_toppar_directory(toppar_directory)
     checksums = verify_audited_streams(main_source, carbohydrate_source)
     definitions = read_drude_cellulose_definitions(main_source, carbohydrate_source)
@@ -507,6 +626,9 @@ def write_drude_namd_system(  # noqa: PLR0913 - explicit build options
         definitions, lengths.pop(), periodic=chain_boundary == "periodic"
     )
     system = build_drude_system(crystal, topology, chain_boundary)
+    restraint_indices = drude_heavy_atom_restraint_indices(system, restraint_chain_ids)
+    if restraint_force is not None and not restraint_indices:
+        raise ValueError("CHARMM Drude position restraints selected no real heavy atoms")
     directory = Path(output_directory)
     directory.mkdir(parents=True, exist_ok=True)
     main_stream = directory / DRUDE_MAIN_FILE
@@ -520,12 +642,29 @@ def write_drude_namd_system(  # noqa: PLR0913 - explicit build options
     pdb.write_text(render_drude_pdb(system), encoding="utf-8")
     write_namd_binary_coordinates(binary_coordinates, system.cartesian_coordinates)
     configuration = _write_run_configuration(
-        directory, system, lj_correction=lj_correction, write_run_input=write_run_input
+        directory,
+        system,
+        lj_correction=lj_correction,
+        write_run_input=write_run_input,
+        restraint_force=restraint_force,
     )
+    restraint_reference = directory / "restraints_namd.pdb"
+    if write_run_input and restraint_force is not None:
+        restraint_reference.write_text(
+            render_drude_restraint_pdb(system, restraint_indices, restraint_force),
+            encoding="utf-8",
+        )
+    else:
+        restraint_reference.unlink(missing_ok=True)
     openmm_runner = directory / "run_drude_openmm.py"
     if write_openmm_runner:
         openmm_runner.write_text(
-            render_drude_openmm_runner(system.basis_vectors, lj_correction=lj_correction),
+            render_drude_openmm_runner(
+                system.basis_vectors,
+                lj_correction=lj_correction,
+                restraint_atom_indices=restraint_indices,
+                restraint_force=restraint_force,
+            ),
             encoding="utf-8",
         )
     else:
@@ -537,6 +676,9 @@ def write_drude_namd_system(  # noqa: PLR0913 - explicit build options
         binary_coordinates=binary_coordinates,
         configuration=configuration,
         openmm_runner=openmm_runner if write_openmm_runner else None,
+        restraint_reference=(
+            restraint_reference if write_run_input and restraint_force is not None else None
+        ),
         main_stream=main_stream,
         carbohydrate_stream=carbohydrate_stream,
         source_sha256=checksums,

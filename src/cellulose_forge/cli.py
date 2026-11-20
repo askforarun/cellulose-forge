@@ -40,6 +40,7 @@ from cellulose_forge.doctor import render_json, render_text, run_diagnostics
 from cellulose_forge.drude import (
     DRUDE_RELEASE,
     validate_drude_toppar_directory,
+    validate_namd_restraint_force,
     write_drude_namd_system,
 )
 from cellulose_forge.forcefields import (
@@ -274,7 +275,7 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     )
     build.add_argument(
         "--md-engine",
-        choices=["gromacs", "amber", "openmm", "lammps", "namd", "tinker"],
+        choices=["gromacs", "amber", "openmm", "lammps", "namd"],
         action="append",
         help=(
             "target MD engine; repeat for multiple outputs (default: gromacs for "
@@ -499,7 +500,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
                     args.restraint_force,
                 )
             ):
-                build_parser().error("chain restraints require --force-field glycam or charmm36")
+                build_parser().error("chain restraints require a supported force-field backend")
             args.output.parent.mkdir(parents=True, exist_ok=True)
             written_path = write_coordinates(crystal, args.output)
             _write_coordinate_only_report(args, crystal, written_path, definition)
@@ -589,10 +590,16 @@ def _validate_amoeba_options(args: argparse.Namespace, parser: argparse.Argument
         return
     if args.amoeba_source_directory is None:
         parser.error("--force-field amoeba requires --amoeba-source-directory")
-    if args.polymer != "cellulose" or args.allomorph != "I-beta":
-        parser.error("experimental AMOEBA output currently supports cellulose I-beta only")
+    if args.polymer != "cellulose":
+        parser.error("experimental AMOEBA output currently supports native cellulose only")
     if args.shape not in {"slab", "fibril"} or args.chain_boundary != "finite":
         parser.error("experimental AMOEBA output currently supports finite slabs and fibrils only")
+    if args.allomorph == "I-alpha" and args.shape == "slab":
+        parser.error(
+            "AMOEBA I-alpha slabs are temporarily unsupported because the shared slab "
+            "builder can create close contacts across the lateral periodic seam; the "
+            "I-alpha 36-chain fibril remains supported"
+        )
     if args.degree_polymerization is None:
         parser.error("experimental AMOEBA output requires --degree-polymerization")
     try:
@@ -1386,11 +1393,18 @@ def _write_drude_build(
         parser.error("--output must be a directory for --force-field charmm-drude")
     if args.polymer != "cellulose":
         parser.error("experimental CHARMM Drude output currently supports cellulose only")
-    if any(
-        value is not None
-        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
-    ):
-        parser.error("position restraints are not implemented for CHARMM Drude output")
+    restraints = _resolve_restraints(args, crystal, parser)
+    if restraints is not None and args.drude_construction_only:
+        parser.error("CHARMM Drude construction-only output cannot apply position restraints")
+    requested_engines = tuple(args.md_engines)
+    if restraints is not None:
+        if not any(value > 0.0 for value in restraints.force_constants):
+            parser.error("position restraints require at least one positive force constant")
+        if "namd" in requested_engines:
+            try:
+                validate_namd_restraint_force(restraints.force_constants)
+            except ValueError as error:
+                parser.error(str(error))
     assert args.drude_toppar_directory is not None
     lj_correction = dispersion_correction("charmm-drude", args.shape)
     try:
@@ -1400,7 +1414,6 @@ def _write_drude_build(
         parser.error(str(error))
     args.output.mkdir(parents=True, exist_ok=True)
     coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
-    requested_engines = tuple(args.md_engines)
     write_runners = not args.drude_construction_only
     try:
         files = write_drude_namd_system(
@@ -1411,6 +1424,8 @@ def _write_drude_build(
             lj_correction=lj_correction,
             write_run_input=write_runners and "namd" in requested_engines,
             write_openmm_runner=write_runners and "openmm" in requested_engines,
+            restraint_chain_ids=(() if restraints is None else restraints.chain_ids),
+            restraint_force=(None if restraints is None else restraints.force_constants),
         )
     except ValueError as error:
         parser.error(str(error))
@@ -1452,6 +1467,9 @@ def _write_drude_build(
                 None if files.configuration is None else files.configuration.name
             ),
             "openmm_runner": (None if files.openmm_runner is None else files.openmm_runner.name),
+            "namd_restraint_reference": (
+                None if files.restraint_reference is None else files.restraint_reference.name
+            ),
             "drude_main_stream": files.main_stream.name,
             "drude_carbohydrate_stream": files.carbohydrate_stream.name,
         },
@@ -1463,6 +1481,17 @@ def _write_drude_build(
             "doi": definition.doi,
         },
     }
+    if restraints is not None:
+        report["position_restraints"] = {
+            "selected_chain_ids": list(restraints.chain_ids),
+            "selected_layer_ids": list(restraints.layer_ids),
+            "layer_mapping": [
+                {"layer_id": layer_id, "chain_ids": list(chain_ids)}
+                for layer_id, chain_ids in restraints.layer_mapping
+            ],
+            "force_constants_kj_mol_nm2": list(restraints.force_constants),
+            "atom_selection": "real heavy atoms in each selected chain",
+        }
     (args.output / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -1474,14 +1503,12 @@ def _write_amoeba_build(
     parser: argparse.ArgumentParser,
     definition: AllomorphDefinition,
 ) -> None:
-    """Write the first finite-cellulose AMOEBA Tinker/OpenMM bundle."""
+    """Write the experimental finite-cellulose AMOEBA/OpenMM bundle."""
     if args.output.suffix:
         parser.error("--output must be a directory for --force-field amoeba")
-    if any(
-        value is not None
-        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
-    ):
-        parser.error("position restraints are not implemented for AMOEBA output")
+    restraints = _resolve_restraints(args, crystal, parser)
+    if restraints is not None and not any(value > 0.0 for value in restraints.force_constants):
+        parser.error("position restraints require at least one positive force constant")
     assert args.amoeba_source_directory is not None
     assert args.degree_polymerization is not None
     try:
@@ -1490,7 +1517,8 @@ def _write_amoeba_build(
             args.amoeba_source_directory,
             args.output,
             args.degree_polymerization,
-            write_openmm_runner="openmm" in args.md_engines,
+            restraint_chain_ids=(() if restraints is None else restraints.chain_ids),
+            restraint_force=(None if restraints is None else restraints.force_constants),
         )
     except ValueError as error:
         parser.error(str(error))
@@ -1517,19 +1545,20 @@ def _write_amoeba_build(
             "Tinker oligomer; coordinates replaced by CelluloseForge crystal coordinates"
         ),
         "known_limitations": [
-            "only finite cellulose I-beta slabs and fibrils with even DP 2 through 10 "
-            "are supported",
+            "only finite cellulose slabs and supported crystallographic fibrils with even "
+            "DP 2 through 10 are supported",
             "the public source repository has no explicit licence file, so parameters are "
             "never bundled with CelluloseForge",
-            "Tinker-versus-OpenMM energies have not yet been compared",
-            "water, periodic chains, other allomorphs and production validation are not "
-            "implemented",
+            "the OpenMM interpretation has not yet been compared with a reference Tinker run",
+            "the published beta-(1->4)-D-glucose parameters are transferred without "
+            "refitting to each crystal allomorph",
+            "water, periodic chains, a cellulose III-I fibril and production validation "
+            "are not implemented",
         ],
         "outputs": {
-            "tinker_coordinates": files.xyz.name,
-            "tinker_key": files.key.name,
+            "amoeba_coordinates": files.xyz.name,
             "amoeba_parameters": files.parameter.name,
-            "openmm_runner": None if files.openmm_runner is None else files.openmm_runner.name,
+            "openmm_runner": files.openmm_runner.name,
         },
         "geometry_annotations": list(crystal.annotations),
         "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),
@@ -1539,6 +1568,17 @@ def _write_amoeba_build(
             "doi": definition.doi,
         },
     }
+    if restraints is not None:
+        report["position_restraints"] = {
+            "selected_chain_ids": list(restraints.chain_ids),
+            "selected_layer_ids": list(restraints.layer_ids),
+            "layer_mapping": [
+                {"layer_id": layer_id, "chain_ids": list(chain_ids)}
+                for layer_id, chain_ids in restraints.layer_mapping
+            ],
+            "force_constants_kj_mol_nm2": list(restraints.force_constants),
+            "atom_selection": "real heavy atoms in each selected chain",
+        }
     (args.output / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )

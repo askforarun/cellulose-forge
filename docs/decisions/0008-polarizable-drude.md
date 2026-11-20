@@ -118,6 +118,22 @@ during review. Both are enforced by the writer and by unit tests.
 runs a short real NAMD job when `CELLULOSE_FORGE_DRUDE_TOPPAR` is set and
 `namd3` is available.
 
+### Position restraints
+
+Finite runnable systems accept the shared `--restrain-chains`,
+`--restrain-layers` and `--restraint-force` interface. Only real heavy atoms
+in the selected chains are restrained. Hydrogens, Drude particles and
+off-centre lone pairs remain free. OpenMM represents the three Cartesian force
+constants directly with a `CustomExternalForce`. NAMD uses its legacy
+constraint-reference PDB; because that format stores one scalar coefficient,
+the nonzero constants on all active axes must be equal. Other combinations
+fail before output is written. The PDB contains a unit mask, and the exact
+converted coefficient is written as `constraintScaling`; this avoids rounding
+small forces in the fixed-width PDB field. NAMD's legacy potential is
+`U = k d^2`, so conversion from the public `U = 1/2 K d^2` convention includes
+the factor of one half. Construction-only periodic systems cannot apply
+restraints because no runnable engine input exists.
+
 ### Coulomb constant
 
 CHARMM derives the Drude charge with `CCELEC = 332.0716`; psfgen uses NAMD's

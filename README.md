@@ -118,8 +118,8 @@ of these:
 |---|---|---|
 | Unit cell | Cellulose I-alpha, I-beta, II, III-I; alpha- and beta-chitin; Mannan I | Coordinate-only: a single cell is narrower than twice any force-field cutoff, so use a periodic bulk crystal for force-field output |
 | Periodic bulk | Cellulose I-alpha, I-beta, II, III-I; alpha- and beta-chitin; Mannan I | GLYCAM06j-1 and CHARMM36 (cellulose and chitin), plus experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI (cellulose); coordinate-only (Mannan I) |
-| Slab | Chain-parallel faces of the four cellulose allomorphs and of alpha- and beta-chitin | GLYCAM06j-1 and CHARMM36 (cellulose and chitin), plus experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI (cellulose); experimental AMOEBA for finite cellulose I-beta |
-| 36-chain fibril | Cellulose I-alpha, I-beta, II | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI |
+| Slab | Chain-parallel faces of the four cellulose allomorphs and of alpha- and beta-chitin | GLYCAM06j-1 and CHARMM36 (cellulose and chitin), plus experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI (cellulose); experimental AMOEBA for finite cellulose slabs |
+| 36-chain fibril | Cellulose I-alpha, I-beta, II | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI; experimental AMOEBA for finite chains |
 | 18- and 24-chain fibril, custom profiles (`main`) | Cellulose I-beta | GLYCAM06j-1, CHARMM36 and experimental OpenFF Sage, OPLS-AA and OPLS-AA-SEI; experimental AMOEBA for finite chains |
 
 Simulation engines by force field and chain boundary:
@@ -133,9 +133,11 @@ Simulation engines by force field and chain boundary:
 | Amber | Finite only | Not available | Not available | Not available | Released (1.2.0) |
 
 The experimental polarizable backends have narrower engine support: CHARMM
-Drude writes NAMD and OpenMM bundles, while AMOEBA writes a native Tinker
-bundle and an optional OpenMM runner. See their workflow sections and decision
-records for the current scientific limitations.
+Drude writes NAMD and OpenMM bundles, while AMOEBA currently supports OpenMM.
+Both use the common chain/layer restraint selectors for finite systems and
+restrain real heavy atoms only; Drude particles, lone pairs and hydrogens stay
+unrestrained.
+See their decision records for the current scientific limitations.
 
 Native Amber output cannot represent covalently periodic chains because Amber
 does not minimum-image bonded terms across the box boundary; use GROMACS or
@@ -736,12 +738,21 @@ the implementation.
 
 ### Experimental AMOEBA
 
-CelluloseForge can construct dry, finite cellulose I-beta slabs and fibrils
-with the published AMOEBA beta-(1->4)-D-glucose model. Supported chain lengths
-are DP 2, 4, 6, 8 and 10. The output is a native Tinker XYZ/key/parameter
-bundle; OpenMM can consume the same bundle directly. The generated OpenMM
-smoke run is NVT so that pressure coupling cannot collapse the vacuum around a
-slab or fibril.
+CelluloseForge can construct dry, finite slabs of cellulose I-beta, II and
+III-I, plus the supported I-alpha, I-beta and II fibrils, with the
+published AMOEBA beta-(1->4)-D-glucose model. Supported chain lengths are DP
+2, 4, 6, 8 and 10. OpenMM reads the generated Tinker-format XYZ topology and
+the audited parameter file through its `TinkerFiles` interface; this does not
+constitute support for the Tinker MD engine. The generated OpenMM smoke run is
+NVT so that pressure coupling cannot collapse the vacuum around a slab or
+fibril. Parameters are transferred without refitting across allomorphs, so this
+experimental construction support does not establish force-field accuracy or
+relative crystal stability.
+
+I-alpha slabs are temporarily refused because the shared slab builder can
+create close contacts across the lateral periodic seam for some chain counts.
+The I-alpha 36-chain fibril has no such seam and remains supported. The slab
+geometry will be corrected and revalidated across all force fields separately.
 
 The source repository has no explicit licence file, so CelluloseForge neither
 bundles nor downloads its parameter files. Supply a local checkout of the
@@ -758,24 +769,25 @@ cellulose-forge build \
   --vacuum 30 \
   --padding-longitudinal 20 \
   --force-field amoeba \
-  --md-engine tinker \
   --md-engine openmm \
   --amoeba-source-directory /path/to/Newman_D-Glucose_2026 \
   --output amoeba_ibeta_fibril
 ```
 
-The output contains `structure.xyz`, `amoeba.key`, a local copy of the
-user-supplied cleaned parameter file, `build_report.json`, and (when OpenMM is
-selected) `run_amoeba_openmm.py`. This is an experimental construction
-milestone: periodic chains, water, other allomorphs, force-field accuracy and
+The output contains `structure.xyz`, a local copy of the user-supplied cleaned
+parameter file, `build_report.json`, and `run_amoeba_openmm.py`. This is an
+experimental construction
+milestone: periodic chains, water, a III-I fibril, force-field accuracy and
 Tinker-versus-OpenMM energy agreement remain outside the validated scope. See
 [`ADR 0009`](docs/decisions/0009-polarizable-amoeba.md).
 
-For the native Tinker bundle, pass the non-default key name explicitly, for
-example `dynamic structure.xyz -k amoeba.key`. Both that key and the OpenMM
-runner disable the isotropic vdW long-range correction because slabs and
-fibrils contain transverse vacuum; OpenMM's Tinker reader enables it by
-default, so the runner overrides the resulting force explicitly.
+The OpenMM runner disables the isotropic vdW long-range correction because
+slabs and fibrils contain transverse vacuum. OpenMM's Tinker-format reader
+enables it by default, so the runner overrides the resulting force explicitly.
+AMOEBA restraints use `--restrain-chains` or `--restrain-layers` together with
+`--restraint-force FX FY FZ`. The generated OpenMM force acts only on the real
+heavy atoms of the selected chains and supports independent Cartesian force
+constants.
 
 ### Experimental OpenFF Sage
 
@@ -830,8 +842,9 @@ monosaccharide parameters to cellulose, and each engine's representation.
 
 ### Selective chain position restraints
 
-GLYCAM and CHARMM36 builds can apply GROMACS position restraints to the heavy
-atoms of selected chains. Hydrogens remain unrestrained. Chain and
+GLYCAM, CHARMM36, CHARMM Drude and AMOEBA builds can apply position restraints
+to the real heavy atoms of selected chains. Hydrogens, Drude particles and
+lone-pair virtual sites remain unrestrained. Chain and
 transverse-layer IDs are deterministic, one-based identifiers reported in
 `build_report.json`. Select explicit chains with `--restrain-chains` or
 complete layers with `--restrain-layers`. The two selectors are mutually
@@ -895,6 +908,14 @@ selectors write `restraints_namd.pdb` and activate NAMD harmonic restraints in
 `run_namd.conf`. Both preserve selected chains and layers, leave zero-valued
 axes free, and require equal nonzero axis force constants because each backend
 uses one coefficient per atom.
+
+CHARMM Drude uses the same NAMD restraint-PDB convention and an OpenMM
+`CustomExternalForce`; AMOEBA uses the corresponding OpenMM force. OpenMM
+supports independent X/Y/Z constants. NAMD stores one scalar coefficient, so
+all nonzero requested axis constants must be equal; unsupported combinations
+are refused before any output is written. Selected atoms carry a unit mask in
+the restraint PDB, while NAMD's `constraintScaling` records the exact converted
+force coefficient without PDB-field rounding.
 
 ## Output files and run inputs
 

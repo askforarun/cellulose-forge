@@ -2,10 +2,12 @@
 
 ## Status
 
-Experimental construction milestone. Finite cellulose I-beta slabs and
-fibrils can be written in native Tinker XYZ/key/parameter form and loaded by
-OpenMM 8.6.1. Force-field accuracy, Tinker-versus-OpenMM energy agreement,
-water, and production dynamics have not been validated.
+Experimental construction milestone. Finite slabs of cellulose I-beta, II and
+III-I and literature-defined fibrils of cellulose I-alpha, I-beta and II
+can be written as AMOEBA/OpenMM bundles using Tinker-format topology and
+parameters read by OpenMM 8.6.1. Force-field accuracy, reference-engine energy
+agreement, water, and
+production dynamics have not been validated.
 
 ## Source and redistribution
 
@@ -24,17 +26,31 @@ output is created.
 ## Initial scientific scope
 
 - polymer: native cellulose;
-- allomorph: I-beta;
-- shapes: finite slabs and finite fibrils;
+- allomorphs: I-beta, II and III-I for slabs; I-alpha, I-beta and II
+  for literature-defined fibrils;
+- shapes: finite slabs and finite crystallographic fibrils;
 - chain lengths: DP 2, 4, 6, 8, and 10, matching the supplied references;
-- engines: native Tinker bundle and OpenMM runner;
+- engine: OpenMM;
 - solvent: none.
 
 Periodic chains are excluded because no cyclic AMOEBA topology or multipole
-frame reference is supplied. Other allomorphs are excluded until the transfer
-of the linkage model across their conformations is tested. Water is excluded
+frame reference is supplied. A III-I fibril is excluded because CelluloseForge
+has no literature-defined cross-section for that allomorph. Water is excluded
 from the construction milestone so that solute topology and engine translation
 can be validated first.
+
+I-alpha slabs are temporarily refused. The shared slab builder can produce
+close lateral-image contacts for some chain counts because the I-alpha
+translation carries a component along the chain direction. The I-alpha
+36-chain fibril has transverse vacuum and no periodic seam, so it remains in
+scope. The shared geometry correction is intentionally separate from this
+force-field backend.
+
+The same published beta-(1->4)-D-glucose atom types, multipoles and bonded
+parameters are transferred without refitting to each crystalline allomorph.
+This is a construction hypothesis, not evidence that AMOEBA reproduces their
+relative stability or crystal properties; those claims require the validation
+gates below.
 
 ## Construction
 
@@ -50,26 +66,31 @@ offset copies of the same graph. Terminal O1/HO1 and HO4 coordinates come from
 the existing finite-chain mapping contract.
 
 The first implementation requires an orthorhombic simulation box. This covers
-the current finite I-beta slab and fibril orientations without rotating the
+the supported finite slab and fibril orientations without rotating the
 crystallographic coordinates.
 
 ## Engine strategy
 
-Tinker format is the native representation and future reference engine.
-OpenMM reads the same XYZ and parameter file using `openmm.app.TinkerFiles`;
-CelluloseForge does not reproduce the AMOEBA functional form itself.
+OpenMM reads the Tinker-format XYZ and parameter file using
+`openmm.app.TinkerFiles`; CelluloseForge does not reproduce the AMOEBA
+functional form itself. Tinker is a future reference engine, not a currently
+supported output target.
 The generated runner lets OpenMM select the fastest available platform rather
 than forcing the slow Reference implementation.
 The generated dry slab and fibril smoke test is NVT. It intentionally has no
 barostat: isotropic pressure coupling would compress the vacuum surrounding
 these non-bulk geometries.
 
-The same vacuum rule disables the isotropic vdW long-range correction in both
-engines. The Tinker key omits `vdw-correction`; OpenMM's `TinkerFiles` enables
-the corresponding `AmoebaVdwForce` flag by default, so the generated runner
-explicitly turns it off and refuses an unexpected vdW-force count. This differs
-from the published oligomer key because the present systems contain transverse
-vacuum.
+The shared chain/layer selectors may restrain real heavy atoms through an
+OpenMM `CustomExternalForce`. Hydrogens remain free, and independent X/Y/Z
+force constants are supported. The exact selected chain IDs, layer mapping,
+force constants and atom-selection rule are recorded in `build_report.json`.
+
+The vacuum rule disables the isotropic vdW long-range correction. OpenMM's
+`TinkerFiles` enables the corresponding `AmoebaVdwForce` flag by default, so
+the generated runner explicitly turns it off and refuses an unexpected
+vdW-force count. This differs from the published oligomer key because the
+present systems contain transverse vacuum.
 
 OpenMM 8.6.1 constructs the cleaned published file with these forces:
 
@@ -88,7 +109,7 @@ editing and are the defensible input for this backend.
 
 ## Evidence at this milestone
 
-The following dry systems were built from the audited external checkout:
+The initial I-beta systems built from the audited external checkout were:
 
 - I-beta (110), 3 layers x 6 chains, finite DP6: 2,322 atoms;
 - I-beta 18-chain fibril, finite DP6: 2,322 atoms.
@@ -96,6 +117,16 @@ The following dry systems were built from the audited external checkout:
 OpenMM 8.6.1 created a complete 2,322-particle AMOEBA System from each bundle.
 The slab produced a finite initial potential energy on the CPU platform. These
 are construction checks, not force-field validation.
+
+During development, the allomorph expansion constructed a DP2 I-alpha (010)
+slab before the shared-builder seam-contact defect was identified. I-alpha
+slabs are now refused and are not part of the supported live matrix. The
+current matrix builds I-beta (110), II (110) and III-I (110) slabs, plus the
+supported I-alpha, I-beta and II fibrils.
+OpenMM constructed every System, found exactly one vdW force with its vacuum
+long-range correction disabled, and returned a finite potential energy for
+each. This verifies parameter coverage and engine construction, but not the
+transferred model's scientific accuracy.
 
 ## Required validation before expanding scope
 

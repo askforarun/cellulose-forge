@@ -15,11 +15,13 @@ from cellulose_forge.cli import main
 from cellulose_forge.drude import (
     DrudeSystem,
     _write_run_configuration,
+    drude_heavy_atom_restraint_indices,
     lone_pair_position,
     render_drude_namd_configuration,
     render_drude_openmm_runner,
     render_drude_pdb,
     render_drude_psf,
+    render_drude_restraint_pdb,
     validate_drude_toppar_directory,
     write_namd_binary_coordinates,
 )
@@ -232,8 +234,78 @@ def test_namd_configuration_uses_drude_settings(lj_correction: bool) -> None:
     assert "vmd" not in text.lower() and "psfgen" not in text.lower()
 
 
+def test_drude_restraints_select_only_real_heavy_atoms() -> None:
+    system = _system(chains=2)
+    indices = drude_heavy_atom_restraint_indices(system, (2,))
+    per_chain = len(system.topology.sites)
+    expected = tuple(
+        per_chain + index
+        for index, site in enumerate(system.topology.sites)
+        if site.kind == "atom" and not site.name.upper().startswith("H")
+    )
+    assert indices == expected
+    assert all(index >= per_chain for index in indices)
+    text = render_drude_restraint_pdb(system, indices, (1000.0, 1000.0, 1000.0))
+    values = [float(line[60:66]) for line in text.splitlines() if line.startswith("ATOM")]
+    assert [index for index, value in enumerate(values) if value > 0.0] == list(indices)
+    assert all(values[index] == 1.0 for index in indices)
+
+
+def test_drude_namd_restraints_require_equal_active_force_constants() -> None:
+    text = render_drude_namd_configuration(
+        np.eye(3) * 40.0,
+        lj_correction=False,
+        restraint_force=(1000.0, 0.0, 1000.0),
+    )
+    assert "constraints on" in text
+    assert "constraintScaling 1.19502868069" in text
+    assert "selectConstrX on" in text
+    assert "selectConstrY off" in text
+    with pytest.raises(ValueError, match="equal nonzero"):
+        render_drude_namd_configuration(
+            np.eye(3) * 40.0,
+            lj_correction=False,
+            restraint_force=(1000.0, 0.0, 500.0),
+        )
+
+
+def test_cli_refuses_unrepresentable_drude_restraints_before_output(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    for force in ((1000, 500, 0), (0, 0, 0)):
+        output = tmp_path / f"out-{force[0]}-{force[1]}"
+        arguments = [
+            *_SLAB,
+            "--chain-boundary",
+            "finite",
+            "--degree-polymerization",
+            "6",
+            "--padding-longitudinal",
+            "20",
+            "--restrain-chains",
+            "1",
+            "--restraint-force",
+            *(str(value) for value in force),
+            "--drude-toppar-directory",
+            str(tmp_path),
+            "--output",
+            str(output),
+        ]
+        with pytest.raises(SystemExit):
+            main(arguments)
+        assert not output.exists()
+    error = capsys.readouterr().err
+    assert "equal nonzero" in error
+    assert "at least one positive" in error
+
+
 def test_openmm_runner_uses_drude_integrator_and_native_bundle() -> None:
-    text = render_drude_openmm_runner(np.eye(3) * 40.0, lj_correction=False)
+    text = render_drude_openmm_runner(
+        np.eye(3) * 40.0,
+        lj_correction=False,
+        restraint_atom_indices=(2, 7),
+        restraint_force=(1000.0, 500.0, 0.0),
+    )
     compile(text, "run_drude_openmm.py", "exec")
     for expected in (
         'CharmmPsfFile("system.psf")',
@@ -246,6 +318,8 @@ def test_openmm_runner_uses_drude_integrator_and_native_bundle() -> None:
         "system.setDefaultPeriodicBoxVectors(*vectors)",
         "system.getNumParticles() != count",
         "computeVirtualSites()",
+        "CellulosePositionRestraints",
+        "RESTRAINT_ATOM_INDICES = [2, 7]",
     ):
         assert expected in text
 
@@ -291,6 +365,8 @@ def test_cli_requires_the_stream_directory_and_refuses_unaudited_files(
         "--chain-boundary", "finite",
         "--degree-polymerization", "6",
         "--padding-longitudinal", "20",
+        "--restrain-chains", "1",
+        "--restraint-force", "1000", "1000", "0",
     ]  # fmt: skip
     with pytest.raises(SystemExit):
         main([*finite, "--output", str(tmp_path / "out")])
@@ -405,6 +481,8 @@ def test_namd_reads_and_runs_the_native_finite_bundle(tmp_path: Path) -> None:
         "--chain-boundary", "finite",
         "--degree-polymerization", "6",
         "--padding-longitudinal", "20",
+        "--restrain-chains", "1",
+        "--restraint-force", "1000", "1000", "0",
     ]  # fmt: skip
     assert main([*arguments, "--drude-toppar-directory", _TOPPAR, "--output", str(output)]) == 0
     counts = json.loads((output / "build_report.json").read_text(encoding="utf-8"))[
@@ -412,6 +490,59 @@ def test_namd_reads_and_runs_the_native_finite_bundle(tmp_path: Path) -> None:
     ]
     configuration = (output / "run_drude_namd.conf").read_text(encoding="utf-8")
     assert "minimize 1000" in configuration and "run 1000" in configuration
+    assert "constraints on" in configuration and "selectConstrZ off" in configuration
+    assert (output / "restraints_namd.pdb").is_file()
+    assert "constraintScaling 1.19502868069" in configuration
+
+    # Verify NAMD's reported restraint response against the public
+    # U=1/2*K*d^2 convention, independently of the generated OpenMM force.
+    single_lines = [
+        line
+        for line in configuration.splitlines()
+        if not line.startswith(("minimize ", "reinitvels ", "run ", "outputEnergies "))
+    ]
+    single_lines.extend(("outputEnergies 1", "run 0", ""))
+    (output / "restraint_single.conf").write_text("\n".join(single_lines), encoding="utf-8")
+    coordinate_path = output / "structure_namd.coor"
+    original = coordinate_path.read_bytes()
+    count = struct.unpack("=i", original[:4])[0]
+    coordinates = np.frombuffer(original[4:], dtype="=f8").copy().reshape(count, 3)
+    restraint_rows = [
+        line
+        for line in (output / "restraints_namd.pdb").read_text(encoding="utf-8").splitlines()
+        if line.startswith("ATOM")
+    ]
+    selected = next(index for index, line in enumerate(restraint_rows) if float(line[60:66]) > 0)
+    reference_x = float(restraint_rows[selected][30:38])
+
+    def restraint_energy(x_coordinate: float) -> float:
+        trial = coordinates.copy()
+        trial[selected, 0] = x_coordinate
+        with coordinate_path.open("wb") as handle:
+            handle.write(struct.pack("=i", count))
+            handle.write(trial.astype("=f8", copy=False).tobytes())
+        completed = subprocess.run(
+            [_NAMD, "+p2", "restraint_single.conf"],
+            cwd=output,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=900,
+        )
+        assert completed.returncode == 0, (completed.stdout + completed.stderr)[-2000:]
+        titles = next(
+            line.split()[1:] for line in completed.stdout.splitlines() if line.startswith("ETITLE:")
+        )
+        values = next(
+            line.split()[1:] for line in completed.stdout.splitlines() if line.startswith("ENERGY:")
+        )
+        return float(dict(zip(titles, values, strict=True))["BOUNDARY"])
+
+    baseline = restraint_energy(reference_x)
+    displaced = restraint_energy(reference_x + 0.1)  # 0.1 A = 0.01 nm
+    coordinate_path.write_bytes(original)
+    expected_kcal_mol = 0.5 * 1000.0 * 0.01**2 / 4.184
+    assert displaced - baseline == pytest.approx(expected_kcal_mol, abs=1.0e-4)
     # NAMD requires minimization and dynamics lengths to be multiples of its
     # default 20-step cycle.
     short = (
@@ -459,12 +590,18 @@ def test_openmm_reads_and_runs_the_native_finite_bundle(
         "--chain-boundary", "finite",
         "--degree-polymerization", "6",
         "--padding-longitudinal", "20",
+        "--restrain-chains", "1",
+        "--restraint-force", "1000", "500", "0",
     ]  # fmt: skip
     assert main([*arguments, "--drude-toppar-directory", _TOPPAR, "--output", str(output)]) == 0
     report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
     assert report["md_engines"] == ["openmm"]
     assert report["outputs"]["openmm_runner"] == "run_drude_openmm.py"
     assert report["outputs"]["namd_configuration"] is None
+    assert report["position_restraints"]["selected_chain_ids"] == [1]
+    assert "CellulosePositionRestraints" in (output / "run_drude_openmm.py").read_text(
+        encoding="utf-8"
+    )
     result = subprocess.run(
         [_OPENMM_PYTHON, "run_drude_openmm.py"],
         cwd=output,
