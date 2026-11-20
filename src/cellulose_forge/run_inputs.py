@@ -51,6 +51,8 @@ PAIRLIST_BUFFER_ANGSTROM = 0.5
 GROMACS_CUTOFF_ANGSTROM = {
     "glycam": 10.0,
     "charmm36": 10.0,
+    # Box rule only: GROMACS has no CHARMM Drude output.  NAMD builds override
+    # this with their 14 A pair-list distance.
     "charmm-drude": 12.0,
     "openff": 9.0,
     "opls-aa": 10.0,
@@ -70,7 +72,7 @@ def dispersion_correction(force_field: str, shape: str) -> bool:
     name = _require_force_field(force_field)
     if shape not in _HOMOGENEOUS_SHAPES | _VACUUM_SHAPES:
         raise ValueError(f"dispersion policy is undefined for shape {shape!r}")
-    if name in {"charmm36", "charmm-drude"}:
+    if name == "charmm36":
         return False
     return shape in _HOMOGENEOUS_SHAPES
 

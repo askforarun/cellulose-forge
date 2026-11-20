@@ -48,8 +48,8 @@ POLYMER_PROFILES: Mapping[str, PolymerProfile] = {
                 frozenset({"gromacs", "openmm", "lammps", "namd"}),
             ),
             "charmm-drude": ForceFieldCapability(
-                frozenset({"slab", "fibril"}),
-                frozenset({"namd"}),
+                frozenset({"bulk", "crystal", "slab", "fibril"}),
+                frozenset({"namd", "openmm"}),
             ),
             "openff": ForceFieldCapability(
                 _CELLULOSE_FORCE_FIELD_SHAPES,
@@ -141,8 +141,12 @@ def capability_error(  # noqa: PLR0911 - each capability refusal stays explicit
         return f"{polymer} with --force-field {force_field} supports --shape {supported}"
     if force_field == "openff" and shape in {"bulk", "crystal"} and chain_boundary != "periodic":
         return "experimental OpenFF Sage bulk crystals require periodic chains"
-    if force_field == "charmm-drude" and chain_boundary != "finite":
-        return "experimental CHARMM Drude output currently requires finite chains"
+    if (
+        force_field == "charmm-drude"
+        and shape in {"bulk", "crystal"}
+        and chain_boundary != "periodic"
+    ):
+        return "experimental CHARMM Drude bulk crystals require periodic chains"
     if force_field in {"opls-aa", "opls-aa-sei"}:
         name = "OPLS-AA-SEI" if force_field == "opls-aa-sei" else "OPLS-AA"
         if shape in {"bulk", "crystal"} and chain_boundary != "periodic":
@@ -161,7 +165,7 @@ def engine_capability_error(  # noqa: PLR0911,PLR0912 - explicit historical diag
     if force_field == "glycam" and not engines:
         return "GLYCAM builds require at least one --md-engine"
     if force_field == "charmm-drude" and not engines:
-        return "experimental CHARMM Drude builds require --md-engine namd"
+        return "experimental CHARMM Drude builds require --md-engine namd or openmm"
     if force_field in {"opls-aa", "opls-aa-sei"} and not engines:
         return (
             "experimental OPLS-AA and OPLS-AA-SEI support --md-engine gromacs, openmm, and lammps"

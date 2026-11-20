@@ -1,70 +1,80 @@
-"""Experimental CHARMM Drude polarizable cellulose output for NAMD."""
+"""Experimental CHARMM Drude polarizable cellulose output for NAMD and OpenMM.
+
+The topology is generated natively by :mod:`cellulose_forge.drude_topology`;
+no CHARMM, VMD or psfgen executable is used.
+"""
 
 from __future__ import annotations
 
-import hashlib
 import shutil
-import subprocess
+import struct
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
 from cellulose_forge.crystallography import FloatArray
+from cellulose_forge.drude_topology import (
+    DRUDE_CARBOHYDRATE_FILE,
+    DRUDE_MAIN_FILE,
+    DrudeChainTopology,
+    build_drude_cellulose_chain,
+    read_drude_cellulose_definitions,
+    verify_audited_streams,
+)
 from cellulose_forge.geometry import BulkCrystal
-from cellulose_forge.polymer_mapping import chain_template, map_crystal_to_chain_template
+from cellulose_forge.polymer_mapping import (
+    chain_template,
+    map_crystal_to_chain_template,
+    minimum_image,
+)
 
 DRUDE_RELEASE = "2023a"
-DRUDE_MAIN_FILE = "toppar_drude_main_protein_2023a.str"
-DRUDE_CARBOHYDRATE_FILE = "toppar_drude_carbohydrate_2023a.str"
-_PHYSICAL_ATOMS = (
-    "C1",
-    "H1",
-    "C2",
-    "H2",
-    "C3",
-    "H3",
-    "C4",
-    "H4",
-    "C5",
-    "H5",
-    "C6",
-    "H61",
-    "H62",
-    "O2",
-    "O3",
-    "O4",
-    "O5",
-    "O6",
-    "HO2",
-    "HO3",
-    "HO6",
-)
+DRUDE_RESIDUE_NAME = "BGLC"
+_MAXIMUM_SEGMENT_COUNT = 999
+_PDB_SERIAL_MODULUS = 100_000
+_PDB_RESIDUE_MODULUS = 10_000
+_PSF_KIND_FLAG = {"atom": 0, "lonepair": -1, "drude": -2}
+_DEGENERATE_GEOMETRY = 1.0e-8
+
+
+@dataclass(frozen=True)
+class DrudeSystem:
+    """Every particle of a Drude system: repeated chains in PSF order."""
+
+    topology: DrudeChainTopology
+    chain_numbers: tuple[int, ...]
+    cartesian_coordinates: FloatArray
+    basis_vectors: FloatArray
+
+    @property
+    def chain_count(self) -> int:
+        """Return the number of chains."""
+        return len(self.chain_numbers)
+
+    @property
+    def atom_count(self) -> int:
+        """Return the particle count including Drude particles and lone pairs."""
+        return self.chain_count * len(self.topology.sites)
 
 
 @dataclass(frozen=True)
 class DrudeSystemFiles:
-    """Files written for one experimental NAMD Drude system."""
+    """Files written for one experimental CHARMM Drude system."""
 
     psf: Path
     pdb: Path
-    configuration: Path
-    build_script: Path
+    binary_coordinates: Path
+    configuration: Path | None
+    openmm_runner: Path | None
     main_stream: Path
     carbohydrate_stream: Path
     source_sha256: dict[str, str]
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+    counts: dict[str, int]
 
 
 def validate_drude_toppar_directory(directory: str | Path) -> tuple[Path, Path]:
-    """Return the two official 2023a stream files required by the backend."""
+    """Return the two audited official 2023a stream files required by the backend."""
     root = Path(directory).expanduser().resolve()
     main = root / DRUDE_MAIN_FILE
     carbohydrate = root / DRUDE_CARBOHYDRATE_FILE
@@ -74,76 +84,272 @@ def validate_drude_toppar_directory(directory: str | Path) -> tuple[Path, Path]:
             f"CHARMM Drude directory {root} is missing {', '.join(missing)}; "
             "use the official MacKerell drude_toppar 2023 release"
         )
-    main_text = main.read_text(encoding="utf-8", errors="replace")
-    carbohydrate_text = carbohydrate.read_text(encoding="utf-8", errors="replace")
-    if "MASS    -1 DRUD" not in main_text or "MASS    -1 LPD" not in main_text:
-        raise ValueError(f"{main.name} does not define the required DRUD and LPD atom types")
-    if "RESI BGLC" not in carbohydrate_text or "PRES 14bb" not in carbohydrate_text:
-        raise ValueError(f"{carbohydrate.name} lacks BGLC or the 14bb cellulose linkage")
+    verify_audited_streams(main, carbohydrate)
     return main, carbohydrate
 
 
-def _finite_template(degree_polymerization: int) -> tuple[tuple[str, int], ...]:
-    atoms: list[tuple[str, int]] = []
-    for residue in range(1, degree_polymerization + 1):
-        names = list(_PHYSICAL_ATOMS)
-        if residue == 1:
-            names.extend(("O1", "HO1"))
-        if residue == degree_polymerization:
-            names.append("HO4")
-        atoms.extend((name, residue) for name in names)
-    return tuple(atoms)
+def lone_pair_position(  # noqa: PLR0913, PLR0917 - mirrors the CHARMM LONEPAIR record
+    mode: str,
+    host: FloatArray,
+    second: FloatArray,
+    third: FloatArray,
+    distance: float,
+    angle_degrees: float,
+    dihedral_degrees: float,
+) -> FloatArray:
+    """Place one CHARMM ``relative`` or ``bisector`` lone pair.
+
+    The site lies ``distance`` from ``host``; ``angle`` is site--host--second
+    and ``dihedral`` is site--host--second--third.  For ``bisector`` the second
+    point is the midpoint of ``second`` and ``third``.  NAMD and OpenMM
+    recompute lone pairs from the PSF record, so this fixes only the written
+    starting coordinates.
+    """
+    if mode == "bisector":
+        second = 0.5 * (second + third)
+    elif mode != "relative":
+        raise ValueError(f"unsupported lone-pair mode {mode!r}")
+    axis = host - second
+    length = float(np.linalg.norm(axis))
+    if length < _DEGENERATE_GEOMETRY:
+        raise ValueError("lone-pair hosts coincide")
+    axis = axis / length
+    normal = np.cross(second - third, axis)
+    normal_length = float(np.linalg.norm(normal))
+    if normal_length < _DEGENERATE_GEOMETRY:
+        raise ValueError("lone-pair hosts are collinear")
+    normal = normal / normal_length
+    in_plane = np.cross(normal, axis)
+    theta = np.radians(angle_degrees)
+    phi = np.radians(dihedral_degrees)
+    offset = (
+        -np.cos(theta) * axis
+        + np.sin(theta) * np.cos(phi) * in_plane
+        + np.sin(theta) * np.sin(phi) * normal
+    )
+    return np.asarray(host + distance * offset, dtype=np.float64)
 
 
-def _render_coordinate_pdb(system: object) -> str:
-    atom_names = system.atom_names
-    residue_numbers = system.residue_numbers
-    chain_numbers = system.chain_numbers
-    coordinates = system.cartesian_coordinates
-    lines = ["REMARK physical coordinates for CHARMM Drude psfgen construction"]
-    for serial, (name, residue, chain, xyz) in enumerate(
-        zip(atom_names, residue_numbers, chain_numbers, coordinates, strict=True), start=1
-    ):
-        x, y, z = xyz
-        segment = f"C{chain:03d}"
-        lines.append(
-            f"ATOM  {serial:5d} {name:>4s} BGLC A{residue:4d}    "
-            f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00      {segment:4s}{name[0]:>2s}"
+def build_drude_system(
+    crystal: BulkCrystal, topology: DrudeChainTopology, chain_boundary: str
+) -> DrudeSystem:
+    """Map crystal atoms onto the Drude chain and place Drudes and lone pairs."""
+    if (chain_boundary == "periodic") != topology.periodic:
+        raise ValueError("Drude topology and chain boundary disagree")
+    real = [index for index, site in enumerate(topology.sites) if site.kind == "atom"]
+    template = chain_template(
+        (topology.sites[index].name, topology.sites[index].residue) for index in real
+    )
+    mapped = map_crystal_to_chain_template(crystal, template, chain_boundary, DRUDE_RESIDUE_NAME)
+    chain_numbers = tuple(dict.fromkeys(mapped.chain_numbers))
+    box = np.asarray(mapped.basis_vectors, dtype=np.float64)
+    per_chain = len(topology.sites)
+    coordinates = np.zeros((len(chain_numbers) * per_chain, 3), dtype=np.float64)
+    physical = np.asarray(mapped.cartesian_coordinates, dtype=np.float64).reshape(
+        len(chain_numbers), len(real), 3
+    )
+    for chain in range(len(chain_numbers)):
+        local = coordinates[chain * per_chain : (chain + 1) * per_chain]
+        local[real] = physical[chain]
+        for drude, parent in topology.drude_parents:
+            local[drude] = local[parent]
+        for lone_pair in topology.lone_pairs:
+            host = local[lone_pair.hosts[0]]
+            second = host + minimum_image(local[lone_pair.hosts[1]] - host, box)
+            third = host + minimum_image(local[lone_pair.hosts[2]] - host, box)
+            local[lone_pair.site] = lone_pair_position(
+                lone_pair.mode,
+                host,
+                second,
+                third,
+                lone_pair.distance,
+                lone_pair.angle,
+                lone_pair.dihedral,
+            )
+    coordinates.setflags(write=False)
+    return DrudeSystem(topology, chain_numbers, coordinates, mapped.basis_vectors)
+
+
+def _integer_rows(values: list[int], width: int) -> list[str]:
+    return [
+        "".join(f"{value:10d}" for value in values[start : start + width])
+        for start in range(0, len(values), width)
+    ]
+
+
+def render_drude_psf(system: DrudeSystem) -> str:
+    """Render a ``PSF EXT DRUDE`` file with lone-pair and anisotropy sections."""
+    topology = system.topology
+    per_chain = len(topology.sites)
+    if system.chain_count > _MAXIMUM_SEGMENT_COUNT:
+        raise ValueError("NAMD PSF output currently supports at most 999 chain segments")
+    offsets = [chain * per_chain for chain in range(system.chain_count)]
+
+    def repeated(items: tuple[tuple[int, ...], ...]) -> list[int]:
+        return [index + offset + 1 for offset in offsets for item in items for index in item]
+
+    title_lines = [
+        " REMARKS generated natively by CelluloseForge from CHARMM Drude BGLC and 14bb",
+        f" REMARKS Drude charges use a Coulomb constant of {topology.coulomb_constant:.4f}",
+    ]
+    if topology.periodic:
+        title_lines.append(" REMARKS PERIODIC CHAINS ARE CONSTRUCTION ONLY; DO NOT RUN")
+    lines = [
+        "PSF EXT DRUDE",
+        "",
+        f"{len(title_lines):10d} !NTITLE",
+        *title_lines,
+        "",
+        f"{system.atom_count:10d} !NATOM",
+    ]
+    index = 0
+    for chain_number in system.chain_numbers:
+        segment = f"C{chain_number:03d}"
+        for site in topology.sites:
+            index += 1
+            lines.append(
+                f"{index:10d} {segment:<8s} {site.residue:<8d} {DRUDE_RESIDUE_NAME:<8s} "
+                f"{site.name:<8s} {site.atom_type:<8s} {site.charge:14.6f} {site.mass:13.4f} "
+                f"{_PSF_KIND_FLAG[site.kind]:11d} {site.alpha:14.6f} {site.thole:14.6f}"
+            )
+    drude_bond_count = len(topology.drude_parents)
+    ordinary_bonds = topology.bonds[: len(topology.bonds) - drude_bond_count]
+    drude_bonds = topology.bonds[len(topology.bonds) - drude_bond_count :]
+    if any(
+        "drude" in {topology.sites[first].kind, topology.sites[second].kind}
+        for first, second in ordinary_bonds
+    ) or any(topology.sites[second].kind != "drude" for _first, second in drude_bonds):
+        raise ValueError("Drude topology must list parent--Drude bonds after all other bonds")
+    # Across the whole system too: NAMD needs every parent--Drude bond last.
+    bond_indices = [*repeated(ordinary_bonds), *repeated(drude_bonds)]
+    lines.extend(
+        (
+            "",
+            f"{len(bond_indices) // 2:10d} !NBOND: bonds",
+            *_integer_rows(bond_indices, 8),
         )
-    lines.append("END")
-    return "\n".join(lines) + "\n"
-
-
-def _render_psfgen_script(chain_count: int, degree_polymerization: int) -> str:
-    segments = " ".join(f"C{chain:03d}" for chain in range(1, chain_count + 1))
-    residues = "\n".join(
-        f"    residue {residue} BGLC" for residue in range(1, degree_polymerization + 1)
     )
-    patches = "\n".join(
-        f"  patch 14bb $seg:{residue} $seg:{residue + 1}"
-        for residue in range(1, degree_polymerization)
+    for label, items, width in (
+        ("!NTHETA: angles", topology.angles, 9),
+        ("!NPHI: dihedrals", topology.dihedrals, 8),
+    ):
+        lines.extend(
+            (
+                "",
+                f"{len(items) * system.chain_count:10d} {label}",
+                *_integer_rows(repeated(items), width),
+            )
+        )
+    lines.extend(
+        (
+            "",
+            f"{0:10d} !NIMPHI: impropers",
+            "",
+            f"{0:10d} !NDON: donors",
+            "",
+            f"{0:10d} !NACC: acceptors",
+            "",
+            f"{0:10d} !NNB",
+            "",
+            *_integer_rows([0] * system.atom_count, 8),
+            "",
+            f"{1:10d}{0:10d} !NGRP",
+            f"{0:10d}{0:10d}{0:10d}",
+            "",
+        )
     )
-    return f"""package require psfgen
-topology {DRUDE_MAIN_FILE}
-topology {DRUDE_CARBOHYDRATE_FILE}
-foreach seg {{{segments}}} {{
-  segment $seg {{
-    first NONE
-    last NONE
-{residues}
-  }}
-{patches}
-  coordpdb physical_coordinates.pdb $seg
-}}
-guesscoord
-writepsf system.psf
-writepdb structure_namd.pdb
-quit
-"""
+    lone_pair_count = len(topology.lone_pairs) * system.chain_count
+    lines.append(f"{lone_pair_count:10d}{4 * lone_pair_count:10d} !NUMLP NUMLPH")
+    pointer = 1
+    for _offset in offsets:
+        for lone_pair in topology.lone_pairs:
+            # CHARMM and NAMD mark a bisector lone pair by a negative distance.
+            distance = -lone_pair.distance if lone_pair.mode == "bisector" else lone_pair.distance
+            lines.append(
+                f"{3:10d}{pointer:10d}   F{distance:14.4f}"
+                f"{lone_pair.angle:14.4f}{lone_pair.dihedral:14.4f}"
+            )
+            pointer += 4
+    lines.extend(
+        _integer_rows(repeated(tuple((item.site, *item.hosts) for item in topology.lone_pairs)), 8)
+    )
+    lines.extend(("", f"{len(topology.anisotropies) * system.chain_count:10d} !NUMANISO"))
+    for _offset in offsets:
+        lines.extend(
+            f"{item.k11:20.4f}{item.k22:14.4f}{item.k33:14.4f}" for item in topology.anisotropies
+        )
+    lines.extend(_integer_rows(repeated(tuple(item.atoms for item in topology.anisotropies)), 8))
+    lines.append("")
+    return "\n".join(lines)
 
 
-def render_drude_namd_configuration(vectors: FloatArray) -> str:
-    """Render a conservative minimization and 1 ps dual-thermostat smoke test."""
+def render_drude_pdb(system: DrudeSystem) -> str:
+    """Render a NAMD coordinate PDB; full precision is in the binary coordinates."""
+    topology = system.topology
+    pdb_names: list[str] = []
+    names_by_residue: dict[int, set[str]] = {}
+    for site in topology.sites:
+        # The PDB atom-name field is exactly four columns. CHARMM lone-pair
+        # names such as LPDA4 are retained in the PSF but shortened here.
+        pdb_name = site.name[:4]
+        residue_names = names_by_residue.setdefault(site.residue, set())
+        if pdb_name in residue_names:
+            raise ValueError(
+                f"Drude PDB atom-name shortening is ambiguous in residue {site.residue}: "
+                f"{site.name!r} becomes {pdb_name!r}"
+            )
+        residue_names.add(pdb_name)
+        pdb_names.append(pdb_name)
+    lines = ["REMARK CHARMM Drude system; structure_namd.coor holds full-precision coordinates"]
+    index = 0
+    for chain_number in system.chain_numbers:
+        segment = f"C{chain_number:03d}"
+        for site, pdb_name in zip(topology.sites, pdb_names, strict=True):
+            x, y, z = system.cartesian_coordinates[index]
+            index += 1
+            element = "" if site.kind != "atom" else site.name[0]
+            lines.append(
+                f"ATOM  {index % _PDB_SERIAL_MODULUS:5d} {pdb_name:<4s} {DRUDE_RESIDUE_NAME:<4s}"
+                f"A{site.residue % _PDB_RESIDUE_MODULUS:4d}    {x:8.3f}{y:8.3f}{z:8.3f}"
+                f"  1.00  0.00      {segment:<4s}{element:>2s}"
+            )
+    lines.extend(("END", ""))
+    return "\n".join(lines)
+
+
+def write_namd_binary_coordinates(path: Path, coordinates: FloatArray) -> None:
+    """Write NAMD binary coordinates in double precision."""
+    with path.open("wb") as handle:
+        handle.write(struct.pack("=i", len(coordinates)))
+        for coordinate in coordinates:
+            handle.write(struct.pack("=ddd", *coordinate))
+
+
+def _write_run_configuration(
+    directory: Path, system: DrudeSystem, *, lj_correction: bool, write_run_input: bool
+) -> Path | None:
+    """Write the NAMD input, or remove a stale one for construction-only output."""
+    path = directory / "run_drude_namd.conf"
+    if not write_run_input:
+        path.unlink(missing_ok=True)
+        return None
+    path.write_text(
+        render_drude_namd_configuration(system.basis_vectors, lj_correction=lj_correction),
+        encoding="utf-8",
+    )
+    return path
+
+
+def render_drude_namd_configuration(vectors: FloatArray, *, lj_correction: bool) -> str:
+    """Render a conservative minimization and 1 ps dual-thermostat smoke test.
+
+    The Drude streams specify a 10--12 A potential switch (``vswitch``), not the
+    additive CHARMM36 force switch.  ``lj_correction`` applies NAMD's isotropic
+    long-range Lennard-Jones correction and is meaningful only for a
+    homogeneous periodic crystal.  With ``drude on`` NAMD assumes the SWM4
+    water model and refuses to start unless ``rigidBonds`` is ``water`` or
+    ``all``; ``water`` leaves every cellulose bond flexible.
+    """
     a, b, c = np.asarray(vectors, dtype=np.float64)
     center = 0.5 * (a + b + c)
     vector_lines = [
@@ -156,21 +362,26 @@ def render_drude_namd_configuration(vectors: FloatArray) -> str:
         [
             "structure system.psf",
             "coordinates structure_namd.pdb",
+            "bincoordinates structure_namd.coor",
             f"parameters {DRUDE_MAIN_FILE}",
             f"parameters {DRUDE_CARBOHYDRATE_FILE}",
             "paraTypeCharmm on",
             "exclude scaled1-4",
             "1-4scaling 1.0",
             "switching on",
+            "vdwForceSwitching off",
             "switchdist 10.0",
             "cutoff 12.0",
             "pairlistdist 14.0",
+            f"LJcorrection {'on' if lj_correction else 'off'}",
             "PME yes",
             "PMEGridSpacing 1.0",
+            "PMETolerance 1.0e-6",
             *vector_lines,
             "wrapAll off",
             "timestep 1.0",
-            "rigidBonds none",
+            "rigidBonds water",
+            "useSettle on",
             "langevin on",
             "langevinTemp 300",
             "langevinDamping 1.0",
@@ -182,6 +393,7 @@ def render_drude_namd_configuration(vectors: FloatArray) -> str:
             "drudeBondLen 0.25",
             "drudeNbTholeCut 5.0",
             "temperature 300",
+            "outputEnergies 100",
             "outputName drude",
             "minimize 1000",
             "reinitvels 300",
@@ -191,69 +403,151 @@ def render_drude_namd_configuration(vectors: FloatArray) -> str:
     )
 
 
-def write_drude_namd_system(
+def render_drude_openmm_runner(vectors: FloatArray, *, lj_correction: bool) -> str:
+    """Render an OpenMM Drude minimization and 1 ps dynamics runner."""
+    box = [[float(value) / 10.0 for value in row] for row in np.asarray(vectors)]
+    return f'''#!/usr/bin/env python3
+"""Run a finite-chain CelluloseForge CHARMM Drude system."""
+import math
+import struct
+
+import openmm
+from openmm import unit
+from openmm.app import (
+    CharmmParameterSet, CharmmPsfFile, DCDReporter, PME, Simulation, StateDataReporter
+)
+
+BOX_NM = {box!r}
+psf = CharmmPsfFile("system.psf")
+parameters = CharmmParameterSet("{DRUDE_MAIN_FILE}", "{DRUDE_CARBOHYDRATE_FILE}")
+with open("structure_namd.coor", "rb") as handle:
+    count = struct.unpack("=i", handle.read(4))[0]
+    values = struct.unpack(f"={{count * 3}}d", handle.read())
+positions = [openmm.Vec3(*values[index:index+3]) for index in range(0, len(values), 3)]
+positions = positions * unit.angstrom
+if count != len(positions):
+    raise SystemExit(f"binary coordinate count mismatch: {{count}} != {{len(positions)}}")
+
+vectors = tuple(openmm.Vec3(*row) * unit.nanometer for row in BOX_NM)
+lengths = [math.sqrt(sum(value * value for value in row)) for row in BOX_NM]
+def angle(first, second):
+    dot = sum(a*b for a, b in zip(first, second))
+    norms = math.sqrt(sum(a*a for a in first) * sum(b*b for b in second))
+    return math.degrees(math.acos(dot / norms))
+psf.setBox(*(value * unit.nanometer for value in lengths),
+           angle(BOX_NM[1], BOX_NM[2])*unit.degree,
+           angle(BOX_NM[0], BOX_NM[2])*unit.degree,
+           angle(BOX_NM[0], BOX_NM[1])*unit.degree)
+system = psf.createSystem(
+    parameters, nonbondedMethod=PME, nonbondedCutoff=1.2*unit.nanometer,
+    switchDistance=1.0*unit.nanometer, constraints=None,
+    ewaldErrorTolerance=1.0e-6,
+)
+system.setDefaultPeriodicBoxVectors(*vectors)
+if system.getNumParticles() != count:
+    raise SystemExit(
+        f"PSF particle count mismatch: {{system.getNumParticles()}} != {{count}}"
+    )
+for force in system.getForces():
+    if isinstance(force, openmm.NonbondedForce):
+        force.setUseDispersionCorrection({lj_correction!r})
+integrator = openmm.DrudeLangevinIntegrator(
+    300*unit.kelvin, 1/unit.picosecond, 1*unit.kelvin,
+    20/unit.picosecond, 0.001*unit.picoseconds,
+)
+integrator.setMaxDrudeDistance(0.025*unit.nanometer)
+simulation = Simulation(psf.topology, system, integrator)
+simulation.context.setPeriodicBoxVectors(*vectors)
+simulation.context.setPositions(positions)
+simulation.context.computeVirtualSites()
+print("Initial potential energy:", simulation.context.getState(getEnergy=True).getPotentialEnergy())
+simulation.minimizeEnergy(maxIterations=1000)
+simulation.context.setVelocitiesToTemperature(300*unit.kelvin)
+simulation.reporters.append(StateDataReporter(
+    "openmm_drude.log", 100, step=True, potentialEnergy=True, temperature=True, speed=True
+))
+simulation.reporters.append(DCDReporter("openmm_drude.dcd", 100))
+simulation.step(1000)
+simulation.saveCheckpoint("openmm_drude.chk")
+'''
+
+
+def write_drude_namd_system(  # noqa: PLR0913 - explicit build options
     crystal: BulkCrystal,
     toppar_directory: str | Path,
     output_directory: str | Path,
     *,
-    vmd_executable: str | Path,
+    chain_boundary: str,
+    lj_correction: bool,
+    write_run_input: bool = True,
+    write_openmm_runner: bool = False,
 ) -> DrudeSystemFiles:
-    """Build a finite-chain CHARMM Drude PSF/PDB and NAMD smoke-test input."""
+    """Write a native CHARMM Drude PSF and coordinates, and optionally a NAMD input.
+
+    Covalently periodic chains are construction-only: three lone pairs per
+    chain have a host across the periodic boundary. NAMD 3.0.3 does not image
+    those hosts correctly and stops before energy evaluation, so no run input
+    may be written for them.
+    """
+    if chain_boundary == "periodic" and (write_run_input or write_openmm_runner):
+        raise ValueError(
+            "periodic CHARMM Drude chains are construction-only; no NAMD or OpenMM run input "
+            "is written because neither engine images cross-boundary lone-pair hosts correctly"
+        )
     main_source, carbohydrate_source = validate_drude_toppar_directory(toppar_directory)
-    degree_polymerization = len(set(crystal.residue_numbers))
-    mapped = map_crystal_to_chain_template(
-        crystal,
-        chain_template(_finite_template(degree_polymerization)),
-        "finite",
-        "BGLC",
+    checksums = verify_audited_streams(main_source, carbohydrate_source)
+    definitions = read_drude_cellulose_definitions(main_source, carbohydrate_source)
+    chain_residues: dict[int, set[int]] = {}
+    for chain, residue in zip(crystal.chain_numbers, crystal.residue_numbers, strict=True):
+        chain_residues.setdefault(chain, set()).add(residue)
+    lengths = {len(residues) for residues in chain_residues.values()}
+    if len(lengths) != 1:
+        raise ValueError("CHARMM Drude output requires chains of one degree of polymerization")
+    topology = build_drude_cellulose_chain(
+        definitions, lengths.pop(), periodic=chain_boundary == "periodic"
     )
+    system = build_drude_system(crystal, topology, chain_boundary)
     directory = Path(output_directory)
     directory.mkdir(parents=True, exist_ok=True)
     main_stream = directory / DRUDE_MAIN_FILE
     carbohydrate_stream = directory / DRUDE_CARBOHYDRATE_FILE
     shutil.copy2(main_source, main_stream)
     shutil.copy2(carbohydrate_source, carbohydrate_stream)
-    physical = directory / "physical_coordinates.pdb"
-    physical.write_text(_render_coordinate_pdb(mapped), encoding="utf-8")
-    build_script = directory / "build_drude_psf.tcl"
-    build_script.write_text(
-        _render_psfgen_script(mapped.chain_count, degree_polymerization), encoding="utf-8"
-    )
-    executable = Path(vmd_executable).expanduser()
-    if not executable.is_file():
-        raise ValueError(f"VMD executable not found: {executable}")
-    result = subprocess.run(
-        [str(executable), "-dispdev", "text", "-e", build_script.name],
-        cwd=directory,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    (directory / "psfgen.log").write_text(result.stdout + result.stderr, encoding="utf-8")
     psf = directory / "system.psf"
     pdb = directory / "structure_namd.pdb"
-    if result.returncode or not psf.is_file() or not pdb.is_file():
-        raise ValueError("VMD/psfgen failed to construct the Drude system; see psfgen.log")
-    psf_text = psf.read_text(encoding="utf-8", errors="replace")
-    required = ("PSF EXT DRUDE", "!NUMLP", "!NANISO")
-    missing = [marker for marker in required if marker not in psf_text]
-    if missing:
-        raise ValueError(
-            f"psfgen output is not a complete Drude PSF (missing {', '.join(missing)})"
-        )
-    configuration = directory / "run_drude_namd.conf"
-    configuration.write_text(
-        render_drude_namd_configuration(mapped.basis_vectors), encoding="utf-8"
+    binary_coordinates = directory / "structure_namd.coor"
+    psf.write_text(render_drude_psf(system), encoding="utf-8")
+    pdb.write_text(render_drude_pdb(system), encoding="utf-8")
+    write_namd_binary_coordinates(binary_coordinates, system.cartesian_coordinates)
+    configuration = _write_run_configuration(
+        directory, system, lj_correction=lj_correction, write_run_input=write_run_input
     )
+    openmm_runner = directory / "run_drude_openmm.py"
+    if write_openmm_runner:
+        openmm_runner.write_text(
+            render_drude_openmm_runner(system.basis_vectors, lj_correction=lj_correction),
+            encoding="utf-8",
+        )
+    else:
+        openmm_runner.unlink(missing_ok=True)
+    chains = system.chain_count
     return DrudeSystemFiles(
         psf=psf,
         pdb=pdb,
+        binary_coordinates=binary_coordinates,
         configuration=configuration,
-        build_script=build_script,
+        openmm_runner=openmm_runner if write_openmm_runner else None,
         main_stream=main_stream,
         carbohydrate_stream=carbohydrate_stream,
-        source_sha256={
-            main_source.name: _sha256(main_source),
-            carbohydrate_source.name: _sha256(carbohydrate_source),
+        source_sha256=checksums,
+        counts={
+            "particles": system.atom_count,
+            "real_atoms": chains * sum(site.kind == "atom" for site in topology.sites),
+            "drude_particles": chains * len(topology.drude_parents),
+            "lone_pairs": chains * len(topology.lone_pairs),
+            "anisotropy_records": chains * len(topology.anisotropies),
+            "bonds": chains * len(topology.bonds),
+            "angles": chains * len(topology.angles),
+            "dihedrals": chains * len(topology.dihedrals),
         },
     )

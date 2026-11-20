@@ -31,7 +31,11 @@ from cellulose_forge.clashes import (
 from cellulose_forge.coordinates import write_coordinates
 from cellulose_forge.crystallography import AllomorphDefinition, MillerIndex, load_allomorph
 from cellulose_forge.doctor import render_json, render_text, run_diagnostics
-from cellulose_forge.drude import DRUDE_RELEASE, write_drude_namd_system
+from cellulose_forge.drude import (
+    DRUDE_RELEASE,
+    validate_drude_toppar_directory,
+    write_drude_namd_system,
+)
 from cellulose_forge.forcefields import (
     CHARMM36_RELEASE,
     discover_charmm36_directory,
@@ -280,12 +284,19 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     build.add_argument(
         "--drude-toppar-directory",
         type=Path,
-        help="official CHARMM Drude 2023 directory containing the main and carbohydrate streams",
+        help=(
+            "official CHARMM Drude 2023 directory containing the audited 2023a main and "
+            "carbohydrate streams"
+        ),
     )
     build.add_argument(
-        "--vmd-executable",
-        type=Path,
-        help="VMD executable containing psfgen 2.0, required for CHARMM Drude output",
+        "--drude-construction-only",
+        action="store_true",
+        help=(
+            "write the CHARMM Drude PSF and coordinates without NAMD or OpenMM run "
+            "inputs; required for periodic chains because neither engine images their "
+            "cross-boundary lone-pair hosts correctly"
+        ),
     )
     build.add_argument(
         "--tleap-executable",
@@ -542,19 +553,27 @@ def _resolve_md_engines(args: argparse.Namespace, parser: argparse.ArgumentParse
 
 
 def _validate_namd_options(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
-    """Validate NAMD-only inputs before any output directory is created."""
+    """Validate NAMD and shared CHARMM Drude inputs before writing output."""
+    if args.drude_construction_only and args.force_field != "charmm-drude":
+        parser.error("--drude-construction-only requires --force-field charmm-drude")
     requested = "namd" in args.md_engines
+    if args.force_field == "charmm-drude":
+        if args.charmm_parameter_file is not None:
+            parser.error("--charmm-parameter-file is not used by --force-field charmm-drude")
+        if args.drude_toppar_directory is None:
+            parser.error("--force-field charmm-drude requires --drude-toppar-directory")
+        if args.chain_boundary == "periodic" and not args.drude_construction_only:
+            parser.error(
+                "periodic CHARMM Drude chains are construction-only: three lone pairs per "
+                "chain have a host across the periodic boundary; NAMD and OpenMM do not image "
+                "those hosts correctly; pass --drude-construction-only to write only the PSF "
+                "and coordinates"
+            )
     if args.charmm_parameter_file is not None and not requested:
         parser.error("--charmm-parameter-file requires --md-engine namd")
     if not requested:
         return
     if args.force_field == "charmm-drude":
-        if args.charmm_parameter_file is not None:
-            parser.error("--charmm-parameter-file is not used by --force-field charmm-drude")
-        if args.drude_toppar_directory is None or args.vmd_executable is None:
-            parser.error(
-                "--force-field charmm-drude requires --drude-toppar-directory and --vmd-executable"
-            )
         return
     if args.charmm_parameter_file is None:
         parser.error("--md-engine namd requires --charmm-parameter-file")
@@ -1313,7 +1332,7 @@ def _write_drude_build(
     parser: argparse.ArgumentParser,
     definition: AllomorphDefinition,
 ) -> None:
-    """Write the experimental finite-chain CHARMM Drude NAMD bundle."""
+    """Write the experimental native CHARMM Drude NAMD/OpenMM bundle."""
     if args.output.suffix:
         parser.error("--output must be a directory for --force-field charmm-drude")
     if args.polymer != "cellulose":
@@ -1324,15 +1343,25 @@ def _write_drude_build(
     ):
         parser.error("position restraints are not implemented for CHARMM Drude output")
     assert args.drude_toppar_directory is not None
-    assert args.vmd_executable is not None
+    lj_correction = dispersion_correction("charmm-drude", args.shape)
+    try:
+        # Refuse a missing or unaudited stream directory before writing anything.
+        validate_drude_toppar_directory(args.drude_toppar_directory)
+    except ValueError as error:
+        parser.error(str(error))
     args.output.mkdir(parents=True, exist_ok=True)
     coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
+    requested_engines = tuple(args.md_engines)
+    write_runners = not args.drude_construction_only
     try:
         files = write_drude_namd_system(
             crystal,
             args.drude_toppar_directory,
             args.output,
-            vmd_executable=args.vmd_executable,
+            chain_boundary=args.chain_boundary,
+            lj_correction=lj_correction,
+            write_run_input=write_runners and "namd" in requested_engines,
+            write_openmm_runner=write_runners and "openmm" in requested_engines,
         )
     except ValueError as error:
         parser.error(str(error))
@@ -1342,20 +1371,38 @@ def _write_drude_build(
         "shape": args.shape,
         "force_field": "CHARMM Drude polarizable carbohydrate force field",
         "force_field_release": DRUDE_RELEASE,
-        "status": "experimental; topology construction implemented, production validation pending",
-        "md_engines": ["namd"],
-        "chain_boundary": "finite",
+        "status": (
+            "experimental; native topology not yet compared with a CHARMM-generated "
+            "reference; a finite I-beta slab passes short NAMD 3.0.3 and OpenMM 8.6.1 "
+            "regressions, but production and independent energy validation remain pending"
+        ),
+        "md_engines": list(requested_engines),
+        "chain_boundary": args.chain_boundary,
+        "construction_only": args.drude_construction_only,
+        "long_range_lj_correction": lj_correction,
+        "long_range_lj_correction_note": (
+            "project default (on for bulk crystals, off for slabs and fibrils); not yet "
+            "checked against a CHARMM or NAMD reference"
+        ),
+        "topology_counts": files.counts,
+        "known_limitations": _drude_limitations(args.chain_boundary),
         "degree_polymerization": _crystal_degree_polymerization(crystal),
         "chain_count": len(set(crystal.chain_numbers)),
         "crystallographic_atom_count": crystal.atom_count,
         "source_sha256": files.source_sha256,
-        "topology_method": "VMD psfgen 2.0 using official BGLC and 14bb definitions",
+        "topology_method": (
+            "native CelluloseForge generator applying the official BGLC and 14bb "
+            "definitions; no CHARMM, VMD or psfgen executable"
+        ),
         "outputs": {
             "crystal_coordinates": coordinate_path.name,
             "namd_psf": files.psf.name,
             "namd_coordinates": files.pdb.name,
-            "namd_configuration": files.configuration.name,
-            "psfgen_script": files.build_script.name,
+            "namd_binary_coordinates": files.binary_coordinates.name,
+            "namd_configuration": (
+                None if files.configuration is None else files.configuration.name
+            ),
+            "openmm_runner": (None if files.openmm_runner is None else files.openmm_runner.name),
             "drude_main_stream": files.main_stream.name,
             "drude_carbohydrate_stream": files.carbohydrate_stream.name,
         },
@@ -1370,6 +1417,25 @@ def _write_drude_build(
     (args.output / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+
+
+def _drude_limitations(chain_boundary: str) -> list[str]:
+    """Return the unverified points recorded in every Drude build report."""
+    limitations = [
+        "the native topology has not been compared with a CHARMM-generated PSF",
+        "a finite I-beta slab passes a short NAMD 3.0.3 minimization-and-dynamics "
+        "regression and a 1 ps OpenMM 8.6.1 regression, but no cross-engine energy "
+        "comparison has been performed",
+        "the force field has not been validated for crystalline cellulose",
+    ]
+    if chain_boundary == "periodic":
+        limitations.append(
+            "each chain has three lone pairs on the linkage oxygen that closes the chain "
+            "across the periodic boundary; NAMD 3.0.3 does not image those hosts correctly "
+            "and stops before energy evaluation, while OpenMM virtual sites also ignore "
+            "the periodic image, so no run input is written"
+        )
+    return limitations
 
 
 def _write_glycam_build(  # noqa: PLR0912, PLR0915
