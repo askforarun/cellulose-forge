@@ -14,7 +14,7 @@ REMARK  orientation_transform=proper_rotation determinant=+1
 REMARK  chain numbering starts at requested low-z face; within each layer low-x to high-x
 REMARK  size_mode=exact_counts
 REMARK  chemically complete mapped coordinates
-REMARK  finite-chain terminal caps: O1/HO1 and HO4
+REMARK  finite-chain terminal caps: O1/HO1 and O4/H4O (GLYCAM naming)
 REMARK  PDB residue name uses the three-character crystallographic alias
 CRYST1   35.787   43.140   41.122  90.00  90.00  90.00 P1           1
 REMARK  crystal basis vector 1: ( 35.786878 0.000000 0.000000 )

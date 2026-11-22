@@ -10,7 +10,7 @@ special_bonds charmm
 read_data system.data
 kspace_style pppm 1.0e-5
 thermo 100
-thermo_style custom step temp pe ebond eangle edihed evdwl ecoul elong
+thermo_style custom step temp pe ebond eangle edihed evdwl ecoul elong etail
 timestep 1.0
 # This file is an initial-energy validation input, not a dynamics protocol.
 run 0

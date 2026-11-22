@@ -159,7 +159,7 @@ CelluloseForge force-field-mapped cellulose
     6BGLCN   C4  157   0.530   3.587   1.713
     6BGLCN   H4  158   0.488   3.609   1.620
     6BGLCN   O4  159   0.486   3.697   1.802
-    6BGLCN  HO4  160   0.570   3.778   1.741
+    6BGLCN  HO4  160   0.536   3.776   1.779
     6BGLCN   C6  161   0.301   3.506   1.780
     6BGLCN  H61  162   0.258   3.448   1.844
     6BGLCN  H62  163   0.289   3.598   1.808
@@ -324,7 +324,7 @@ CelluloseForge force-field-mapped cellulose
    12BGLCN   C4  322   2.419   3.587   1.713
    12BGLCN   H4  323   2.377   3.609   1.620
    12BGLCN   O4  324   2.375   3.697   1.802
-   12BGLCN  HO4  325   2.459   3.778   1.741
+   12BGLCN  HO4  325   2.425   3.776   1.779
    12BGLCN   C6  326   2.190   3.506   1.780
    12BGLCN  H61  327   2.147   3.448   1.844
    12BGLCN  H62  328   2.178   3.598   1.808
@@ -489,7 +489,7 @@ CelluloseForge force-field-mapped cellulose
    18BGLCN   C4  487   4.308   3.587   1.713
    18BGLCN   H4  488   4.266   3.609   1.620
    18BGLCN   O4  489   4.264   3.697   1.802
-   18BGLCN  HO4  490   4.348   3.778   1.741
+   18BGLCN  HO4  490   4.314   3.776   1.779
    18BGLCN   C6  491   4.079   3.506   1.780
    18BGLCN  H61  492   4.036   3.448   1.844
    18BGLCN  H62  493   4.067   3.598   1.808
@@ -654,7 +654,7 @@ CelluloseForge force-field-mapped cellulose
    24BGLCN   C4  652   6.197   3.587   1.713
    24BGLCN   H4  653   6.155   3.609   1.620
    24BGLCN   O4  654   6.153   3.697   1.802
-   24BGLCN  HO4  655   6.237   3.778   1.741
+   24BGLCN  HO4  655   6.203   3.776   1.779
    24BGLCN   C6  656   5.968   3.506   1.780
    24BGLCN  H61  657   5.925   3.448   1.844
    24BGLCN  H62  658   5.956   3.598   1.808
@@ -819,7 +819,7 @@ CelluloseForge force-field-mapped cellulose
    30BGLCN   C4  817   1.542   1.275   1.951
    30BGLCN   H4  818   1.584   1.253   1.858
    30BGLCN   O4  819   1.586   1.165   2.039
-   30BGLCN  HO4  820   1.502   1.084   1.979
+   30BGLCN  HO4  820   1.537   1.086   2.016
    30BGLCN   C6  821   1.771   1.357   2.017
    30BGLCN  H61  822   1.814   1.414   2.082
    30BGLCN  H62  823   1.783   1.265   2.046
@@ -984,7 +984,7 @@ CelluloseForge force-field-mapped cellulose
    36BGLCN   C4  982   3.431   1.275   1.951
    36BGLCN   H4  983   3.473   1.253   1.858
    36BGLCN   O4  984   3.475   1.165   2.039
-   36BGLCN  HO4  985   3.391   1.084   1.979
+   36BGLCN  HO4  985   3.426   1.086   2.016
    36BGLCN   C6  986   3.660   1.357   2.017
    36BGLCN  H61  987   3.703   1.414   2.082
    36BGLCN  H62  988   3.672   1.265   2.046
@@ -1149,7 +1149,7 @@ CelluloseForge force-field-mapped cellulose
    42BGLCN   C4 1147   5.320   1.275   1.951
    42BGLCN   H4 1148   5.362   1.253   1.858
    42BGLCN   O4 1149   5.364   1.165   2.039
-   42BGLCN  HO4 1150   5.280   1.084   1.979
+   42BGLCN  HO4 1150   5.315   1.086   2.016
    42BGLCN   C6 1151   5.549   1.357   2.017
    42BGLCN  H61 1152   5.592   1.414   2.082
    42BGLCN  H62 1153   5.561   1.265   2.046
@@ -1314,7 +1314,7 @@ CelluloseForge force-field-mapped cellulose
    48BGLCN   C4 1312   7.209   1.275   1.951
    48BGLCN   H4 1313   7.251   1.253   1.858
    48BGLCN   O4 1314   7.253   1.165   2.039
-   48BGLCN  HO4 1315   7.169   1.084   1.979
+   48BGLCN  HO4 1315   7.204   1.086   2.016
    48BGLCN   C6 1316   7.438   1.357   2.017
    48BGLCN  H61 1317   7.481   1.414   2.082
    48BGLCN  H62 1318   7.450   1.265   2.046

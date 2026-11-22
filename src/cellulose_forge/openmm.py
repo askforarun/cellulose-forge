@@ -315,9 +315,7 @@ def main() -> None:
     topology = PDBxFile("topology.cif").topology
 
     if args.pressure_bar is not None:
-        axes = args.pressure_axes or "".join(
-            axis for axis in AXES if axis != CHAIN_AXIS
-        )
+        axes = args.pressure_axes or "".join(axis for axis in AXES if axis != CHAIN_AXIS)
         if HAS_RESTRAINTS and not args.no_restraints:
             parser.error(
                 "position restraints use fixed reference coordinates that a barostat "
@@ -329,8 +327,12 @@ def main() -> None:
                 "OpenMM barostats move molecules rigidly, so that axis must stay fixed"
             )
         box = state.getPeriodicBoxVectors(asNumpy=True).value_in_unit(unit.nanometer)
-        if any(abs(float(box[row][column])) > BOX_TILT_TOLERANCE for row in range(3)
-               for column in range(3) if row != column):
+        if any(
+            abs(float(box[row][column])) > BOX_TILT_TOLERANCE
+            for row in range(3)
+            for column in range(3)
+            if row != column
+        ):
             parser.error("the anisotropic barostat requires a rectangular box")
         system.addForce(
             openmm.MonteCarloAnisotropicBarostat(
@@ -440,7 +442,7 @@ def heavy_atom_restraints(
 def render_openmm_runner(*, chain_axis: str, periodic_chains: bool, has_restraints: bool) -> str:
     """Return the standalone runner text for one generated system."""
     return (
-        _RUNNER.replace("__CHAIN_AXIS__", repr(chain_axis))
+        _RUNNER.replace("__CHAIN_AXIS__", f'"{chain_axis}"')
         .replace("__PERIODIC_CHAINS__", repr(periodic_chains))
         .replace("__HAS_RESTRAINTS__", repr(has_restraints))
         .replace("__RESTRAINT_PARAMETER__", POSITION_RESTRAINT_SCALE_PARAMETER)

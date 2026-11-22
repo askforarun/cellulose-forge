@@ -59,12 +59,12 @@
     }
   },
   "closest_longitudinal_periodic_image_contact": {
-    "atom_index": 994,
-    "atom_name": "HO1",
-    "chain_id": 7,
-    "distance_angstrom": 10.811422363742262,
-    "image_atom_index": 1150,
-    "image_atom_name": "HO4"
+    "atom_index": 160,
+    "atom_name": "HO4",
+    "chain_id": 1,
+    "distance_angstrom": 10.782668872111813,
+    "image_atom_index": 4,
+    "image_atom_name": "HO1"
   },
   "crystallographic_atom_count": 1296,
   "crystallographic_source": {
@@ -139,17 +139,17 @@
     "harmonic_bond_count": 2416,
     "initial_energies_kj_mol": {
       "CMMotionRemover": 0.0,
-      "HarmonicAngleForce": 1946.312483,
-      "HarmonicBondForce": 22759.655064,
+      "HarmonicAngleForce": 1754.37865,
+      "HarmonicBondForce": 20467.988128,
       "HarmonicTorsionForce": 0.940196,
-      "NonbondedForce": 1943.234948,
-      "NonbondedForce exceptions (1-4)": 17171.59956,
-      "PeriodicTorsionForce": 4864.114967
+      "NonbondedForce": 2027.781838,
+      "NonbondedForce exceptions (1-4)": 17148.704894,
+      "PeriodicTorsionForce": 4864.503513
     },
-    "initial_potential_energy_kj_mol": 31514.257657,
-    "maximum_bond_length_deviation_nm": 0.03567383946707134,
+    "initial_potential_energy_kj_mol": 29115.592324,
+    "maximum_bond_length_deviation_nm": 0.024424520543187667,
     "minimization_iterations_requested": 10,
-    "minimized_potential_energy_kj_mol": 7580.32228,
+    "minimized_potential_energy_kj_mol": 7022.248103,
     "nonbonded_cutoff_nm": 1.0,
     "openmm_version": "8.6.1",
     "particle_count": 1320,
@@ -183,7 +183,7 @@
     "openmm_validation_system": "validation_system.xml"
   },
   "polymer": "chitin",
-  "reference_force_field": "charmm36-feb2026_cgenff-5.0.ff",
+  "reference_force_field": "<local-path>",
   "residue_name": "NAG",
   "shape": "slab",
   "status": "supported",

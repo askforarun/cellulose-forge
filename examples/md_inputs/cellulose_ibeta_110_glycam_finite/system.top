@@ -9,7 +9,7 @@
 ;   Created by:
 ;   ParmEd:       VERSION4.3.1
 ;   Executable:   cellulose_forge.glycam_convert
-;   Library dir:  /opt/homebrew/Cellar/gromacs/2024.2/share/gromacs/top
+;   Library dir:  <redacted>
 ;   Command line:
 ;     glycam_convert cellulose_chain.prmtop cellulose_chain.inpcrd cellulose_chain.top cellulose_chain.gro CELLULOSE_CHAIN
 ;

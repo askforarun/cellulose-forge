@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<System openmmVersion="8.1.1" type="System" version="1">
+<System openmmVersion="8.6.1" type="System" version="1">
 	<PeriodicBoxVectors>
 		<A x="3.6956" y="0" z="0"/>
 		<B x="0" y="3.1152" z="0"/>

@@ -70,7 +70,7 @@ LAPACK library:      External - detected on the system
 
 
 Running on 1 node with total 0 processing units
-Hardware detected on host Aruns-MacBook-Pro.local:
+Hardware detected on host <redacted>:
   CPU info:
     Vendor: ARM
     Brand:  Unknown CPU brand
@@ -496,4 +496,3 @@ NOTE: 8 % of the run time was spent in domain decomposition,
                  (ns/day)    (hour/ns)
 Performance:        6.791        3.534
 Finished mdrun on rank 0 Wed Nov 11 19:52:37 2026
-

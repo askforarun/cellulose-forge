@@ -907,12 +907,8 @@ def map_finite_charmm36(
         _MISSING_CELLULOSE_II_HYDROGENS if crystal.allomorph == "II" else frozenset()
     )
     hydrogen_reference = _hydrogen_reference() if generated_hydrogens else {}
-    placer = (
-        HydroxylHydrogenPlacer(
-            crystal.atom_labels, crystal.cartesian_coordinates, crystal.basis_vectors
-        )
-        if generated_hydrogens
-        else None
+    placer = HydroxylHydrogenPlacer(
+        crystal.atom_labels, crystal.cartesian_coordinates, crystal.basis_vectors
     )
     for chain_number in chain_numbers:
         crystal_residue_order = _finite_chain_residue_order(
@@ -951,16 +947,23 @@ def map_finite_charmm36(
                     )
                 elif atom.atom_name == "HO4":
                     assert nonreducing_transform is not None
-                    coordinate = _transform(
+                    aligned_hydrogen = _transform(
                         _NONREDUCING_END_REFERENCE[atom.atom_name], nonreducing_transform
                     )
+                    placer.request(
+                        len(output_coordinates),
+                        lookup["C4"],
+                        lookup["O4"],
+                        aligned_hydrogen,
+                        donor="O4",
+                    )
+                    coordinate = np.zeros(3)
                 elif atom.atom_name in generated_hydrogens:
                     assert hydrogen_transform is not None
                     oxygen_name = _HYDROXYL_OXYGEN_BY_HYDROGEN[atom.atom_name]
                     aligned_hydrogen = _transform(
                         hydrogen_reference[atom.atom_name], hydrogen_transform
                     )
-                    assert placer is not None
                     placer.request(
                         len(output_coordinates),
                         lookup["C" + oxygen_name[1:]],
@@ -979,9 +982,8 @@ def map_finite_charmm36(
                 else:
                     coordinate = lookup[_crystal_name(atom.atom_name)]
                 output_coordinates.append(coordinate)
-    if placer is not None:
-        for index, coordinate in placer.resolve().items():
-            output_coordinates[index] = coordinate
+    for index, coordinate in placer.resolve().items():
+        output_coordinates[index] = coordinate
     coordinates = np.vstack(output_coordinates)
     coordinates.setflags(write=False)
     system = GlycamMappedSystem(

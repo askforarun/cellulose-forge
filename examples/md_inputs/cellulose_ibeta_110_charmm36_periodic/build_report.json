@@ -1,6 +1,6 @@
 {
   "allomorph": "I-beta",
-  "cellulose_forge_version": "1.1.2",
+  "cellulose_forge_version": "1.4.0",
   "chain_boundary": "periodic",
   "chain_count": 8,
   "charmm36_release": "charmm36-feb2026_cgenff-5.0.ff",
@@ -49,9 +49,11 @@
     "data": "system.data",
     "dihedral_count": 4560,
     "dispersion_correction": false,
+    "explicit_pair_override_count": 0,
     "improper_count": 0,
     "input": "in.cellulose",
     "input_scope": "single-point run 0 validation; not a dynamics protocol",
+    "position_restraint_atom_count": 0,
     "special_bonds": "charmm",
     "urey_bradley_count": 768,
     "weighted_one_four_count": 3024,
@@ -65,6 +67,8 @@
   "openmm_validation": {
     "chain_axis": "y",
     "constraint_count": 480,
+    "diagnostic_energy_note": "build-time diagnostic energies computed in full precision and recorded to 1e-6 kJ/mol; they are not equilibrium or force-field-accuracy results",
+    "diagnostic_energy_precision_kj_mol": 1e-06,
     "dispersion_correction": false,
     "forces": [
       "NonbondedForce",
@@ -76,18 +80,18 @@
     "harmonic_bond_count": 1824,
     "initial_energies_kj_mol": {
       "CMMotionRemover": 0.0,
-      "HarmonicAngleForce": 920.4686431950936,
-      "HarmonicBondForce": 9232.08367152899,
-      "NonbondedForce": 11322.826633771645,
-      "NonbondedForce exceptions (1-4)": 28797.61942099292,
-      "PeriodicTorsionForce": 6711.981079646052
+      "HarmonicAngleForce": 920.468643,
+      "HarmonicBondForce": 9232.083672,
+      "NonbondedForce": 11322.826634,
+      "NonbondedForce exceptions (1-4)": 28797.619421,
+      "PeriodicTorsionForce": 6711.98108
     },
-    "initial_potential_energy_kj_mol": 28187.36002814178,
+    "initial_potential_energy_kj_mol": 28187.360028,
     "maximum_bond_length_deviation_nm": 0.023755121528379886,
     "minimization_iterations_requested": 10,
-    "minimized_potential_energy_kj_mol": 19749.062418150672,
+    "minimized_potential_energy_kj_mol": 18730.109425,
     "nonbonded_cutoff_nm": 1.0,
-    "openmm_version": "8.1.1",
+    "openmm_version": "8.6.1",
     "particle_count": 1008,
     "periodic_chains": true,
     "periodic_forces": [
@@ -108,16 +112,20 @@
   },
   "outputs": {
     "coordinates": "structure.pdb",
+    "crystallographic_coordinates": "crystal_structure.pdb",
     "gromacs_coordinates": "structure.gro",
     "gromacs_force_field": "charmm36.ff",
+    "gromacs_minimization_input": "minim.mdp",
     "gromacs_molecule_topology": "cellulose_charmm36.itp",
+    "gromacs_nvt_input": "nvt.mdp",
     "gromacs_topology": "system.top",
     "lammps_data": "system.data",
     "lammps_input": "in.cellulose",
     "openmm_runner": "run_openmm.py",
     "openmm_state": "state.xml",
     "openmm_system": "system.xml",
-    "openmm_topology": "topology.cif"
+    "openmm_topology": "topology.cif",
+    "openmm_validation_system": "validation_system.xml"
   },
   "periodic_glycosidic_bond_validation": {
     "mapped_geometry": {
@@ -131,7 +139,7 @@
       "molecule_type_count": 1
     }
   },
-  "reference_force_field": "charmm36-feb2026_cgenff-5.0.ff",
+  "reference_force_field": "<local-path>",
   "shape": "slab",
   "status": "supported",
   "topology_source": "native BGLC residue with periodic 14bb linkage"

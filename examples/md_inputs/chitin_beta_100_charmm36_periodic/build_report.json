@@ -1,6 +1,6 @@
 {
   "allomorph": "beta",
-  "cellulose_forge_version": "1.1.2",
+  "cellulose_forge_version": "1.4.0",
   "chain_boundary": "periodic",
   "chain_count": 8,
   "charmm36_release": "charmm36-feb2026_cgenff-5.0.ff",
@@ -98,9 +98,11 @@
     "data": "system.data",
     "dihedral_count": 4992,
     "dispersion_correction": false,
+    "explicit_pair_override_count": 0,
     "improper_count": 96,
     "input": "in.chitin",
     "input_scope": "single-point run 0 validation; not a dynamics protocol",
+    "position_restraint_atom_count": 0,
     "special_bonds": "charmm",
     "urey_bradley_count": 1056,
     "weighted_one_four_count": 3648,
@@ -114,6 +116,8 @@
   "openmm_validation": {
     "chain_axis": "y",
     "constraint_count": 624,
+    "diagnostic_energy_note": "build-time diagnostic energies computed in full precision and recorded to 1e-6 kJ/mol; they are not equilibrium or force-field-accuracy results",
+    "diagnostic_energy_precision_kj_mol": 1e-06,
     "dispersion_correction": false,
     "forces": [
       "NonbondedForce",
@@ -126,19 +130,19 @@
     "harmonic_bond_count": 2400,
     "initial_energies_kj_mol": {
       "CMMotionRemover": 0.0,
-      "HarmonicAngleForce": 3521.2670361121,
-      "HarmonicBondForce": 23217.322637334702,
-      "HarmonicTorsionForce": 14.866350605573388,
-      "NonbondedForce": -1722.4506966959798,
-      "NonbondedForce exceptions (1-4)": 16123.910410178225,
-      "PeriodicTorsionForce": 5580.828960454524
+      "HarmonicAngleForce": 3521.267036,
+      "HarmonicBondForce": 23217.322637,
+      "HarmonicTorsionForce": 14.866351,
+      "NonbondedForce": -1722.450697,
+      "NonbondedForce exceptions (1-4)": 16123.91041,
+      "PeriodicTorsionForce": 5580.82896
     },
-    "initial_potential_energy_kj_mol": 30611.83428781092,
+    "initial_potential_energy_kj_mol": 30611.834288,
     "maximum_bond_length_deviation_nm": 0.026437209881397777,
     "minimization_iterations_requested": 10,
-    "minimized_potential_energy_kj_mol": 4034.0333098840633,
+    "minimized_potential_energy_kj_mol": 4034.167931,
     "nonbonded_cutoff_nm": 1.0,
-    "openmm_version": "8.1.1",
+    "openmm_version": "8.6.1",
     "particle_count": 1296,
     "periodic_chains": true,
     "periodic_forces": [
@@ -160,31 +164,35 @@
   },
   "outputs": {
     "coordinates": "structure.pdb",
+    "crystallographic_coordinates": "crystal_structure.pdb",
     "gromacs_coordinates": "structure.gro",
     "gromacs_force_field": "charmm36.ff",
+    "gromacs_minimization_input": "minim.mdp",
     "gromacs_molecule_topology": "chitin_charmm36.itp",
+    "gromacs_nvt_input": "nvt.mdp",
     "gromacs_topology": "system.top",
     "lammps_data": "system.data",
     "lammps_input": "in.chitin",
     "openmm_runner": "run_openmm.py",
     "openmm_state": "state.xml",
     "openmm_system": "system.xml",
-    "openmm_topology": "topology.cif"
+    "openmm_topology": "topology.cif",
+    "openmm_validation_system": "validation_system.xml"
   },
   "periodic_glycosidic_bond_validation": {
     "mapped_geometry": {
       "bond_count": 48,
-      "maximum_distance_angstrom": 1.4639960659350162
+      "maximum_distance_angstrom": 1.4639960659350164
     },
     "written_topology": {
       "bond_count": 48,
-      "maximum_distance_angstrom": 1.4639960659350162,
+      "maximum_distance_angstrom": 1.4639960659350164,
       "molecule_count": 8,
       "molecule_type_count": 1
     }
   },
   "polymer": "chitin",
-  "reference_force_field": "charmm36-feb2026_cgenff-5.0.ff",
+  "reference_force_field": "<local-path>",
   "residue_name": "NAG",
   "shape": "slab",
   "status": "supported",

@@ -247,6 +247,27 @@ def test_builds_native_periodic_topology_from_bglc(
         "dihedrals": 264,
     }
     assert finite_mapped.atom_count == finite_mapped.chain_count * finite.atom_count
+    for chain_number in range(1, finite_mapped.chain_count + 1):
+        terminal_residue = chain_number * finite.degree_polymerization
+        terminal = {
+            name: coordinate
+            for name, residue, chain, coordinate in zip(
+                finite_mapped.atom_names,
+                finite_mapped.residue_numbers,
+                finite_mapped.chain_numbers,
+                finite_mapped.cartesian_coordinates,
+                strict=True,
+            )
+            if chain == chain_number and residue == terminal_residue and name in {"C4", "O4", "HO4"}
+        }
+        assert np.linalg.norm(terminal["HO4"] - terminal["O4"]) == pytest.approx(0.96)
+        carbon_vector = terminal["C4"] - terminal["O4"]
+        hydrogen_vector = terminal["HO4"] - terminal["O4"]
+        cosine = float(
+            np.dot(carbon_vector, hydrogen_vector)
+            / (np.linalg.norm(carbon_vector) * np.linalg.norm(hydrogen_vector))
+        )
+        assert np.degrees(np.arccos(np.clip(cosine, -1.0, 1.0))) == pytest.approx(108.5)
     finite_path = tmp_path / "finite.itp"
     finite_path.write_text(
         render_finite_charmm36_itp(finite) + "#ifdef REST_ON\n#endif\n",

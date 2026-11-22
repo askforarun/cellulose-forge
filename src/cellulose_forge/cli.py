@@ -1320,7 +1320,14 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
         report["generated_force_field_coordinates"] = {
             "atoms": ["HO2", "HO3", "HO6"],
             "scope": "each anhydroglucose residue",
-            "method": "I-beta reference O-H geometry aligned on C1/C3/C5",
+            "method": (
+                "tetrahedral C-O-H placement, class by class (HO3, HO2, HO6); "
+                "intrachain O3-H...O5 first, otherwise the clash-free torsion with "
+                "the best geometric hydrogen bond, otherwise the aligned reference torsion"
+            ),
+            "geometry": "0.96 A O-H and 108.5 degree C-O-H",
+            "reason": "hydroxyl-hydrogen coordinates are absent from the diffraction dataset",
+            "requires_minimization_or_restrained_relaxation": True,
         }
     (args.output / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",

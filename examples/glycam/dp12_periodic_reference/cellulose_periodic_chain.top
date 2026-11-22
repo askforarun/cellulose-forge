@@ -1,7 +1,7 @@
 ;
 ;   File cellulose_periodic_chain.top  was generated
-;   By user: arunsrikanthsridhar (501)
-;   On host:Aruns-MBP 
+;   By user: <redacted>
+;   On host: <redacted>
 ;   At date:Thu. September  4 00:14:43 2026 
 ;
 ;   This is a standalone topology file
@@ -9,7 +9,7 @@
 ;   Created by:
 ;   ParmEd:       -c, VERSION4.3.1 
 ;   Executable:   -c
-;   Library dir:  /opt/homebrew/Cellar/gromacs/2024.2/share/gromacs/top
+;   Library dir:  <redacted>
 ;   Command line:
 ;     -c cellulose_periodic_chain.prmtop cellulose_periodic_chain.inpcrd cellulose_periodic_chain.top cellulose_periodic_chain.gro
 ;

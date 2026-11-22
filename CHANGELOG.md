@@ -42,6 +42,9 @@ All notable changes to CelluloseForge are documented in this file.
   `crystal_structure.pdb`. For cellulose II, the shared coordinate layer also
   models HO2, HO3, and HO6 because they are absent from the diffraction input;
   build reports record this explicitly.
+- Corrected CHARMM36 finite-chain HO4 placement so the non-reducing terminal
+  hydroxyl uses the shared 0.96 Angstrom O-H and 108.5 degree C-O-H geometry
+  instead of inheriting a distorted bond from a whole-ring rigid fit.
 - Unified GROMACS, OpenMM, LAMMPS, NAMD and finite-chain Amber single-point
   energies behind one canonical, fail-closed report schema. Live validators
   verify the coordinates and box actually consumed by each engine, normalize

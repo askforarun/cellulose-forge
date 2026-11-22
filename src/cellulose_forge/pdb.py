@@ -48,6 +48,11 @@ def write_pdb(crystal: BulkCrystal, path: str | Path) -> None:
     ]
     if crystal.chain_ids and crystal.allomorph == "I-beta":
         lines.insert(2, "REMARK  unit-cell chain A=origin chain B=center for cellulose I-beta")
+        if chemically_complete:
+            lines.insert(
+                2,
+                "REMARK  chain IDs follow the crystal; residues run reducing to non-reducing end",
+            )
     elif crystal.chain_ids and chemically_complete:
         lines.insert(
             2,
