@@ -25,6 +25,20 @@ def _pdb_header(path: Path) -> list[str]:
     ]
 
 
+@pytest.mark.parametrize(
+    "relative_path",
+    [
+        "examples/md_inputs/cellulose_ibeta_110_charmm36_periodic/crystal_structure.pdb",
+        "examples/md_inputs/cellulose_ibeta_110_glycam_finite/crystal_structure.pdb",
+        "examples/fibrils/ibeta_36chain_dp12.pdb",
+    ],
+)
+def test_shipped_i_beta_diagnostic_headers_are_crystallographic(relative_path: str) -> None:
+    header = _pdb_header(_ROOT / relative_path)
+    assert header[2] == "REMARK  chain and residue IDs follow the crystallographic model"
+    assert header[3] == "REMARK  unit-cell chain A=origin chain B=center for cellulose I-beta"
+
+
 def _gro_atoms(path: Path) -> list[tuple[int, str, np.ndarray]]:
     lines = path.read_text(encoding="utf-8").splitlines()
     atom_count = int(lines[1])
