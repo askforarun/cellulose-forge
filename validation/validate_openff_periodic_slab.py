@@ -78,6 +78,15 @@ def minimum_image(displacement: np.ndarray, box: np.ndarray) -> np.ndarray:
     return fractional @ box
 
 
+def mirror_x_periodic(positions: np.ndarray, box: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Reflect coordinates and their periodic cell together across x."""
+    mirrored_positions = positions.copy()
+    mirrored_positions[:, 0] = 2.0 * mirrored_positions[:, 0].mean() - mirrored_positions[:, 0]
+    mirrored_box = box.copy()
+    mirrored_box[:, 0] *= -1.0
+    return mirrored_positions, mirrored_box
+
+
 def periodic_bond_checks(
     positions: np.ndarray, box: np.ndarray, template: Molecule
 ) -> dict[str, object]:
@@ -225,10 +234,9 @@ def independent_periodic_stereochemistry_checks(
         controls[f"{name}_local_inversion_rejected"] = (
             centre_parity(altered, target, box) != reference_parity[name]
         )
-    mirrored = first_chain.copy()
-    mirrored[:, 0] = 2.0 * mirrored[:, 0].mean() - mirrored[:, 0]
+    mirrored, mirrored_box = mirror_x_periodic(first_chain, box)
     controls["whole_chain_mirror_rejected"] = all(
-        centre_parity(mirrored, atom, box) != reference_parity[atom.name]
+        centre_parity(mirrored, atom, mirrored_box) != reference_parity[atom.name]
         for atom in template.atoms
         if atom.name in STEREOCENTRE_NAMES
     )

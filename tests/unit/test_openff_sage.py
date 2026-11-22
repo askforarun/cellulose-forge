@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
+import sys
 import time
 from collections import Counter
 from dataclasses import replace
@@ -68,6 +70,30 @@ def test_triclinic_box_reduction_preserves_lattice_volume() -> None:
     assert abs(reduced[1, 0]) <= reduced[0, 0] / 2
     assert abs(reduced[2, 0]) <= reduced[0, 0] / 2
     assert abs(reduced[2, 1]) <= reduced[1, 1] / 2
+
+
+@pytest.mark.skipif(find_spec("openff") is None, reason="optional OpenFF environment")
+def test_periodic_mirror_reflects_coordinates_and_triclinic_box() -> None:
+    root = Path(__file__).resolve().parents[2]
+    validation = root / "validation"
+    sys.path.insert(0, str(validation))
+    spec = importlib.util.spec_from_file_location(
+        "_test_validate_openff_periodic_slab",
+        validation / "validate_openff_periodic_slab.py",
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    box = np.asarray(((4.0, 0.0, 0.0), (-1.0, 3.0, 0.0), (0.0, 0.0, 5.0)))
+    positions = np.asarray(((0.2, 0.3, 0.4), (3.9, 2.8, 0.5)))
+    displacement = positions[1] - positions[0]
+    mirrored_positions, mirrored_box = module.mirror_x_periodic(positions, box)
+
+    expected = module.minimum_image(displacement, box).copy()
+    expected[0] *= -1.0
+    observed = module.minimum_image(mirrored_positions[1] - mirrored_positions[0], mirrored_box)
+    assert observed == pytest.approx(expected)
 
 
 def _angle(left: np.ndarray, centre: np.ndarray, right: np.ndarray) -> float:
