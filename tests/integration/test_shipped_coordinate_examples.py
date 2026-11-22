@@ -1,0 +1,60 @@
+"""Regression checks for committed chemically complete coordinate examples."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _pdb_names(path: Path) -> list[str]:
+    return [
+        line[12:16].strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.startswith(("ATOM  ", "HETATM"))
+    ]
+
+
+@pytest.mark.parametrize(
+    "stem",
+    [
+        "ibeta_010_slab",
+        "ibeta_020_slab",
+        "ibeta_100_slab",
+        "ibeta_110_slab",
+        "ibeta_1m10_slab",
+        "ibeta_200_slab",
+        "ibeta_m1m10_slab",
+    ],
+)
+def test_finite_face_examples_are_capped_and_longitudinally_separated(stem: str) -> None:
+    directory = _ROOT / "examples/faces"
+    names = _pdb_names(directory / f"{stem}.pdb")
+    assert len(names) == 3096
+    assert {name: names.count(name) for name in ("O1", "HO1", "HO4")} == {
+        "O1": 24,
+        "HO1": 24,
+        "HO4": 24,
+    }
+    report = json.loads((directory / f"{stem}.build_report.json").read_text(encoding="utf-8"))
+    assert report["chemical_atom_count"] == 3096
+    assert any("padding_z=12.000000" in item for item in report["geometry_annotations"])
+
+
+@pytest.mark.parametrize(
+    "folder",
+    ["cellulose_ibeta_110_glycam_finite", "chitin_alpha_100_charmm36_finite"],
+)
+def test_finite_md_example_pdb_matches_simulation_atom_count(folder: str) -> None:
+    directory = _ROOT / "examples/md_inputs" / folder
+    pdb_names = _pdb_names(directory / "structure.pdb")
+    gro_lines = (directory / "structure.gro").read_text(encoding="utf-8").splitlines()
+    gro_count = int(gro_lines[1])
+    assert len(pdb_names) == gro_count
+    assert pdb_names == [line[10:15].strip() for line in gro_lines[2 : gro_count + 2]]
+    assert {"O1", "HO1"} <= set(pdb_names)
+    assert (directory / "crystal_structure.pdb").is_file()
+    assert len(_pdb_names(directory / "crystal_structure.pdb")) < gro_count

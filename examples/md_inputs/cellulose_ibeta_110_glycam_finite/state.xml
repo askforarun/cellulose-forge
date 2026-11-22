@@ -1,11 +1,10 @@
 <?xml version="1.0" ?>
-<State openmmVersion="8.1.1" stepCount="0" time="0" type="State" version="1">
+<State openmmVersion="8.6.1" stepCount="0" time="0" type="State" version="1">
 	<PeriodicBoxVectors>
 		<A x="3.57869" y="0" z="0"/>
 		<B x="0" y="4.314" z="0"/>
 		<C x="0" y="0" z="4.11221"/>
 	</PeriodicBoxVectors>
-	<Energies KineticEnergy="721.0990083883643" PotentialEnergy="44053.96415978581"/>
 	<Positions>
 		<Position x=".325" y=".725" z="1.748"/>
 		<Position x=".367" y=".792" z="1.694"/>

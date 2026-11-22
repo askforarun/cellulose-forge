@@ -415,6 +415,11 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
         if args.shape not in {"slab", "fibril"} and args.padding_longitudinal is not None:
             build_parser().error("--padding-longitudinal is valid only with --shape slab or fibril")
         _validate_longitudinal_padding(args, build_parser())
+        if args.shape in {"unit-cell", "bulk", "crystal"} and args.chain_boundary == "finite":
+            build_parser().error(
+                "finite chains are supported only for slabs and fibrils; "
+                "unit-cell and bulk crystal models are periodic"
+            )
         if args.shape == "unit-cell":
             if args.cells is not None:
                 build_parser().error("--cells is not valid with --shape unit-cell")
@@ -470,8 +475,9 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
                 chemical_atom_count=chemical_atom_count,
             )
             if written_path != args.output:
+                written_atom_count = chemical_atom_count or crystal.atom_count
                 print(
-                    f"Requested structure has {crystal.atom_count} atoms; "
+                    f"Requested structure has {written_atom_count} atoms; "
                     f"wrote mmCIF instead of PDB: {written_path}"
                 )
     return 0
@@ -607,12 +613,21 @@ def _write_coordinate_only_report(
         "degree_polymerization": _crystal_degree_polymerization(crystal),
         "chain_count": len(set(crystal.chain_numbers)),
         "crystallographic_atom_count": crystal.atom_count,
-        "chemical_atom_count": chemical_atom_count or crystal.atom_count,
+        "written_atom_count": chemical_atom_count or crystal.atom_count,
         "requested_output": str(requested_output),
         "outputs": {"coordinates": coordinate_path.name},
         "geometry_annotations": list(crystal.annotations),
         "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),
     }
+    if chemical_atom_count is not None:
+        report["chemical_atom_count"] = chemical_atom_count
+        if crystal.allomorph == "II":
+            report["generated_coordinates"] = {
+                "terminal_caps": ["O1", "HO1", "HO4"],
+                "modelled_hydroxyl_hydrogens": ["HO2", "HO3", "HO6"],
+                "scope": "each anhydroglucose residue for hydroxyl hydrogens",
+                "reason": "the cellulose II diffraction definition omits HO2, HO3, and HO6",
+            }
     if args.polymer != "cellulose":
         report.update(_polymer_report_fields(args, definition))
     report_path.write_text(
@@ -926,6 +941,8 @@ def _write_opls_build(
         "degree_polymerization": build.topology.degree_polymerization,
         "chain_count": build.mapped.chain_count,
         "atom_count": build.mapped.atom_count,
+        "crystallographic_atom_count": crystal.atom_count,
+        "force_field_atom_count": build.mapped.atom_count,
         "dispersion_correction": dispersion,
         "md_engines": list(args.md_engines),
         "outputs": {

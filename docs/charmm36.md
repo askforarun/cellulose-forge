@@ -33,8 +33,10 @@ cellulose-forge build \
   --output ibeta_charmm36
 ```
 
-The output directory contains crystallographic PDB coordinates, matched GRO
-coordinates, the cellulose ITP, `system.top`, a local copy of the installed
+The output directory contains chemically complete mapped coordinates in
+`structure.pdb`, matching `structure.gro` atom-for-atom, and retains the
+diffraction-derived diagnostic geometry separately as `crystal_structure.pdb`.
+It also contains the cellulose ITP, `system.top`, a local copy of the installed
 force-field directory, and a machine-readable build report. The optional
 `--charmm-template` argument retains the earlier reference-driven route for
 regression studies; normal periodic builds do not require it.

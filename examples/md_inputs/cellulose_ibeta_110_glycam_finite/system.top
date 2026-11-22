@@ -1,17 +1,17 @@
 ;
 ;   File cellulose_chain.top  was generated
-;   By user: arunsrikanthsridhar (501)
-;   On host:Aruns-MacBook-Pro.local 
-;   At date:Wed. November  3 23:29:45 2026 
+;   By user: <redacted>
+;   On host: <redacted>
+;   Regenerated for the CelluloseForge 1.4.0 example bundle
 ;
 ;   This is a standalone topology file
 ;
 ;   Created by:
-;   ParmEd:       -c, VERSION4.3.1 
-;   Executable:   -c
+;   ParmEd:       VERSION4.3.1
+;   Executable:   cellulose_forge.glycam_convert
 ;   Library dir:  /opt/homebrew/Cellar/gromacs/2024.2/share/gromacs/top
 ;   Command line:
-;     -c cellulose_chain.prmtop cellulose_chain.inpcrd cellulose_chain.top cellulose_chain.gro
+;     glycam_convert cellulose_chain.prmtop cellulose_chain.inpcrd cellulose_chain.top cellulose_chain.gro CELLULOSE_CHAIN
 ;
 
 [ defaults ]

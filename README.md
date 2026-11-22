@@ -870,6 +870,12 @@ independently of force-field assignment. Periodic chains correctly remain
 uncapped. Unit-cell and bulk coordinate-only files without a finite boundary
 remain diffraction-derived crystallographic models.
 
+Cellulose II requires one additional reconstruction step: its diffraction
+definition omits HO2, HO3, and HO6. Finite chemically complete output models
+those three hydroxyl hydrogens on every residue using the documented shared
+hydrogen-placement procedure. The build report lists these generated atoms;
+they are not experimental coordinates.
+
 When physical slab dimensions are requested, the report records both the
 requested and realized dimensions in `geometry_annotations`. The reported DP
 is the even number of anhydroglucose units obtained by rounding the requested

@@ -37,6 +37,11 @@ def write_mapped_coordinates(
     """Write chemically complete mapped coordinates with crystal metadata."""
     chain_id_by_number = dict(zip(crystal.chain_numbers, crystal.chain_ids, strict=True))
     chain_ids = tuple(chain_id_by_number.get(number, "A") for number in mapped.chain_numbers)
+    cap_annotation = (
+        ("finite-chain terminal caps: O1/HO1 and HO4",)
+        if {"O1", "HO1", "HO4"} <= set(mapped.atom_names)
+        else ()
+    )
     structure = BulkCrystal(
         allomorph=crystal.allomorph,
         space_group=crystal.space_group,
@@ -49,7 +54,8 @@ def write_mapped_coordinates(
         chain_numbers=mapped.chain_numbers,
         annotations=(
             *crystal.annotations,
-            "chemically complete coordinates with explicit caps",
+            "chemically complete mapped coordinates",
+            *cap_annotation,
             "PDB residue name uses the three-character crystallographic alias",
         ),
         residue_name=crystal.residue_name,

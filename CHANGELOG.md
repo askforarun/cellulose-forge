@@ -39,7 +39,9 @@ All notable changes to CelluloseForge are documented in this file.
   O1/HO1 and HO4 terminal caps before force-field assignment. Force-field
   bundles write the same chemically complete atom ordering to `structure.pdb`
   and retain the diffraction-derived model separately as
-  `crystal_structure.pdb`.
+  `crystal_structure.pdb`. For cellulose II, the shared coordinate layer also
+  models HO2, HO3, and HO6 because they are absent from the diffraction input;
+  build reports record this explicitly.
 - Unified GROMACS, OpenMM, LAMMPS, NAMD and finite-chain Amber single-point
   energies behind one canonical, fail-closed report schema. Live validators
   verify the coordinates and box actually consumed by each engine, normalize

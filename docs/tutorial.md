@@ -270,7 +270,8 @@ and should use at least 12 Å through `--padding-longitudinal`; the validated
 examples use 12--20 Å.
 
 Cellulose II is a separate documented case: its diffraction dataset omits
-HO2, HO3, and HO6. Force-field output places those hydrogens on an exact
+HO2, HO3, and HO6. Chemically complete finite coordinate-only and force-field
+output place those hydrogens on an exact
 tetrahedral cone (0.96 A O--H, 108.5 degree C--O--H), class by class (HO3,
 HO2, HO6): HO3 takes the intrachain O3--H...O5 hydrogen bond; HO2 and HO6
 follow the chain-specific neutron assignments O2o--H...O6o, O6o--H...O6c,

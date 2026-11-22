@@ -9,6 +9,12 @@ only for bulk crystals and unit cells; CHARMM36 never uses it; slabs and
 fibrils never use it. `build_report.json` in each folder records the exact
 build and its validation; machine-local paths are redacted.
 
+Finite bundles contain a chemically complete `structure.pdb` in the same atom
+order as their simulation coordinates, including O1/HO1 and HO4 chain caps.
+The diffraction-derived uncapped geometry is retained separately as
+`crystal_structure.pdb`. `validation_system.xml` is the unconstrained OpenMM
+single-point system; production `system.xml` retains its declared constraints.
+
 | Folder | System | Atoms | Chains x DP | GROMACS | OpenMM | LAMMPS | Amber |
 |---|---|---|---|---|---|---|---|
 | `cellulose_ibeta_110_charmm36_periodic` | I-beta (1 1 0) slab, CHARMM36, periodic chains | 1008 | 8 x 6 | yes | yes | yes | - |

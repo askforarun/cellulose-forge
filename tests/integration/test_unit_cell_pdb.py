@@ -203,6 +203,8 @@ def test_cli_writes_i_beta_110_slab(tmp_path: Path) -> None:
             "finite",
             "--vacuum",
             "30",
+            "--padding-longitudinal",
+            "12",
             "--output",
             str(output),
         ]
@@ -211,7 +213,7 @@ def test_cli_writes_i_beta_110_slab(tmp_path: Path) -> None:
     assert result == 0
     lines = output.read_text(encoding="utf-8").splitlines()
     atom_lines = [line for line in lines if line.startswith("HETATM")]
-    assert len(atom_lines) == 20_160
+    assert len(atom_lines) == 20_400
     assert any("shape=slab face=(1,1,0) layers=4" in line for line in lines)
     assert any("chains_per_layer=20 total_chains=80" in line for line in lines)
     assert any("degree_polymerization=12" in line for line in lines)
@@ -684,6 +686,68 @@ def test_coordinate_only_finite_fibril_contains_caps_on_every_chain(tmp_path: Pa
         "HO1": 18,
         "HO4": 18,
     }
+
+
+def test_coordinate_only_cellulose_ii_reports_modelled_hydrogens(tmp_path: Path) -> None:
+    output = tmp_path / "cellulose_ii_complete.pdb"
+    assert (
+        main(
+            [
+                "build",
+                "--allomorph",
+                "II",
+                "--shape",
+                "slab",
+                "--face",
+                "1",
+                "1",
+                "0",
+                "--layers",
+                "2",
+                "--chains-per-layer",
+                "4",
+                "--degree-polymerization",
+                "4",
+                "--chain-boundary",
+                "finite",
+                "--padding-longitudinal",
+                "12",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    report = json.loads(output.with_suffix(".build_report.json").read_text(encoding="utf-8"))
+    assert report["generated_coordinates"]["modelled_hydroxyl_hydrogens"] == [
+        "HO2",
+        "HO3",
+        "HO6",
+    ]
+    assert report["chemical_atom_count"] - report["crystallographic_atom_count"] == (4 * 3 + 3) * 8
+
+
+@pytest.mark.parametrize("shape", ["unit-cell", "bulk"])
+def test_coordinate_only_refuses_finite_crystal_models_before_writing(
+    tmp_path: Path, shape: str
+) -> None:
+    output = tmp_path / f"invalid_{shape}.pdb"
+    arguments = [
+        "build",
+        "--allomorph",
+        "I-beta",
+        "--shape",
+        shape,
+        "--chain-boundary",
+        "finite",
+        "--output",
+        str(output),
+    ]
+    if shape == "bulk":
+        arguments[6:6] = ["--cells", "2", "2", "2"]
+    with pytest.raises(SystemExit, match="2"):
+        main(arguments)
+    assert not output.exists()
 
 
 def test_cli_writes_periodic_glycam_fibril_system(

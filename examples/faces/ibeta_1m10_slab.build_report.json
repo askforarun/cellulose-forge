@@ -1,8 +1,22 @@
 {
   "allomorph": "I-beta",
-  "cellulose_forge_version": "1.1.0",
+  "cellulose_forge_version": "1.4.0",
   "chain_boundary": "finite",
   "chain_count": 24,
+  "chemical_atom_count": 3096,
+  "chirality_validation": {
+    "configuration": "D-cellulose",
+    "expected_signed_volume_sign": "negative",
+    "minimum_absolute_signed_volume_angstrom3": 1.4897228914310858,
+    "residue_count": 144,
+    "status": "passed",
+    "stereocentre": "C1",
+    "substituent_order": [
+      "O5",
+      "C2",
+      "H1"
+    ]
+  },
   "crystallographic_atom_count": 3024,
   "degree_polymerization": 6,
   "force_field": "none",
@@ -13,16 +27,18 @@
     "chain_boundary=finite",
     "d_hkl=5.956262 angstrom",
     "vacuum=20.000000 angstrom",
-    "padding_z=0.000000 angstrom total longitudinal padding",
+    "padding_z=12.000000 angstrom total longitudinal padding",
     "lateral_repeat=5.324332 angstrom",
     "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
     "chain numbering starts at requested low-z face; within each layer low-x to high-x",
     "construction=whole_chain_reciprocal_lattice_cut",
     "size_mode=exact_counts"
   ],
+  "md_engines": [],
   "outputs": {
     "coordinates": "ibeta_1m10_slab.pdb"
   },
   "requested_output": "examples/faces/ibeta_1m10_slab.pdb",
-  "shape": "slab"
+  "shape": "slab",
+  "written_atom_count": 3096
 }
