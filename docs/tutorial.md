@@ -374,6 +374,14 @@ requires `h=0`. For I-beta, II, and III-I the chain axis is `c`, so it requires
 ends from their periodic images. Periodic slabs reject nonzero chain-end
 padding. The historical `--padding-z` spelling remains a deprecated alias.
 
+An I-alpha `(010)` slab has a triclinic lateral translation. CelluloseForge
+therefore rotates its coordinates and box together into reduced triclinic form:
+the surface normal remains Cartesian z, but the chains lie diagonally in the
+xy plane rather than exactly along y. Interface builders may still place water
+above and below the slab along z. Analysis scripts should use the box and the
+orientation annotations in `build_report.json` instead of assuming that the
+chain direction is Cartesian y.
+
 ## 8. Build elementary fibrils
 
 ```bash

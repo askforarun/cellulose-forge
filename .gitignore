@@ -14,6 +14,17 @@ tmp/
 .DS_Store
 mdout.mdp
 
+# Private research outputs and paper planning are not release artifacts.
+# These directories may contain trajectories and user-supplied force fields
+# whose redistribution terms differ from CelluloseForge's GPL licence.
+/output/
+/docs/plans/polarizable_paper.md
+/.claude/
+/journal_unit_cells/
+/validation/namd_acceptance_matrix/
+/validation/npt_bulk_matrix/
+/validation/prepare_npt_bulk_matrix.py
+
 # Third-party reference distributions and locally downloaded literature are
 # cited in the provenance documentation rather than vendored in this project.
 legacy/cellulose-builder-2013/

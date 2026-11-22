@@ -2,7 +2,7 @@
 
 All notable changes to CelluloseForge are documented in this file.
 
-## Unreleased
+## 1.4.0 - 2026-11-22
 
 ### Added
 
@@ -32,6 +32,18 @@ All notable changes to CelluloseForge are documented in this file.
   convention corrections, and a machine-readable pass/fail report. Engine
   subfolders can be selected independently, so unrelated executables are not
   installation requirements.
+
+### Changed
+
+- Unified GROMACS, OpenMM, LAMMPS, NAMD and finite-chain Amber single-point
+  energies behind one canonical, fail-closed report schema. Live validators
+  verify the coordinates and box actually consumed by each engine, normalize
+  documented convention differences, and fail when required terms or native
+  inputs cannot be verified.
+- Corrected the cellulose I-alpha `(010)` slab's lateral periodic seam by
+  retaining the complete crystallographic surface translation and rotating
+  the coordinates and box together into reduced triclinic form. Other slab
+  fingerprints are unchanged.
 
 ## 1.3.0 - 2026-11-15
 

@@ -30,21 +30,18 @@ Amber, and checks that every engine evaluates the **same energy** for the same
 model.
 
 > [!IMPORTANT]
-> ## 🚀 New in 1.3.0
+> ## 🚀 New in 1.4.0
 >
-> `pip install cellulose-forge`. This release adds **OpenMM output** for GLYCAM06j-1 and CHARMM36
-> with finite or covalently periodic chains; **native Amber output** for finite
-> GLYCAM chains; experimental **LAMMPS output**; **CHARMM36 chitin**;
-> coordinate-only **Mannan I**; I-beta **18- and 24-chain fibril presets** and
-> **custom I-beta fibril profiles**; an experimental **OpenFF Sage 2.3**
-> backend; experimental **OPLS-AA and OPLS-AA-SEI** for GROMACS, OpenMM and
-> LAMMPS; **cross-engine energy validation** for every force field; starting
-> **run inputs for every engine**; and validated **NAMD/PSF output for
-> CHARMM36**, including single-point energy comparison and short production
-> dynamics checks. **Odd-DP chains** remain planned. Feedback and
-> contributions are welcome.
+> `pip install cellulose-forge`. This release adds validated **NAMD/PSF output
+> for CHARMM36**, selective NAMD and LAMMPS restraints, and one canonical
+> single-point energy-report contract spanning GROMACS, OpenMM, LAMMPS, NAMD
+> and finite-chain Amber. The live validators bind every result to the native
+> coordinates and box consumed by its engine and fail closed on unverifiable
+> terms or inputs. It also corrects the cellulose I-alpha `(010)` slab's
+> triclinic lateral periodic seam. **Odd-DP chains** remain planned. Feedback
+> and contributions are welcome.
 
-> **Release status:** CelluloseForge 1.3.0 is the release candidate described by this branch. Its
+> **Release status:** CelluloseForge 1.4.0 is the release described by this tag. Its
 > supported and validated boundaries are intentionally narrower than the
 > long-term project plan. Every supported combination is validated as
 > described in [Validation](#validation).

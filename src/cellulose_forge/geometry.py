@@ -1246,7 +1246,7 @@ def build_slab_with_sizing(  # noqa: PLR0913
     )
     realized_width = float(slab.basis_vectors[0, 0])
     realized_thickness = float(slab.basis_vectors[2, 2]) - vacuum
-    realized_length = float(slab.basis_vectors[1, 1]) - padding_z
+    realized_length = chain_repeat_length * (degree_polymerization // 2)
     physical_axes = sum(value is not None for value in (width, thickness, length))
     size_mode = (
         "physical_dimensions"
@@ -1451,7 +1451,11 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     lattice_surface_vector = (transverse_indices[1] // divisor) * vectors[transverse_axes[0]] - (
         transverse_indices[0] // divisor
     ) * vectors[transverse_axes[1]]
-    lattice_surface_repeat = abs(float(np.dot(lattice_surface_vector, surface_x)))
+    projected_surface_vector = np.asarray(lattice_surface_vector @ axes.T, dtype=np.float64)
+    if projected_surface_vector[0] < 0.0:
+        projected_surface_vector *= -1.0
+    projected_surface_vector[np.abs(projected_surface_vector) < _ORTHOGONAL_TOLERANCE] = 0.0
+    lattice_surface_repeat = float(projected_surface_vector[0])
     selected_x_by_row = [
         sorted(candidate[1] for candidate in selected[index : index + chains_per_layer])
         for index in range(0, len(selected), chains_per_layer)
@@ -1464,7 +1468,36 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
     ]
     surface_repeat_length = float(np.median(spacings)) if spacings else lattice_surface_repeat
     periodic_width = surface_repeat_length * chains_per_layer
-    basis = np.diag([periodic_width, chain_length + padding_z, float(extents[2]) + vacuum])
+    # Preserve the complete crystallographic surface translation.  In a
+    # triclinic crystal it can contain a component parallel to the chains.  A
+    # diagonal box discards that component and joins unlike images at the
+    # lateral seam (notably cellulose I-alpha (010)).
+    surface_scale = surface_repeat_length / lattice_surface_repeat
+    periodic_surface_vector = projected_surface_vector * surface_scale * chains_per_layer
+    periodic_surface_vector[0] = periodic_width
+    basis = np.vstack(
+        [
+            periodic_surface_vector,
+            np.array([0.0, chain_length + padding_z, 0.0]),
+            np.array([0.0, 0.0, float(extents[2]) + vacuum]),
+        ]
+    )
+    has_chain_direction_tilt = abs(float(periodic_surface_vector[1])) > _ORTHOGONAL_TOLERANCE
+    if has_chain_direction_tilt:
+        surface_direction = periodic_surface_vector / np.linalg.norm(periodic_surface_vector)
+        reduced_axes = np.vstack(
+            [
+                surface_direction,
+                np.array([-surface_direction[1], surface_direction[0], 0.0]),
+                np.array([0.0, 0.0, 1.0]),
+            ]
+        )
+        projected = projected @ reduced_axes.T
+        basis = basis @ reduced_axes.T
+        basis[1] -= basis[0] * round(float(basis[1, 0] / basis[0, 0]))
+        basis[np.abs(basis) < _ORTHOGONAL_TOLERANCE] = 0.0
+        projected[:, 0] -= float(np.min(projected[:, 0]))
+        projected[:, 1] -= float(np.min(projected[:, 1])) - padding_z / 2.0
     termination_annotations: tuple[str, ...] = ()
     if requested_termination is not None:
         chain_type = _I_BETA_CHAIN_TYPE_NAMES[requested_termination]
@@ -1472,6 +1505,19 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             f"requested_face_chain_type={chain_type}",
             "requested face is the low-z surface",
         )
+    surface_vector_annotations = (
+        (
+            "lateral box vector preserves its crystallographic chain-direction component",
+            "box and coordinates rotated together into reduced triclinic form",
+        )
+        if has_chain_direction_tilt
+        else ()
+    )
+    orientation_annotation = (
+        "surface normal aligned with Cartesian -z; chains lie in the Cartesian x-y plane"
+        if has_chain_direction_tilt
+        else "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y"
+    )
     return BulkCrystal(
         allomorph=allomorph.name,
         space_group="P1",
@@ -1492,7 +1538,8 @@ def _build_exploratory_chain_parallel_slab(  # noqa: PLR0912, PLR0913, PLR0915
             f"vacuum={vacuum:.6f} angstrom",
             f"padding_z={padding_z:.6f} angstrom total longitudinal padding",
             f"lateral_repeat={surface_repeat_length:.6f} angstrom",
-            "surface normal aligned with Cartesian -z; chains aligned with Cartesian -y",
+            *surface_vector_annotations,
+            orientation_annotation,
             "chain numbering starts at requested low-z face; within each layer low-x to high-x",
             "construction=whole_chain_reciprocal_lattice_cut",
             *termination_annotations,

@@ -613,7 +613,11 @@ def test_allomorph_chain_parallel_slabs_preserve_complete_chains_and_layers(
     assert slab.atom_count == expected_atoms
     assert set(slab.chain_numbers) == set(range(1, layers * chains_per_layer + 1))
     assert set(slab.residue_numbers) == set(range(1, degree_polymerization + 1))
-    assert_allclose(slab.basis_vectors - np.diag(np.diag(slab.basis_vectors)), 0.0)
+    if allomorph_key == "i_alpha":
+        assert slab.basis_vectors[1, 0] != pytest.approx(0.0)
+        assert_allclose(slab.basis_vectors[[0, 0, 1, 2, 2], [1, 2, 2, 0, 1]], 0.0)
+    else:
+        assert_allclose(slab.basis_vectors - np.diag(np.diag(slab.basis_vectors)), 0.0)
     chain_numbers = np.asarray(slab.chain_numbers)
     layer_centers = [
         np.mean(
@@ -631,6 +635,39 @@ def test_allomorph_chain_parallel_slabs_preserve_complete_chains_and_layers(
     assert "construction=whole_chain_reciprocal_lattice_cut" in slab.annotations
 
 
+@pytest.mark.parametrize("chains_per_layer", [2, 3, 4, 5, 6, 7, 8, 9, 10])
+def test_i_alpha_010_slab_preserves_triclinic_lateral_seam(
+    chains_per_layer: int,
+) -> None:
+    slab = build_chain_parallel_slab(
+        load_allomorph("i_alpha"),
+        MillerIndex(0, 1, 0),
+        layers=3,
+        chains_per_layer=chains_per_layer,
+        degree_polymerization=6,
+        vacuum=12.0,
+    )
+    coordinates = slab.cartesian_coordinates
+    chains = np.asarray(slab.chain_numbers)
+    image_shifts = np.asarray(
+        [
+            i * slab.basis_vectors[0] + j * slab.basis_vectors[1] + k * slab.basis_vectors[2]
+            for i in (-1, 0, 1)
+            for j in (-1, 0, 1)
+            for k in (-1, 0, 1)
+        ]
+    )
+    minimum = np.inf
+    for index, coordinate in enumerate(coordinates):
+        offsets = coordinates[chains != chains[index]] - coordinate
+        image_offsets = offsets[:, np.newaxis, :] + image_shifts[np.newaxis, :, :]
+        minimum = min(minimum, float(np.min(np.linalg.norm(image_offsets, axis=2))))
+
+    assert minimum == pytest.approx(1.8678578642, abs=1.0e-6)
+    assert slab.basis_vectors[0, 0] == pytest.approx(chains_per_layer * 5.962, abs=1.0e-6)
+    assert abs(slab.basis_vectors[1, 0]) <= slab.basis_vectors[0, 0] / 2.0
+
+
 def test_finite_slab_chain_end_padding_expands_and_centers_box() -> None:
     definition = load_allomorph("i_alpha")
     slab = build_chain_parallel_slab(
@@ -644,8 +681,7 @@ def test_finite_slab_chain_end_padding_expands_and_centers_box() -> None:
         chain_boundary="finite",
     )
 
-    assert slab.basis_vectors[1, 1] == pytest.approx(32.8)
-    assert np.min(slab.cartesian_coordinates[:, 1]) == pytest.approx(6.0)
+    assert np.linalg.norm(slab.basis_vectors[1] + slab.basis_vectors[0]) == pytest.approx(32.8)
     assert any(annotation.startswith("padding_z=12.000000") for annotation in slab.annotations)
 
 
@@ -810,8 +846,13 @@ def test_i_alpha_physical_slab_length_uses_its_a_chain_axis() -> None:
         padding_z=12.0,
     )
 
-    assert slab.basis_vectors[1, 1] - 12.0 >= 25.0
-    assert slab.basis_vectors[1, 1] == pytest.approx(3 * 10.4 + 12.0)
+    assert np.linalg.norm(slab.basis_vectors[1] + slab.basis_vectors[0]) == pytest.approx(
+        3 * 10.4 + 12.0
+    )
+    assert any(
+        annotation == "requested_length=25.000000 angstrom realized_length=31.200000 angstrom"
+        for annotation in slab.annotations
+    )
 
 
 @pytest.mark.parametrize(
