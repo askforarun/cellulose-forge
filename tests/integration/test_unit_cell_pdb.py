@@ -601,6 +601,91 @@ def test_cli_rejects_longitudinal_padding_for_periodic_fibril(tmp_path: Path) ->
         )
 
 
+def test_coordinate_only_finite_slab_contains_explicit_terminal_caps(tmp_path: Path) -> None:
+    output = tmp_path / "finite_complete.pdb"
+    assert (
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "slab",
+                "--face",
+                "1",
+                "1",
+                "0",
+                "--layers",
+                "2",
+                "--chains-per-layer",
+                "4",
+                "--degree-polymerization",
+                "4",
+                "--chain-boundary",
+                "finite",
+                "--padding-longitudinal",
+                "12",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    records = [
+        line
+        for line in output.read_text(encoding="utf-8").splitlines()
+        if line.startswith("HETATM")
+    ]
+    names = [line[12:16].strip() for line in records]
+    assert len(records) == 696
+    assert {name: names.count(name) for name in ("O1", "HO1", "HO4")} == {
+        "O1": 8,
+        "HO1": 8,
+        "HO4": 8,
+    }
+    report = json.loads(output.with_suffix(".build_report.json").read_text(encoding="utf-8"))
+    assert report["crystallographic_atom_count"] == 672
+    assert report["chemical_atom_count"] == 696
+
+
+def test_coordinate_only_finite_fibril_contains_caps_on_every_chain(tmp_path: Path) -> None:
+    output = tmp_path / "finite_fibril_complete.pdb"
+    assert (
+        main(
+            [
+                "build",
+                "--allomorph",
+                "I-beta",
+                "--shape",
+                "fibril",
+                "--fibril-model",
+                "18-chain",
+                "--degree-polymerization",
+                "4",
+                "--chain-boundary",
+                "finite",
+                "--padding-longitudinal",
+                "12",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    records = [
+        line
+        for line in output.read_text(encoding="utf-8").splitlines()
+        if line.startswith("HETATM")
+    ]
+    names = [line[12:16].strip() for line in records]
+    assert len(records) == 18 * (4 * 21 + 3)
+    assert {name: names.count(name) for name in ("O1", "HO1", "HO4")} == {
+        "O1": 18,
+        "HO1": 18,
+        "HO4": 18,
+    }
+
+
 def test_cli_writes_periodic_glycam_fibril_system(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

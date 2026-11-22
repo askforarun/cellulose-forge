@@ -703,9 +703,11 @@ cellulose-forge build \
   --output ibeta_110_charmm36
 ```
 
-The output directory contains `structure.gro`, `structure.pdb` (or mmCIF for
-large systems), `cellulose_charmm36.itp`, `system.top`, `minim.mdp`, `nvt.mdp`,
-the pinned local force-field files, and `build_report.json`. Preprocess it with:
+The output directory contains chemically complete `structure.gro` and
+`structure.pdb` files in force-field atom order, the original diffraction-derived
+geometry as `crystal_structure.pdb`, `cellulose_charmm36.itp`, `system.top`,
+`minim.mdp`, `nvt.mdp`, the pinned local force-field files, and
+`build_report.json`. Preprocess it with:
 
 ```bash
 gmx grompp \
@@ -861,6 +863,13 @@ structure.cif
 structure.mmcif
 ```
 
+When `--chain-boundary finite` is selected for cellulose or chitin, the
+coordinate-only file is chemically complete: O1/HO1 cap each reducing end and
+HO4 caps each non-reducing end. These coordinates are generated before and
+independently of force-field assignment. Periodic chains correctly remain
+uncapped. Unit-cell and bulk coordinate-only files without a finite boundary
+remain diffraction-derived crystallographic models.
+
 When physical slab dimensions are requested, the report records both the
 requested and realized dimensions in `geometry_annotations`. The reported DP
 is the even number of anhydroglucose units obtained by rounding the requested
@@ -870,7 +879,8 @@ chain-direction length upward to complete cellobiose repeats.
 
 ```text
 ibeta_fibril/
-├── structure.pdb       # or structure.cif for more than 99,999 crystal atoms
+├── structure.pdb       # chemically complete, in force-field atom order
+├── crystal_structure.pdb # diffraction-derived diagnostic geometry
 ├── structure.gro       # GROMACS coordinates            (--md-engine gromacs)
 ├── system.top          # standalone GROMACS topology
 ├── minim.mdp           # GROMACS minimization input

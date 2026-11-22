@@ -35,6 +35,11 @@ All notable changes to CelluloseForge are documented in this file.
 
 ### Changed
 
+- Finite coordinate-only cellulose and chitin structures now include explicit
+  O1/HO1 and HO4 terminal caps before force-field assignment. Force-field
+  bundles write the same chemically complete atom ordering to `structure.pdb`
+  and retain the diffraction-derived model separately as
+  `crystal_structure.pdb`.
 - Unified GROMACS, OpenMM, LAMMPS, NAMD and finite-chain Amber single-point
   energies behind one canonical, fail-closed report schema. Live validators
   verify the coordinates and box actually consumed by each engine, normalize

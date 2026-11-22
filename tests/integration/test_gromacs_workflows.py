@@ -227,6 +227,21 @@ def test_charmm36_slab_passes_grompp(
     )
     _grompp(output, Path(__file__).parents[2] / "validation/grompp_minim.mdp")
     assert _single_point_bond_energy_per_atom(output) < 50.0
+    pdb_records = [
+        line
+        for line in (output / "structure.pdb").read_text(encoding="utf-8").splitlines()
+        if line.startswith("HETATM")
+    ]
+    gro_lines = (output / "structure.gro").read_text(encoding="utf-8").splitlines()
+    gro_atom_count = int(gro_lines[1])
+    assert len(pdb_records) == gro_atom_count
+    assert [line[12:16].strip() for line in pdb_records] == [
+        line[10:15].strip() for line in gro_lines[2 : gro_atom_count + 2]
+    ]
+    if chain_boundary == "finite":
+        names = [line[12:16].strip() for line in pdb_records]
+        assert {"O1", "HO1", "HO4"} <= set(names)
+    assert (output / "crystal_structure.pdb").is_file()
 
 
 def test_periodic_i_beta_glycam_slab_retains_core_geometry_during_short_nvt(

@@ -46,6 +46,59 @@ _MISSING_II_HYDROGENS = frozenset({"HO2", "HO3", "HO6"})
 _REDUCING_CAP = frozenset({"O1", "HO1"})
 _NONREDUCING_CAP = frozenset({"HO4"})
 
+_CELLULOSE_ATOM_ORDER = (
+    "C1",
+    "H1",
+    "C2",
+    "H2",
+    "C3",
+    "H3",
+    "C4",
+    "H4",
+    "C5",
+    "H5",
+    "C6",
+    "H61",
+    "H62",
+    "O2",
+    "O3",
+    "O4",
+    "O5",
+    "O6",
+    "HO2",
+    "HO3",
+    "HO6",
+)
+_CHITIN_ATOM_ORDER = (
+    "C1",
+    "H1",
+    "C2",
+    "H2",
+    "C3",
+    "H3",
+    "C4",
+    "H4",
+    "C5",
+    "H5",
+    "C6",
+    "H61",
+    "H62",
+    "N2",
+    "HN2",
+    "C7",
+    "O7",
+    "C8",
+    "H81",
+    "H82",
+    "H83",
+    "O3",
+    "O4",
+    "O5",
+    "O6",
+    "HO3",
+    "HO6",
+)
+
 _INTERNAL_REFERENCE = {
     "C1": (2.720, 11.610, 12.966),
     "H1": (2.053, 11.447, 12.268),
@@ -106,6 +159,45 @@ def chain_template(atoms: Iterable[tuple[str, int]]) -> tuple[ChainTemplateAtom,
             raise ValueError(f"duplicate chain-template atom {atom.name} in residue {key[0]}")
         seen.add(key)
     return template
+
+
+def map_chemically_complete_structure(
+    crystal: BulkCrystal, chain_boundary: str, polymer: str
+) -> GlycamMappedSystem:
+    """Return coordinates with explicit caps before force-field assignment.
+
+    Finite cellulose and chitin chains receive O1/HO1 on the reducing end and
+    HO4 on the non-reducing end. Periodic chains correctly remain uncapped.
+    """
+    try:
+        internal_names, residue_name = {
+            "cellulose": (_CELLULOSE_ATOM_ORDER, "BGC"),
+            "chitin": (_CHITIN_ATOM_ORDER, "NAG"),
+        }[polymer]
+    except KeyError as error:
+        raise ValueError(
+            f"chemically complete coordinate output is not implemented for {polymer}"
+        ) from error
+    if not crystal.chain_numbers or not crystal.residue_numbers:
+        raise ValueError("chemical coordinate mapping requires chain and residue numbers")
+    first_chain = crystal.chain_numbers[0]
+    degree = len(
+        {
+            residue
+            for chain, residue in zip(crystal.chain_numbers, crystal.residue_numbers, strict=True)
+            if chain == first_chain
+        }
+    )
+    atoms: list[tuple[str, int]] = []
+    for residue in range(1, degree + 1):
+        atoms.extend((name, residue) for name in internal_names)
+        if chain_boundary == "finite" and residue == 1:
+            atoms.extend((("O1", residue), ("HO1", residue)))
+        if chain_boundary == "finite" and residue == degree:
+            atoms.append(("HO4", residue))
+    return map_crystal_to_chain_template(
+        crystal, chain_template(atoms), chain_boundary, residue_name
+    )
 
 
 def reduced_periodic_box(box: FloatArray) -> FloatArray:

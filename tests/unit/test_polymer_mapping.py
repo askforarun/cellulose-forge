@@ -31,6 +31,7 @@ from cellulose_forge.opls import build_chain_graph, build_opls_system
 from cellulose_forge.polymer_mapping import (
     ChainTemplateAtom,
     chain_template,
+    map_chemically_complete_structure,
     map_crystal_to_chain_template,
 )
 
@@ -217,6 +218,31 @@ def test_finite_caps_bond_to_their_anchor_atoms() -> None:
                 np.subtract(mapped[chain, residue, donor], mapped[chain, residue, acceptor])
             )
             assert 0.9 < distance < 1.5, (chain, donor, acceptor, distance)
+
+
+@pytest.mark.parametrize(
+    ("polymer", "allomorph", "internal_atoms"),
+    [("cellulose", "i_beta", 21), ("chitin", "beta", 27)],
+)
+def test_force_field_independent_finite_coordinates_are_chemically_complete(
+    polymer: str, allomorph: str, internal_atoms: int
+) -> None:
+    crystal = _slab(allomorph, "finite", polymer)
+    mapped = map_chemically_complete_structure(crystal, "finite", polymer)
+    chain_count = len(set(crystal.chain_numbers))
+    assert mapped.atom_count == chain_count * (_DP * internal_atoms + 3)
+    for chain in set(mapped.chain_numbers):
+        identities = {
+            (residue, name)
+            for mapped_chain, residue, name in zip(
+                mapped.chain_numbers,
+                mapped.residue_numbers,
+                mapped.atom_names,
+                strict=True,
+            )
+            if mapped_chain == chain
+        }
+        assert {(1, "O1"), (1, "HO1"), (_DP, "HO4")} <= identities
 
 
 def test_template_order_does_not_change_coordinates() -> None:

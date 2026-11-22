@@ -258,9 +258,12 @@ The important arguments are:
 - `--chain-boundary finite`: do not join the last residue to the first;
 - `--vacuum 30`: add a total of 30 Å normal to the slab.
 
-The coordinate-only structure contains crystallographic atoms. Force-field
-mode later constructs the additional terminal atoms required for finite GLYCAM
-chains. Coordinate-only finite builds may omit longitudinal padding, but they
+With `--chain-boundary finite`, the coordinate-only structure already contains
+the O1/HO1 and HO4 terminal caps. Cap placement is a shared chemical-coordinate
+step and does not depend on selecting a force field. Periodic chains remain
+uncapped; unit-cell and bulk builds without a finite boundary remain the
+diffraction-derived crystallographic model. Coordinate-only finite builds may
+omit longitudinal padding, but they
 emit a warning because a periodic simulation box must separate the capped ends
 from their images. Finite force-field slabs and fibrils require at least 3 Å
 and should use at least 12 Å through `--padding-longitudinal`; the validated
@@ -534,6 +537,7 @@ Unlike coordinate-only mode, the output is a directory:
 ```text
 ibeta_fibril_glycam/
 ├── structure.pdb
+├── crystal_structure.pdb
 ├── structure.gro
 ├── system.top
 └── build_report.json
@@ -698,7 +702,8 @@ I-alpha, I-beta, and II.
 Each CHARMM36 output directory contains:
 
 ```text
-structure.pdb                 crystallographic/force-field coordinates
+structure.pdb                 chemically complete force-field-order coordinates
+crystal_structure.pdb         diffraction-derived diagnostic coordinates
 structure.gro                 GROMACS coordinates
 cellulose_charmm36.itp        generated cellulose topology
 system.top                    complete GROMACS system topology

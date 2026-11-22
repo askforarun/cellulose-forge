@@ -28,7 +28,7 @@ from cellulose_forge.clashes import (
     validate_periodic_glycosidic_bonds,
     validate_periodic_gromacs_topology_bonds,
 )
-from cellulose_forge.coordinates import write_coordinates
+from cellulose_forge.coordinates import write_coordinates, write_mapped_coordinates
 from cellulose_forge.crystallography import AllomorphDefinition, MillerIndex, load_allomorph
 from cellulose_forge.doctor import render_json, render_text, run_diagnostics
 from cellulose_forge.forcefields import (
@@ -83,6 +83,7 @@ from cellulose_forge.opls import (
     write_opls_system,
 )
 from cellulose_forge.opls_engines import write_opls_lammps, write_opls_openmm
+from cellulose_forge.polymer_mapping import map_chemically_complete_structure
 from cellulose_forge.polymer_profiles import capability_error, engine_capability_error
 from cellulose_forge.restraints import (
     ChainRestraints,
@@ -449,8 +450,25 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
             ):
                 build_parser().error("chain restraints require --force-field glycam or charmm36")
             args.output.parent.mkdir(parents=True, exist_ok=True)
-            written_path = write_coordinates(crystal, args.output)
-            _write_coordinate_only_report(args, crystal, written_path, definition)
+            chemical_atom_count = None
+            if args.chain_boundary == "finite":
+                try:
+                    mapped = map_chemically_complete_structure(
+                        crystal, args.chain_boundary, args.polymer
+                    )
+                except ValueError as error:
+                    build_parser().error(str(error))
+                written_path = write_mapped_coordinates(mapped, crystal, args.output)
+                chemical_atom_count = mapped.atom_count
+            else:
+                written_path = write_coordinates(crystal, args.output)
+            _write_coordinate_only_report(
+                args,
+                crystal,
+                written_path,
+                definition,
+                chemical_atom_count=chemical_atom_count,
+            )
             if written_path != args.output:
                 print(
                     f"Requested structure has {crystal.atom_count} atoms; "
@@ -573,6 +591,8 @@ def _write_coordinate_only_report(
     crystal: BulkCrystal,
     coordinate_path: Path,
     definition: AllomorphDefinition,
+    *,
+    chemical_atom_count: int | None = None,
 ) -> Path:
     """Write a sibling build report for a coordinate-only construction."""
     requested_output = Path(args.output)
@@ -587,6 +607,7 @@ def _write_coordinate_only_report(
         "degree_polymerization": _crystal_degree_polymerization(crystal),
         "chain_count": len(set(crystal.chain_numbers)),
         "crystallographic_atom_count": crystal.atom_count,
+        "chemical_atom_count": chemical_atom_count or crystal.atom_count,
         "requested_output": str(requested_output),
         "outputs": {"coordinates": coordinate_path.name},
         "geometry_annotations": list(crystal.annotations),
@@ -891,7 +912,8 @@ def _write_opls_build(
         parser.error(str(error))
     dispersion = dispersion_correction(args.force_field, args.shape)
     outputs, engine_metadata = _write_opls_engines(args, build, dispersion, parser)
-    coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
+    crystal_coordinate_path = write_coordinates(crystal, args.output / "crystal_structure.pdb")
+    coordinate_path = write_mapped_coordinates(build.mapped, crystal, args.output / "structure.pdb")
     report: dict[str, object] = {
         "software": "CelluloseForge",
         "version": __version__,
@@ -906,7 +928,11 @@ def _write_opls_build(
         "atom_count": build.mapped.atom_count,
         "dispersion_correction": dispersion,
         "md_engines": list(args.md_engines),
-        "outputs": {"coordinates": coordinate_path.name, **outputs},
+        "outputs": {
+            "coordinates": coordinate_path.name,
+            "crystallographic_coordinates": crystal_coordinate_path.name,
+            **outputs,
+        },
         "parameters": topology_report(build.topology),
         "engine_validation": engine_metadata,
         "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),
@@ -1093,7 +1119,8 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             restrained_molecule_type=f"{topology.molecule_name}_RESTRAINED",
         )
     args.output.mkdir(parents=True, exist_ok=True)
-    coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
+    crystal_coordinate_path = write_coordinates(crystal, args.output / "crystal_structure.pdb")
+    coordinate_path = write_mapped_coordinates(mapped, crystal, args.output / "structure.pdb")
     write_gromacs = "gromacs" in args.md_engines
     openmm_files: OpenMMSystemFiles | None = None
     openmm_metadata: dict[str, object] | None = None
@@ -1230,7 +1257,8 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             ),
             openmm_files,
             lammps_files,
-        ),
+        )
+        | {"crystallographic_coordinates": crystal_coordinate_path.name},
         "geometry_annotations": list(crystal.annotations),
         "chirality_validation": _validate_polymer_chirality(crystal, args.polymer),
     }
@@ -1362,7 +1390,12 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                 restrained_molecule_type=f"{molecule_name}_RESTRAINED",
             )
         output_directory.mkdir(parents=True, exist_ok=True)
-        coordinate_path = write_coordinates(crystal, output_directory / "structure.pdb")
+        crystal_coordinate_path = write_coordinates(
+            crystal, output_directory / "crystal_structure.pdb"
+        )
+        coordinate_path = write_mapped_coordinates(
+            mapped, crystal, output_directory / "structure.pdb"
+        )
         if write_gromacs or write_openmm or write_lammps:
             gromacs_directory = output_directory if write_gromacs else Path(temporary) / "gromacs"
             written_gro, written_topology = write_glycam_gromacs_system(
@@ -1431,6 +1464,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             }
         )
     outputs = _engine_outputs(coordinate_path, engine_files, openmm_files, lammps_files)
+    outputs["crystallographic_coordinates"] = crystal_coordinate_path.name
     report = {
         "cellulose_forge_version": __version__,
         "polymer": args.polymer,
