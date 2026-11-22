@@ -19,6 +19,12 @@ def _pdb_names(path: Path) -> list[str]:
     ]
 
 
+def _pdb_header(path: Path) -> list[str]:
+    return [
+        line for line in path.read_text(encoding="utf-8").splitlines() if line.startswith("REMARK")
+    ]
+
+
 def _gro_atoms(path: Path) -> list[tuple[int, str, np.ndarray]]:
     lines = path.read_text(encoding="utf-8").splitlines()
     atom_count = int(lines[1])
@@ -53,6 +59,9 @@ def test_finite_face_examples_are_capped_and_longitudinally_separated(stem: str)
         "HO1": 24,
         "HO4": 24,
     }
+    assert _pdb_header(directory / f"{stem}.pdb")[2] == (
+        "REMARK  chain IDs follow the crystal; residues run reducing to non-reducing end"
+    )
     report = json.loads((directory / f"{stem}.build_report.json").read_text(encoding="utf-8"))
     assert report["chemical_atom_count"] == 3096
     assert any("padding_z=12.000000" in item for item in report["geometry_annotations"])
@@ -75,6 +84,10 @@ def test_finite_md_example_pdb_matches_simulation_atom_count(
     assert len(pdb_names) == gro_count
     assert pdb_names == [line[10:15].strip() for line in gro_lines[2 : gro_count + 2]]
     assert {"O1", "HO1", terminal_hydrogen} <= set(pdb_names)
+    header = _pdb_header(directory / "structure.pdb")
+    assert header[2] == (
+        "REMARK  chain IDs follow the crystal; residues run reducing to non-reducing end"
+    )
     assert (directory / "crystal_structure.pdb").is_file()
     assert len(_pdb_names(directory / "crystal_structure.pdb")) < gro_count
 
@@ -101,6 +114,10 @@ def test_periodic_charmm36_example_pdb_matches_simulation_atom_order(folder: str
     assert len(pdb_names) == gro_count
     assert pdb_names == [line[10:15].strip() for line in gro_lines[2 : gro_count + 2]]
     assert not {"O1", "HO1", "HO4"} & set(pdb_names)
+    header = _pdb_header(directory / "structure.pdb")
+    assert header[2] == (
+        "REMARK  chain IDs follow the crystal; residue numbers follow mapped topology"
+    )
     crystal_path = directory / "crystal_structure.pdb"
     assert crystal_path.is_file()
     assert len(_pdb_names(crystal_path)) == gro_count
