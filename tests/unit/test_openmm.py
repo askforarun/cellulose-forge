@@ -90,6 +90,11 @@ def test_runner_embeds_axis_periodicity_and_restraint_parameter() -> None:
     text = render_openmm_runner(chain_axis="y", periodic_chains=True, has_restraints=True)
 
     assert 'CHAIN_AXIS = "y"' in text
+    assert "openmm.Vec3(args.pressure_bar, args.pressure_bar, args.pressure_bar) * unit.bar" in text
+    assert (
+        "platform = openmm.Platform.getPlatformByName(args.platform) if args.platform else None"
+        in text
+    )
     assert "PERIODIC_CHAINS = True" in text
     assert "HAS_RESTRAINTS = True" in text
     assert POSITION_RESTRAINT_SCALE_PARAMETER in text

@@ -41,8 +41,8 @@ of the License, or (at your option) any later version.
                            Berk Hess and Erik Lindahl
 
 GROMACS:      gmx mdrun, version 2024.2-Homebrew
-Executable:   /opt/homebrew/bin/../Cellar/gromacs/2024.2/bin/gmx
-Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2024.2
+Executable:   <redacted>
+Data prefix:  <redacted>
 Working dir:  <local-path>
 Process ID:   7804
 Command line:
@@ -61,9 +61,9 @@ Multi-GPU FFT:       none
 TNG support:         enabled
 Hwloc support:       disabled
 Tracing support:     disabled
-C compiler:          /opt/homebrew/opt/gcc/bin/gcc-14
+C compiler:          <redacted>
 C compiler flags:    -fexcess-precision=fast -funroll-all-loops -Wno-missing-field-initializers -O3 -DNDEBUG
-C++ compiler:        /opt/homebrew/opt/gcc/bin/g++-14
+C++ compiler:        <redacted>
 C++ compiler flags:  -fexcess-precision=fast -funroll-all-loops -Wno-missing-field-initializers -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-return-std-move-in-c++11 -Wno-source-uses-openmp -Wno-c++17-extensions -Wno-documentation-unknown-command -Wno-covered-switch-default -Wno-switch-enum -Wno-switch-default -Wno-extra-semi-stmt -Wno-weak-vtables -Wno-shadow -Wno-padded -Wno-reserved-id-macro -Wno-double-promotion -Wno-exit-time-destructors -Wno-global-constructors -Wno-documentation -Wno-format-nonliteral -Wno-used-but-marked-unused -Wno-float-equal -Wno-conditional-uninitialized -Wno-conversion -Wno-disabled-macro-expansion -Wno-unused-macros -Wno-unsafe-buffer-usage -Wno-cast-function-type-strict SHELL:-fopenmp -O3 -DNDEBUG
 BLAS library:        External - detected on the system
 LAPACK library:      External - detected on the system

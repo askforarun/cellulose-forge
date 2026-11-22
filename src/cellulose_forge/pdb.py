@@ -35,6 +35,9 @@ def write_pdb(crystal: BulkCrystal, path: str | Path) -> None:
     chemically_complete = any(
         annotation == "chemically complete mapped coordinates" for annotation in crystal.annotations
     )
+    finite_caps = any(
+        annotation.startswith("finite-chain terminal caps:") for annotation in crystal.annotations
+    )
     description = (
         "chemically complete mapped-coordinate PDB"
         if chemically_complete
@@ -48,12 +51,12 @@ def write_pdb(crystal: BulkCrystal, path: str | Path) -> None:
     ]
     if crystal.chain_ids and crystal.allomorph == "I-beta":
         lines.insert(2, "REMARK  unit-cell chain A=origin chain B=center for cellulose I-beta")
-        if chemically_complete:
+        if finite_caps:
             lines.insert(
                 2,
                 "REMARK  chain IDs follow the crystal; residues run reducing to non-reducing end",
             )
-    elif crystal.chain_ids and chemically_complete:
+    elif crystal.chain_ids and finite_caps:
         lines.insert(
             2,
             "REMARK  chain IDs follow the crystal; residues run reducing to non-reducing end",
