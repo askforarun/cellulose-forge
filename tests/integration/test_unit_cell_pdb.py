@@ -695,7 +695,9 @@ def test_cli_writes_selectively_restrained_fibril_chains(
     restraints = report["position_restraints"]
     assert restraints["selected_chain_ids"] == [6, 11, 16, 21, 26, 31]
     assert restraints["force_constants_kj_mol_nm2"] == [1000.0, 1000.0, 1000.0]
-    assert restraints["atom_selection"] == "heavy atoms in each selected chain"
+    assert restraints["atom_selection"] == "all real heavy atoms in each selected chain"
+    assert restraints["selection_mode"] == "all_heavy_atoms"
+    assert restraints["canonical_atom_names"] == []
     assert [
         entry["original_chain_id"]
         for entry in restraints["chain_mapping"]

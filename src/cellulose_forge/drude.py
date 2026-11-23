@@ -28,6 +28,7 @@ from cellulose_forge.polymer_mapping import (
     map_crystal_to_chain_template,
     minimum_image,
 )
+from cellulose_forge.restraints import atom_element, resolve_restraint_atom_indices
 
 DRUDE_RELEASE = "2023a"
 DRUDE_RESIDUE_NAME = "BGLC"
@@ -76,18 +77,24 @@ class DrudeSystemFiles:
 
 
 def drude_heavy_atom_restraint_indices(
-    system: DrudeSystem, chain_ids: tuple[int, ...]
+    system: DrudeSystem,
+    chain_ids: tuple[int, ...],
+    atom_names: tuple[str, ...] = (),
 ) -> tuple[int, ...]:
-    """Return zero-based real-heavy-atom indices for selected crystal chains."""
-    selected = set(chain_ids)
+    """Return shared-resolver real-heavy-atom indices for selected chains."""
     per_chain = len(system.topology.sites)
-    return tuple(
-        chain_index * per_chain + site_index
-        for chain_index, chain_id in enumerate(system.chain_numbers)
-        if chain_id in selected
-        for site_index, site in enumerate(system.topology.sites)
-        if site.kind == "atom" and not site.name.upper().startswith("H")
+    sites = system.topology.sites * system.chain_count
+    resolved = resolve_restraint_atom_indices(
+        canonical_atom_names=tuple(site.name.upper() for site in sites),
+        elements=tuple(atom_element(site.name) if site.kind == "atom" else "X" for site in sites),
+        site_kinds=tuple(site.kind for site in sites),
+        chain_numbers=tuple(
+            chain_id for chain_id in system.chain_numbers for _ in range(per_chain)
+        ),
+        restrained_chain_ids=chain_ids,
+        requested_atom_names=atom_names,
     )
+    return resolved.atom_indices
 
 
 def validate_drude_toppar_directory(directory: str | Path) -> tuple[Path, Path]:
@@ -594,6 +601,7 @@ def write_drude_namd_system(  # noqa: PLR0913 - explicit build options
     write_run_input: bool = True,
     write_openmm_runner: bool = False,
     restraint_chain_ids: tuple[int, ...] = (),
+    restraint_atom_names: tuple[str, ...] = (),
     restraint_force: tuple[float, float, float] | None = None,
 ) -> DrudeSystemFiles:
     """Write a native CHARMM Drude PSF and coordinates, and optionally a NAMD input.
@@ -626,7 +634,9 @@ def write_drude_namd_system(  # noqa: PLR0913 - explicit build options
         definitions, lengths.pop(), periodic=chain_boundary == "periodic"
     )
     system = build_drude_system(crystal, topology, chain_boundary)
-    restraint_indices = drude_heavy_atom_restraint_indices(system, restraint_chain_ids)
+    restraint_indices = drude_heavy_atom_restraint_indices(
+        system, restraint_chain_ids, restraint_atom_names
+    )
     if restraint_force is not None and not restraint_indices:
         raise ValueError("CHARMM Drude position restraints selected no real heavy atoms")
     directory = Path(output_directory)
@@ -691,5 +701,6 @@ def write_drude_namd_system(  # noqa: PLR0913 - explicit build options
             "bonds": chains * len(topology.bonds),
             "angles": chains * len(topology.angles),
             "dihedrals": chains * len(topology.dihedrals),
+            "position_restraint_atoms": len(restraint_indices),
         },
     )

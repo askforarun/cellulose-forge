@@ -81,10 +81,13 @@ The generated dry slab and fibril smoke test is NVT. It intentionally has no
 barostat: isotropic pressure coupling would compress the vacuum surrounding
 these non-bulk geometries.
 
-The shared chain/layer selectors may restrain real heavy atoms through an
-OpenMM `CustomExternalForce`. Hydrogens remain free, and independent X/Y/Z
-force constants are supported. The exact selected chain IDs, layer mapping,
-force constants and atom-selection rule are recorded in `build_report.json`.
+The shared chain/layer selectors restrain all real heavy atoms by default and
+may be intersected with canonical mapped-template names through
+`--restrain-atom-names`. The resulting indices feed an OpenMM
+`CustomExternalForce`. Hydrogens remain free, and independent X/Y/Z force
+constants are supported. The exact selected chain IDs, layer mapping, force
+constants, selection mode, names and resolved count are recorded in
+`build_report.json`.
 
 The vacuum rule disables the isotropic vdW long-range correction. OpenMM's
 `TinkerFiles` enables the corresponding `AmoebaVdwForce` flag by default, so

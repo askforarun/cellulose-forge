@@ -20,6 +20,7 @@ import numpy as np
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.geometry import BulkCrystal
 from cellulose_forge.polymer_mapping import chain_template, map_crystal_to_chain_template
+from cellulose_forge.restraints import atom_element, resolve_restraint_atom_indices
 
 AMOEBA_SOURCE_REPOSITORY = "https://github.com/WelbornGroup/Newman_D-Glucose_2026"
 AMOEBA_SOURCE_COMMIT = "a2adb2a3b21f4df9696fcd13cf0cc21d36ae6c71"
@@ -103,6 +104,7 @@ class AmoebaSystemFiles:
     parameter: Path
     openmm_runner: Path
     source_sha256: dict[str, str]
+    restraint_atom_count: int = 0
 
 
 def _sha256(path: Path) -> str:
@@ -235,19 +237,21 @@ def amoeba_heavy_atom_restraint_indices(
     crystal: BulkCrystal,
     degree_polymerization: int,
     chain_ids: tuple[int, ...],
+    atom_names: tuple[str, ...] = (),
 ) -> tuple[int, ...]:
-    """Return zero-based real-heavy-atom indices in generated Tinker order."""
+    """Return shared-resolver real-heavy-atom indices in Tinker order."""
     layout = _atom_layout(degree_polymerization)
     template = chain_template((name, residue) for name, _, residue in layout)
     mapped = map_crystal_to_chain_template(crystal, template, "finite", "BGC")
-    selected = set(chain_ids)
-    return tuple(
-        index
-        for index, (name, chain) in enumerate(
-            zip(mapped.atom_names, mapped.chain_numbers, strict=True)
-        )
-        if chain in selected and not name.upper().startswith("H")
+    resolved = resolve_restraint_atom_indices(
+        canonical_atom_names=tuple(name.upper() for name in mapped.atom_names),
+        elements=tuple(atom_element(name) for name in mapped.atom_names),
+        site_kinds=("atom",) * len(mapped.atom_names),
+        chain_numbers=mapped.chain_numbers,
+        restrained_chain_ids=chain_ids,
+        requested_atom_names=atom_names,
     )
+    return resolved.atom_indices
 
 
 def render_openmm_runner(
@@ -314,6 +318,7 @@ def write_amoeba_system(  # noqa: PLR0913 - explicit build and restraint inputs
     degree_polymerization: int,
     *,
     restraint_chain_ids: tuple[int, ...] = (),
+    restraint_atom_names: tuple[str, ...] = (),
     restraint_force: tuple[float, float, float] | None = None,
 ) -> AmoebaSystemFiles:
     """Write a finite cellulose AMOEBA/OpenMM bundle."""
@@ -325,7 +330,7 @@ def write_amoeba_system(  # noqa: PLR0913 - explicit build and restraint inputs
     reference = _read_reference_topology(reference_path, degree_polymerization)
     xyz_text = render_tinker_xyz(crystal, reference, degree_polymerization)
     restraint_indices = amoeba_heavy_atom_restraint_indices(
-        crystal, degree_polymerization, restraint_chain_ids
+        crystal, degree_polymerization, restraint_chain_ids, restraint_atom_names
     )
     if restraint_force is not None and not restraint_indices:
         raise ValueError("AMOEBA position restraints selected no real heavy atoms")
@@ -354,4 +359,5 @@ def write_amoeba_system(  # noqa: PLR0913 - explicit build and restraint inputs
             AMOEBA_PARAMETER_FILE: _sha256(parameter),
             f"beta_dp{degree_polymerization}_topology": _sha256(reference_path),
         },
+        len(restraint_indices),
     )

@@ -1153,6 +1153,7 @@ def write_charmm36_system(  # noqa: PLR0913
     *,
     restrained_chain_count: int = 0,
     restraint_force: tuple[float, float, float] | None = None,
+    restraint_canonical_atom_names: tuple[str, ...] = (),
     polymer: str = "cellulose",
 ) -> tuple[Path, Path, Path, Path]:
     """Write a CHARMM36 GROMACS system and local FF copy.
@@ -1200,7 +1201,11 @@ def write_charmm36_system(  # noqa: PLR0913
             else tuple(atom.atom_name for atom in topology.topology_atoms)
         )
         restrained_itp += position_restraints_section(
-            restraint_atom_names, restraint_force, define=f"POSRES_{polymer.upper()}"
+            restraint_atom_names,
+            restraint_force,
+            define=f"POSRES_{polymer.upper()}",
+            canonical_atom_names=tuple(_crystal_name(name) for name in restraint_atom_names),
+            selected_atom_names=restraint_canonical_atom_names,
         )
         itp_text += "\n" + restrained_itp
         molecule_rows.append(f"{restrained_name}  {restrained_chain_count}")

@@ -107,6 +107,9 @@ def test_cli_restrained_chitin_uses_posres_chitin(tmp_path: Path) -> None:
         str(force_field),
         "--restrain-layers",
         "1",
+        "--restrain-atom-names",
+        "C7",
+        "C8",
         "--restraint-force",
         "1000",
         "1000",
@@ -118,6 +121,9 @@ def test_cli_restrained_chitin_uses_posres_chitin(tmp_path: Path) -> None:
     assert "POSRES_CELLULOSE" not in itp
     report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
     assert report["position_restraints"]["define"] == "POSRES_CHITIN"
+    assert report["position_restraints"]["selection_mode"] == "named_heavy_atoms"
+    assert report["position_restraints"]["canonical_atom_names"] == ["C7", "C8"]
+    assert report["position_restraints"]["resolved_atom_count"] == 48
 
     gmx = shutil.which("gmx")
     if gmx is None:

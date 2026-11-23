@@ -326,19 +326,18 @@ def _restraint_lines(force_constants: tuple[float, float, float] | None) -> list
 def render_namd_restraint_pdb(
     system: GlycamMappedSystem,
     topology: CharmmTopology,
-    chain_ids: tuple[int, ...],
+    atom_indices: tuple[int, ...],
     force_constants: tuple[float, float, float],
 ) -> str:
-    """Encode selected heavy atoms and the NAMD force coefficient in the B column."""
+    """Encode shared resolved atom indices and the NAMD coefficient in the B column."""
     active = [value for value in force_constants if value > 0.0]
     coefficient = (active[0] if active else 0.0) * _KJ_NM2_TO_NAMD_KCAL_A2
     if coefficient > _MAXIMUM_PDB_B_FACTOR:
         raise ValueError("NAMD restraint force is too large for the PDB B-factor field")
-    selected = set(chain_ids)
+    selected = set(atom_indices)
     lines = render_pdb(system, topology).splitlines()
     atom_lines = iter(
-        coefficient if chain in selected and not name.upper().startswith("H") else 0.0
-        for name, chain in zip(system.atom_names, system.chain_numbers, strict=True)
+        coefficient if index in selected else 0.0 for index in range(len(system.atom_names))
     )
     rendered: list[str] = []
     for line in lines:
@@ -624,7 +623,7 @@ def write_namd_system(  # noqa: PLR0913
     output_directory: str | Path,
     *,
     periodic_chains: bool,
-    restraint_chain_ids: tuple[int, ...] = (),
+    restraint_atom_indices: tuple[int, ...] = (),
     restraint_force: tuple[float, float, float] | None = None,
 ) -> NamdSystemFiles:
     """Write PSF, PDB, parameter file, and a runnable NAMD smoke-test input."""
@@ -658,7 +657,7 @@ def write_namd_system(  # noqa: PLR0913
     if restraint_reference is not None:
         assert restraint_force is not None
         restraint_reference.write_text(
-            render_namd_restraint_pdb(system, topology, restraint_chain_ids, restraint_force),
+            render_namd_restraint_pdb(system, topology, restraint_atom_indices, restraint_force),
             encoding="utf-8",
         )
     single_point_configuration.write_text(

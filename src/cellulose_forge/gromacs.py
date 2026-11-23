@@ -57,6 +57,7 @@ def write_repeated_chain_topology(  # noqa: PLR0913
     restrained_chain_count: int = 0,
     restraint_force: tuple[float, float, float] | None = None,
     restraint_define: str = "POSRES_CELLULOSE",
+    restraint_atom_names: tuple[str, ...] = (),
 ) -> None:
     """Write a standalone topology with the requested repeated-chain count."""
     if chain_count < 1:
@@ -81,6 +82,7 @@ def write_repeated_chain_topology(  # noqa: PLR0913
             restraint_define,
             template_molecule_name,
             restrained_molecule_name,
+            restraint_atom_names,
         )
     in_molecules = False
     replaced = False
@@ -120,12 +122,13 @@ def _template_molecule_name(lines: list[str]) -> str:
     raise ValueError("template topology has no [ molecules ] data row")
 
 
-def _insert_restrained_glycam_molecule(
+def _insert_restrained_glycam_molecule(  # noqa: PLR0913, PLR0917
     lines: list[str],
     restraint_force: tuple[float, float, float],
     restraint_define: str,
     free_molecule_name: str,
     restrained_molecule_name: str,
+    selected_atom_names: tuple[str, ...] = (),
 ) -> None:
     """Duplicate the one-chain molecule definition and attach position restraints."""
     molecule_start = next(
@@ -166,6 +169,7 @@ def _insert_restrained_glycam_molecule(
             atom_names,
             restraint_force,
             define=restraint_define,
+            selected_atom_names=selected_atom_names,
         ).splitlines()
     )
     lines[system_index:system_index] = restrained_block
@@ -178,6 +182,7 @@ def write_glycam_gromacs_system(  # noqa: PLR0913, PLR0917
     restrained_chain_count: int = 0,
     restraint_force: tuple[float, float, float] | None = None,
     restraint_define: str = "POSRES_CELLULOSE",
+    restraint_atom_names: tuple[str, ...] = (),
 ) -> tuple[Path, Path]:
     """Write a mapped multi-chain GLYCAM system as GRO and standalone TOP."""
     directory = Path(output_directory)
@@ -192,5 +197,6 @@ def write_glycam_gromacs_system(  # noqa: PLR0913, PLR0917
         restrained_chain_count=restrained_chain_count,
         restraint_force=restraint_force,
         restraint_define=restraint_define,
+        restraint_atom_names=restraint_atom_names,
     )
     return gro_path, topology_path

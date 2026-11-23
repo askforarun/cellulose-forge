@@ -12,6 +12,8 @@ import pytest
 
 from cellulose_forge import amoeba
 from cellulose_forge.cli import main
+from cellulose_forge.crystallography import MillerIndex, load_allomorph
+from cellulose_forge.geometry import build_chain_parallel_slab
 
 
 def _source(tmp_path: Path, degree_polymerization: int = 2) -> tuple[Path, Path]:
@@ -61,6 +63,25 @@ def test_openmm_runner_disables_vdw_dispersion_correction() -> None:
     assert "RESTRAINT_FORCE_KJ_MOL_NM2 = (1000.0, 500.0, 0.0)" in runner
     assert "CellulosePositionRestraints" in runner
     compile(runner, "run_amoeba_openmm.py", "exec")
+
+
+def test_amoeba_restraints_filter_canonical_ring_atom_names() -> None:
+    crystal = build_chain_parallel_slab(
+        load_allomorph("i_beta"),
+        face=MillerIndex(1, 1, 0),
+        layers=1,
+        chains_per_layer=2,
+        degree_polymerization=2,
+        vacuum=20.0,
+        chain_boundary="finite",
+    )
+    indices = amoeba.amoeba_heavy_atom_restraint_indices(crystal, 2, (2,), ("C1", "O5"))
+    layout = amoeba._atom_layout(2)
+    particles_per_chain = len(layout)
+
+    assert indices
+    assert all(index >= particles_per_chain for index in indices)
+    assert {layout[index % particles_per_chain][0] for index in indices} == {"C1", "O5"}
 
 
 def test_cli_refuses_amoeba_without_external_source(
@@ -184,6 +205,9 @@ def test_cli_writes_openmm_readable_amoeba_bundle(
         _SOURCE,
         "--restrain-chains",
         "1",
+        "--restrain-atom-names",
+        "C1",
+        "O5",
         "--restraint-force",
         "1000",
         "500",
@@ -198,6 +222,9 @@ def test_cli_writes_openmm_readable_amoeba_bundle(
     assert report["chain_count"] == chain_count
     assert report["md_engines"] == ["openmm"]
     assert report["position_restraints"]["selected_chain_ids"] == [1]
+    assert report["position_restraints"]["selection_mode"] == "named_heavy_atoms"
+    assert report["position_restraints"]["canonical_atom_names"] == ["C1", "O5"]
+    assert report["position_restraints"]["resolved_atom_count"] == 4
     assert report["position_restraints"]["force_constants_kj_mol_nm2"] == [
         1000.0,
         500.0,

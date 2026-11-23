@@ -100,6 +100,7 @@ from cellulose_forge.restraints import (
     ChainRestraints,
     group_mapped_chains,
     resolve_chain_restraints,
+    resolve_mapped_restraint_atoms,
 )
 from cellulose_forge.run_inputs import (
     GROMACS_CUTOFF_ANGSTROM,
@@ -359,6 +360,15 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
         metavar=("FX", "FY", "FZ"),
         help="heavy-atom position-restraint force constants in kJ mol^-1 nm^-2",
     )
+    build.add_argument(
+        "--restrain-atom-names",
+        nargs="+",
+        metavar="ATOM_NAME",
+        help=(
+            "optional canonical mapped-template atom names within the selected chains or "
+            "layers; the default restrains all real heavy atoms"
+        ),
+    )
     build.add_argument("--output", type=Path, required=True)
 
     doctor = subparsers.add_parser(
@@ -498,6 +508,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0912, PLR0915
                     args.restrain_chains,
                     args.restrain_layers,
                     args.restraint_force,
+                    args.restrain_atom_names,
                 )
             ):
                 build_parser().error("chain restraints require a supported force-field backend")
@@ -760,7 +771,14 @@ def _write_openmm_output(  # noqa: PLR0913
             restraints=(
                 None
                 if restraints is None
-                else heavy_atom_restraints(mapped, restraints.chain_ids, restraints.force_constants)
+                else heavy_atom_restraints(
+                    mapped,
+                    restraints.chain_ids,
+                    restraints.force_constants,
+                    atom_names=restraints.atom_names,
+                    polymer=args.polymer,
+                    naming="charmm" if args.force_field == "charmm36" else "glycam",
+                )
             ),
             python_executable=args.openmm_python,
         )
@@ -781,7 +799,14 @@ def _write_lammps_output(  # noqa: PLR0913
     selected = (
         None
         if restraints is None
-        else heavy_atom_restraints(mapped, restraints.chain_ids, restraints.force_constants)
+        else heavy_atom_restraints(
+            mapped,
+            restraints.chain_ids,
+            restraints.force_constants,
+            atom_names=restraints.atom_names,
+            polymer=args.polymer,
+            naming="charmm" if args.force_field == "charmm36" else "glycam",
+        )
     )
     try:
         return write_lammps_system(
@@ -973,7 +998,12 @@ def _write_opls_build(
         parser.error(f"{name} {args.shape}s require --chain-boundary finite or periodic")
     if any(
         value is not None
-        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
+        for value in (
+            args.restrain_chains,
+            args.restrain_layers,
+            args.restraint_force,
+            args.restrain_atom_names,
+        )
     ):
         parser.error(f"{name} position restraints are not implemented")
     if args.output.suffix:
@@ -1056,7 +1086,12 @@ def _write_openff_build(
         parser.error("this geometry is outside the validated OpenFF Sage scope")
     if any(
         value is not None
-        for value in (args.restrain_chains, args.restrain_layers, args.restraint_force)
+        for value in (
+            args.restrain_chains,
+            args.restrain_layers,
+            args.restraint_force,
+            args.restrain_atom_names,
+        )
     ):
         parser.error("OpenFF Sage position restraints are not implemented")
     if args.output.suffix:
@@ -1209,6 +1244,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             gromacs_directory,
             restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
             restraint_force=restraints.force_constants if restraints else None,
+            restraint_canonical_atom_names=restraints.atom_names if restraints else (),
             polymer=args.polymer,
         )
         gromacs_run_inputs = (
@@ -1250,6 +1286,18 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                 args.charmm_parameter_file
             )
             try:
+                namd_restraints = (
+                    None
+                    if restraints is None
+                    else heavy_atom_restraints(
+                        mapped,
+                        restraints.chain_ids,
+                        restraints.force_constants,
+                        atom_names=restraints.atom_names,
+                        polymer=args.polymer,
+                        naming="charmm",
+                    )
+                )
                 namd_files = write_namd_system(
                     mapped,
                     topology,
@@ -1257,7 +1305,9 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                     gro_path,
                     args.output,
                     periodic_chains=args.chain_boundary == "periodic",
-                    restraint_chain_ids=(() if restraints is None else restraints.chain_ids),
+                    restraint_atom_indices=(
+                        () if namd_restraints is None else namd_restraints.atom_indices
+                    ),
                     restraint_force=(None if restraints is None else restraints.force_constants),
                 )
                 namd_metadata = {
@@ -1367,7 +1417,22 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
                 for layer_id, chain_ids in restraints.layer_mapping
             ],
             "force_constants_kj_mol_nm2": list(restraints.force_constants),
-            "atom_selection": "heavy atoms in each selected chain",
+            "selection_mode": restraints.selection_mode,
+            "canonical_atom_names": list(restraints.atom_names),
+            "resolved_atom_count": len(
+                resolve_mapped_restraint_atoms(
+                    mapped,
+                    restraints.chain_ids,
+                    requested_atom_names=restraints.atom_names,
+                    polymer=args.polymer,
+                    naming="charmm",
+                ).atom_indices
+            ),
+            "atom_selection": (
+                "all real heavy atoms in each selected chain"
+                if not restraints.atom_names
+                else "named real heavy atoms in each selected chain"
+            ),
             "chain_mapping": chain_mapping,
         }
     if crystal.allomorph == "II":
@@ -1425,6 +1490,7 @@ def _write_drude_build(
             write_run_input=write_runners and "namd" in requested_engines,
             write_openmm_runner=write_runners and "openmm" in requested_engines,
             restraint_chain_ids=(() if restraints is None else restraints.chain_ids),
+            restraint_atom_names=(() if restraints is None else restraints.atom_names),
             restraint_force=(None if restraints is None else restraints.force_constants),
         )
     except ValueError as error:
@@ -1490,7 +1556,14 @@ def _write_drude_build(
                 for layer_id, chain_ids in restraints.layer_mapping
             ],
             "force_constants_kj_mol_nm2": list(restraints.force_constants),
-            "atom_selection": "real heavy atoms in each selected chain",
+            "selection_mode": restraints.selection_mode,
+            "canonical_atom_names": list(restraints.atom_names),
+            "resolved_atom_count": files.counts["position_restraint_atoms"],
+            "atom_selection": (
+                "all real heavy atoms in each selected chain"
+                if not restraints.atom_names
+                else "named real heavy atoms in each selected chain"
+            ),
         }
     (args.output / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -1518,6 +1591,7 @@ def _write_amoeba_build(
             args.output,
             args.degree_polymerization,
             restraint_chain_ids=(() if restraints is None else restraints.chain_ids),
+            restraint_atom_names=(() if restraints is None else restraints.atom_names),
             restraint_force=(None if restraints is None else restraints.force_constants),
         )
     except ValueError as error:
@@ -1577,7 +1651,14 @@ def _write_amoeba_build(
                 for layer_id, chain_ids in restraints.layer_mapping
             ],
             "force_constants_kj_mol_nm2": list(restraints.force_constants),
-            "atom_selection": "real heavy atoms in each selected chain",
+            "selection_mode": restraints.selection_mode,
+            "canonical_atom_names": list(restraints.atom_names),
+            "resolved_atom_count": files.restraint_atom_count,
+            "atom_selection": (
+                "all real heavy atoms in each selected chain"
+                if not restraints.atom_names
+                else "named real heavy atoms in each selected chain"
+            ),
         }
     (args.output / "build_report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -1692,6 +1773,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                 restrained_chain_count=len(restraints.chain_ids) if restraints else 0,
                 restraint_force=restraints.force_constants if restraints else None,
                 restraint_define=f"POSRES_{args.polymer.upper()}",
+                restraint_atom_names=restraints.atom_names if restraints else (),
             )
             if write_gromacs:
                 gro_path, topology_path = written_gro, written_topology
@@ -1792,7 +1874,22 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                 for layer_id, chain_ids in restraints.layer_mapping
             ],
             "force_constants_kj_mol_nm2": list(restraints.force_constants),
-            "atom_selection": "heavy atoms in each selected chain",
+            "selection_mode": restraints.selection_mode,
+            "canonical_atom_names": list(restraints.atom_names),
+            "resolved_atom_count": len(
+                resolve_mapped_restraint_atoms(
+                    mapped,
+                    restraints.chain_ids,
+                    requested_atom_names=restraints.atom_names,
+                    polymer=args.polymer,
+                    naming="glycam",
+                ).atom_indices
+            ),
+            "atom_selection": (
+                "all real heavy atoms in each selected chain"
+                if not restraints.atom_names
+                else "named real heavy atoms in each selected chain"
+            ),
             "chain_mapping": chain_mapping,
         }
     if crystal.allomorph == "II":
@@ -1849,6 +1946,8 @@ def _resolve_restraints(
             chain_ids=args.restrain_chains,
             layer_ids=args.restrain_layers,
             force_constants=args.restraint_force,
+            atom_names=args.restrain_atom_names,
+            polymer=args.polymer,
         )
     except ValueError as error:
         parser.error(str(error))

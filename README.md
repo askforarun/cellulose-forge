@@ -135,8 +135,9 @@ Simulation engines by force field and chain boundary:
 The experimental polarizable backends have narrower engine support: CHARMM
 Drude writes NAMD and OpenMM bundles, while AMOEBA currently supports OpenMM.
 Both use the common chain/layer restraint selectors for finite systems and
-restrain real heavy atoms only; Drude particles, lone pairs and hydrogens stay
-unrestrained.
+restrain real heavy atoms only by default. `--restrain-atom-names` optionally
+limits that selection in the canonical mapped-template namespace; Drude
+particles, lone pairs and hydrogens stay unrestrained.
 See their decision records for the current scientific limitations.
 
 Native Amber output cannot represent covalently periodic chains because Amber
@@ -786,8 +787,8 @@ slabs and fibrils contain transverse vacuum. OpenMM's Tinker-format reader
 enables it by default, so the runner overrides the resulting force explicitly.
 AMOEBA restraints use `--restrain-chains` or `--restrain-layers` together with
 `--restraint-force FX FY FZ`. The generated OpenMM force acts only on the real
-heavy atoms of the selected chains and supports independent Cartesian force
-constants.
+heavy atoms of the selected chains by default. The optional canonical-name
+filter and independent Cartesian force constants are supported.
 
 ### Experimental OpenFF Sage
 
@@ -867,6 +868,37 @@ cellulose-forge build \
   --restraint-force 1000 1000 1000 \
   --output restrained_4layer_slab
 ```
+
+Without another selector, every real heavy atom in those chains is restrained.
+Add `--restrain-atom-names` to take the intersection with canonical
+mapped-template names. This example holds only the pyranose-ring framework and
+leaves C6, O6 and all hydroxyl groups mobile:
+
+```bash
+cellulose-forge build \
+  --allomorph I-beta \
+  --shape slab \
+  --face 1 1 0 \
+  --layers 4 \
+  --chains-per-layer 20 \
+  --degree-polymerization 12 \
+  --chain-boundary finite \
+  --vacuum 30 \
+  --padding-longitudinal 20 \
+  --force-field amoeba \
+  --md-engine openmm \
+  --amoeba-source-directory /path/to/audited/source \
+  --restrain-layers 1 2 \
+  --restrain-atom-names C1 C2 C3 C4 C5 O5 \
+  --restraint-force 1000 1000 1000 \
+  --output ring_restrained_4layer_slab
+```
+
+Canonical names are defined by CelluloseForge's mapped polymer templates, not
+by backend-specific output names. For example, chitin `C7` is translated to
+CHARMM36's `C` internally. Unknown names are rejected for the selected polymer,
+and every selected chain must resolve at least one atom. Per-chain-specific
+name lists are outside the current GROMACS molecule-topology model.
 
 Slab and fibril layers are numbered from low to high Cartesian `z`. Fibril
 cross-sections are displayed with the documented 90-degree counterclockwise
@@ -1048,6 +1080,7 @@ cellulose-forge build --allomorph ALLOMORPH --shape SHAPE [OPTIONS] --output PAT
 | `--charmm-force-field-directory` | directory | Optional override for the installed CHARMM36 release |
 | `--restrain-chains` | one or more IDs | Restrain selected deterministic chain IDs |
 | `--restrain-layers` | one or more IDs | Restrain geometry-defined transverse layers |
+| `--restrain-atom-names` | one or more canonical names | Optionally restrict selected chains/layers to named real heavy atoms |
 | `--restraint-force` | `FX FY FZ` | Position-restraint force constants in kJ mol$^{-1}$ nm$^{-2}$ |
 | `--output` | file or directory | Coordinate file for `none`; directory for force-field builds |
 

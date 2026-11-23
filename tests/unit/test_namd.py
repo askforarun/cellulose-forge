@@ -288,7 +288,7 @@ def test_writer_copies_parameter_file_and_writes_complete_bundle(
         gro,
         tmp_path / "namd_restrained",
         periodic_chains=False,
-        restraint_chain_ids=(2,),
+        restraint_atom_indices=(4, 5, 6, 7),
         restraint_force=(1000.0, 1000.0, 1000.0),
     )
     assert restrained.restraint_reference is not None
@@ -302,7 +302,7 @@ def test_namd_restraints_select_only_heavy_atoms_in_requested_chain() -> None:
         _system(),
         atom_names=("C1", "O5", "C5", "O4", "C1", "O5", "C5", "H4"),
     )
-    text = render_namd_restraint_pdb(system, _topology(), (2,), (1000.0, 1000.0, 0.0))
+    text = render_namd_restraint_pdb(system, _topology(), (4, 5, 6), (1000.0, 1000.0, 0.0))
     atom_lines = [line for line in text.splitlines() if line.startswith("ATOM")]
     coefficients = [float(line[60:66]) for line in atom_lines]
 

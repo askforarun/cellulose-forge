@@ -251,6 +251,16 @@ def test_drude_restraints_select_only_real_heavy_atoms() -> None:
     assert all(values[index] == 1.0 for index in indices)
 
 
+def test_drude_restraints_filter_canonical_ring_atom_names() -> None:
+    system = _system(chains=2)
+    indices = drude_heavy_atom_restraint_indices(system, (2,), ("C1", "O4"))
+    per_chain = len(system.topology.sites)
+
+    assert indices
+    assert all(index >= per_chain for index in indices)
+    assert {system.topology.sites[index % per_chain].name for index in indices} == {"C1", "O4"}
+
+
 def test_drude_namd_restraints_require_equal_active_force_constants() -> None:
     text = render_drude_namd_configuration(
         np.eye(3) * 40.0,

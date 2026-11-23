@@ -121,9 +121,10 @@ runs a short real NAMD job when `CELLULOSE_FORGE_DRUDE_TOPPAR` is set and
 ### Position restraints
 
 Finite runnable systems accept the shared `--restrain-chains`,
-`--restrain-layers` and `--restraint-force` interface. Only real heavy atoms
-in the selected chains are restrained. Hydrogens, Drude particles and
-off-centre lone pairs remain free. OpenMM represents the three Cartesian force
+`--restrain-layers` and `--restraint-force` interface. All real heavy atoms in
+the selected chains are restrained by default; `--restrain-atom-names` may
+limit them using canonical mapped-template names. Hydrogens, Drude particles
+and off-centre lone pairs remain free. OpenMM represents the three Cartesian force
 constants directly with a `CustomExternalForce`. NAMD uses its legacy
 constraint-reference PDB; because that format stores one scalar coefficient,
 the nonzero constants on all active axes must be equal. Other combinations

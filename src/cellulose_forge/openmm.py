@@ -24,6 +24,7 @@ import numpy as np
 
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
 from cellulose_forge.gromacs_pairs import prepare_explicit_pairs
+from cellulose_forge.restraints import resolve_mapped_restraint_atoms
 
 OPENMM_SYSTEM_FILE = "system.xml"
 OPENMM_VALIDATION_SYSTEM_FILE = "validation_system.xml"
@@ -420,21 +421,24 @@ def chain_axis(system: GlycamMappedSystem) -> str:
     return _AXIS_NAMES[int(np.argmax(np.abs(direction)))]
 
 
-def heavy_atom_restraints(
+def heavy_atom_restraints(  # noqa: PLR0913
     system: GlycamMappedSystem,
     chain_ids: tuple[int, ...],
     force_constants_kj_mol_nm2: tuple[float, float, float],
+    *,
+    atom_names: tuple[str, ...] = (),
+    polymer: str = "cellulose",
+    naming: str = "canonical",
 ) -> OpenMMPositionRestraints:
-    """Select zero-based heavy-atom indices of the restrained chains."""
-    selected = set(chain_ids)
-    indices = tuple(
-        index
-        for index, (name, chain) in enumerate(
-            zip(system.atom_names, system.chain_numbers, strict=True)
-        )
-        if chain in selected and not name.upper().startswith("H")
+    """Select zero-based real-heavy-atom indices through the shared resolver."""
+    resolved = resolve_mapped_restraint_atoms(
+        system,
+        chain_ids,
+        requested_atom_names=atom_names,
+        polymer=polymer,
+        naming=naming,
     )
-    return OpenMMPositionRestraints(indices, force_constants_kj_mol_nm2)
+    return OpenMMPositionRestraints(resolved.atom_indices, force_constants_kj_mol_nm2)
 
 
 def render_openmm_runner(*, chain_axis: str, periodic_chains: bool, has_restraints: bool) -> str:
