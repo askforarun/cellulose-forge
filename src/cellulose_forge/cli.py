@@ -1219,9 +1219,10 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             parser.error(str(error))
     restraints = _resolve_restraints(args, crystal, parser)
     chain_mapping = None
+    resolved_restraint_atoms = None
     if restraints is not None:
         try:
-            resolve_mapped_restraint_atoms(
+            resolved_restraint_atoms = resolve_mapped_restraint_atoms(
                 mapped,
                 restraints.chain_ids,
                 requested_atom_names=restraints.atom_names,
@@ -1418,6 +1419,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             "written_topology": written_periodic_bond_validation,
         }
     if restraints is not None:
+        assert resolved_restraint_atoms is not None
         report["position_restraints"] = {
             "define": f"POSRES_{args.polymer.upper()}",
             "selected_chain_ids": list(restraints.chain_ids),
@@ -1429,15 +1431,7 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
             "force_constants_kj_mol_nm2": list(restraints.force_constants),
             "selection_mode": restraints.selection_mode,
             "canonical_atom_names": list(restraints.atom_names),
-            "resolved_atom_count": len(
-                resolve_mapped_restraint_atoms(
-                    mapped,
-                    restraints.chain_ids,
-                    requested_atom_names=restraints.atom_names,
-                    polymer=args.polymer,
-                    naming="charmm",
-                ).atom_indices
-            ),
+            "resolved_atom_count": len(resolved_restraint_atoms.atom_indices),
             "atom_selection": (
                 "all real heavy atoms in each selected chain"
                 if not restraints.atom_names
@@ -1763,9 +1757,10 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                 parser.error(str(error))
         restraints = _resolve_restraints(args, crystal, parser)
         chain_mapping = None
+        resolved_restraint_atoms = None
         if restraints is not None:
             try:
-                resolve_mapped_restraint_atoms(
+                resolved_restraint_atoms = resolve_mapped_restraint_atoms(
                     mapped,
                     restraints.chain_ids,
                     requested_atom_names=restraints.atom_names,
@@ -1885,6 +1880,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             "written_topology": written_periodic_bond_validation,
         }
     if restraints is not None:
+        assert resolved_restraint_atoms is not None
         report["position_restraints"] = {
             "define": f"POSRES_{args.polymer.upper()}",
             "selected_chain_ids": list(restraints.chain_ids),
@@ -1896,15 +1892,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
             "force_constants_kj_mol_nm2": list(restraints.force_constants),
             "selection_mode": restraints.selection_mode,
             "canonical_atom_names": list(restraints.atom_names),
-            "resolved_atom_count": len(
-                resolve_mapped_restraint_atoms(
-                    mapped,
-                    restraints.chain_ids,
-                    requested_atom_names=restraints.atom_names,
-                    polymer=args.polymer,
-                    naming="glycam",
-                ).atom_indices
-            ),
+            "resolved_atom_count": len(resolved_restraint_atoms.atom_indices),
             "atom_selection": (
                 "all real heavy atoms in each selected chain"
                 if not restraints.atom_names

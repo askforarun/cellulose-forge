@@ -6,11 +6,13 @@ import shutil
 import struct
 import subprocess
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pytest
 from drude_fixtures import MAIN, carbohydrate
 
+import cellulose_forge.cli as cli_module
 from cellulose_forge.cli import main
 from cellulose_forge.drude import (
     DrudeSystem,
@@ -307,6 +309,38 @@ def test_cli_refuses_unrepresentable_drude_restraints_before_output(
     error = capsys.readouterr().err
     assert "equal nonzero" in error
     assert "at least one positive" in error
+
+
+def test_cli_refuses_missing_drude_atom_name_before_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli_module,
+        "validate_drude_toppar_directory",
+        lambda _directory: (tmp_path / "main.str", tmp_path / "carbohydrate.str"),
+    )
+
+    def reject_missing_name(*_args: object, **kwargs: object) -> None:
+        drude_heavy_atom_restraint_indices(
+            _system(),
+            cast(tuple[int, ...], kwargs["restraint_chain_ids"]),
+            cast(tuple[str, ...], kwargs["restraint_atom_names"]),
+        )
+
+    monkeypatch.setattr(cli_module, "write_drude_namd_system", reject_missing_name)
+    output = tmp_path / "missing-name"
+    arguments = [
+        *_SLAB,
+        "--chain-boundary", "finite", "--degree-polymerization", "6",
+        "--padding-longitudinal", "20", "--restrain-chains", "1",
+        "--restrain-atom-names", "O2", "--restraint-force", "1000", "1000", "1000",
+        "--drude-toppar-directory", str(tmp_path), "--output", str(output),
+    ]  # fmt: skip
+
+    with pytest.raises(SystemExit, match="2"):
+        main(arguments)
+    assert "chain 1: O2" in capsys.readouterr().err
+    assert not output.exists()
 
 
 def test_openmm_runner_uses_drude_integrator_and_native_bundle() -> None:

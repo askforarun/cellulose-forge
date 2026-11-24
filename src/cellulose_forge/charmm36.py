@@ -16,7 +16,7 @@ from cellulose_forge.geometry import BulkCrystal, build_bulk_crystal
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
 from cellulose_forge.gromacs import write_gro
 from cellulose_forge.hydroxyl import HydroxylHydrogenPlacer
-from cellulose_forge.restraints import position_restraints_section
+from cellulose_forge.restraints import canonical_atom_name, position_restraints_section
 
 _MINIMUM_ATOM_FIELDS = 8
 _INTERACTION_ARITY = {"bonds": 2, "pairs": 2, "angles": 3, "dihedrals": 4}
@@ -26,18 +26,6 @@ _RING_ALIGNMENT_ATOMS = ("C1", "C3", "C5")
 _MISSING_CELLULOSE_II_HYDROGENS = frozenset({"HO2", "HO3", "HO6"})
 _HYDROXYL_OXYGEN_BY_HYDROGEN = {"HO2": "O2", "HO3": "O3", "HO6": "O6"}
 _MAXIMUM_GLYCOSIDIC_BOND_ANGSTROM = 2.0
-# CHARMM36 BGLCNA names for the N-acetyl group and the crystal labels used by
-# the chitin definitions. Glucose (BGLC) has none of these names.
-_CRYSTAL_NAME_BY_CHARMM_NAME = {
-    "N": "N2",
-    "HN": "HN2",
-    "C": "C7",
-    "O": "O7",
-    "CT": "C8",
-    "HT1": "H81",
-    "HT2": "H82",
-    "HT3": "H83",
-}
 _MINIMUM_ATOMTYPE_FIELDS = 3
 _NATIVE_REFERENCE_DP = 8
 _PATCH_DELETIONS = frozenset({"O1", "HO1", "HO4"})
@@ -618,7 +606,7 @@ def native_finite_charmm36_topology(  # noqa: PLR0912
 
 def _crystal_name(charmm_name: str) -> str:
     """Return the crystal-definition label for a CHARMM36 atom name."""
-    return _CRYSTAL_NAME_BY_CHARMM_NAME.get(charmm_name, charmm_name)
+    return canonical_atom_name(charmm_name, polymer="chitin", naming="charmm")
 
 
 def _coordinate_lookup(
