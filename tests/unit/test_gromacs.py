@@ -91,3 +91,34 @@ def test_repeated_chain_topology_adds_selective_position_restraints(tmp_path: Pa
     assert "     2      1   1000.000   1000.000      0.000" not in text
     assert "CELLULOSE_CHAIN  30" in text
     assert "CELLULOSE_CHAIN_RESTRAINED  6" in text
+
+
+def test_repeated_chain_topology_translates_glycam_chitin_names(tmp_path: Path) -> None:
+    template = tmp_path / "template.top"
+    template.write_text(
+        "[ moleculetype ]\nCHITIN_CHAIN 3\n\n"
+        "[ atoms ]\n"
+        "1 CT 1 4YB C2N 1 0.0 12.0\n"
+        "2 CT 1 4YB CME 2 0.0 12.0\n"
+        "3 N  1 4YB N2  3 0.0 14.0\n"
+        "4 O  1 4YB O2N 4 0.0 16.0\n\n"
+        "[ system ]\nChitin\n\n"
+        "[ molecules ]\nCHITIN_CHAIN 1\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "system.top"
+
+    write_repeated_chain_topology(
+        template,
+        output,
+        chain_count=4,
+        restrained_chain_count=4,
+        restraint_force=(1000.0, 1000.0, 1000.0),
+        restraint_atom_names=("C7", "C8", "N2", "O7"),
+        restraint_define="POSRES_CHITIN",
+        polymer="chitin",
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert "#ifdef POSRES_CHITIN" in text
+    assert all(f"{index:6d}      1" in text for index in range(1, 5))

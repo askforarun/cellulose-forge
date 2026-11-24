@@ -96,6 +96,30 @@ def test_cli_builds_chitin_charmm36_gromacs_slab(
     assert "WARNING" not in completed.stdout + completed.stderr
 
 
+def test_periodic_named_terminal_restraint_refuses_before_output(tmp_path: Path) -> None:
+    force_field = _force_field()
+    output = tmp_path / "missing_terminal"
+    arguments = _slab_arguments(
+        "beta",
+        "periodic",
+        output,
+        "--charmm-force-field-directory",
+        str(force_field),
+        "--restrain-layers",
+        "1",
+        "--restrain-atom-names",
+        "O1",
+        "--restraint-force",
+        "1000",
+        "1000",
+        "1000",
+    )
+
+    with pytest.raises(SystemExit, match="2"):
+        main(arguments)
+    assert not output.exists()
+
+
 def test_cli_restrained_chitin_uses_posres_chitin(tmp_path: Path) -> None:
     force_field = _force_field()
     output = tmp_path / "restrained"

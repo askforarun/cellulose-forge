@@ -201,6 +201,11 @@ def test_chitin_glycam_restraints_use_chitin_define(tmp_path: Path) -> None:
                 "gromacs",
                 "--restrain-layers",
                 "1",
+                "--restrain-atom-names",
+                "C7",
+                "C8",
+                "N2",
+                "O7",
                 "--restraint-force",
                 "1000",
                 "1000",
@@ -218,6 +223,9 @@ def test_chitin_glycam_restraints_use_chitin_define(tmp_path: Path) -> None:
     topology = (output / "system.top").read_text(encoding="utf-8")
     assert "CHITIN_CHAIN_RESTRAINED  4" in topology
     assert "#ifdef POSRES_CHITIN" in topology
+    report = json.loads((output / "build_report.json").read_text(encoding="utf-8"))
+    assert report["position_restraints"]["canonical_atom_names"] == ["C7", "C8", "N2", "O7"]
+    assert report["position_restraints"]["resolved_atom_count"] == 96
     mdp = (output / "minim.mdp").read_text(encoding="utf-8")
     (output / "restrained.mdp").write_text(
         mdp.replace("; define                  = -DPOSRES_CHITIN", "define = -DPOSRES_CHITIN"),
@@ -248,3 +256,21 @@ def test_chitin_glycam_restraints_use_chitin_define(tmp_path: Path) -> None:
         check=False,
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_periodic_glycam_terminal_restraint_refuses_before_output(tmp_path: Path) -> None:
+    tleap, _, parmed_python = _tools()
+    output = tmp_path / "missing_terminal"
+    arguments = [
+        "build", "--polymer", "chitin", "--allomorph", "beta", "--shape", "slab",
+        "--face", "1", "0", "0", "--layers", "2", "--chains-per-layer", "4",
+        "--degree-polymerization", "6", "--chain-boundary", "periodic", "--vacuum", "30",
+        "--force-field", "glycam", "--md-engine", "gromacs", "--restrain-layers", "1",
+        "--restrain-atom-names", "O1", "--restraint-force", "1000", "1000", "1000",
+        "--tleap-executable", tleap, "--parmed-python", parmed_python,
+        "--output", str(output),
+    ]  # fmt: skip
+
+    with pytest.raises(SystemExit, match="2"):
+        main(arguments)
+    assert not output.exists()

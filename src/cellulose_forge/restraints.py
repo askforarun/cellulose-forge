@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from cellulose_forge.geometry import BulkCrystal
-from cellulose_forge.glycam_mapping import GlycamMappedSystem
+from cellulose_forge.glycam_mapping import GlycamMappedSystem, glycam_to_crystal_atom_name
 
 
 @dataclass(frozen=True)
@@ -59,11 +59,10 @@ def canonical_atom_name(name: str, *, polymer: str, naming: str = "canonical") -
     normalized = name.upper()
     if naming == "charmm" and polymer == "chitin":
         return _CHARMM_CHITIN_CANONICAL_NAMES.get(normalized, normalized)
+    if naming == "glycam":
+        return glycam_to_crystal_atom_name(normalized)
     if naming not in {"canonical", "charmm", "glycam"}:
         raise ValueError(f"unknown restraint atom naming convention {naming!r}")
-    # GLYCAM renames terminal hydrogens, not real heavy atoms. Keeping this
-    # branch explicit prevents a future backend rename from silently changing
-    # the public canonical-name contract.
     return normalized
 
 
@@ -89,8 +88,9 @@ def resolve_restraint_atom_indices(  # noqa: PLR0913
     if any(len(values) != size for values in (elements, site_kinds, chain_numbers)):
         raise ValueError("restraint atom metadata arrays must have equal lengths")
     selected_chains = set(restrained_chain_ids)
-    requested = set(requested_atom_names)
+    requested = {name.upper() for name in requested_atom_names}
     counts = dict.fromkeys(restrained_chain_ids, 0)
+    names_by_chain: dict[int, set[str]] = {chain_id: set() for chain_id in restrained_chain_ids}
     indices: list[int] = []
     for index, (name, element, kind, chain_id) in enumerate(
         zip(canonical_atom_names, elements, site_kinds, chain_numbers, strict=True)
@@ -101,6 +101,20 @@ def resolve_restraint_atom_indices(  # noqa: PLR0913
             continue
         indices.append(index)
         counts[chain_id] += 1
+        names_by_chain[chain_id].add(name.upper())
+    missing_by_chain = {
+        chain_id: sorted(requested.difference(names))
+        for chain_id, names in names_by_chain.items()
+        if requested.difference(names)
+    }
+    if missing_by_chain:
+        detail = "; ".join(
+            f"chain {chain_id}: {', '.join(names)}"
+            for chain_id, names in sorted(missing_by_chain.items())
+        )
+        raise ValueError(
+            "position restraint atom names are absent from the written topology: " + detail
+        )
     empty_chains = [chain_id for chain_id, count in counts.items() if count == 0]
     if empty_chains:
         raise ValueError(

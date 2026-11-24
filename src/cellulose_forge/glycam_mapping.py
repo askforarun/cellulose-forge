@@ -37,6 +37,12 @@ _HYDROXYL_OXYGEN_BY_GLYCAM_HYDROGEN = {"H2O": "O2", "H3O": "O3", "H6O": "O6"}
 _MAXIMUM_GLYCOSIDIC_BOND_ANGSTROM = 2.0
 
 
+def glycam_to_crystal_atom_name(name: str) -> str:
+    """Translate a GLYCAM atom name to the mapped crystallographic namespace."""
+    normalized = name.upper()
+    return _GLYCAM_TO_CRYSTAL_NAME.get(normalized, normalized)
+
+
 @dataclass(frozen=True)
 class GlycamMappedSystem:
     """Coordinates and identifiers ordered exactly like repeated GLYCAM chains."""

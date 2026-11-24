@@ -796,19 +796,19 @@ def _write_lammps_output(  # noqa: PLR0913
     parser: argparse.ArgumentParser,
 ) -> tuple[LammpsSystemFiles, dict[str, object]]:
     """Write an exact LAMMPS system through the validated force graph."""
-    selected = (
-        None
-        if restraints is None
-        else heavy_atom_restraints(
-            mapped,
-            restraints.chain_ids,
-            restraints.force_constants,
-            atom_names=restraints.atom_names,
-            polymer=args.polymer,
-            naming="charmm" if args.force_field == "charmm36" else "glycam",
-        )
-    )
     try:
+        selected = (
+            None
+            if restraints is None
+            else heavy_atom_restraints(
+                mapped,
+                restraints.chain_ids,
+                restraints.force_constants,
+                atom_names=restraints.atom_names,
+                polymer=args.polymer,
+                naming="charmm" if args.force_field == "charmm36" else "glycam",
+            )
+        )
         return write_lammps_system(
             mapped,
             gromacs_topology,
@@ -1220,6 +1220,16 @@ def _write_charmm36_build(  # noqa: PLR0912, PLR0915
     restraints = _resolve_restraints(args, crystal, parser)
     chain_mapping = None
     if restraints is not None:
+        try:
+            resolve_mapped_restraint_atoms(
+                mapped,
+                restraints.chain_ids,
+                requested_atom_names=restraints.atom_names,
+                polymer=args.polymer,
+                naming="charmm",
+            )
+        except ValueError as error:
+            parser.error(str(error))
         mapped, chain_mapping = group_mapped_chains(
             mapped,
             restraints.chain_ids,
@@ -1477,8 +1487,6 @@ def _write_drude_build(
         validate_drude_toppar_directory(args.drude_toppar_directory)
     except ValueError as error:
         parser.error(str(error))
-    args.output.mkdir(parents=True, exist_ok=True)
-    coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
     write_runners = not args.drude_construction_only
     try:
         files = write_drude_namd_system(
@@ -1495,6 +1503,7 @@ def _write_drude_build(
         )
     except ValueError as error:
         parser.error(str(error))
+    coordinate_path = write_coordinates(crystal, args.output / "structure.pdb")
     report = {
         "cellulose_forge_version": __version__,
         "allomorph": crystal.allomorph,
@@ -1755,6 +1764,16 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
         restraints = _resolve_restraints(args, crystal, parser)
         chain_mapping = None
         if restraints is not None:
+            try:
+                resolve_mapped_restraint_atoms(
+                    mapped,
+                    restraints.chain_ids,
+                    requested_atom_names=restraints.atom_names,
+                    polymer=args.polymer,
+                    naming="glycam",
+                )
+            except ValueError as error:
+                parser.error(str(error))
             molecule_name = f"{args.polymer.upper()}_CHAIN"
             mapped, chain_mapping = group_mapped_chains(
                 mapped,
@@ -1774,6 +1793,7 @@ def _write_glycam_build(  # noqa: PLR0912, PLR0915
                 restraint_force=restraints.force_constants if restraints else None,
                 restraint_define=f"POSRES_{args.polymer.upper()}",
                 restraint_atom_names=restraints.atom_names if restraints else (),
+                polymer=args.polymer,
             )
             if write_gromacs:
                 gro_path, topology_path = written_gro, written_topology

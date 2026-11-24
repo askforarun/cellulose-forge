@@ -64,6 +64,48 @@ def test_shared_selector_uses_canonical_chitin_names_and_checks_each_chain() -> 
     assert canonical_atom_name("CT", polymer="chitin", naming="charmm") == "C8"
 
 
+def test_shared_selector_translates_glycam_chitin_acetamide_names() -> None:
+    system = GlycamMappedSystem(
+        atom_names=("C2N", "CME", "N2", "O2N") * 2,
+        residue_names=("BGLCNA",) * 8,
+        residue_numbers=(1,) * 8,
+        chain_numbers=(1, 1, 1, 1, 2, 2, 2, 2),
+        cartesian_coordinates=np.zeros((8, 3)),
+        basis_vectors=np.eye(3),
+    )
+
+    selected = resolve_mapped_restraint_atoms(
+        system,
+        (1, 2),
+        requested_atom_names=("C7", "C8", "N2", "O7"),
+        polymer="chitin",
+        naming="glycam",
+    )
+
+    assert selected.atom_indices == tuple(range(8))
+    assert canonical_atom_name("C2N", polymer="chitin", naming="glycam") == "C7"
+    assert canonical_atom_name("CME", polymer="chitin", naming="glycam") == "C8"
+    assert canonical_atom_name("O2N", polymer="chitin", naming="glycam") == "O7"
+
+
+def test_shared_selector_rejects_each_missing_requested_name() -> None:
+    system = GlycamMappedSystem(
+        atom_names=("C1", "O5"),
+        residue_names=("BGC", "BGC"),
+        residue_numbers=(1, 1),
+        chain_numbers=(1, 1),
+        cartesian_coordinates=np.zeros((2, 3)),
+        basis_vectors=np.eye(3),
+    )
+
+    with pytest.raises(ValueError, match=r"chain 1: O1"):
+        resolve_mapped_restraint_atoms(
+            system,
+            (1,),
+            requested_atom_names=("C1", "O1"),
+        )
+
+
 def test_shared_selector_rejects_a_selected_chain_with_no_matching_atom() -> None:
     system = GlycamMappedSystem(
         atom_names=("O1", "C1"),
@@ -74,7 +116,7 @@ def test_shared_selector_rejects_a_selected_chain_with_no_matching_atom() -> Non
         basis_vectors=np.eye(3),
     )
 
-    with pytest.raises(ValueError, match="chain IDs: 2"):
+    with pytest.raises(ValueError, match=r"chain 2: O1"):
         resolve_mapped_restraint_atoms(
             system,
             (1, 2),

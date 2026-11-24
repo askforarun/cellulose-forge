@@ -9,7 +9,7 @@ import numpy as np
 
 from cellulose_forge.crystallography import FloatArray
 from cellulose_forge.glycam_mapping import GlycamMappedSystem
-from cellulose_forge.restraints import position_restraints_section
+from cellulose_forge.restraints import canonical_atom_name, position_restraints_section
 
 _ANGSTROM_TO_NANOMETER = 0.1
 _GRO_INDEX_MODULUS = 100_000
@@ -58,6 +58,7 @@ def write_repeated_chain_topology(  # noqa: PLR0913
     restraint_force: tuple[float, float, float] | None = None,
     restraint_define: str = "POSRES_CELLULOSE",
     restraint_atom_names: tuple[str, ...] = (),
+    polymer: str = "cellulose",
 ) -> None:
     """Write a standalone topology with the requested repeated-chain count."""
     if chain_count < 1:
@@ -83,6 +84,7 @@ def write_repeated_chain_topology(  # noqa: PLR0913
             template_molecule_name,
             restrained_molecule_name,
             restraint_atom_names,
+            polymer,
         )
     in_molecules = False
     replaced = False
@@ -129,6 +131,7 @@ def _insert_restrained_glycam_molecule(  # noqa: PLR0913, PLR0917
     free_molecule_name: str,
     restrained_molecule_name: str,
     selected_atom_names: tuple[str, ...] = (),
+    polymer: str = "cellulose",
 ) -> None:
     """Duplicate the one-chain molecule definition and attach position restraints."""
     molecule_start = next(
@@ -169,6 +172,9 @@ def _insert_restrained_glycam_molecule(  # noqa: PLR0913, PLR0917
             atom_names,
             restraint_force,
             define=restraint_define,
+            canonical_atom_names=tuple(
+                canonical_atom_name(name, polymer=polymer, naming="glycam") for name in atom_names
+            ),
             selected_atom_names=selected_atom_names,
         ).splitlines()
     )
@@ -183,6 +189,7 @@ def write_glycam_gromacs_system(  # noqa: PLR0913, PLR0917
     restraint_force: tuple[float, float, float] | None = None,
     restraint_define: str = "POSRES_CELLULOSE",
     restraint_atom_names: tuple[str, ...] = (),
+    polymer: str = "cellulose",
 ) -> tuple[Path, Path]:
     """Write a mapped multi-chain GLYCAM system as GRO and standalone TOP."""
     directory = Path(output_directory)
@@ -198,5 +205,6 @@ def write_glycam_gromacs_system(  # noqa: PLR0913, PLR0917
         restraint_force=restraint_force,
         restraint_define=restraint_define,
         restraint_atom_names=restraint_atom_names,
+        polymer=polymer,
     )
     return gro_path, topology_path
